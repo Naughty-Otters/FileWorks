@@ -396,7 +396,7 @@ describe("ConvertControls", () => {
           user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
           plan: "pro",
           permissions: { extract: true },
-          quota: { ...guestMe.quota, limit_month: 500, remaining_month: 0 },
+          quota: { ...guestMe.quota, limit_month: 100, remaining_month: 0 },
         }}
         health={null}
         loading={false}
@@ -426,10 +426,10 @@ describe("ConvertControls", () => {
           permissions: { extract: true, "extract.ai": true, "extract.translate": true },
           quota: {
             ...guestMe.quota,
-            limit_month: 500,
-            remaining_month: 400,
-            used_ai_month: 100,
-            limit_ai_month: 100,
+            limit_month: 100,
+            remaining_month: 50,
+            used_ai_month: 50,
+            limit_ai_month: 50,
             remaining_ai_month: 0,
           },
         }}
@@ -444,7 +444,7 @@ describe("ConvertControls", () => {
     );
     await user.click(screen.getByRole("button", { name: "Convert with AI" }));
     expect(screen.getByRole("dialog", { name: "Monthly AI allowance reached" })).toBeInTheDocument();
-    expect(screen.getByText(/100 with AI or translation/)).toBeInTheDocument();
+    expect(screen.getByText(/50 with AI or translation/)).toBeInTheDocument();
   });
 });
 
@@ -478,12 +478,12 @@ describe("AuthBar", () => {
           ...guestMe,
           user: { id: "1", email: "a@b.co", name: null, picture_url: null, plan: "premium" },
           plan: "premium",
-          quota: { ...guestMe.quota, limit_month: 1000, used_month: 12 },
+          quota: { ...guestMe.quota, limit_month: 500, used_month: 12 },
         }}
       />,
     );
     expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/profile");
-    expect(screen.getByTitle("a@b.co · premium · 12/1000 this month")).toBeInTheDocument();
+    expect(screen.getByTitle("a@b.co · premium · 12/500 this month")).toBeInTheDocument();
     expect(screen.getByText("A")).toBeInTheDocument();
   });
 });
@@ -607,7 +607,7 @@ describe("ProfilePage", () => {
       user: { ...basicMe.user!, plan: "pro" },
       plan: "pro",
       permissions: { ...basicMe.permissions, "extract.ai": true, "extract.translate": true },
-      quota: { ...guestMe.quota, used_month: 3, limit_month: 500, remaining_month: 497 },
+      quota: { ...guestMe.quota, used_month: 3, limit_month: 100, remaining_month: 97 },
     };
     vi.spyOn(api, "fetchMe").mockResolvedValueOnce(basicMe).mockResolvedValue(proMe);
     vi.spyOn(api, "upgradePlan").mockResolvedValue(proMe);
@@ -628,7 +628,7 @@ describe("ProfilePage", () => {
       user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
       plan: "pro",
       permissions: { extract: true, "extract.ai": true, "extract.translate": true, export: true },
-      quota: { ...guestMe.quota, used_month: 3, limit_month: 500, remaining_month: 497 },
+      quota: { ...guestMe.quota, used_month: 3, limit_month: 100, remaining_month: 97 },
     };
     const basicMe = {
       ...proMe,
@@ -661,11 +661,11 @@ describe("ProfilePage", () => {
       user: { id: "1", email: "a@b.co", name: "Ada", picture_url: "https://example.com/a.png", plan: "pro" },
       plan: "pro",
       permissions: { extract: true, "extract.ai": true, "extract.translate": true, export: true },
-      quota: { ...guestMe.quota, used_month: 20, limit_month: 500, remaining_month: 480, used_ai_month: 20, limit_ai_month: 100, remaining_ai_month: 80 },
+      quota: { ...guestMe.quota, used_month: 20, limit_month: 100, remaining_month: 80, used_ai_month: 20, limit_ai_month: 50, remaining_ai_month: 30 },
     });
     vi.spyOn(api, "upgradePlan").mockRejectedValue(new Error("plan_invalid"));
     render(<ProfilePage />);
-    expect(await screen.findByText(/20 \/ 500 this month/)).toBeInTheDocument();
+    expect(await screen.findByText(/20 \/ 100 this month/)).toBeInTheDocument();
     expect(screen.getByText(/AI \/ translation this month/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
     expect(await screen.findByText("plan_invalid")).toBeInTheDocument();

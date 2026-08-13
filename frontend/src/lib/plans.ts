@@ -9,8 +9,8 @@ export type PlanRule = {
 export const PLAN_RULES: PlanRule[] = [
   { id: "anonymous", label: "Guest", convert: "Sign in required", quota: "—", extras: "No history" },
   { id: "basic", label: "Basic", convert: "Yes", quota: "1 file / day", extras: "AI + translation on that file" },
-  { id: "pro", label: "Pro", convert: "Yes", quota: "500 / month", extras: "100 with AI or translation" },
-  { id: "premium", label: "Premium", convert: "Yes", quota: "1000 / month", extras: "500 with AI or translation" },
+  { id: "pro", label: "Pro", convert: "Yes", quota: "100 / month", extras: "50 with AI or translation" },
+  { id: "premium", label: "Premium", convert: "Yes", quota: "500 / month", extras: "100 with AI or translation" },
 ];
 
 export const PLAN_ORDER = ["anonymous", "basic", "pro", "premium"] as const;
@@ -35,15 +35,15 @@ export const PLAN_CATALOG: CatalogPlan[] = [
     id: "pro",
     label: "Pro",
     blurb: "Higher volume, with a monthly AI and translation cap.",
-    quota: "500 files / month",
-    features: ["Everything in Basic", "500 conversions / month", "100 with AI or translation"],
+    quota: "100 files / month",
+    features: ["Everything in Basic", "100 conversions / month", "50 with AI or translation"],
   },
   {
     id: "premium",
     label: "Premium",
     blurb: "Highest monthly volume for teams.",
-    quota: "1000 files / month",
-    features: ["Everything in Pro", "1000 conversions / month", "500 with AI or translation"],
+    quota: "500 files / month",
+    features: ["Everything in Pro", "500 conversions / month", "100 with AI or translation"],
   },
 ];
 

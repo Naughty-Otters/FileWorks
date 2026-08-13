@@ -18,9 +18,9 @@ const guestMe: MeResponse = {
     used_ai_day: 0,
     used_ai_month: 0,
     limit_ai_day: null,
-    limit_ai_month: 100,
+    limit_ai_month: 50,
     remaining_ai_day: null,
-    remaining_ai_month: 100,
+    remaining_ai_month: 50,
   },
   google_client_id: null,
 };
