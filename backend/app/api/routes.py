@@ -554,15 +554,15 @@ async def list_history(
     principal: Principal = Depends(get_principal),
 ) -> HistoryListResponse:
     settings = get_settings()
-    if not principal.plan.history:
+    if not principal.plan.history or not principal.user_id:
         return HistoryListResponse(items=[], storage_backend=settings.storage_backend)
     store = get_document_store()
     limit = max(1, min(limit, 500))
-    owner = str(principal.user_id) if principal.user_id else None
+    owner = str(principal.user_id)
     records = [
         record
         for record in store.list_documents(limit=500)
-        if owner and record.owner_id == owner
+        if record.owner_id == owner
     ][:limit]
     return HistoryListResponse(
         items=[HistoryItem(**record.summary()) for record in records],
@@ -571,14 +571,13 @@ async def list_history(
 
 
 def _require_owned_record(document_id: str, principal: Principal):
-    if not principal.plan.history:
+    if not principal.plan.history or not principal.user_id:
         raise HTTPException(status_code=403, detail={"code": "plan_forbidden", "feature": "history.read"})
     store = get_document_store()
     record = store.get_document(document_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Document not found")
-    owner = str(principal.user_id) if principal.user_id else None
-    if record.owner_id and record.owner_id != owner:
+    if record.owner_id != str(principal.user_id):
         raise HTTPException(status_code=404, detail="Document not found")
     return store, record
 

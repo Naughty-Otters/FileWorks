@@ -163,6 +163,11 @@ export function Workspace() {
   }, [refreshHistory]);
 
   useEffect(() => {
+    if (!me) return;
+    void refreshHistory();
+  }, [me?.user?.id, me?.plan, refreshHistory]);
+
+  useEffect(() => {
     let cancelled = false;
     async function restoreSession() {
       const prefs = loadWorkspacePrefs();
@@ -463,6 +468,7 @@ export function Workspace() {
                 selectedId={selectedId}
                 loading={historyLoading}
                 storageBackend={storageBackend}
+                requiresLogin={!me?.permissions?.["history.read"]}
                 onSelect={handleSelectHistory}
                 onDelete={handleDeleteHistory}
                 onCollapse={() => setHistoryOpen(false)}
