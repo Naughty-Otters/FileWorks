@@ -52,6 +52,12 @@ const guestMe: MeResponse = {
     limit_month: null,
     remaining_day: null,
     remaining_month: null,
+    used_ai_day: 0,
+    used_ai_month: 0,
+    limit_ai_day: null,
+    limit_ai_month: null,
+    remaining_ai_day: null,
+    remaining_ai_month: null,
   },
   google_client_id: null,
 };
@@ -92,6 +98,7 @@ describe("HistoryPanel", () => {
     );
     await user.click(screen.getByText("doc.pdf"));
     expect(onSelect).toHaveBeenCalledWith("1");
+    expect(screen.queryByText(/anydoc|AnyDoc|PP-OCR/i)).not.toBeInTheDocument();
     await user.click(screen.getByLabelText("Hide history"));
     expect(onCollapse).toHaveBeenCalled();
   });
@@ -219,6 +226,10 @@ describe("ExtractOptionsPanel", () => {
     render(<ExtractOptionsPanel options={DEFAULT_EXTRACT_OPTIONS} onChange={onChange} />);
     await user.click(screen.getByText(/Parse options/));
     expect(screen.getAllByText("Doc preprocessor").length).toBeGreaterThan(0);
+    expect(screen.getByText("Uses AI to read images and scanned PDFs")).toBeInTheDocument();
+    expect(screen.queryByText(/Vision LLM/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/API key/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/AnyDoc/i)).not.toBeInTheDocument();
   });
 });
 
@@ -261,6 +272,10 @@ describe("ConvertControls", () => {
     expect(onConvert).toHaveBeenCalled();
     await user.click(screen.getByText("Options"));
     await user.click(screen.getByText("Read with AI"));
+    expect(screen.queryByText(/AnyDoc/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/openai/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Vision providers/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/PP-OCR/i)).not.toBeInTheDocument();
   });
 
   it("shows stop while loading", async () => {
@@ -396,6 +411,40 @@ describe("ConvertControls", () => {
     expect(screen.getByRole("dialog", { name: "Monthly conversion limit reached" })).toBeInTheDocument();
     await user.click(screen.getByLabelText("Dismiss"));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("explains a reached AI quota in the policy popup", async () => {
+    const user = userEvent.setup();
+    render(
+      <ConvertControls
+        options={{ ...DEFAULT_EXTRACT_OPTIONS, use_ai: true }}
+        onChange={vi.fn()}
+        me={{
+          ...guestMe,
+          user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
+          plan: "pro",
+          permissions: { extract: true, "extract.ai": true, "extract.translate": true },
+          quota: {
+            ...guestMe.quota,
+            limit_month: 500,
+            remaining_month: 400,
+            used_ai_month: 100,
+            limit_ai_month: 100,
+            remaining_ai_month: 0,
+          },
+        }}
+        health={null}
+        loading={false}
+        canExtract
+        fileReady
+        quotaBlocked={false}
+        onConvert={vi.fn()}
+        onStop={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Convert with AI" }));
+    expect(screen.getByRole("dialog", { name: "Monthly AI allowance reached" })).toBeInTheDocument();
+    expect(screen.getByText(/100 with AI or translation/)).toBeInTheDocument();
   });
 });
 
@@ -543,8 +592,15 @@ describe("ProfilePage", () => {
       ...guestMe,
       user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
       plan: "basic",
-      permissions: { extract: true, "extract.full_result": true, "history.read": true, export: true },
-      quota: { ...guestMe.quota, used_day: 1, limit_day: 1, remaining_day: 0 },
+      permissions: {
+        extract: true,
+        "extract.full_result": true,
+        "extract.ai": true,
+        "extract.translate": true,
+        "history.read": true,
+        export: true,
+      },
+      quota: { ...guestMe.quota, used_day: 1, limit_day: 1, remaining_day: 0, used_ai_day: 1, limit_ai_day: 1, remaining_ai_day: 0 },
     };
     const proMe = {
       ...basicMe,
@@ -557,7 +613,8 @@ describe("ProfilePage", () => {
     vi.spyOn(api, "upgradePlan").mockResolvedValue(proMe);
     render(<ProfilePage />);
     expect(await screen.findByText("Ada")).toBeInTheDocument();
-    expect(screen.getByText(/1 \/ 1 today/)).toBeInTheDocument();
+    expect(screen.getAllByText(/1 \/ 1 today/).length).toBeGreaterThan(0);
+    expect(screen.getByText("AI / translation today")).toBeInTheDocument();
     expect(screen.getByText("Convert files")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
     expect(api.upgradePlan).toHaveBeenCalledWith("pro");
@@ -604,17 +661,46 @@ describe("ProfilePage", () => {
       user: { id: "1", email: "a@b.co", name: "Ada", picture_url: "https://example.com/a.png", plan: "pro" },
       plan: "pro",
       permissions: { extract: true, "extract.ai": true, "extract.translate": true, export: true },
-      quota: { ...guestMe.quota, used_month: 20, limit_month: 500, remaining_month: 480 },
+      quota: { ...guestMe.quota, used_month: 20, limit_month: 500, remaining_month: 480, used_ai_month: 20, limit_ai_month: 100, remaining_ai_month: 80 },
     });
     vi.spyOn(api, "upgradePlan").mockRejectedValue(new Error("plan_invalid"));
     render(<ProfilePage />);
     expect(await screen.findByText(/20 \/ 500 this month/)).toBeInTheDocument();
+    expect(screen.getByText(/AI \/ translation this month/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
     expect(await screen.findByText("plan_invalid")).toBeInTheDocument();
   });
 });
 
 describe("ResultPanel", () => {
+  it("hides conversion engine names from the client", () => {
+    render(
+      <ResultPanel
+        result={{
+          filename: "doc.pdf",
+          content_type: "application/pdf",
+          size_bytes: 1,
+          engine: "AnyDoc",
+          page_count: 3,
+          format: "both",
+          markdown: "# Hello",
+          json: {},
+          pages: [],
+        }}
+        loading={false}
+        error={null}
+        view="markdown"
+        onViewChange={vi.fn()}
+        markdownDraft="# Hello"
+        markdownMode="preview"
+      />,
+    );
+    expect(screen.getByText("3 pages")).toBeInTheDocument();
+    expect(screen.queryByText(/AnyDoc/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/PP-OCR/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Paddle/i)).not.toBeInTheDocument();
+  });
+
   it("switches tabs and copies", async () => {
     const user = userEvent.setup();
     Object.defineProperty(navigator, "clipboard", {

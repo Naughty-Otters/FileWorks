@@ -15,6 +15,12 @@ const guestMe: MeResponse = {
     limit_month: null,
     remaining_day: 9,
     remaining_month: null,
+    used_ai_day: 0,
+    used_ai_month: 0,
+    limit_ai_day: null,
+    limit_ai_month: 100,
+    remaining_ai_day: null,
+    remaining_ai_month: 100,
   },
   google_client_id: null,
 };
@@ -105,7 +111,8 @@ describe("Workspace", () => {
     await user.upload(input, new File(["abc"], "note.png", { type: "image/png" }));
     await waitFor(() => expect(screen.getByText("note.png")).toBeInTheDocument());
     await user.click(screen.getByText("Convert"));
-    await waitFor(() => expect(screen.getByText(/ocr/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("1 page")).toBeInTheDocument());
+    expect(screen.queryByText(/AnyDoc|PP-OCR|Paddle/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByLabelText("Show history"));
     await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());

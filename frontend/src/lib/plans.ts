@@ -8,9 +8,9 @@ export type PlanRule = {
 
 export const PLAN_RULES: PlanRule[] = [
   { id: "anonymous", label: "Guest", convert: "Sign in required", quota: "—", extras: "No history" },
-  { id: "basic", label: "Basic", convert: "Yes", quota: "1 file / day", extras: "History; no AI" },
-  { id: "pro", label: "Pro", convert: "Yes", quota: "500 / month", extras: "AI + translation" },
-  { id: "premium", label: "Premium", convert: "Yes", quota: "1000 / month", extras: "AI + translation" },
+  { id: "basic", label: "Basic", convert: "Yes", quota: "1 file / day", extras: "AI + translation on that file" },
+  { id: "pro", label: "Pro", convert: "Yes", quota: "500 / month", extras: "100 with AI or translation" },
+  { id: "premium", label: "Premium", convert: "Yes", quota: "1000 / month", extras: "500 with AI or translation" },
 ];
 
 export const PLAN_ORDER = ["anonymous", "basic", "pro", "premium"] as const;
@@ -27,23 +27,23 @@ export const PLAN_CATALOG: CatalogPlan[] = [
   {
     id: "basic",
     label: "Basic",
-    blurb: "Convert files and keep history.",
+    blurb: "One conversion per day, including AI and translation.",
     quota: "1 file / day",
-    features: ["Full conversion results", "Document history", "Export Markdown / PDF"],
+    features: ["Full conversion results", "AI reading and translation", "Document history"],
   },
   {
     id: "pro",
     label: "Pro",
-    blurb: "AI reading and translation for daily work.",
+    blurb: "Higher volume, with a monthly AI and translation cap.",
     quota: "500 files / month",
-    features: ["Everything in Basic", "AI reading", "Translation"],
+    features: ["Everything in Basic", "500 conversions / month", "100 with AI or translation"],
   },
   {
     id: "premium",
     label: "Premium",
-    blurb: "Higher monthly volume for teams.",
+    blurb: "Highest monthly volume for teams.",
     quota: "1000 files / month",
-    features: ["Everything in Pro", "1000 conversions / month"],
+    features: ["Everything in Pro", "1000 conversions / month", "500 with AI or translation"],
   },
 ];
 
@@ -70,7 +70,7 @@ export function planSwitchLabel(current: string, target: CatalogPlan): string {
   return `Switch to ${target.label}`;
 }
 
-export type ConvertGate = "login" | "plan" | "quota_day" | "quota_month" | "ready";
+export type ConvertGate = "login" | "plan" | "quota_day" | "quota_month" | "quota_ai_day" | "quota_ai_month" | "ready";
 
 export function convertGate(args: {
   signedIn: boolean;
@@ -78,14 +78,28 @@ export function convertGate(args: {
   quotaBlocked?: boolean;
   remainingDay: number | null | undefined;
   remainingMonth: number | null | undefined;
+  wantsAi?: boolean;
+  remainingAiDay?: number | null | undefined;
+  remainingAiMonth?: number | null | undefined;
 }): ConvertGate {
   if (!args.signedIn) return "login";
   if (args.quotaBlocked && args.remainingDay === 0) return "quota_day";
   if (args.quotaBlocked && args.remainingMonth === 0) return "quota_month";
   if (args.remainingDay === 0) return "quota_day";
   if (args.remainingMonth === 0) return "quota_month";
+  if (args.wantsAi && args.remainingAiDay === 0) return "quota_ai_day";
+  if (args.wantsAi && args.remainingAiMonth === 0) return "quota_ai_month";
   if (!args.canExtract) return "plan";
   return "ready";
+}
+
+export function aiQuotaLeft(quota: {
+  remaining_ai_day?: number | null;
+  remaining_ai_month?: number | null;
+} | null | undefined): boolean {
+  if (!quota) return true;
+  if (quota.remaining_ai_day === 0 || quota.remaining_ai_month === 0) return false;
+  return true;
 }
 
 export function convertGateTitle(gate: ConvertGate): string {
@@ -96,6 +110,10 @@ export function convertGateTitle(gate: ConvertGate): string {
       return "Daily conversion limit reached";
     case "quota_month":
       return "Monthly conversion limit reached";
+    case "quota_ai_day":
+      return "Daily AI allowance reached";
+    case "quota_ai_month":
+      return "Monthly AI allowance reached";
     case "plan":
       return "Your plan cannot convert files";
     default:
@@ -108,9 +126,13 @@ export function convertGateBody(gate: ConvertGate): string {
     case "login":
       return "Conversion needs a signed-in FileWorks account. Guest browsing is fine; converting a file is not.";
     case "quota_day":
-      return "Basic includes one conversion per day. Come back tomorrow, or upgrade for a monthly allowance.";
+      return "Basic includes one conversion per day, with AI and translation. Come back tomorrow, or upgrade for a monthly allowance.";
     case "quota_month":
       return "This account has used its monthly conversions. Upgrade or wait until next month.";
+    case "quota_ai_day":
+      return "Today’s AI or translation conversion is used. You can still convert without AI, or come back tomorrow.";
+    case "quota_ai_month":
+      return "This plan’s AI or translation allowance is used for the month. You can still convert files without AI, or upgrade.";
     case "plan":
       return "This account’s plan does not include file conversion.";
     default:

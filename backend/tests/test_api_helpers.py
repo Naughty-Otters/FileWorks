@@ -117,10 +117,23 @@ class HealthRouteTests(unittest.TestCase):
         ):
             res = client.get("/api/health")
             self.assertEqual(res.status_code, 200)
+            body = res.json()
+            self.assertNotIn("AnyDoc", str(body))
+            self.assertNotIn("paddle", str(body).lower())
+            self.assertNotIn("openai", str(body).lower())
+            self.assertNotIn("firecrawl", str(body).lower())
+            self.assertIsNone(body.get("ocr_engine"))
+            if body.get("llm_provider"):
+                self.assertEqual(body["llm_provider"], "AI")
             opts = client.get("/api/options")
             self.assertEqual(opts.status_code, 200)
             engines = client.get("/api/engines")
             self.assertEqual(engines.status_code, 200)
+            self.assertNotIn("AnyDoc", str(engines.json()))
+            self.assertNotIn("PP-OCR", str(engines.json()))
+            self.assertNotIn("paddle", str(engines.json()).lower())
+            for engine in engines.json():
+                self.assertEqual(engine.get("label"), "FileWorks")
 
     def test_warmup_degraded(self) -> None:
         client = TestClient(_guest_app())
@@ -355,6 +368,100 @@ class PrincipalTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as ctx:
             get_principal(Req(), db=db)  # type: ignore[arg-type]
         self.assertEqual(ctx.exception.status_code, 401)
+
+
+class PublicSchemaTests(unittest.TestCase):
+    def test_helpers_hide_stack_names(self) -> None:
+        from app.api.schemas import public_engine_name, public_error
+
+        self.assertEqual(public_engine_name("AnyDoc"), "FileWorks")
+        self.assertEqual(public_engine_name("PP-OCR"), "FileWorks")
+        self.assertEqual(public_engine_name("ocr"), "FileWorks")
+        self.assertIsNone(public_error(None))
+        self.assertIsNone(public_error(""))
+        self.assertEqual(public_error("firecrawl-anydoc not installed"), "Unavailable")
+        self.assertEqual(public_error("PP-StructureV3 failed"), "Unavailable")
+        self.assertEqual(public_error("AnyDoc crashed"), "Unavailable")
+        self.assertEqual(public_error("PP-OCR timeout"), "Unavailable")
+        self.assertEqual(public_error("timeout"), "timeout")
+
+    def test_engine_info_and_providers_are_generic(self) -> None:
+        from app.api.schemas import EngineInfo, LLMFileProvider
+
+        anydoc = EngineInfo(id="anydoc", label="AnyDoc", error="firecrawl-anydoc not installed").model_dump()
+        self.assertEqual(anydoc["id"], "document")
+        self.assertEqual(anydoc["label"], "FileWorks")
+        self.assertEqual(anydoc["error"], "Unavailable")
+        self.assertEqual(EngineInfo(id="llm", label="LLM").model_dump()["id"], "ai")
+        self.assertEqual(EngineInfo(id="structure", label="PP-StructureV3").model_dump()["id"], "document")
+        provider = LLMFileProvider(
+            id="openai",
+            label="OpenAI",
+            default_model="gpt-4o",
+            native_pdf=True,
+            key_env="OPENAI_API_KEY",
+        ).model_dump()
+        self.assertEqual(provider["id"], "ai")
+        self.assertEqual(provider["label"], "ai")
+        self.assertNotIn("openai", str(provider).lower())
+
+    def test_extract_and_history_engine_is_fileworks(self) -> None:
+        from app.api.schemas import ExtractResponse, HistoryDetailResponse, HistoryItem
+
+        extract = ExtractResponse(
+            filename="a.png",
+            size_bytes=1,
+            engine="AnyDoc",
+            page_count=2,
+            format="both",
+        ).model_dump()
+        self.assertEqual(extract["engine"], "FileWorks")
+        item = HistoryItem(
+            id="1",
+            filename="a.png",
+            size_bytes=1,
+            created_at="2026-01-01T00:00:00Z",
+            engine="PP-OCR",
+        ).model_dump()
+        self.assertEqual(item["engine"], "FileWorks")
+        detail = HistoryDetailResponse(
+            id="1",
+            filename="a.png",
+            size_bytes=1,
+            created_at="2026-01-01T00:00:00Z",
+            engine="anydoc",
+            file_url="/api/history/1/file",
+        ).model_dump()
+        self.assertEqual(detail["engine"], "FileWorks")
+
+    def test_health_payload_hides_backends(self) -> None:
+        from app.api.schemas import EngineInfo, HealthResponse, LLMFileProvider
+
+        payload = HealthResponse(
+            status="ok",
+            app="FileWorks",
+            ocr_ready=True,
+            ocr_engine="structure",
+            ocr_error="paddleocr missing",
+            llm_ready=True,
+            llm_provider="openai",
+            llm_error="langchain timeout",
+            llm_file_providers=[
+                LLMFileProvider(id="openai", label="OpenAI", default_model="gpt-4o", key_env="OPENAI_API_KEY")
+            ],
+            translate_provider="claude",
+            engines=[EngineInfo(id="anydoc", label="AnyDoc", error="firecrawl-anydoc not installed")],
+        ).model_dump()
+        blob = str(payload)
+        self.assertIsNone(payload["ocr_engine"])
+        self.assertEqual(payload["llm_provider"], "AI")
+        self.assertEqual(payload["translate_provider"], "AI")
+        self.assertEqual(payload["ocr_error"], "Unavailable")
+        self.assertEqual(payload["llm_error"], "Unavailable")
+        self.assertNotIn("AnyDoc", blob)
+        self.assertNotIn("paddle", blob.lower())
+        self.assertNotIn("openai", blob.lower())
+        self.assertNotIn("firecrawl", blob.lower())
 
 
 if __name__ == "__main__":

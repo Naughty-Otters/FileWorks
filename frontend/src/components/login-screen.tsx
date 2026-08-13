@@ -48,7 +48,7 @@ export function LoginScreen() {
           <p className="font-[family-name:var(--font-display)] text-3xl tracking-tight">Sign in</p>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             Use Google to authenticate to this FileWorks URL. Conversion requires a signed-in account.
-            Basic can convert files; Pro and Premium add AI reading and translation.
+            Basic includes one conversion a day with AI and translation. Pro and Premium add monthly volume.
           </p>
           <div className="mt-8">
             {!sessionReady ? (

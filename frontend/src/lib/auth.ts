@@ -20,6 +20,12 @@ export type MeResponse = {
     limit_month: number | null;
     remaining_day: number | null;
     remaining_month: number | null;
+    used_ai_day: number;
+    used_ai_month: number;
+    limit_ai_day: number | null;
+    limit_ai_month: number | null;
+    remaining_ai_day: number | null;
+    remaining_ai_month: number | null;
   };
   google_client_id: string | null;
 };

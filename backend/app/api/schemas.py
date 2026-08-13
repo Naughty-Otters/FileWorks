@@ -1,6 +1,22 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
+
+PUBLIC_ENGINE = "FileWorks"
+_STACK_TOKENS = ("anydoc", "paddle", "firecrawl", "pp-ocr", "ppocr", "structurev3", "langchain")
+
+
+def public_engine_name(_value: str | None) -> str:
+    return PUBLIC_ENGINE
+
+
+def public_error(value: str | None) -> str | None:
+    if not value:
+        return None
+    lower = value.lower()
+    if any(token in lower for token in _STACK_TOKENS):
+        return "Unavailable"
+    return value
 
 
 class EngineInfo(BaseModel):
@@ -12,6 +28,22 @@ class EngineInfo(BaseModel):
     error: str | None = None
     option_support: dict[str, str] = Field(default_factory=dict)
 
+    @field_serializer("id")
+    def _public_id(self, value: str) -> str:
+        if value in {"anydoc", "ocr", "structure"}:
+            return "document"
+        if value == "llm":
+            return "ai"
+        return "document"
+
+    @field_serializer("label")
+    def _public_label(self, _value: str) -> str:
+        return PUBLIC_ENGINE
+
+    @field_serializer("error")
+    def _public_error(self, value: str | None) -> str | None:
+        return public_error(value)
+
 
 class LLMFileProvider(BaseModel):
     """Catalog entry that can read images / PDFs via a vision or document model."""
@@ -21,6 +53,10 @@ class LLMFileProvider(BaseModel):
     default_model: str
     native_pdf: bool = False
     key_env: str
+
+    @field_serializer("id", "label", "default_model", "key_env")
+    def _public_provider(self, _value: str) -> str:
+        return "ai"
 
 
 class TranslateLanguage(BaseModel):
@@ -45,6 +81,18 @@ class HealthResponse(BaseModel):
     storage_backend: str | None = None
     direct_upload: bool = False
     engines: list[EngineInfo] = Field(default_factory=list)
+
+    @field_serializer("ocr_engine")
+    def _public_ocr_engine(self, _value: str | None) -> None:
+        return None
+
+    @field_serializer("llm_provider", "translate_provider")
+    def _public_provider_name(self, value: str | None) -> str | None:
+        return "AI" if value else None
+
+    @field_serializer("ocr_error", "llm_error", "translate_error")
+    def _public_health_error(self, value: str | None) -> str | None:
+        return public_error(value)
 
 
 class PresignUploadRequest(BaseModel):
@@ -114,6 +162,10 @@ class ExtractResponse(BaseModel):
     regions: list[RegionBox] = Field(default_factory=list)
     image_size: ImageSize | None = None
 
+    @field_serializer("engine")
+    def _public_engine(self, _value: str) -> str:
+        return public_engine_name(_value)
+
 
 class HistoryItem(BaseModel):
     id: str
@@ -127,6 +179,10 @@ class HistoryItem(BaseModel):
     has_markdown: bool = False
     has_json: bool = False
     owner_id: str | None = None
+
+    @field_serializer("engine")
+    def _public_engine(self, _value: str | None) -> str | None:
+        return public_engine_name(_value) if _value else None
 
 
 class HistoryListResponse(BaseModel):
@@ -153,6 +209,10 @@ class HistoryDetailResponse(BaseModel):
     regions: list[RegionBox] = Field(default_factory=list)
     image_size: ImageSize | None = None
     options: ExtractOptionsResponse | None = None
+
+    @field_serializer("engine")
+    def _public_engine(self, _value: str | None) -> str | None:
+        return public_engine_name(_value) if _value else None
 
 
 class ErrorResponse(BaseModel):

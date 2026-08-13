@@ -205,7 +205,7 @@ export function ResultPanel({
             <p className="truncate text-sm font-medium">{result?.filename || "Converted file"}</p>
             <p className="truncate text-[11px] text-[var(--ink-muted)]">
               {result
-                ? `${result.engine} · ${result.page_count} page${result.page_count === 1 ? "" : "s"}`
+                ? `${result.page_count} page${result.page_count === 1 ? "" : "s"}`
                 : "Markdown lands here after convert"}
             </p>
           </div>

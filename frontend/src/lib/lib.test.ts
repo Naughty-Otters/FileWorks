@@ -331,6 +331,28 @@ describe("plan policy", () => {
     ).toBe("quota_month");
     expect(convertGate({ signedIn: true, canExtract: false, remainingDay: 1, remainingMonth: null })).toBe("plan");
     expect(convertGate({ signedIn: true, canExtract: true, remainingDay: 1, remainingMonth: 10 })).toBe("ready");
+    expect(
+      convertGate({
+        signedIn: true,
+        canExtract: true,
+        remainingDay: 1,
+        remainingMonth: 400,
+        wantsAi: true,
+        remainingAiDay: null,
+        remainingAiMonth: 0,
+      }),
+    ).toBe("quota_ai_month");
+    expect(
+      convertGate({
+        signedIn: true,
+        canExtract: true,
+        remainingDay: 1,
+        remainingMonth: null,
+        wantsAi: true,
+        remainingAiDay: 0,
+        remainingAiMonth: null,
+      }),
+    ).toBe("quota_ai_day");
     expect(canSwitchPlan("basic", "pro")).toBe(true);
     expect(canSwitchPlan("premium", "pro")).toBe(true);
     expect(canSwitchPlan("basic", "basic")).toBe(false);
@@ -343,11 +365,15 @@ describe("plan policy", () => {
     expect(convertGateTitle("login")).toMatch(/Sign in/);
     expect(convertGateTitle("quota_day")).toMatch(/Daily/);
     expect(convertGateTitle("quota_month")).toMatch(/Monthly/);
+    expect(convertGateTitle("quota_ai_day")).toMatch(/AI/);
+    expect(convertGateTitle("quota_ai_month")).toMatch(/AI/);
     expect(convertGateTitle("plan")).toMatch(/cannot convert/);
     expect(convertGateTitle("ready")).toMatch(/Plan rules/);
     expect(convertGateBody("login")).toMatch(/signed-in/);
     expect(convertGateBody("quota_day")).toMatch(/one conversion/);
     expect(convertGateBody("quota_month")).toMatch(/monthly/);
+    expect(convertGateBody("quota_ai_day")).toMatch(/without AI/);
+    expect(convertGateBody("quota_ai_month")).toMatch(/without AI/);
     expect(convertGateBody("plan")).toMatch(/does not include/);
     expect(convertGateBody("ready")).toMatch(/plan rules/);
   });

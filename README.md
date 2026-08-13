@@ -17,7 +17,7 @@ fileworks/
 - Automatic fallback for scans and images (layout + text recognition when a file has no text layer)
 - Editable Markdown preview on the right; download as Markdown / TXT / HTML / JSON / PDF (print)
 - Light / dark theme toggle
-- Google sign-in with plans: **Guest** (half the text), **Basic** (1 file/day), **Pro** (AI + translation, 500/month), **Premium** (1000/month)
+- Google sign-in with plans: **Guest** (browse only), **Basic** (1 file/day with AI + translation), **Pro** (500/month, 100 with AI or translation), **Premium** (1000/month, 500 with AI or translation)
 - Reading order: **AnyDoc** → **LLM** (if configured) → **OCR** (PP-OCR, then PP-StructureV3)
 
 ## Prerequisites

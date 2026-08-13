@@ -8,7 +8,7 @@ from uuid import uuid4
 from fastapi import HTTPException
 
 from app.auth.plans import can_change_plan, get_plan, permissions_for
-from app.auth.quota import assert_can_extract, quota_snapshot, record_extract
+from app.auth.quota import assert_can_extract, assert_can_use_ai, quota_snapshot, record_extract
 from app.auth.redact import redact_extract_payload
 from app.auth.tokens import decode_access_token, hash_token, issue_access_token, new_refresh_token
 from app.core.config import Settings, get_settings
@@ -24,17 +24,23 @@ class PlansTests(unittest.TestCase):
     def test_empty_plan_is_guest(self) -> None:
         self.assertEqual(get_plan(None).id, "anonymous")
 
-    def test_basic_can_convert_without_ai(self) -> None:
+    def test_basic_can_convert_with_ai(self) -> None:
         perms = permissions_for(get_plan("basic"))
         self.assertTrue(perms["extract"])
         self.assertTrue(perms["extract.full_result"])
-        self.assertFalse(perms["extract.ai"])
+        self.assertTrue(perms["extract.ai"])
+        self.assertTrue(perms["extract.translate"])
         self.assertTrue(perms["history.read"])
+        self.assertEqual(get_plan("basic").ai_per_day, 1)
 
     def test_pro_permissions(self) -> None:
         perms = permissions_for(get_plan("pro"))
         self.assertTrue(perms["extract.ai"])
         self.assertTrue(perms["history.read"])
+        self.assertEqual(get_plan("pro").extracts_per_month, 500)
+        self.assertEqual(get_plan("pro").ai_per_month, 100)
+        self.assertEqual(get_plan("premium").extracts_per_month, 1000)
+        self.assertEqual(get_plan("premium").ai_per_month, 500)
 
     def test_plan_upgrade_ranks(self) -> None:
         self.assertTrue(can_change_plan("basic", "pro"))
@@ -71,7 +77,9 @@ class QuotaTests(unittest.TestCase):
     def test_basic_can_extract(self) -> None:
         snap = quota_snapshot(None, user_id=None, plan=get_plan("basic"))
         self.assertEqual(snap["remaining_day"], 1)
+        self.assertEqual(snap["remaining_ai_day"], 1)
         assert_can_extract(None, user_id=None, plan=get_plan("basic"))
+        assert_can_use_ai(None, user_id=None, plan=get_plan("basic"), use_ai=True, translate=True)
 
     def test_record_without_db_is_noop(self) -> None:
         record_extract(None, user_id=None, anonymous_id="x")
@@ -114,6 +122,39 @@ class QuotaTests(unittest.TestCase):
 
         record_extract(FakeDb(), user_id=uuid4(), anonymous_id="anon")
         self.assertEqual(len(added), 1)
+
+    def test_record_extract_enhanced_adds_ai_event(self) -> None:
+        added = []
+        class FakeDb:
+            def add(self, event):
+                added.append(event)
+
+        record_extract(FakeDb(), user_id=uuid4(), anonymous_id="anon", enhanced=True)
+        self.assertEqual([event.action for event in added], ["extract", "extract.ai"])
+
+    def test_ai_month_quota_exhausted(self) -> None:
+        plan = get_plan("pro")
+
+        class FakeDb:
+            def __init__(self) -> None:
+                self.n = 0
+
+            def scalar(self, _q):
+                self.n += 1
+                return 100 if self.n >= 4 else 0
+
+        with self.assertRaises(HTTPException) as ctx:
+            assert_can_use_ai(FakeDb(), user_id=uuid4(), plan=plan, use_ai=True, translate=False)
+        self.assertEqual(ctx.exception.detail["code"], "quota_ai_month")
+        self.assertEqual(ctx.exception.detail["limit"], 100)
+
+    def test_ai_forbidden_when_plan_disallows(self) -> None:
+        from dataclasses import replace
+
+        plan = replace(get_plan("basic"), ai=False)
+        with self.assertRaises(HTTPException) as ctx:
+            assert_can_use_ai(None, user_id=None, plan=plan, use_ai=True, translate=False)
+        self.assertEqual(ctx.exception.detail["feature"], "extract.ai")
 
 
 class RedactTests(unittest.TestCase):

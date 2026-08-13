@@ -26,7 +26,7 @@ from app.api.schemas import (
     TranslateLanguage,
 )
 from app.auth.deps import Principal, get_principal
-from app.auth.quota import assert_can_extract, record_extract
+from app.auth.quota import assert_can_extract, assert_can_use_ai, record_extract
 from app.auth.redact import redact_extract_payload
 from app.core.config import get_settings
 from app.engines.llm.catalog import list_vision_providers
@@ -400,16 +400,13 @@ async def extract(
         format_block_content=_form_bool(format_block_content),
         target_lang=str(target_lang or ""),
     )
-    if options.use_ai and not principal.plan.ai:
-        raise HTTPException(
-            status_code=403,
-            detail={"code": "plan_forbidden", "feature": "extract.ai", "plan": principal.plan.id},
-        )
-    if options.normalized_target_lang() and not principal.plan.translate:
-        raise HTTPException(
-            status_code=403,
-            detail={"code": "plan_forbidden", "feature": "extract.translate", "plan": principal.plan.id},
-        )
+    assert_can_use_ai(
+        db,
+        user_id=principal.user_id,
+        plan=principal.plan,
+        use_ai=options.use_ai,
+        translate=bool(options.normalized_target_lang()),
+    )
     if options.normalized_target_lang():
         if not settings.llm_lambda_function:
             translator = get_markdown_translator()
@@ -501,7 +498,12 @@ async def extract(
                 logger.exception("Failed to persist document history")
                 raise HTTPException(status_code=500, detail=f"Failed to save history: {exc}") from exc
 
-        record_extract(db, user_id=principal.user_id, anonymous_id=principal.anonymous_id)
+        record_extract(
+            db,
+            user_id=principal.user_id,
+            anonymous_id=principal.anonymous_id,
+            enhanced=options.use_ai or bool(options.normalized_target_lang()),
+        )
 
         regions_raw = result.get("regions") or []
         image_size_raw = result.get("image_size")

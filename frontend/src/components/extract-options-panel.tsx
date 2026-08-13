@@ -25,7 +25,7 @@ const OPTION_META: Array<{
   {
     key: "use_ai",
     label: "Read with AI",
-    hint: "Vision LLM for images and scanned PDFs (needs server API key)",
+    hint: "Uses AI to read images and scanned PDFs",
   },
   {
     key: "use_doc_preprocessor",

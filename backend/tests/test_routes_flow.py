@@ -94,8 +94,10 @@ class ExtractFlowTests(unittest.TestCase):
         self.assertEqual(res.status_code, 400)
 
     def test_extract_ai_forbidden(self) -> None:
+        from dataclasses import replace
+
         user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic")
-        principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+        principal = Principal(plan=replace(get_plan("basic"), ai=False), user=user)  # type: ignore[arg-type]
         client = TestClient(_app(principal))
         res = client.post(
             "/api/extract",
@@ -132,6 +134,8 @@ class ExtractFlowTests(unittest.TestCase):
                 files={"file": ("note.png", b"png-bytes", "image/png")},
             )
         self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["engine"], "FileWorks")
+        self.assertNotIn("AnyDoc", str(res.json()))
         store.save_document.assert_called()
 
     def test_history_owned_roundtrip(self) -> None:
@@ -164,8 +168,11 @@ class ExtractFlowTests(unittest.TestCase):
             listed = client.get("/api/history")
             self.assertEqual(listed.status_code, 200)
             self.assertEqual(listed.json()["items"][0]["id"], "doc1")
+            self.assertEqual(listed.json()["items"][0]["engine"], "FileWorks")
             detail = client.get("/api/history/doc1")
             self.assertEqual(detail.status_code, 200)
+            self.assertEqual(detail.json()["engine"], "FileWorks")
+            self.assertNotIn("AnyDoc", str(detail.json()))
             file_res = client.get("/api/history/doc1/file")
             self.assertEqual(file_res.status_code, 200)
             deleted = client.delete("/api/history/doc1")

@@ -127,6 +127,43 @@ export function ProfilePage() {
                 </div>
               </div>
             ) : null}
+            {me.quota.limit_ai_day != null ? (
+              <div>
+                <div className="flex justify-between text-sm">
+                  <dt>AI / translation today</dt>
+                  <dd className="text-[var(--ink-muted)]">
+                    {usageLine(me.quota.used_ai_day, me.quota.limit_ai_day, me.quota.remaining_ai_day, "today")}
+                  </dd>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--accent)]"
+                    style={{ width: `${usagePercent(me.quota.used_ai_day, me.quota.limit_ai_day)}%` }}
+                  />
+                </div>
+              </div>
+            ) : null}
+            {me.quota.limit_ai_month != null ? (
+              <div>
+                <div className="flex justify-between text-sm">
+                  <dt>AI / translation this month</dt>
+                  <dd className="text-[var(--ink-muted)]">
+                    {usageLine(
+                      me.quota.used_ai_month,
+                      me.quota.limit_ai_month,
+                      me.quota.remaining_ai_month,
+                      "this month",
+                    )}
+                  </dd>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--accent)]"
+                    style={{ width: `${usagePercent(me.quota.used_ai_month, me.quota.limit_ai_month)}%` }}
+                  />
+                </div>
+              </div>
+            ) : null}
             {me.quota.limit_day == null && me.quota.limit_month == null ? (
               <p className="text-sm text-[var(--ink-muted)]">No conversion quota on this plan.</p>
             ) : null}

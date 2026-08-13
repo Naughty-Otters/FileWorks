@@ -18,6 +18,8 @@ class Plan:
     export: bool
     extracts_per_day: int | None  # None = unlimited
     extracts_per_month: int | None
+    ai_per_day: int | None  # AI or translation; None = unlimited / not applicable
+    ai_per_month: int | None
 
 
 PLANS: dict[str, Plan] = {
@@ -32,18 +34,22 @@ PLANS: dict[str, Plan] = {
         export=True,
         extracts_per_day=None,
         extracts_per_month=None,
+        ai_per_day=None,
+        ai_per_month=None,
     ),
     "basic": Plan(
         id="basic",
         label="Basic",
         extract=True,
         full_result=True,
-        ai=False,
-        translate=False,
+        ai=True,
+        translate=True,
         history=True,
         export=True,
         extracts_per_day=1,
         extracts_per_month=None,
+        ai_per_day=1,
+        ai_per_month=None,
     ),
     "pro": Plan(
         id="pro",
@@ -56,6 +62,8 @@ PLANS: dict[str, Plan] = {
         export=True,
         extracts_per_day=None,
         extracts_per_month=500,
+        ai_per_day=None,
+        ai_per_month=100,
     ),
     "premium": Plan(
         id="premium",
@@ -68,6 +76,8 @@ PLANS: dict[str, Plan] = {
         export=True,
         extracts_per_day=None,
         extracts_per_month=1000,
+        ai_per_day=None,
+        ai_per_month=500,
     ),
 }
 

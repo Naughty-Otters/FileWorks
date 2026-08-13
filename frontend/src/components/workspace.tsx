@@ -26,6 +26,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { UploadPanel } from "@/components/upload-panel";
 import { prefetchHeavyUi } from "@/lib/prefetch";
 import { scheduleTokenRefresh, type MeResponse } from "@/lib/auth";
+import { aiQuotaLeft } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 import {
   loadSessionFile,
@@ -277,11 +278,11 @@ export function Workspace() {
     setExtractOptions((current) => {
       const next = { ...current };
       let changed = false;
-      if (!me.permissions["extract.ai"] && next.use_ai) {
+      if ((!me.permissions["extract.ai"] || !aiQuotaLeft(me.quota)) && next.use_ai) {
         next.use_ai = false;
         changed = true;
       }
-      if (!me.permissions["extract.translate"] && next.target_lang) {
+      if ((!me.permissions["extract.translate"] || !aiQuotaLeft(me.quota)) && next.target_lang) {
         next.target_lang = "";
         changed = true;
       }

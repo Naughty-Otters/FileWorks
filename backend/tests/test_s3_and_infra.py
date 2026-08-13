@@ -143,7 +143,14 @@ class S3StoreTests(unittest.TestCase):
 
 class LLMEngineTests(unittest.TestCase):
     def test_unconfigured(self) -> None:
-        engine = LLMEngine(get_settings())
+        settings = Settings(
+            _env_file=None,
+            llm_provider=None,
+            llm_api_key=None,
+            openai_api_key=None,
+            jwt_secret="test-secret-do-not-use-in-prod-please",
+        )
+        engine = LLMEngine(settings)
         self.assertFalse(engine.configured())
         self.assertIsNotNone(engine.init_error)
         with self.assertRaises(RuntimeError):
@@ -287,10 +294,18 @@ class LLMEngineTests(unittest.TestCase):
         self.assertTrue(fake.called)
 
     def test_llm_reader_unconfigured(self) -> None:
-        reader = LLMReader()
-        source = SourceFile(path=Path("a.png"), filename="a.png", suffix=".png")
-        self.assertFalse(reader.can_process(source).supported)
-        desc = reader.describe()
+        settings = Settings(
+            _env_file=None,
+            llm_provider=None,
+            llm_api_key=None,
+            openai_api_key=None,
+            jwt_secret="test-secret-do-not-use-in-prod-please",
+        )
+        with patch("app.processing.reading.llm.get_settings", return_value=settings):
+            reader = LLMReader()
+            source = SourceFile(path=Path("a.png"), filename="a.png", suffix=".png")
+            self.assertFalse(reader.can_process(source).supported)
+            desc = reader.describe()
         self.assertEqual(desc["id"], "llm")
 
 

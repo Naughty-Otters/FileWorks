@@ -5,13 +5,12 @@ import dynamic from "next/dynamic";
 import { Bot, Languages, Settings2, Sparkles, Square } from "lucide-react";
 import {
   DEFAULT_EXTRACT_OPTIONS,
-  formatFileProviders,
   type ExtractOptions,
   type HealthResponse,
   type TranslateLanguage,
 } from "@/lib/api";
 import type { MeResponse } from "@/lib/auth";
-import { convertGate, convertGateTitle } from "@/lib/plans";
+import { aiQuotaLeft, convertGate, convertGateTitle } from "@/lib/plans";
 import { PlanPolicyDialog } from "@/components/plan-policy-dialog";
 import { cn } from "@/lib/utils";
 
@@ -51,15 +50,20 @@ export function ConvertControls({
   const [open, setOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const wantsAi = Boolean(options.use_ai || options.target_lang);
   const gate = convertGate({
     signedIn: Boolean(me?.user),
     canExtract,
     quotaBlocked,
     remainingDay: me?.quota.remaining_day,
     remainingMonth: me?.quota.remaining_month,
+    wantsAi,
+    remainingAiDay: me?.quota.remaining_ai_day,
+    remainingAiMonth: me?.quota.remaining_ai_month,
   });
-  const canAi = Boolean(me?.permissions["extract.ai"] && health?.llm_ready);
-  const canTranslate = Boolean(me?.permissions["extract.translate"] && health?.translate_ready);
+  const aiLeft = aiQuotaLeft(me?.quota);
+  const canAi = Boolean(me?.permissions["extract.ai"] && health?.llm_ready && aiLeft);
+  const canTranslate = Boolean(me?.permissions["extract.translate"] && health?.translate_ready && aiLeft);
   const languages: TranslateLanguage[] = health?.translate_languages?.length
     ? health.translate_languages
     : [{ id: "original", label: "Original (no translation)" }];
@@ -121,10 +125,12 @@ export function ConvertControls({
               )}
               title={
                 !me?.permissions["extract.ai"]
-                  ? "Upgrade to Pro or Premium to use AI reading"
-                  : health?.llm_ready
-                    ? "Use a vision model to read this file"
-                    : health?.llm_error || "AI reading is not configured"
+                  ? "Sign in to use AI reading"
+                  : !aiLeft
+                    ? "AI or translation allowance is used"
+                    : health?.llm_ready
+                      ? "Use a vision model to read this file"
+                      : health?.llm_error || "AI reading is not configured"
               }
             >
               <Bot size={16} className="shrink-0 text-[var(--accent)]" />
@@ -146,10 +152,12 @@ export function ConvertControls({
               )}
               title={
                 !me?.permissions["extract.translate"]
-                  ? "Upgrade to Pro or Premium to translate"
-                  : health?.translate_ready
-                    ? "Translate Markdown after conversion"
-                    : health?.translate_error || "Translation is not configured"
+                  ? "Sign in to translate"
+                  : !aiLeft
+                    ? "AI or translation allowance is used"
+                    : health?.translate_ready
+                      ? "Translate Markdown after conversion"
+                      : health?.translate_error || "Translation is not configured"
               }
             >
               <Languages size={16} className="shrink-0 text-[var(--accent)]" />
@@ -183,11 +191,15 @@ export function ConvertControls({
               disabled={loading}
               embedded
               hideKeys={["use_ai"]}
-              aiHint={`Vision providers: ${formatFileProviders(health?.llm_file_providers)}`}
+              aiHint="Uses AI to read images and scanned PDFs"
               lockedKeys={
-                me?.permissions["extract.ai"]
+                me?.permissions["extract.ai"] && aiLeft
                   ? undefined
-                  : { use_ai: "Upgrade to Pro or Premium to use AI reading" }
+                  : {
+                      use_ai: !aiLeft
+                        ? "AI or translation allowance is used"
+                        : "Sign in to use AI reading",
+                    }
               }
               onChange={onChange}
             />
@@ -196,7 +208,7 @@ export function ConvertControls({
                 <a href="/login" className="text-[var(--accent-strong)] underline-offset-2 hover:underline">
                   Sign in
                 </a>{" "}
-                to convert files and save history. Basic includes conversion; Pro adds AI and translation.
+                to convert files and save history. Basic includes one conversion per day with AI and translation.
               </p>
             ) : null}
           </div>
