@@ -30,6 +30,7 @@ from app.auth.quota import assert_can_extract, record_extract
 from app.auth.redact import redact_extract_payload
 from app.core.config import get_settings
 from app.engines.llm.catalog import list_vision_providers
+from app.processing.postprocess.media import expand_embedded_media, fold_embedded_media
 from app.processing.pipeline import get_document_pipeline
 from app.processing.postprocess import get_markdown_translator, language_catalog
 from app.processing.reading.anydoc import anydoc_is_available
@@ -472,6 +473,11 @@ async def extract(
         record = None
         if principal.plan.history:
             store = get_document_store()
+            folded = fold_embedded_media(
+                result.get("markdown"),
+                result.get("json"),
+                result.get("pages") or [],
+            )
             try:
                 record = store.save_document(
                     document_id=document_id,
@@ -482,10 +488,14 @@ async def extract(
                     engine=result.get("engine", "unknown"),
                     page_count=int(result.get("page_count", 0)),
                     output_format=output_format,
-                    markdown=result.get("markdown"),
-                    json_data=result.get("json"),
-                    pages=result.get("pages") or [],
+                    markdown=folded.markdown,
+                    json_data=folded.json_data,
+                    pages=folded.pages,
                     owner_id=str(principal.user_id) if principal.user_id else None,
+                )
+                store.save_media_files(
+                    document_id,
+                    [(item.name, item.data, item.content_type) for item in folded.files],
                 )
             except Exception as exc:  # noqa: BLE001
                 logger.exception("Failed to persist document history")
@@ -587,8 +597,14 @@ async def get_history_item(
     document_id: str,
     principal: Principal = Depends(get_principal),
 ) -> HistoryDetailResponse:
-    _store, record = _require_owned_record(document_id, principal)
-    regions, image_size = _regions_payload(record.json_data, record.pages)
+    store, record = _require_owned_record(document_id, principal)
+    markdown, json_data, pages = expand_embedded_media(
+        record.markdown,
+        record.json_data,
+        record.pages,
+        store.load_media_files(record.id),
+    )
+    regions, image_size = _regions_payload(json_data, pages)
     return HistoryDetailResponse(
         id=record.id,
         filename=record.filename,
@@ -598,9 +614,9 @@ async def get_history_item(
         engine=record.engine,
         page_count=record.page_count,
         format=record.output_format,
-        markdown=record.markdown,
-        data=record.json_data,
-        pages=record.pages,
+        markdown=markdown,
+        data=json_data,
+        pages=pages,
         storage_backend=record.storage_backend,
         file_url=f"/api/history/{record.id}/file",
         regions=regions,

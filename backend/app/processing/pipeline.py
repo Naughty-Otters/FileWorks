@@ -25,7 +25,7 @@ class DocumentPipeline:
     1. SourceFile normalization
     2. EngineDecisionMaker → ordered Reader candidates
     3. read() with fallback on soft failures
-    4. Optional Markdown translation post-process
+    4. Embed / compress document images, then optional translation
     5. FormatExporter for user-requested download formats
     """
 
@@ -60,7 +60,7 @@ class DocumentPipeline:
         source = SourceFile.from_path(file_path, filename=filename, mime_type=mime_type)
         opts = options or DEFAULT_EXTRACT_OPTIONS
         result = self.read(source, options=opts, preferred_output=preferred_output)
-        result = self._postprocess(result, opts)
+        result = self._postprocess(result, opts, source)
         include_md = api_output_format in {"markdown", "both"}
         include_json = api_output_format in {"json", "both"}
         return result.to_api_dict(include_markdown=include_md, include_json=include_json)
@@ -120,7 +120,10 @@ class DocumentPipeline:
             f"'{source.filename}': {' | '.join(errors)}"
         )
 
-    def _postprocess(self, result: ReadResult, options: ExtractOptions) -> ReadResult:
+    def _postprocess(self, result: ReadResult, options: ExtractOptions, source: SourceFile) -> ReadResult:
+        from app.processing.postprocess.media import embed_read_result_media
+
+        result = embed_read_result_media(result, source)
         lang = options.normalized_target_lang()
         if not lang:
             return result

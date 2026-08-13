@@ -10,6 +10,10 @@ import type { Element, Root } from "hast";
 
 export const markdownSanitizeSchema = {
   ...defaultSchema,
+  protocols: {
+    ...defaultSchema.protocols,
+    src: [...(defaultSchema.protocols?.src || ["http", "https"]), "data", "blob"],
+  },
   tagNames: [
     ...(defaultSchema.tagNames || []),
     "mark",
@@ -38,9 +42,36 @@ export const markdownSanitizeSchema = {
     table: [...(defaultSchema.attributes?.table || []), "border", "style", "width"],
     span: ["style", "className", "class"],
     div: ["style", "className", "class", "align"],
-    img: [...(defaultSchema.attributes?.img || []), "src", "alt", "title", "width", "height", "style"],
+    img: [...(defaultSchema.attributes?.img || []), "src", "alt", "title", "width", "height", "style", "className", "class"],
   },
 };
+
+function rehypeSizedImages() {
+  return (tree: Root) => {
+    visit(tree, "element", (node: Element) => {
+      if (node.tagName !== "img") return;
+      const title = typeof node.properties?.title === "string" ? node.properties.title.trim() : "";
+      if (!title) return;
+      const classes = Array.isArray(node.properties.className)
+        ? [...node.properties.className]
+        : typeof node.properties.className === "string"
+          ? [node.properties.className]
+          : [];
+      const widthMatch = /^(\d+)/.exec(title);
+      if (widthMatch) {
+        const width = Number(widthMatch[1]);
+        node.properties.width = width;
+        node.properties.style = `width:${width}px;max-width:100%;height:auto;object-fit:contain`;
+      }
+      if (/\bright\b/i.test(title)) classes.push("fw-img-right");
+      else if (/\bleft\b/i.test(title)) classes.push("fw-img-left");
+      if (classes.length) node.properties.className = classes;
+      delete node.properties.title;
+      delete node.properties.width;
+      delete node.properties.height;
+    });
+  };
+}
 
 function rehypeSafeImages() {
   return (tree: Root) => {
@@ -85,6 +116,7 @@ const processor = unified()
   .use(remarkGfm)
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeRaw)
+  .use(rehypeSizedImages)
   .use(rehypeSanitize, markdownSanitizeSchema)
   .use(rehypeSafeImages)
   .use(rehypeWrapTables)

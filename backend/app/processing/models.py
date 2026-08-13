@@ -117,6 +117,52 @@ class ReadResult:
         text = self.output(OutputKind.TEXT)
         return text.content if text else ""
 
+    def with_markdown(
+        self,
+        markdown: str,
+        *,
+        pages: list[dict[str, Any]] | None = None,
+        metadata_extra: dict[str, Any] | None = None,
+    ) -> ReadResult:
+        """Return a copy whose Markdown output (and matching page/json text) is replaced."""
+        previous = self.markdown()
+        outputs = [
+            DocumentOutput(kind=OutputKind.MARKDOWN, content=markdown)
+            if item.kind == OutputKind.MARKDOWN
+            else item
+            for item in self.outputs
+        ]
+        if not any(item.kind == OutputKind.MARKDOWN for item in outputs):
+            outputs.append(DocumentOutput(kind=OutputKind.MARKDOWN, content=markdown))
+        new_outputs: list[DocumentOutput] = []
+        for item in outputs:
+            if item.kind == OutputKind.JSON and isinstance(item.data, dict) and item.data.get("text") == previous:
+                new_outputs.append(DocumentOutput(kind=item.kind, content=item.content, data={**item.data, "text": markdown}))
+            else:
+                new_outputs.append(item)
+        next_pages = pages
+        if next_pages is None:
+            next_pages = []
+            for page in self.pages:
+                if isinstance(page, dict) and page.get("markdown") == previous:
+                    next_pages.append({**page, "markdown": markdown})
+                else:
+                    next_pages.append(page)
+        metadata = dict(self.metadata)
+        if metadata_extra:
+            metadata.update(metadata_extra)
+        return ReadResult(
+            engine_id=self.engine_id,
+            engine_label=self.engine_label,
+            outputs=new_outputs,
+            pages=next_pages,
+            regions=self.regions,
+            image_size=self.image_size,
+            page_count=self.page_count,
+            metadata=metadata,
+            options=self.options,
+        )
+
     def to_api_dict(self, *, include_markdown: bool = True, include_json: bool = True) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "engine": self.engine_label,

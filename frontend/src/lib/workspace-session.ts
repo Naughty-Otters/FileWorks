@@ -18,6 +18,7 @@ export type WorkspacePrefs = {
   previewOpen: boolean;
   extractOptions: ExtractOptions;
   markdownMode: MarkdownMode;
+  markdownToolbar: boolean;
   markdownDraft: string;
   result: ExtractResponse | null;
 };
@@ -29,6 +30,7 @@ const DEFAULT_PREFS: WorkspacePrefs = {
   previewOpen: true,
   extractOptions: DEFAULT_EXTRACT_OPTIONS,
   markdownMode: "preview",
+  markdownToolbar: true,
   markdownDraft: "",
   result: null,
 };

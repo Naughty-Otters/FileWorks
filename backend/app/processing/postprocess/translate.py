@@ -13,6 +13,7 @@ from app.engines.llm.providers import ConvertRequest, LLMClientError, clean_mark
 from app.engines.llm.urls import LLMHttpTarget, resolve_http_target
 from app.processing.models import DocumentOutput, OutputKind, ReadResult
 from app.processing.postprocess.languages import language_label, normalize_target_lang
+from app.processing.postprocess.media import protect_embedded_images, restore_embedded_images
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ TRANSLATE_PROMPT = (
     "Output Markdown only — no preamble, no explanation, no code fences around the whole document. "
     "Preserve headings, lists, tables, links, images, emphasis, and reading order. "
     "Do not translate URLs, fenced code, inline code, or Markdown syntax. "
+    "Keep placeholders like @@FWIMG0@@ unchanged — they stand in for images. "
     "Keep the same structure and heading levels."
 )
 
@@ -127,7 +129,8 @@ class MarkdownTranslator:
         )
         provider = get_api_provider(spec.id)
         label = language_label(lang)
-        chunks = _split_markdown(markdown, max_chars=int(self.settings.translate_chunk_chars))
+        protected, held = protect_embedded_images(markdown)
+        chunks = _split_markdown(protected, max_chars=int(self.settings.translate_chunk_chars))
         translated: list[str] = []
         for index, chunk in enumerate(chunks):
             header = TRANSLATE_PROMPT.format(language=f"{label} ({lang})")
@@ -138,7 +141,7 @@ class MarkdownTranslator:
             if not text:
                 raise LLMClientError(f"Translation returned empty Markdown for part {index + 1}")
             translated.append(text)
-        return "\n\n".join(translated).strip()
+        return restore_embedded_images("\n\n".join(translated).strip(), held)
 
     def apply(self, result: ReadResult, target_lang: str) -> ReadResult:
         lang = normalize_target_lang(target_lang)

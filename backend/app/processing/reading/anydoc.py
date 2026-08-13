@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import base64
 import logging
 import sys
 from pathlib import Path
 from typing import Any
 
 from app.processing.models import Capability, DocumentOutput, OutputKind, ReadResult, SourceFile
+from app.processing.postprocess.media import EmbeddedImage, place_images
 from app.processing.reading.base import Reader
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
 
@@ -73,28 +73,118 @@ def _markdown_looks_empty(markdown: str | None) -> bool:
     return len(meaningful) == 0
 
 
-def _embed_assets_as_data_urls(markdown: str, document: Any) -> str:
-    assets = getattr(document, "assets", None) or []
-    if not assets or not markdown:
-        return markdown
-    chunks: list[str] = []
+def _asset_bytes(asset: Any) -> bytes | None:
+    data = getattr(asset, "data", None) or getattr(asset, "bytes", None)
+    if data is None:
+        return None
+    if isinstance(data, memoryview):
+        data = data.tobytes()
+    if not isinstance(data, (bytes, bytearray)):
+        return None
+    return bytes(data)
+
+
+def _iter_inlines(inlines: Any) -> Any:
+    for inline in inlines or []:
+        yield inline
+        nested = getattr(inline, "content", None)
+        if nested:
+            yield from _iter_inlines(nested)
+
+
+def _iter_blocks(blocks: Any) -> Any:
+    for block in blocks or []:
+        yield block
+        content = getattr(block, "content", None)
+        if content:
+            yield from _iter_inlines(content)
+        lst = getattr(block, "list", None)
+        if lst is not None:
+            for item in getattr(lst, "items", None) or []:
+                yield from _iter_blocks(getattr(item, "blocks", None))
+        table = getattr(block, "table", None)
+        if table is not None:
+            for row in getattr(table, "grid", None) or []:
+                for slot in row or []:
+                    cell = getattr(slot, "cell", None)
+                    if cell is not None:
+                        yield from _iter_blocks(getattr(cell, "blocks", None))
+        nested_blocks = getattr(block, "blocks", None)
+        if nested_blocks:
+            yield from _iter_blocks(nested_blocks)
+
+
+def _collect_document_images(document: Any) -> list[EmbeddedImage]:
+    assets = list(getattr(document, "assets", None) or [])
+    by_id: dict[int, Any] = {}
     for index, asset in enumerate(assets):
-        media_type = getattr(asset, "media_type", None) or "application/octet-stream"
-        data = getattr(asset, "data", None) or getattr(asset, "bytes", None)
-        if data is None:
+        asset_id = getattr(asset, "id", index)
+        try:
+            by_id[int(asset_id)] = asset
+        except (TypeError, ValueError):
+            by_id[index] = asset
+
+    images: list[EmbeddedImage] = []
+    seen: set[int] = set()
+
+    def consider(inline: Any) -> None:
+        if getattr(inline, "kind", None) != "image":
+            return
+        source = getattr(inline, "source", None)
+        if source is None or getattr(source, "kind", None) != "asset":
+            return
+        asset_id = getattr(source, "asset_id", None)
+        if asset_id is None:
+            return
+        try:
+            key = int(asset_id)
+        except (TypeError, ValueError):
+            return
+        asset = by_id.get(key)
+        if asset is None:
+            return
+        media_type = str(getattr(asset, "media_type", None) or "")
+        if not media_type.startswith("image/"):
+            return
+        data = _asset_bytes(asset)
+        if not data:
+            return
+        alt = (getattr(inline, "alt", None) or "").strip() or f"image-{key}"
+        images.append(EmbeddedImage(alt=alt, data=data, mime=media_type))
+        seen.add(key)
+
+    for node in _iter_blocks(getattr(document, "blocks", None)):
+        if getattr(node, "kind", None) == "image":
+            consider(node)
+    for note in getattr(document, "notes", None) or []:
+        for node in _iter_blocks(getattr(note, "blocks", None)):
+            if getattr(node, "kind", None) == "image":
+                consider(node)
+
+    for index, asset in enumerate(assets):
+        key = getattr(asset, "id", index)
+        try:
+            key_int = int(key)
+        except (TypeError, ValueError):
+            key_int = index
+        if key_int in seen:
             continue
-        if isinstance(data, memoryview):
-            data = data.tobytes()
-        if not isinstance(data, (bytes, bytearray)):
+        media_type = str(getattr(asset, "media_type", None) or "")
+        if not media_type.startswith("image/"):
             continue
-        if not str(media_type).startswith("image/"):
+        data = _asset_bytes(asset)
+        if not data:
             continue
-        b64 = base64.b64encode(bytes(data)).decode("ascii")
-        alt = getattr(asset, "alt", None) or getattr(asset, "name", None) or f"asset-{index + 1}"
-        chunks.append(f"![{alt}](data:{media_type};base64,{b64})")
-    if not chunks or "data:image" in markdown:
+        alt = getattr(asset, "alt", None) or getattr(asset, "name", None) or f"image-{key_int}"
+        images.append(EmbeddedImage(alt=str(alt), data=data, mime=media_type))
+    return images
+
+
+def _embed_assets_as_data_urls(markdown: str, document: Any) -> str:
+    images = _collect_document_images(document)
+    if not images:
         return markdown
-    return markdown.rstrip() + "\n\n## Embedded images\n\n" + "\n\n".join(chunks) + "\n"
+    return place_images(markdown, images)
 
 
 class AnyDocReader(Reader):

@@ -1,15 +1,22 @@
 from __future__ import annotations
 
+import re
 from typing import Any
+
+from app.processing.postprocess.media import protect_embedded_images, restore_embedded_images
+
+_DANGLING_PLACEHOLDER_RE = re.compile(r"@@FWIMG\d*$")
 
 
 def _cut_text(value: str | None, fraction: float = 0.5) -> str | None:
     if not value:
         return value
-    keep = max(1, int(len(value) * fraction))
-    if keep >= len(value):
-        return value
-    return value[:keep] + "\n\n… Sign in to see the full result."
+    protected, held = protect_embedded_images(value)
+    keep = max(1, int(len(protected) * fraction))
+    if keep >= len(protected):
+        return restore_embedded_images(protected, held)
+    cut = _DANGLING_PLACEHOLDER_RE.sub("", protected[:keep])
+    return restore_embedded_images(cut, held) + "\n\n… Sign in to see the full result."
 
 
 def redact_extract_payload(markdown: str | None, json_data: Any, pages: list) -> tuple[str | None, Any, list]:

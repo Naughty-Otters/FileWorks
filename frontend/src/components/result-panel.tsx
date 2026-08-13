@@ -11,8 +11,7 @@ import {
   Boxes,
   Pencil,
 } from "lucide-react";
-import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   downloadTextFile,
   exportMarkdownFile,
@@ -21,19 +20,11 @@ import {
   type ExtractResponse,
   type RegionBox,
 } from "@/lib/api";
+import { applyMarkdownFormat, type FormatCommand, type FormatExtra } from "@/lib/markdown-format";
 import { cn } from "@/lib/utils";
+import { EditableMarkdownPreview, type MarkdownPreviewHandle } from "@/components/editable-markdown-preview";
+import { MarkdownToolbar, ShowMarkdownToolbarButton } from "@/components/markdown-toolbar";
 import { RegionList } from "@/components/region-overlay";
-
-const EditableMarkdownPreview = dynamic(
-  () => import("@/components/editable-markdown-preview").then((mod) => mod.EditableMarkdownPreview),
-  {
-    loading: () => (
-      <div className="flex h-full min-h-[220px] items-center justify-center text-sm text-[var(--ink-muted)]">
-        Loading preview…
-      </div>
-    ),
-  },
-);
 
 type ResultPanelProps = {
   result: ExtractResponse | null;
@@ -47,6 +38,8 @@ type ResultPanelProps = {
   onMarkdownChange?: (value: string) => void;
   markdownMode?: "preview" | "edit";
   onMarkdownModeChange?: (mode: "preview" | "edit") => void;
+  toolbarVisible?: boolean;
+  onToolbarVisibleChange?: (visible: boolean) => void;
 };
 
 const DOWNLOAD_OPTIONS: Array<{ id: DownloadFormat | "pdf"; label: string }> = [
@@ -69,11 +62,15 @@ export function ResultPanel({
   onMarkdownChange,
   markdownMode = "preview",
   onMarkdownModeChange,
+  toolbarVisible = true,
+  onToolbarVisibleChange,
 }: ResultPanelProps) {
   const [copied, setCopied] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [regionsOpen, setRegionsOpen] = useState(false);
+  const previewRef = useRef<MarkdownPreviewHandle>(null);
+  const sourceRef = useRef<HTMLTextAreaElement>(null);
 
   const sourceMarkdown = result?.markdown?.trim() || "";
   const markdown = markdownDraft || sourceMarkdown;
@@ -161,6 +158,27 @@ export function ResultPanel({
     onMarkdownModeChange?.(tab === "source" ? "edit" : "preview");
   }
 
+  function handleFormatCommand(command: FormatCommand, extra?: FormatExtra) {
+    if (!onMarkdownChange) return;
+    if (markdownMode === "preview") {
+      if (previewRef.current) {
+        previewRef.current.applyCommand(command, extra);
+        return;
+      }
+    }
+    const field = sourceRef.current;
+    const start = field?.selectionStart ?? markdown.length;
+    const end = field?.selectionEnd ?? markdown.length;
+    const next = applyMarkdownFormat(markdown, start, end, command, extra);
+    onMarkdownChange(next.value);
+    window.requestAnimationFrame(() => {
+      field?.focus();
+      field?.setSelectionRange(next.start, next.end);
+    });
+  }
+
+  const showToolbar = view === "markdown" && Boolean(markdown) && !loading && !error;
+
   return (
     <section className="flex h-full min-h-0 flex-col">
       <div className="panel relative flex min-h-[480px] flex-1 flex-col overflow-visible rounded-2xl lg:min-h-[calc(100vh-140px)]">
@@ -174,6 +192,9 @@ export function ResultPanel({
                 : "Markdown lands here after convert"}
             </p>
           </div>
+          {showToolbar && !toolbarVisible ? (
+            <ShowMarkdownToolbarButton onClick={() => onToolbarVisibleChange?.(true)} />
+          ) : null}
           <div className="inline-flex rounded-full border border-[var(--line)] bg-[var(--bg)] p-0.5">
             {(
               [
@@ -235,7 +256,14 @@ export function ResultPanel({
           </button>
         </div>
 
-        <div className="relative min-h-0 flex-1 overflow-hidden rounded-b-2xl">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-2xl">
+          {showToolbar && toolbarVisible ? (
+            <MarkdownToolbar
+              disabled={!onMarkdownChange}
+              onCommand={handleFormatCommand}
+              onHide={() => onToolbarVisibleChange?.(false)}
+            />
+          ) : null}
           {loading ? (
             <div className="flex h-full min-h-[220px] flex-col items-center justify-center gap-3 text-[var(--ink-muted)]">
               <Loader2 size={28} className="animate-spin text-[var(--accent)]" />
@@ -252,17 +280,24 @@ export function ResultPanel({
               <p className="max-w-sm text-sm">Drop a file and convert — editable Markdown lands here.</p>
             </div>
           ) : view === "markdown" && markdownMode === "preview" ? (
-            <EditableMarkdownPreview markdown={markdown} onChange={onMarkdownChange} />
+            <div className="min-h-0 flex-1">
+              <EditableMarkdownPreview
+                ref={previewRef}
+                markdown={markdown}
+                onChange={onMarkdownChange}
+              />
+            </div>
           ) : view === "markdown" && markdownMode === "edit" ? (
             <textarea
+              ref={sourceRef}
               value={markdown}
               onChange={(e) => onMarkdownChange?.(e.target.value)}
               spellCheck={false}
-              className="h-full w-full resize-none border-0 bg-transparent p-5 font-[family-name:var(--font-mono)] text-[13px] leading-relaxed text-[var(--ink)] outline-none md:p-6"
+              className="min-h-0 flex-1 w-full resize-none border-0 bg-transparent p-5 font-[family-name:var(--font-mono)] text-[13px] leading-relaxed text-[var(--ink)] outline-none md:p-6"
               placeholder="Edit Markdown source…"
             />
           ) : (
-            <pre className="h-full overflow-auto p-5 font-[family-name:var(--font-mono)] text-[12.5px] leading-relaxed text-[var(--ink)] md:p-6">
+            <pre className="min-h-0 flex-1 overflow-auto p-5 font-[family-name:var(--font-mono)] text-[12.5px] leading-relaxed text-[var(--ink)] md:p-6">
               <code className="animate-rise">{jsonText}</code>
             </pre>
           )}

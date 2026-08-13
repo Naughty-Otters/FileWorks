@@ -57,6 +57,7 @@ export function Workspace() {
   const [activeRegionId, setActiveRegionId] = useState<string | null>(null);
   const [markdownDraft, setMarkdownDraft] = useState("");
   const [markdownMode, setMarkdownMode] = useState<MarkdownMode>("preview");
+  const [markdownToolbar, setMarkdownToolbar] = useState(true);
   const convertAbortRef = useRef<AbortController | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -176,6 +177,7 @@ export function Workspace() {
       setPreviewOpen(prefs.previewOpen);
       setExtractOptions(prefs.extractOptions);
       setMarkdownMode(prefs.markdownMode);
+      setMarkdownToolbar(prefs.markdownToolbar !== false);
       setMarkdownDraft(prefs.markdownDraft);
       setSelectedId(prefs.selectedId);
       if (prefs.result && !prefs.selectedId) {
@@ -211,6 +213,7 @@ export function Workspace() {
 
   useEffect(() => {
     if (!sessionReady) return;
+    const bulky = markdownDraft.includes("data:image") || Boolean(result?.markdown?.includes("data:image"));
     saveWorkspacePrefs({
       selectedId,
       view,
@@ -218,8 +221,9 @@ export function Workspace() {
       previewOpen,
       extractOptions,
       markdownMode,
-      markdownDraft,
-      result: selectedId ? null : result,
+      markdownToolbar,
+      markdownDraft: bulky ? "" : markdownDraft,
+      result: selectedId ? null : bulky && result ? { ...result, markdown: "" } : result,
     });
   }, [
     sessionReady,
@@ -229,6 +233,7 @@ export function Workspace() {
     previewOpen,
     extractOptions,
     markdownMode,
+    markdownToolbar,
     markdownDraft,
     result,
   ]);
@@ -517,6 +522,8 @@ export function Workspace() {
               onMarkdownChange={setMarkdownDraft}
               markdownMode={markdownMode}
               onMarkdownModeChange={setMarkdownMode}
+              toolbarVisible={markdownToolbar}
+              onToolbarVisibleChange={setMarkdownToolbar}
             />
           </div>
         </div>

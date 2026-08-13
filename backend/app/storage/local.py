@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import shutil
 from pathlib import Path
 from typing import Any
@@ -10,18 +11,21 @@ from app.storage.base import DocumentRecord, utc_now_iso
 
 logger = logging.getLogger(__name__)
 
+_MEDIA_NAME_RE = re.compile(r"^[0-9]+\.(jpe?g|png|gif|webp)$", re.I)
+
 
 class LocalDocumentStore:
     """Filesystem-backed document history.
 
-    Layout::
+        Layout::
 
-        {root}/
-          index.json
-          docs/{id}/
-            meta.json
-            source{suffix}
-            result.json
+            {root}/
+              index.json
+              docs/{id}/
+                meta.json
+                source{suffix}
+                result.json
+                media/n.jpg
     """
 
     backend_name = "local"
@@ -173,3 +177,25 @@ class LocalDocumentStore:
         shutil.rmtree(doc_dir, ignore_errors=True)
         self._remove_from_index(document_id)
         return True
+
+    def save_media_files(self, document_id: str, files: list[tuple[str, bytes, str]]) -> None:
+        media_dir = self._doc_dir(document_id) / "media"
+        if media_dir.exists():
+            shutil.rmtree(media_dir, ignore_errors=True)
+        if not files:
+            return
+        media_dir.mkdir(parents=True, exist_ok=True)
+        for name, data, _content_type in files:
+            if not _MEDIA_NAME_RE.match(name):
+                continue
+            (media_dir / name).write_bytes(data)
+
+    def load_media_files(self, document_id: str) -> dict[str, bytes]:
+        media_dir = self._doc_dir(document_id) / "media"
+        if not media_dir.is_dir():
+            return {}
+        out: dict[str, bytes] = {}
+        for path in media_dir.iterdir():
+            if path.is_file() and _MEDIA_NAME_RE.match(path.name):
+                out[path.name] = path.read_bytes()
+        return out

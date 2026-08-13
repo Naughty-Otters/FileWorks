@@ -5,6 +5,7 @@ Layout::
     {prefix}/docs/{id}/meta.json
     {prefix}/docs/{id}/source{suffix}
     {prefix}/docs/{id}/result.json
+    {prefix}/docs/{id}/media/n.jpg
 
 Browser uploads (never through Lambda / NAT)::
 
@@ -27,6 +28,7 @@ PRESIGN_PUT_EXPIRES = 600
 PRESIGN_GET_EXPIRES = 3600
 USER_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{8,64}$")
 UNSAFE_FILENAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
+_MEDIA_NAME_RE = re.compile(r"^[0-9]+\.(jpe?g|png|gif|webp)$", re.I)
 
 
 def sanitize_user_id(user_id: str) -> str:
@@ -304,3 +306,48 @@ class S3DocumentStore:
                 Delete={"Objects": [{"Key": key} for key in chunk], "Quiet": True},
             )
         return True
+
+    def _list_keys(self, prefix: str) -> list[str]:
+        client = self._require_client()
+        keys: list[str] = []
+        paginator = client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+            for item in page.get("Contents", []):
+                key = item.get("Key")
+                if key:
+                    keys.append(key)
+        return keys
+
+    def save_media_files(self, document_id: str, files: list[tuple[str, bytes, str]]) -> None:
+        prefix = self._key("docs", document_id, "media") + "/"
+        existing = self._list_keys(prefix)
+        client = self._require_client()
+        for offset in range(0, len(existing), 1000):
+            chunk = existing[offset : offset + 1000]
+            if not chunk:
+                continue
+            client.delete_objects(
+                Bucket=self.bucket,
+                Delete={"Objects": [{"Key": key} for key in chunk], "Quiet": True},
+            )
+        for name, data, content_type in files:
+            if not _MEDIA_NAME_RE.match(name):
+                continue
+            client.put_object(
+                Bucket=self.bucket,
+                Key=self._key("docs", document_id, "media", name),
+                Body=data,
+                ContentType=content_type or "application/octet-stream",
+            )
+
+    def load_media_files(self, document_id: str) -> dict[str, bytes]:
+        prefix = self._key("docs", document_id, "media") + "/"
+        out: dict[str, bytes] = {}
+        for key in self._list_keys(prefix):
+            name = key.rsplit("/", 1)[-1]
+            if not _MEDIA_NAME_RE.match(name):
+                continue
+            data = self._get_bytes(key)
+            if data is not None:
+                out[name] = data
+        return out

@@ -23,6 +23,11 @@ _TITLE_LABELS = {
     "reference_title": 2,
 }
 
+_IMAGE_LABELS = {"image", "chart", "seal"}
+_IMAGE_MARKUP_RE = re.compile(
+    r'(?:<div[^>]*>\s*)?(?:!\[[^\]]*\]\([^)]+\)|<img\b[^>]*/?>)(?:\s*</div>)?',
+    flags=re.IGNORECASE | re.DOTALL,
+)
 _EMPHASIS_LABELS = {"abstract", "content", "reference", "reference_content"}
 _IGNORE_LABELS = {
     "number",
@@ -141,13 +146,11 @@ def _block_to_markdown(block: dict[str, Any]) -> str:
     if label in {"algorithm", "code"}:
         return _format_code(content)
 
-    if label in {"image", "chart", "seal"}:
+    if label in _IMAGE_LABELS:
         body = _clean_block(content)
-        if not body:
-            return ""
         if body.startswith("![") or body.startswith("<img") or body.startswith("<div"):
             return body
-        return f"*{body}*"
+        return f"*{body}*" if body else ""
 
     if label in {"figure_title", "table_title", "chart_title", "figure_table_chart_title"}:
         return _heading(3, content) if content else ""
@@ -181,7 +184,13 @@ def _extract_parsing_list(payload: Any) -> list[dict[str, Any]]:
     return []
 
 
-def markdown_from_parsing_blocks(payload: Any) -> str:
+def _extract_image_markup(markdown: str) -> list[str]:
+    if not markdown:
+        return []
+    return [match.group(0).strip() for match in _IMAGE_MARKUP_RE.finditer(markdown)]
+
+
+def markdown_from_parsing_blocks(payload: Any, *, image_markup: list[str] | None = None) -> str:
     blocks = _extract_parsing_list(payload)
     if not blocks:
         return ""
@@ -196,11 +205,24 @@ def markdown_from_parsing_blocks(payload: Any) -> str:
         ),
     )
 
+    slots = list(image_markup or [])
+    slot_index = 0
     parts: list[str] = []
     for block in ordered:
+        label = str(block.get("block_label") or block.get("label") or "text").lower().strip()
         md = _block_to_markdown(block)
+        if label in _IMAGE_LABELS:
+            body = _clean_block(_as_text(block.get("block_content") or block.get("content") or ""))
+            already = body.startswith("![") or body.startswith("<img") or body.startswith("<div")
+            if not already and slot_index < len(slots):
+                markup = slots[slot_index]
+                slot_index += 1
+                md = f"{markup}\n\n*{body}*" if body else markup
         if md:
             parts.append(md)
+    leftover = slots[slot_index:]
+    if leftover:
+        parts.extend(leftover)
     return "\n\n".join(parts).strip()
 
 
@@ -227,10 +249,14 @@ def normalize_structure_markdown(raw: Any) -> str:
 def pick_best_markdown(*, pipeline_markdown: Any, json_payload: Any) -> str:
     """Prefer rich pipeline markdown; fall back to layout-block reconstruction."""
     primary = normalize_structure_markdown(pipeline_markdown)
-    rebuilt = markdown_from_parsing_blocks(json_payload)
+    rebuilt = markdown_from_parsing_blocks(
+        json_payload,
+        image_markup=_extract_image_markup(primary),
+    )
 
-    def richness(md: str) -> tuple[int, int, int, int]:
+    def richness(md: str) -> tuple[int, int, int, int, int]:
         return (
+            len(re.findall(r"!\[|<img\b", md, flags=re.I)),
             len(re.findall(r"(?m)^#{1,6}\s", md)),
             len(re.findall(r"<table|^\|.+\|$", md, flags=re.I | re.M)),
             len(re.findall(r"\*\*[^*]+\*\*|__.+__", md)),
