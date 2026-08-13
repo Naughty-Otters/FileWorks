@@ -24,7 +24,7 @@ PLANS: dict[str, Plan] = {
     "anonymous": Plan(
         id="anonymous",
         label="Guest",
-        extract=True,
+        extract=False,
         full_result=False,
         ai=False,
         translate=False,
@@ -76,6 +76,16 @@ def get_plan(plan_id: str | None) -> Plan:
     if not plan_id:
         return PLANS["anonymous"]
     return PLANS.get(plan_id, PLANS["anonymous"])
+
+
+PLAN_RANK = {"anonymous": 0, "basic": 1, "pro": 2, "premium": 3}
+CHANGEABLE_PLANS = frozenset({"basic", "pro", "premium"})
+
+
+def can_change_plan(current: str, target: str) -> bool:
+    if target not in CHANGEABLE_PLANS:
+        return False
+    return target != current
 
 
 def permissions_for(plan: Plan) -> dict[str, bool]:

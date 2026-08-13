@@ -83,7 +83,7 @@ export function MarkdownToolbar({ disabled, onCommand, onHide }: MarkdownToolbar
   }
 
   return (
-    <div className="flex items-center gap-0.5 overflow-x-auto border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--bg-elevated)_70%,transparent)] px-2 py-1">
+    <div className="flex shrink-0 items-center gap-0.5 overflow-x-auto border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--bg-elevated)_70%,transparent)] px-2 py-1">
       <ToolButton title="Bold" disabled={disabled} onClick={() => onCommand("bold")}>
         <Bold size={13} />
       </ToolButton>

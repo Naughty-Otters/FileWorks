@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Versioned hook. Enable with: uvx pre-commit install
+# or: git config core.hooksPath .githooks
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+exec bash "$ROOT/scripts/check-coverage.sh" --auto

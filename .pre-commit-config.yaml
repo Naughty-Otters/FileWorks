@@ -1,0 +1,18 @@
+# Install: uvx pre-commit install
+# Manual:  uvx pre-commit run --all-files
+# Skip:    SKIP=backend-coverage,frontend-coverage git commit ...
+repos:
+  - repo: local
+    hooks:
+      - id: backend-coverage
+        name: backend tests + ≥80% coverage
+        language: system
+        entry: bash scripts/check-coverage.sh --backend
+        files: ^backend/
+        pass_filenames: false
+      - id: frontend-coverage
+        name: frontend tests + coverage thresholds
+        language: system
+        entry: bash scripts/check-coverage.sh --frontend
+        files: ^frontend/
+        pass_filenames: false

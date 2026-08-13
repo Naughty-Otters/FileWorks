@@ -53,3 +53,8 @@ output "db_address" {
 output "secret_arn" {
   value = aws_secretsmanager_secret.app.arn
 }
+
+output "google_client_id" {
+  value       = var.google_client_id
+  description = "Public GIS client ID baked into Pages and the API Lambda."
+}

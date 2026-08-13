@@ -435,14 +435,19 @@ def frontend(ctx: Context) -> None:
     else:
         console.info(f"Pages project {project} already exists (or create skipped).")
 
+    parsed = _parse_dotenv()
+    google_client_id = str(outputs.get("google_client_id") or parsed.get("GOOGLE_CLIENT_ID") or "").strip()
+    frontend_env = {
+        "FILEWORKS_STATIC_EXPORT": "1",
+        "NEXT_PUBLIC_API_URL": api_url,
+        "NEXT_PUBLIC_DIRECT_UPLOAD": "1",
+    }
+    if google_client_id:
+        frontend_env["NEXT_PUBLIC_GOOGLE_CLIENT_ID"] = google_client_id
     run(
         ["npm", "run", "build"],
         cwd=FRONTEND_DIR,
-        env={
-            "FILEWORKS_STATIC_EXPORT": "1",
-            "NEXT_PUBLIC_API_URL": api_url,
-            "NEXT_PUBLIC_DIRECT_UPLOAD": "1",
-        },
+        env=frontend_env,
         ctx=ctx,
     )
     out_dir = FRONTEND_DIR / "out"

@@ -11,6 +11,8 @@ import {
   type TranslateLanguage,
 } from "@/lib/api";
 import type { MeResponse } from "@/lib/auth";
+import { convertGate, convertGateTitle } from "@/lib/plans";
+import { PlanPolicyDialog } from "@/components/plan-policy-dialog";
 import { cn } from "@/lib/utils";
 
 const ExtractOptionsPanel = dynamic(
@@ -25,6 +27,7 @@ type ConvertControlsProps = {
   health: HealthResponse | null;
   loading: boolean;
   canExtract: boolean;
+  fileReady?: boolean;
   quotaBlocked: boolean;
   onConvert: () => void;
   onStop: () => void;
@@ -39,13 +42,22 @@ export function ConvertControls({
   health,
   loading,
   canExtract,
+  fileReady = false,
   quotaBlocked,
   onConvert,
   onStop,
   compact = false,
 }: ConvertControlsProps) {
   const [open, setOpen] = useState(false);
+  const [policyOpen, setPolicyOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const gate = convertGate({
+    signedIn: Boolean(me?.user),
+    canExtract,
+    quotaBlocked,
+    remainingDay: me?.quota.remaining_day,
+    remainingMonth: me?.quota.remaining_month,
+  });
   const canAi = Boolean(me?.permissions["extract.ai"] && health?.llm_ready);
   const canTranslate = Boolean(me?.permissions["extract.translate"] && health?.translate_ready);
   const languages: TranslateLanguage[] = health?.translate_languages?.length
@@ -181,7 +193,10 @@ export function ConvertControls({
             />
             {me && !me.user ? (
               <p className="mt-3 px-1 text-xs text-[var(--ink-muted)]">
-                Guests get half the text. Sign in for full results and history.
+                <a href="/login" className="text-[var(--accent-strong)] underline-offset-2 hover:underline">
+                  Sign in
+                </a>{" "}
+                to convert files and save history. Basic includes conversion; Pro adds AI and translation.
               </p>
             ) : null}
           </div>
@@ -199,21 +214,24 @@ export function ConvertControls({
       ) : (
         <button
           type="button"
-          disabled={!canExtract}
-          title={
-            quotaBlocked
-              ? me?.quota.remaining_day === 0
-                ? "Daily conversion limit reached"
-                : "Monthly conversion limit reached"
-              : undefined
-          }
-          onClick={onConvert}
+          disabled={!fileReady}
+          title={!fileReady ? "Choose a file to convert" : gate !== "ready" ? convertGateTitle(gate) : undefined}
+          onClick={() => {
+            if (gate !== "ready") {
+              setPolicyOpen(true);
+              return;
+            }
+            onConvert();
+          }}
           className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition enabled:hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-45 dark:text-[#06281d]"
         >
           <Sparkles size={15} />
           {options.use_ai ? "Convert with AI" : "Convert"}
         </button>
       )}
+      {policyOpen ? (
+        <PlanPolicyDialog gate={gate === "ready" ? "login" : gate} onClose={() => setPolicyOpen(false)} />
+      ) : null}
     </div>
   );
 }

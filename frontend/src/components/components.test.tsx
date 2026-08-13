@@ -1,0 +1,786 @@
+import { createRef } from "react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { HistoryPanel } from "@/components/history-panel";
+import { MarkdownToolbar, ShowMarkdownToolbarButton } from "@/components/markdown-toolbar";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeProvider } from "@/components/theme-provider";
+import { AnnotatedImage, RegionList } from "@/components/region-overlay";
+import { UploadPanel } from "@/components/upload-panel";
+import { ExtractOptionsPanel } from "@/components/extract-options-panel";
+import { ConvertControls } from "@/components/convert-controls";
+import { AuthBar } from "@/components/auth-bar";
+import { GoogleSignIn } from "@/components/google-sign-in";
+import { LoginScreen, loginRedirectPath } from "@/components/login-screen";
+import { ProfilePage } from "@/components/profile-page";
+import { ResultPanel } from "@/components/result-panel";
+import { EditableMarkdownPreview, type MarkdownPreviewHandle } from "@/components/editable-markdown-preview";
+import { DEFAULT_EXTRACT_OPTIONS, type MeResponse } from "@/lib/api";
+import { LINES_PER_PAGE, PAGES_PER_VIEW } from "@/lib/markdown-pages";
+import * as api from "@/lib/api";
+import * as gis from "@/lib/google-gis";
+
+vi.mock("next-themes", () => ({
+  useTheme: () => ({ resolvedTheme: "light", setTheme: vi.fn() }),
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock("next/dynamic", () => ({
+  default: (loader: () => Promise<Record<string, unknown>>) => {
+    let Resolved: React.ComponentType<Record<string, unknown>> | null = null;
+    void loader().then((mod) => {
+      const value = (mod.default || Object.values(mod).find((item) => typeof item === "function")) as
+        | React.ComponentType<Record<string, unknown>>
+        | undefined;
+      Resolved = value || (() => null);
+    });
+    return function DynamicMock(props: Record<string, unknown>) {
+      if (!Resolved) return null;
+      return <Resolved {...props} />;
+    };
+  },
+}));
+
+const guestMe: MeResponse = {
+  user: null,
+  plan: "anonymous",
+  permissions: {},
+  quota: {
+    used_day: 0,
+    used_month: 0,
+    limit_day: null,
+    limit_month: null,
+    remaining_day: null,
+    remaining_month: null,
+  },
+  google_client_id: null,
+};
+
+describe("HistoryPanel", () => {
+  const item = {
+    id: "1",
+    filename: "doc.pdf",
+    content_type: "application/pdf",
+    size_bytes: 1200,
+    created_at: "2026-01-01T12:00:00.000Z",
+    engine: "anydoc",
+    page_count: 2,
+    storage_backend: "local",
+    has_markdown: true,
+    has_json: false,
+  };
+
+  it("renders empty and item states", async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const onDelete = vi.fn();
+    const onCollapse = vi.fn();
+    const { rerender } = render(
+      <HistoryPanel items={[]} selectedId={null} requiresLogin onSelect={onSelect} onDelete={onDelete} />,
+    );
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
+    expect(screen.getByText(/to save conversions and see history/i)).toBeInTheDocument();
+    rerender(
+      <HistoryPanel
+        items={[item]}
+        selectedId="1"
+        onSelect={onSelect}
+        onDelete={onDelete}
+        onCollapse={onCollapse}
+        storageBackend="local"
+      />,
+    );
+    await user.click(screen.getByText("doc.pdf"));
+    expect(onSelect).toHaveBeenCalledWith("1");
+    await user.click(screen.getByLabelText("Hide history"));
+    expect(onCollapse).toHaveBeenCalled();
+  });
+});
+
+describe("MarkdownToolbar", () => {
+  it("fires commands and can hide", async () => {
+    const user = userEvent.setup();
+    const onCommand = vi.fn();
+    const onHide = vi.fn();
+    render(<MarkdownToolbar onCommand={onCommand} onHide={onHide} />);
+    await user.click(screen.getByTitle("Bold"));
+    expect(onCommand).toHaveBeenCalledWith("bold");
+    await user.click(screen.getByTitle("Italic"));
+    await user.click(screen.getByTitle("Heading 1"));
+    await user.click(screen.getByTitle("Bullet list"));
+    await user.click(screen.getByTitle("Numbered list"));
+    await user.click(screen.getByTitle("Quote"));
+    await user.click(screen.getByTitle("Strikethrough"));
+    await user.click(screen.getByTitle("Inline code"));
+    await user.click(screen.getByTitle("Heading 2"));
+    await user.click(screen.getByTitle("Heading 3"));
+    await user.click(screen.getByTitle("Smaller image"));
+    await user.click(screen.getByTitle("Image left"));
+    await user.click(screen.getByTitle("Image right"));
+    await user.click(screen.getByTitle("Image inline"));
+    vi.spyOn(window, "prompt").mockReturnValue("https://example.com");
+    await user.click(screen.getByTitle("Insert link"));
+    expect(onCommand).toHaveBeenCalledWith("link", { url: "https://example.com" });
+    await user.click(screen.getByTitle("Hide formatting toolbar"));
+    expect(onHide).toHaveBeenCalled();
+    const show = vi.fn();
+    render(<ShowMarkdownToolbarButton onClick={show} />);
+    await user.click(screen.getByTitle("Show formatting toolbar"));
+    expect(show).toHaveBeenCalled();
+  });
+});
+
+describe("ThemeToggle", () => {
+  it("renders a theme button", async () => {
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>,
+    );
+    const button = screen.getByRole("button");
+    expect(button).toBeInTheDocument();
+    await user.click(button);
+  });
+});
+
+describe("Region overlay", () => {
+  it("lists regions and draws boxes", async () => {
+    const user = userEvent.setup();
+    const onActiveChange = vi.fn();
+    render(
+      <RegionList
+        regions={[{ id: "r1", page: 1, label: "text", text: "Hello", bbox: [0, 0, 1, 1] }]}
+        activeId={null}
+        onActiveChange={onActiveChange}
+      />,
+    );
+    await user.click(screen.getByText("Hello"));
+    expect(onActiveChange).toHaveBeenCalled();
+    render(<RegionList regions={[]} activeId={null} onActiveChange={onActiveChange} />);
+    expect(screen.getByText(/No layout regions/i)).toBeInTheDocument();
+    render(
+      <AnnotatedImage
+        src="data:image/png;base64,aa"
+        alt="page"
+        regions={[{ id: "r1", page: 1, label: "text", text: "Hello", bbox: [0, 0, 10, 10] }]}
+        imageSize={{ width: 20, height: 20 }}
+        activeId="r1"
+        onActiveChange={onActiveChange}
+      />,
+    );
+    expect(screen.getByAltText("page")).toBeInTheDocument();
+  });
+});
+
+describe("UploadPanel", () => {
+  it("accepts a dropped file and can clear it", async () => {
+    const user = userEvent.setup();
+    const onFileSelect = vi.fn();
+    const { rerender } = render(
+      <UploadPanel file={null} previewUrl={null} onFileSelect={onFileSelect} onCollapse={vi.fn()} />,
+    );
+    expect(screen.getByLabelText("Upload document")).toBeInTheDocument();
+    fireEvent.dragEnter(screen.getByLabelText("Upload document"));
+    fireEvent.dragOver(screen.getByLabelText("Upload document"));
+    fireEvent.dragLeave(screen.getByLabelText("Upload document"));
+    fireEvent.drop(screen.getByLabelText("Upload document"), {
+      dataTransfer: { files: [new File(["abc"], "dropped.png", { type: "image/png" })] },
+    });
+    expect(onFileSelect).toHaveBeenCalled();
+    fireEvent.keyDown(screen.getByLabelText("Upload document"), { key: "Enter" });
+    const file = new File(["abc"], "note.png", { type: "image/png" });
+    rerender(
+      <UploadPanel
+        file={file}
+        previewUrl="blob:mock"
+        onFileSelect={onFileSelect}
+        onCollapse={vi.fn()}
+        regions={[{ id: "r1", page: 1, label: "text", text: "Hi", bbox: [0, 0, 1, 1] }]}
+        imageSize={{ width: 10, height: 10 }}
+      />,
+    );
+    expect(screen.getByText("note.png")).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Clear file"));
+    expect(onFileSelect).toHaveBeenCalledWith(null);
+  });
+});
+
+describe("ExtractOptionsPanel", () => {
+    it("toggles options in embedded and collapsible modes", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { unmount } = render(
+      <ExtractOptionsPanel options={DEFAULT_EXTRACT_OPTIONS} onChange={onChange} embedded hideKeys={["use_ai"]} />,
+    );
+    await user.click(screen.getByText("Table recognition"));
+    expect(onChange).toHaveBeenCalled();
+    unmount();
+    render(<ExtractOptionsPanel options={DEFAULT_EXTRACT_OPTIONS} onChange={onChange} />);
+    await user.click(screen.getByText(/Parse options/));
+    expect(screen.getAllByText("Doc preprocessor").length).toBeGreaterThan(0);
+  });
+});
+
+describe("ConvertControls", () => {
+  it("converts and opens options", async () => {
+    const user = userEvent.setup();
+    const onConvert = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <ConvertControls
+        options={{ ...DEFAULT_EXTRACT_OPTIONS, use_ai: true }}
+        onChange={onChange}
+        me={{
+          ...guestMe,
+          user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
+          permissions: { "extract.ai": true, "extract.translate": true },
+        }}
+        health={{
+          status: "ok",
+          app: "FileWorks",
+          ocr_ready: true,
+          ocr_engine: "ocr",
+          ocr_error: null,
+          llm_ready: true,
+          translate_ready: true,
+          translate_languages: [
+            { id: "original", label: "Original (no translation)" },
+            { id: "en", label: "English" },
+          ],
+        }}
+        loading={false}
+        canExtract
+        fileReady
+        quotaBlocked={false}
+        onConvert={onConvert}
+        onStop={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByText("Convert with AI"));
+    expect(onConvert).toHaveBeenCalled();
+    await user.click(screen.getByText("Options"));
+    await user.click(screen.getByText("Read with AI"));
+  });
+
+  it("shows stop while loading", async () => {
+    const user = userEvent.setup();
+    const onStop = vi.fn();
+    render(
+      <ConvertControls
+        options={DEFAULT_EXTRACT_OPTIONS}
+        onChange={vi.fn()}
+        me={guestMe}
+        health={null}
+        loading
+        canExtract={false}
+        quotaBlocked={false}
+        onConvert={vi.fn()}
+        onStop={onStop}
+      />,
+    );
+    await user.click(screen.getByText("Stop"));
+    expect(onStop).toHaveBeenCalled();
+  });
+
+  it("shows a plan policy popup when a guest clicks convert", async () => {
+    const user = userEvent.setup();
+    const onConvert = vi.fn();
+    render(
+      <ConvertControls
+        options={DEFAULT_EXTRACT_OPTIONS}
+        onChange={vi.fn()}
+        me={guestMe}
+        health={null}
+        loading={false}
+        canExtract={false}
+        fileReady
+        quotaBlocked={false}
+        onConvert={onConvert}
+        onStop={vi.fn()}
+      />,
+    );
+    const convert = screen.getByRole("button", { name: "Convert" });
+    expect(convert).toBeEnabled();
+    await user.click(convert);
+    expect(onConvert).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Sign in to convert" })).toBeInTheDocument();
+    expect(screen.getByText("1 file / day")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await user.click(convert);
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("lets a basic account convert", async () => {
+    const user = userEvent.setup();
+    const onConvert = vi.fn();
+    render(
+      <ConvertControls
+        options={DEFAULT_EXTRACT_OPTIONS}
+        onChange={vi.fn()}
+        me={{
+          ...guestMe,
+          user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+          plan: "basic",
+          permissions: { extract: true, export: true, "history.read": true },
+          quota: { ...guestMe.quota, limit_day: 1, remaining_day: 1 },
+        }}
+        health={null}
+        loading={false}
+        canExtract
+        fileReady
+        quotaBlocked={false}
+        onConvert={onConvert}
+        onStop={vi.fn()}
+      />,
+    );
+    const convert = screen.getByRole("button", { name: "Convert" });
+    expect(convert).toBeEnabled();
+    await user.click(convert);
+    expect(onConvert).toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("explains a reached daily quota in the policy popup", async () => {
+    const user = userEvent.setup();
+    render(
+      <ConvertControls
+        options={DEFAULT_EXTRACT_OPTIONS}
+        onChange={vi.fn()}
+        me={{
+          ...guestMe,
+          user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+          plan: "basic",
+          permissions: { extract: true },
+          quota: { ...guestMe.quota, limit_day: 1, remaining_day: 0 },
+        }}
+        health={null}
+        loading={false}
+        canExtract={false}
+        fileReady
+        quotaBlocked
+        onConvert={vi.fn()}
+        onStop={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Convert" }));
+    expect(screen.getByRole("dialog", { name: "Daily conversion limit reached" })).toBeInTheDocument();
+  });
+
+  it("explains a reached monthly quota in the policy popup", async () => {
+    const user = userEvent.setup();
+    render(
+      <ConvertControls
+        options={DEFAULT_EXTRACT_OPTIONS}
+        onChange={vi.fn()}
+        me={{
+          ...guestMe,
+          user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
+          plan: "pro",
+          permissions: { extract: true },
+          quota: { ...guestMe.quota, limit_month: 500, remaining_month: 0 },
+        }}
+        health={null}
+        loading={false}
+        canExtract={false}
+        fileReady
+        quotaBlocked
+        onConvert={vi.fn()}
+        onStop={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Convert" }));
+    expect(screen.getByRole("dialog", { name: "Monthly conversion limit reached" })).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Dismiss"));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
+describe("AuthBar", () => {
+  it("links guests to the login page without an inline Google button", () => {
+    render(<AuthBar me={{ ...guestMe, google_client_id: "cid.apps.googleusercontent.com" }} />);
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
+    expect(screen.queryByTestId("google-sign-in")).not.toBeInTheDocument();
+  });
+
+  it("shows signed-in user", () => {
+    render(
+      <AuthBar
+        me={{
+          ...guestMe,
+          user: { id: "1", email: "a@b.co", name: "Ada", picture_url: "https://example.com/a.png", plan: "pro" },
+          plan: "pro",
+          quota: { ...guestMe.quota, limit_day: 5, used_day: 1 },
+        }}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/profile");
+    expect(screen.getByTitle("Ada · pro · 1/5 today")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Sign out")).not.toBeInTheDocument();
+  });
+
+  it("summarizes name plan and quota on the avatar", () => {
+    render(
+      <AuthBar
+        me={{
+          ...guestMe,
+          user: { id: "1", email: "a@b.co", name: null, picture_url: null, plan: "premium" },
+          plan: "premium",
+          quota: { ...guestMe.quota, limit_month: 1000, used_month: 12 },
+        }}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/profile");
+    expect(screen.getByTitle("a@b.co · premium · 12/1000 this month")).toBeInTheDocument();
+    expect(screen.getByText("A")).toBeInTheDocument();
+  });
+});
+
+describe("GoogleSignIn", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete window.google;
+  });
+  it("completes login from a GIS credential", async () => {
+    const initialize = vi.fn();
+    const renderButton = vi.fn();
+    const cancel = vi.fn();
+    window.google = { accounts: { id: { initialize, renderButton, cancel } } };
+    const signedIn = vi.fn();
+    const nextMe = { ...guestMe, user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" } };
+    vi.spyOn(api, "loginWithGoogle").mockResolvedValue(nextMe);
+    const { unmount } = render(
+      <GoogleSignIn clientId="cid.apps.googleusercontent.com" onSignedIn={signedIn} size="large" />,
+    );
+    await waitFor(() => expect(initialize).toHaveBeenCalled());
+    expect(renderButton).toHaveBeenCalled();
+    const callback = initialize.mock.calls.at(-1)?.[0].callback as (resp: { credential: string }) => Promise<void>;
+    await callback({ credential: "id-token" });
+    expect(api.loginWithGoogle).toHaveBeenCalledWith("id-token");
+    expect(signedIn).toHaveBeenCalledWith(nextMe);
+    unmount();
+    expect(cancel).toHaveBeenCalled();
+  });
+
+  it("shows errors when GIS or login fails", async () => {
+    const initialize = vi.fn();
+    window.google = {
+      accounts: { id: { initialize, renderButton: vi.fn(), prompt: vi.fn() } },
+    };
+    vi.spyOn(api, "loginWithGoogle").mockRejectedValue(new Error("nope"));
+    render(<GoogleSignIn clientId="cid" onSignedIn={vi.fn()} />);
+    await waitFor(() => expect(initialize).toHaveBeenCalled());
+    const callback = initialize.mock.calls.at(-1)?.[0].callback as (resp: { credential: string }) => Promise<void>;
+    await callback({ credential: "" });
+    expect(await screen.findByText(/did not return a sign-in credential/i)).toBeInTheDocument();
+    await callback({ credential: "bad" });
+    expect(await screen.findByText("nope")).toBeInTheDocument();
+  });
+
+  it("explains when the client id is missing", () => {
+    render(<GoogleSignIn clientId="" onSignedIn={vi.fn()} />);
+    expect(screen.getByText(/not configured/i)).toBeInTheDocument();
+  });
+
+  it("shows a load error when GIS is blocked", async () => {
+    vi.spyOn(gis, "loadGoogleIdentity").mockRejectedValue(new Error("blocked"));
+    render(<GoogleSignIn clientId="cid" onSignedIn={vi.fn()} />);
+    expect(await screen.findByText("blocked")).toBeInTheDocument();
+  });
+});
+
+describe("LoginScreen", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+  it("renders the sign-in card and guest escape hatch", async () => {
+    vi.spyOn(api, "fetchMe").mockResolvedValue(guestMe);
+    render(<LoginScreen />);
+    expect(screen.getByText("Sign in")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Continue as guest" })).toHaveAttribute("href", "/");
+    await waitFor(() => expect(api.fetchMe).toHaveBeenCalled());
+  });
+
+  it("stays on the page when session check fails", async () => {
+    vi.spyOn(api, "fetchMe").mockRejectedValue(new Error("offline"));
+    render(<LoginScreen />);
+    expect(await screen.findByText("Sign in")).toBeInTheDocument();
+    expect(await screen.findByText(/not configured/i)).toBeInTheDocument();
+  });
+
+  it("redirects when the session is already signed in", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, search: "?next=/workspace" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+    });
+    render(<LoginScreen />);
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/workspace"));
+  });
+
+  it("only allows same-origin next paths", () => {
+    expect(loginRedirectPath("")).toBe("/");
+    expect(loginRedirectPath("?next=/history")).toBe("/history");
+    expect(loginRedirectPath("?next=https://evil.example")).toBe("/");
+    expect(loginRedirectPath("?next=//evil.example")).toBe("/");
+  });
+});
+
+describe("ProfilePage", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("shows usage role and lets a basic account upgrade", async () => {
+    const user = userEvent.setup();
+    const basicMe: MeResponse = {
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+      plan: "basic",
+      permissions: { extract: true, "extract.full_result": true, "history.read": true, export: true },
+      quota: { ...guestMe.quota, used_day: 1, limit_day: 1, remaining_day: 0 },
+    };
+    const proMe = {
+      ...basicMe,
+      user: { ...basicMe.user!, plan: "pro" },
+      plan: "pro",
+      permissions: { ...basicMe.permissions, "extract.ai": true, "extract.translate": true },
+      quota: { ...guestMe.quota, used_month: 3, limit_month: 500, remaining_month: 497 },
+    };
+    vi.spyOn(api, "fetchMe").mockResolvedValueOnce(basicMe).mockResolvedValue(proMe);
+    vi.spyOn(api, "upgradePlan").mockResolvedValue(proMe);
+    render(<ProfilePage />);
+    expect(await screen.findByText("Ada")).toBeInTheDocument();
+    expect(screen.getByText(/1 \/ 1 today/)).toBeInTheDocument();
+    expect(screen.getByText("Convert files")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+    expect(api.upgradePlan).toHaveBeenCalledWith("pro");
+    expect(await screen.findByText("Current plan")).toBeInTheDocument();
+  });
+
+  it("lets a pro account switch down to basic", async () => {
+    const user = userEvent.setup();
+    const proMe: MeResponse = {
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
+      plan: "pro",
+      permissions: { extract: true, "extract.ai": true, "extract.translate": true, export: true },
+      quota: { ...guestMe.quota, used_month: 3, limit_month: 500, remaining_month: 497 },
+    };
+    const basicMe = {
+      ...proMe,
+      user: { ...proMe.user!, plan: "basic" },
+      plan: "basic",
+      permissions: { extract: true, "extract.full_result": true, "history.read": true, export: true },
+      quota: { ...guestMe.quota, used_day: 0, limit_day: 1, remaining_day: 1 },
+    };
+    vi.spyOn(api, "fetchMe").mockResolvedValue(proMe);
+    vi.spyOn(api, "upgradePlan").mockResolvedValue(basicMe);
+    render(<ProfilePage />);
+    expect(await screen.findByText("Ada")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Switch to Basic" }));
+    expect(api.upgradePlan).toHaveBeenCalledWith("basic");
+    expect(await screen.findByText("Current plan")).toBeInTheDocument();
+  });
+
+  it("sends guests to login", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, search: "" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue(guestMe);
+    render(<ProfilePage />);
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/login?next=/profile"));
+  });
+
+  it("shows monthly usage and reports upgrade errors", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: "https://example.com/a.png", plan: "pro" },
+      plan: "pro",
+      permissions: { extract: true, "extract.ai": true, "extract.translate": true, export: true },
+      quota: { ...guestMe.quota, used_month: 20, limit_month: 500, remaining_month: 480 },
+    });
+    vi.spyOn(api, "upgradePlan").mockRejectedValue(new Error("plan_invalid"));
+    render(<ProfilePage />);
+    expect(await screen.findByText(/20 \/ 500 this month/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
+    expect(await screen.findByText("plan_invalid")).toBeInTheDocument();
+  });
+});
+
+describe("ResultPanel", () => {
+  it("switches tabs and copies", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+    const onViewChange = vi.fn();
+    const onMarkdownChange = vi.fn();
+    const { rerender } = render(
+      <ResultPanel
+        result={{
+          filename: "note.png",
+          content_type: "image/png",
+          size_bytes: 1,
+          engine: "ocr",
+          page_count: 1,
+          format: "both",
+          markdown: "# Hello",
+          json: { a: 1 },
+          pages: [],
+          regions: [{ id: "r1", page: 1, label: "text", text: "Hello", bbox: [0, 0, 1, 1] }],
+        }}
+        loading={false}
+        error={null}
+        view="markdown"
+        onViewChange={onViewChange}
+        markdownDraft="# Hello"
+        onMarkdownChange={onMarkdownChange}
+        markdownMode="edit"
+        onMarkdownModeChange={vi.fn()}
+        toolbarVisible={false}
+        onToolbarVisibleChange={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByTitle("JSON"));
+    expect(onViewChange).toHaveBeenCalledWith("json");
+    await user.click(screen.getByTitle("Source"));
+    await user.click(screen.getByLabelText("Copy"));
+    expect(navigator.clipboard.writeText).toHaveBeenCalled();
+    Object.defineProperty(window, "open", {
+      configurable: true,
+      value: vi.fn(() => ({
+        document: { write: vi.fn(), close: vi.fn() },
+        focus: vi.fn(),
+        print: vi.fn(),
+      })),
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>ok</html>", { status: 200 })));
+    await user.click(screen.getByLabelText("Download"));
+    await user.click(screen.getByText("PDF (print)"));
+    await user.click(screen.getByText(/recognized region/));
+    expect(screen.getAllByText("Hello").length).toBeGreaterThan(0);
+    rerender(
+      <ResultPanel
+        result={{
+          filename: "note.png",
+          content_type: "image/png",
+          size_bytes: 1,
+          engine: "ocr",
+          page_count: 1,
+          format: "both",
+          markdown: "# Hello",
+          json: { a: 1 },
+          pages: [],
+        }}
+        loading={false}
+        error={null}
+        view="markdown"
+        onViewChange={vi.fn()}
+        markdownDraft="# Hello"
+        onMarkdownChange={vi.fn()}
+        markdownMode="preview"
+        toolbarVisible
+      />,
+    );
+  });
+
+  it("shows empty and error states", () => {
+    const { rerender } = render(
+      <ResultPanel result={null} loading={false} error={null} view="markdown" onViewChange={vi.fn()} />,
+    );
+    expect(screen.getByText(/Drop a file and convert/)).toBeInTheDocument();
+    rerender(<ResultPanel result={null} loading={false} error="boom" view="markdown" onViewChange={vi.fn()} />);
+    expect(screen.getByText("boom")).toBeInTheDocument();
+    rerender(<ResultPanel result={null} loading error={null} view="markdown" onViewChange={vi.fn()} />);
+    expect(screen.getByText(/Converting your file/)).toBeInTheDocument();
+  });
+
+  it("shows five line-pages then swaps to the next set", async () => {
+    const user = userEvent.setup();
+    const lines = Array.from({ length: LINES_PER_PAGE * PAGES_PER_VIEW + LINES_PER_PAGE + 3 }, (_, index) => `Line ${index + 1}`);
+    const markdown = lines.join("\n");
+    render(
+      <ResultPanel
+        result={{
+          filename: "doc.pdf",
+          content_type: "application/pdf",
+          size_bytes: 1,
+          engine: "ocr",
+          page_count: 1,
+          format: "both",
+          markdown,
+          json: { pages: [] },
+          pages: [],
+        }}
+        loading={false}
+        error={null}
+        view="markdown"
+        onViewChange={vi.fn()}
+        markdownDraft={markdown}
+        onMarkdownChange={vi.fn()}
+        markdownMode="edit"
+      />,
+    );
+    const first = screen.getByPlaceholderText("Edit Markdown source…") as HTMLTextAreaElement;
+    expect(first.value).toContain("Line 1");
+    expect(first.value).toContain(`Line ${LINES_PER_PAGE * PAGES_PER_VIEW}`);
+    expect(first.value).not.toContain(`Line ${LINES_PER_PAGE * PAGES_PER_VIEW + 1}`);
+    expect(screen.getByText("Pages 1–5 of 7")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show next pages" }));
+    const next = screen.getByPlaceholderText("Edit Markdown source…") as HTMLTextAreaElement;
+    expect(next.value).toContain(`Line ${LINES_PER_PAGE * PAGES_PER_VIEW + 1}`);
+    expect(next.value).not.toContain("Line 1");
+    expect(screen.getByText("Pages 6–7 of 7")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Previous" }));
+    expect(screen.getByText("Pages 1–5 of 7")).toBeInTheDocument();
+    expect((screen.getByPlaceholderText("Edit Markdown source…") as HTMLTextAreaElement).value).toContain("Line 1");
+  });
+});
+
+describe("EditableMarkdownPreview", () => {
+  it("renders markdown html and applies commands", async () => {
+    const onChange = vi.fn();
+    const ref = createRef<MarkdownPreviewHandle>();
+    document.execCommand = vi.fn(() => true) as typeof document.execCommand;
+    render(<EditableMarkdownPreview markdown="# Title" onChange={onChange} ref={ref} />);
+    await waitFor(() => {
+      expect(document.querySelector('[aria-label="Editable Markdown preview"]')).toBeInTheDocument();
+    });
+    const editor = document.querySelector('[aria-label="Editable Markdown preview"]') as HTMLElement;
+    editor.innerHTML = '<p>hello</p><img src="data:image/png;base64,aa" width="100" class="fw-img-left" />';
+    ref.current?.focus();
+    for (const command of [
+      "bold",
+      "italic",
+      "strike",
+      "code",
+      "h1",
+      "h2",
+      "h3",
+      "quote",
+      "ul",
+      "ol",
+      "hr",
+      "img-larger",
+      "img-smaller",
+      "img-left",
+      "img-right",
+      "img-inline",
+    ] as const) {
+      ref.current?.applyCommand(command);
+    }
+    ref.current?.applyCommand("link", { url: "https://example.com" });
+    ref.current?.applyCommand("image", { dataUrl: "data:image/png;base64,bb", alt: "logo" });
+    fireEvent.blur(editor);
+    fireEvent.keyDown(editor, { key: "Escape" });
+    fireEvent.mouseDown(editor.querySelector("img")!);
+  });
+});

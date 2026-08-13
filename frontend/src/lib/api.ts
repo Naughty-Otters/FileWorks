@@ -268,6 +268,20 @@ export async function loginWithGoogle(idToken: string): Promise<MeResponse> {
   return fetchMe();
 }
 
+export async function upgradePlan(plan: string): Promise<MeResponse> {
+  const res = await apiFetch("/api/me/plan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan }),
+  });
+  if (!res.ok) {
+    throw new Error(await readError(res, `Plan change failed (${res.status})`));
+  }
+  const payload = (await res.json()) as { access_token: string; refresh_token: string };
+  setSession(payload.access_token, payload.refresh_token);
+  return fetchMe();
+}
+
 export async function logoutSession(): Promise<void> {
   const refresh = getRefreshToken();
   if (refresh) {

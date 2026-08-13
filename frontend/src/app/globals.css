@@ -85,6 +85,13 @@ body {
   flex-direction: column;
 }
 
+.app-shell-fixed {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 .atmosphere {
   position: fixed;
   inset: 0;

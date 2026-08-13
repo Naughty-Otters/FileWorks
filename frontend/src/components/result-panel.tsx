@@ -2,6 +2,8 @@
 
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCopy,
   Code2,
   Download,
@@ -21,6 +23,7 @@ import {
   type RegionBox,
 } from "@/lib/api";
 import { applyMarkdownFormat, type FormatCommand, type FormatExtra } from "@/lib/markdown-format";
+import { joinLines, lineRangeForPages, PAGES_PER_VIEW, replaceLineRange, splitLines } from "@/lib/markdown-pages";
 import { cn } from "@/lib/utils";
 import { EditableMarkdownPreview, type MarkdownPreviewHandle } from "@/components/editable-markdown-preview";
 import { MarkdownToolbar, ShowMarkdownToolbarButton } from "@/components/markdown-toolbar";
@@ -69,6 +72,7 @@ export function ResultPanel({
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [regionsOpen, setRegionsOpen] = useState(false);
+  const [pageStart, setPageStart] = useState(0);
   const previewRef = useRef<MarkdownPreviewHandle>(null);
   const sourceRef = useRef<HTMLTextAreaElement>(null);
 
@@ -80,10 +84,23 @@ export function ResultPanel({
     const payload = result.json ?? { pages: result.pages };
     return JSON.stringify(payload, null, 2);
   }, [result]);
+  const pagedText = view === "json" ? jsonText : markdown;
+  const { startPage, endPage, lineStart, lineEnd, pageCount } = lineRangeForPages(
+    pageStart,
+    splitLines(pagedText).length,
+  );
+  const visibleText = joinLines(splitLines(pagedText).slice(lineStart, lineEnd));
+  const paginated = pageCount > PAGES_PER_VIEW;
 
   useEffect(() => {
     setDownloadOpen(false);
-  }, [result?.id, result?.filename]);
+    setPageStart(0);
+  }, [result?.id, result?.filename, view]);
+
+  function applyVisibleMarkdown(nextSlice: string) {
+    if (!onMarkdownChange) return;
+    onMarkdownChange(replaceLineRange(markdown, lineStart, lineEnd, nextSlice));
+  }
 
   const content = view === "markdown" ? markdown : jsonText;
   const empty = !loading && !error && !content && regions.length === 0;
@@ -167,10 +184,10 @@ export function ResultPanel({
       }
     }
     const field = sourceRef.current;
-    const start = field?.selectionStart ?? markdown.length;
-    const end = field?.selectionEnd ?? markdown.length;
-    const next = applyMarkdownFormat(markdown, start, end, command, extra);
-    onMarkdownChange(next.value);
+    const selStart = field?.selectionStart ?? visibleText.length;
+    const selEnd = field?.selectionEnd ?? visibleText.length;
+    const next = applyMarkdownFormat(visibleText, selStart, selEnd, command, extra);
+    applyVisibleMarkdown(next.value);
     window.requestAnimationFrame(() => {
       field?.focus();
       field?.setSelectionRange(next.start, next.end);
@@ -181,8 +198,8 @@ export function ResultPanel({
 
   return (
     <section className="flex h-full min-h-0 flex-col">
-      <div className="panel relative flex min-h-[480px] flex-1 flex-col overflow-visible rounded-2xl lg:min-h-[calc(100vh-140px)]">
-        <div className="flex items-center gap-2 rounded-t-2xl border-b border-[var(--line)] px-3 py-2">
+      <div className="panel relative flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
+        <div className="flex shrink-0 items-center gap-2 rounded-t-2xl border-b border-[var(--line)] px-3 py-2">
           <FileOutput size={15} className="shrink-0 text-[var(--accent)]" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{result?.filename || "Converted file"}</p>
@@ -265,46 +282,76 @@ export function ResultPanel({
             />
           ) : null}
           {loading ? (
-            <div className="flex h-full min-h-[220px] flex-col items-center justify-center gap-3 text-[var(--ink-muted)]">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-[var(--ink-muted)]">
               <Loader2 size={28} className="animate-spin text-[var(--accent)]" />
               <p className="animate-pulse-soft text-sm">Converting your file…</p>
               <p className="text-xs text-[var(--ink-muted)]">Stop is on the source panel</p>
             </div>
           ) : error ? (
-            <div className="flex h-full min-h-[220px] items-center justify-center px-8 text-center">
+            <div className="flex min-h-0 flex-1 items-center justify-center px-8 text-center">
               <p className="max-w-md text-sm text-[var(--danger)]">{error}</p>
             </div>
           ) : empty ? (
-            <div className="flex h-full min-h-[220px] flex-col items-center justify-center gap-3 px-6 text-center text-[var(--ink-muted)]">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center text-[var(--ink-muted)]">
               <FileOutput size={28} className="opacity-50" />
               <p className="max-w-sm text-sm">Drop a file and convert — editable Markdown lands here.</p>
             </div>
           ) : view === "markdown" && markdownMode === "preview" ? (
-            <div className="min-h-0 flex-1">
+            <div className="min-h-0 flex-1 overflow-hidden">
               <EditableMarkdownPreview
+                key={`${lineStart}-${lineEnd}`}
                 ref={previewRef}
-                markdown={markdown}
-                onChange={onMarkdownChange}
+                markdown={visibleText}
+                onChange={onMarkdownChange ? applyVisibleMarkdown : undefined}
               />
             </div>
           ) : view === "markdown" && markdownMode === "edit" ? (
             <textarea
+              key={`${lineStart}-${lineEnd}`}
               ref={sourceRef}
-              value={markdown}
-              onChange={(e) => onMarkdownChange?.(e.target.value)}
+              value={visibleText}
+              onChange={(e) => applyVisibleMarkdown(e.target.value)}
               spellCheck={false}
-              className="min-h-0 flex-1 w-full resize-none border-0 bg-transparent p-5 font-[family-name:var(--font-mono)] text-[13px] leading-relaxed text-[var(--ink)] outline-none md:p-6"
+              className="min-h-0 flex-1 w-full resize-none overflow-auto border-0 bg-transparent p-5 font-[family-name:var(--font-mono)] text-[13px] leading-relaxed text-[var(--ink)] outline-none md:p-6"
               placeholder="Edit Markdown source…"
             />
           ) : (
-            <pre className="min-h-0 flex-1 overflow-auto p-5 font-[family-name:var(--font-mono)] text-[12.5px] leading-relaxed text-[var(--ink)] md:p-6">
-              <code className="animate-rise">{jsonText}</code>
+            <pre
+              key={`${lineStart}-${lineEnd}`}
+              className="min-h-0 flex-1 overflow-auto p-5 font-[family-name:var(--font-mono)] text-[12.5px] leading-relaxed text-[var(--ink)] md:p-6"
+            >
+              <code className="animate-rise">{visibleText}</code>
             </pre>
           )}
+          {paginated && !loading && !error && !empty ? (
+            <div className="flex shrink-0 items-center gap-2 border-t border-[var(--line)] px-3 py-2">
+              <p className="min-w-0 flex-1 truncate text-[11px] text-[var(--ink-muted)]">
+                Pages {startPage + 1}–{endPage} of {pageCount}
+              </p>
+              <button
+                type="button"
+                disabled={startPage === 0}
+                onClick={() => setPageStart(Math.max(0, startPage - PAGES_PER_VIEW))}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] text-[var(--ink-muted)] transition enabled:hover:bg-[var(--accent-soft)] enabled:hover:text-[var(--accent-strong)] disabled:opacity-40"
+              >
+                <ChevronLeft size={12} />
+                Previous
+              </button>
+              <button
+                type="button"
+                disabled={endPage >= pageCount}
+                onClick={() => setPageStart(startPage + PAGES_PER_VIEW)}
+                className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-3 py-1 text-[11px] font-medium text-white transition enabled:hover:opacity-90 disabled:opacity-40 dark:text-[#06281d]"
+              >
+                Show next pages
+                <ChevronRight size={12} />
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {regions.length > 0 ? (
-          <div className="border-t border-[var(--line)]">
+          <div className="shrink-0 border-t border-[var(--line)]">
             <button
               type="button"
               aria-expanded={regionsOpen}
@@ -316,7 +363,7 @@ export function ResultPanel({
               <span className="ml-auto">{regionsOpen ? "Hide" : "Show"}</span>
             </button>
             {regionsOpen ? (
-              <div className="max-h-[28vh] overflow-auto border-t border-[var(--line)] p-2">
+              <div className="max-h-32 overflow-auto border-t border-[var(--line)] p-2">
                 <RegionList
                   regions={regions}
                   activeId={activeRegionId}

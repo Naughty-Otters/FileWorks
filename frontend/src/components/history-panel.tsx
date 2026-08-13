@@ -38,7 +38,7 @@ export function HistoryPanel({
 }: HistoryPanelProps) {
   return (
     <aside className="panel flex h-full min-h-0 flex-col overflow-hidden rounded-2xl">
-      <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--line)] px-3 py-2">
         <div className="flex min-w-0 items-center gap-2">
           <Clock3 size={15} className="shrink-0 text-[var(--accent)]" />
           <h2
@@ -65,9 +65,16 @@ export function HistoryPanel({
           <p className="px-2 py-6 text-center text-xs text-[var(--ink-muted)]">Loading history…</p>
         ) : items.length === 0 ? (
           <p className="px-2 py-6 text-center text-xs text-[var(--ink-muted)]">
-            {requiresLogin
-              ? "Sign in to save conversions and see history."
-              : "Files you convert will appear here."}
+            {requiresLogin ? (
+              <>
+                <a href="/login" className="text-[var(--accent-strong)] underline-offset-2 hover:underline">
+                  Sign in
+                </a>{" "}
+                to save conversions and see history.
+              </>
+            ) : (
+              "Files you convert will appear here."
+            )}
           </p>
         ) : (
           <ul className="space-y-1.5">

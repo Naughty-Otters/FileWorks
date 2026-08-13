@@ -106,11 +106,11 @@ export function UploadPanel({
       <div
         {...(file ? dropHandlers : {})}
         className={cn(
-          "panel relative flex min-h-[480px] flex-1 flex-col overflow-visible rounded-2xl lg:min-h-[calc(100vh-140px)]",
+          "panel relative flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl",
           file && dragging && "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]",
         )}
       >
-        <div className="flex flex-wrap items-center gap-2 rounded-t-2xl border-b border-[var(--line)] px-3 py-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-t-2xl border-b border-[var(--line)] px-3 py-2">
           {file ? (
             isPdf ? (
               <FileText size={15} className="shrink-0 text-[var(--accent)]" />
@@ -193,24 +193,26 @@ export function UploadPanel({
             </div>
           </div>
         ) : (
-          <div className="relative min-h-0 flex-1 overflow-auto bg-[color-mix(in_oklab,var(--bg)_80%,black_4%)] p-3">
+          <div className="relative min-h-0 flex-1 overflow-hidden bg-[color-mix(in_oklab,var(--bg)_80%,black_4%)] p-3">
             {isPdf ? (
               <iframe
                 title="PDF preview"
                 src={previewUrl ?? undefined}
-                className="h-full min-h-[360px] w-full rounded-xl border border-[var(--line)] bg-white"
+                className="h-full min-h-0 w-full rounded-xl border border-[var(--line)] bg-white"
               />
             ) : previewUrl ? (
-              <AnnotatedImage
-                src={previewUrl}
-                alt={file.name}
-                regions={regions}
-                imageSize={imageSize}
-                activeId={activeRegionId}
-                onActiveChange={onActiveRegionChange || (() => undefined)}
-              />
+              <div className="flex h-full min-h-0 items-center justify-center overflow-hidden">
+                <AnnotatedImage
+                  src={previewUrl}
+                  alt={file.name}
+                  regions={regions}
+                  imageSize={imageSize}
+                  activeId={activeRegionId}
+                  onActiveChange={onActiveRegionChange || (() => undefined)}
+                />
+              </div>
             ) : (
-              <div className="flex h-full min-h-[280px] items-center justify-center text-sm text-[var(--ink-muted)]">
+              <div className="flex h-full min-h-0 items-center justify-center text-sm text-[var(--ink-muted)]">
                 Preview not available for this file type — convert to see Markdown on the right.
               </div>
             )}

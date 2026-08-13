@@ -26,6 +26,23 @@ fileworks/
 - Node.js 20+
 - [uv](https://docs.astral.sh/uv/)
 
+## Tests and coverage
+
+Pre-commit runs the suites with coverage floors (backend **80%**, frontend Vitest thresholds in `frontend/vitest.config.ts`). A commit that touches `backend/` or `frontend/` fails if tests fail or coverage drops.
+
+```bash
+uvx pre-commit install
+```
+
+Manual:
+
+```bash
+./scripts/check-coverage.sh --all
+# or:
+cd backend && PYTHONPATH=. uv run pytest --cov=app --cov-fail-under=80
+cd frontend && npm run test:coverage
+```
+
 ## Operator CLI
 
 Rich TUI (same pattern as OpenFDEServer `python -m deploy`):

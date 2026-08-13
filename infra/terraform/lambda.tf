@@ -44,6 +44,7 @@ resource "aws_lambda_function" "api" {
       MAX_UPLOAD_MB        = tostring(var.max_upload_mb)
       DATABASE_URL         = local.database_url
       JWT_SECRET           = random_password.jwt.result
+      GOOGLE_CLIENT_ID     = var.google_client_id
       LLM_LAMBDA_FUNCTION  = aws_lambda_function.llm.function_name
     }
   }

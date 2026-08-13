@@ -52,12 +52,12 @@ export function AnnotatedImage({
   );
 
   return (
-    <div ref={wrapRef} className="relative mx-auto inline-block max-w-full">
+    <div ref={wrapRef} className="relative mx-auto max-h-full max-w-full">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={alt}
-        className="block max-h-[min(62vh,720px)] max-w-full rounded-xl object-contain shadow-[var(--shadow)]"
+        className="block max-h-full max-w-full rounded-xl object-contain shadow-[var(--shadow)]"
         onLoad={(e) => {
           const img = e.currentTarget;
           setNatural({ w: img.naturalWidth, h: img.naturalHeight });

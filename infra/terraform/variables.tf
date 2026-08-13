@@ -62,8 +62,8 @@ variable "uploads_bucket_name" {
 
 variable "google_client_id" {
   type        = string
-  default     = ""
-  description = "Google OAuth client ID (GIS). Also stored on the API Lambda as GOOGLE_CLIENT_ID."
+  default     = "1063086817026-33rehu3tmsg08gll6dc9jue97000ib8f.apps.googleusercontent.com"
+  description = "Google OAuth client ID (GIS). Public; also set on the API Lambda and Pages build."
 }
 
 variable "db_instance_class" {

@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Clock3, FileImage, PanelLeftClose, Wifi, WifiOff } from "lucide-react";
+import { Clock3, FileImage, PanelLeftClose, WifiOff } from "lucide-react";
 import {
   deleteHistoryItem,
   extractDocument,
@@ -289,23 +289,18 @@ export function Workspace() {
     });
   }, [me]);
 
+  const signedIn = Boolean(me?.user);
   const quotaBlocked =
-    me?.quota.remaining_day === 0 || me?.quota.remaining_month === 0;
-  const canExtract = Boolean(file) && !loading && !quotaBlocked;
-
-  const statusLabel = useMemo(() => {
-    if (!health) return "Checking engine…";
-    if (health.status === "offline") return "API offline";
-    if (health.ocr_ready) return "Ready to convert";
-    return "Ready — first convert may take a moment";
-  }, [health]);
+    signedIn && (me?.quota.remaining_day === 0 || me?.quota.remaining_month === 0);
+  const canExtract =
+    Boolean(file) && !loading && signedIn && Boolean(me?.permissions["extract"]) && !quotaBlocked;
 
   function handleStopConvert() {
     convertAbortRef.current?.abort();
   }
 
   async function handleExtract() {
-    if (!file) return;
+    if (!file || !me?.user || !me.permissions["extract"]) return;
     convertAbortRef.current?.abort();
     const controller = new AbortController();
     convertAbortRef.current = controller;
@@ -382,10 +377,10 @@ export function Workspace() {
   }
 
   return (
-    <div className="app-shell relative">
+    <div className="app-shell app-shell-fixed relative">
       <div className="atmosphere" aria-hidden />
 
-      <header className="relative z-10 border-b border-[var(--line)]">
+      <header className="relative z-10 shrink-0 border-b border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
           <p className="font-[family-name:var(--font-display)] text-xl tracking-tight md:text-2xl">
             FileWorks
@@ -411,27 +406,21 @@ export function Workspace() {
               </span>
             ) : null}
           </button>
-          <div className="ml-auto flex items-center gap-2">
-            <span
-              title={statusLabel}
-              className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[var(--ink-muted)]"
-            >
-              {health?.status === "offline" ? (
-                <WifiOff size={14} className="text-[var(--danger)]" />
-              ) : (
-                <Wifi size={14} className="text-[var(--accent)]" />
-              )}
-              <span className="hidden text-[11px] lg:inline">{statusLabel}</span>
-            </span>
-            <AuthBar me={me} onChange={setMe} />
-            <ThemeToggle />
+          <div className="ml-auto flex items-center gap-1.5">
+            {health?.status === "offline" ? (
+              <span title="API offline" className="inline-flex p-1.5 text-[var(--danger)]">
+                <WifiOff size={14} />
+              </span>
+            ) : null}
+            <AuthBar me={me} />
+            <ThemeToggle className="h-8 w-8" />
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-[1500px] flex-1 flex-col gap-3 px-4 py-3 md:px-6 md:py-4">
+      <main className="relative z-10 mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-3 overflow-hidden px-4 py-3 md:px-6 md:py-4">
         {!previewOpen ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--line)] bg-[var(--bg-panel)] px-3 py-2">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--line)] bg-[var(--bg-panel)] px-3 py-2">
             <button
               type="button"
               aria-controls="source-preview-panel"
@@ -450,6 +439,7 @@ export function Workspace() {
               health={health}
               loading={loading}
               canExtract={canExtract}
+              fileReady={Boolean(file)}
               quotaBlocked={Boolean(quotaBlocked)}
               onConvert={handleExtract}
               onStop={handleStopConvert}
@@ -459,15 +449,15 @@ export function Workspace() {
 
         <div
           className={cn(
-            "grid min-h-0 flex-1 gap-3 lg:gap-4",
-            historyOpen && previewOpen && "lg:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)]",
-            historyOpen && !previewOpen && "lg:grid-cols-[220px_minmax(0,1fr)]",
-            !historyOpen && previewOpen && "lg:grid-cols-2",
-            !historyOpen && !previewOpen && "lg:grid-cols-1",
+            "grid min-h-0 flex-1 gap-3 overflow-hidden lg:gap-4",
+            historyOpen && previewOpen && "grid-rows-3 lg:grid-rows-1 lg:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)]",
+            historyOpen && !previewOpen && "grid-rows-2 lg:grid-rows-1 lg:grid-cols-[220px_minmax(0,1fr)]",
+            !historyOpen && previewOpen && "grid-rows-2 lg:grid-rows-1 lg:grid-cols-2",
+            !historyOpen && !previewOpen && "grid-rows-1",
           )}
         >
           {historyOpen ? (
-            <div id="history-panel" className="min-h-[280px] lg:min-h-[calc(100vh-140px)]">
+            <div id="history-panel" className="min-h-0 overflow-hidden">
               <HistoryPanel
                 items={history}
                 selectedId={selectedId}
@@ -481,7 +471,7 @@ export function Workspace() {
             </div>
           ) : null}
           {previewOpen ? (
-            <div id="source-preview-panel" className="min-h-[480px] lg:min-h-[calc(100vh-140px)]">
+            <div id="source-preview-panel" className="min-h-0 overflow-hidden">
               <UploadPanel
                 file={file}
                 previewUrl={previewUrl}
@@ -501,6 +491,7 @@ export function Workspace() {
                     health={health}
                     loading={loading}
                     canExtract={canExtract}
+                    fileReady={Boolean(file)}
                     quotaBlocked={Boolean(quotaBlocked)}
                     onConvert={handleExtract}
                     onStop={handleStopConvert}
@@ -509,7 +500,7 @@ export function Workspace() {
               />
             </div>
           ) : null}
-          <div className="min-h-[480px] lg:min-h-[calc(100vh-140px)]">
+          <div className="min-h-0 overflow-hidden">
             <ResultPanel
               result={result}
               loading={loading}

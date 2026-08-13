@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.deps import Principal, get_principal
 from app.auth.google import verify_google_id_token
-from app.auth.plans import get_plan, permissions_for
+from app.auth.plans import can_change_plan, get_plan, permissions_for
 from app.auth.quota import quota_snapshot
 from app.auth.tokens import hash_token, issue_access_token, new_refresh_token
 from app.core.config import get_settings
@@ -43,6 +43,10 @@ class MeResponse(BaseModel):
     permissions: dict[str, bool]
     quota: dict
     google_client_id: str | None = None
+
+
+class PlanChangeRequest(BaseModel):
+    plan: str
 
 
 def _user_public(user: User) -> dict:
@@ -149,3 +153,29 @@ def me(principal: Principal = Depends(get_principal), db: Session | None = Depen
         quota=quota_snapshot(db, user_id=principal.user_id, plan=principal.plan),
         google_client_id=settings.google_client_id,
     )
+
+
+@router.post("/me/plan", response_model=TokenResponse)
+def change_plan(
+    body: PlanChangeRequest,
+    principal: Principal = Depends(get_principal),
+    db: Session | None = Depends(get_db),
+) -> TokenResponse:
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database is not configured")
+    if principal.user is None:
+        raise HTTPException(status_code=401, detail="Sign in to change plan")
+    target = (body.plan or "").strip().lower()
+    user = db.get(User, principal.user.id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    if not can_change_plan(user.plan, target):
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "plan_invalid", "current": user.plan, "target": target},
+        )
+    user.plan = target
+    db.add(user)
+    tokens = _issue_pair(db, user)
+    db.commit()
+    return tokens

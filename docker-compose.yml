@@ -23,7 +23,6 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://fileworks:fileworks@db:5432/fileworks
       JWT_SECRET: ${JWT_SECRET:-dev-insecure-change-me}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       STORAGE_BACKEND: local
       STORAGE_LOCAL_ROOT: /tmp/history
       UPLOAD_DIR: /tmp/uploads
@@ -49,7 +48,7 @@ services:
       dockerfile: Dockerfile
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-1063086817026-33rehu3tmsg08gll6dc9jue97000ib8f.apps.googleusercontent.com}
       API_PROXY_TARGET: http://backend:8000
     ports:
       - "3000:3000"
