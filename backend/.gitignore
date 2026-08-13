@@ -1,0 +1,15 @@
+vendor/
+uploads/
+*.pyc
+__pycache__/
+.venv/
+.env
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+.DS_Store
+secrets/*
+!secrets/README.md
+!secrets/*.example.json

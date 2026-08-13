@@ -1,0 +1,17 @@
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*
+**/uploads
+**/data
+**/.paddlex
+**/.pytest_cache
+**/.ruff_cache
+**/node_modules
+**/.next
+**/frontend
+**/.git
+**/.terraform
+**/secrets
+**/*.md

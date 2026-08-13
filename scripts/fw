@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# FileWorks operator TUI (Rich). Same pattern as OpenFDEServer `python -m deploy`.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
+if command -v uv >/dev/null 2>&1; then
+  exec uv run --with rich python -m fw "$@"
+fi
+exec python3 -m fw "$@"
