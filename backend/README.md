@@ -20,4 +20,7 @@ Auth tables live in Postgres. Set `DATABASE_URL` and apply migrations (also runs
 - Docs: http://127.0.0.1:8000/docs
 - Health: `GET /api/health`
 - Warmup: `POST /api/warmup`
-- Extract: `POST /api/extract` (`file`, `output_format`)
+- Extract (workspace): `POST /api/extract` (`file` or `s3_key`, `output_format`)
+- One-shot convert: `GET /api/v1/convert` (options check), `POST /api/v1/convert` (`file` + `target`; no `s3_key`)
+
+Option reference (inputs, targets, form fields, languages, errors): [docs/convert-api.md](../docs/convert-api.md)

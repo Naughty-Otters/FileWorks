@@ -97,10 +97,12 @@ API:
 - `GET /api/health` — service status + registered engines / option support
 - `GET /api/engines` — list OCR provider strategies (Paddle Structure / PP-OCR)
 - `POST /api/warmup` — eagerly load the configured OCR provider
-- `POST /api/extract` — multipart form: `file`, optional `output_format`, parse option toggles (Text → AnyDoc → LLM → OCR)
-- `POST /api/export` — JSON body `{ markdown, format, filename? }` → downloadable `markdown|txt|html|json`
+- `POST /api/extract` — workspace: multipart `file` or `s3_key`, parse option toggles (Text → AnyDoc → LLM → OCR)
+- `POST /api/export` — workspace: JSON `{ markdown, format, filename? }` → `markdown|txt|html|json`
+- `GET /api/v1/convert` — one-shot API: list accepted inputs, targets, and which options are available
+- `POST /api/v1/convert` — one-shot API: multipart `file` + options + `target`; returns converted content (no `s3_key`)
 
-Docs: http://127.0.0.1:8000/docs
+Full option reference: [docs/convert-api.md](docs/convert-api.md). Interactive: http://127.0.0.1:8000/docs
 
 Optional env (backend `.env`):
 
