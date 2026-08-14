@@ -22,8 +22,13 @@ variable "image_tag" {
 
 variable "lambda_memory_mb" {
   type        = number
-  description = "Lambda memory. Paddle OCR needs ~4 GB+."
-  default     = 4096
+  description = "Lambda memory (MB). Prefer 8192 for Paddle OCR once Support lifts the account 3008 MB cap."
+  default     = 3008
+
+  validation {
+    condition     = var.lambda_memory_mb >= 128 && var.lambda_memory_mb <= 10240
+    error_message = "lambda_memory_mb must be between 128 and 10240."
+  }
 }
 
 variable "lambda_timeout_s" {

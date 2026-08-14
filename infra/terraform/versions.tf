@@ -33,7 +33,7 @@ data "aws_region" "current" {}
 locals {
   name_prefix = "fileworks-${var.environment}"
   account_id  = data.aws_caller_identity.current.account_id
-  region      = data.aws_region.current.id
+  region      = data.aws_region.current.region
   image_uri   = "${aws_ecr_repository.api.repository_url}:${var.image_tag}"
   cors_csv    = join(",", var.cors_origins)
   # Bucket alias: staging → stage so URIs match s3://fileworks-prod|stage|dev/...

@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import textwrap
+import time
 
 from fw import console
 from fw.context import (
@@ -219,21 +220,26 @@ def push_image(ctx: Context) -> None:
     repo_url = f"{ctx.account_id}.dkr.ecr.{ctx.region}.amazonaws.com/{ctx.env.ecr_repository}"
     image = f"{repo_url}:{ctx.env.name}"
     _ecr_login(ctx, repo_url)
+    # Lambda rejects OCI index / attestation manifests from recent BuildKit defaults.
+    # Force a single linux/amd64 Docker V2 schema 2 image (no provenance/SBOM).
     run(
         [
             "docker",
+            "buildx",
             "build",
             "--platform",
             "linux/amd64",
+            "--provenance=false",
+            "--sbom=false",
             "-f",
             str(DOCKERFILE),
             "-t",
             image,
+            "--push",
             str(ROOT_DIR),
         ],
         ctx=ctx,
     )
-    run(["docker", "push", image], ctx=ctx)
     console.success(f"Pushed {image}")
 
 
@@ -294,8 +300,20 @@ def status(ctx: Context) -> None:
     console.kv_table("Stack", rows)
     api_url = str(outputs.get("api_url") or "").rstrip("/")
     if api_url:
+        _probe_health(ctx, api_url)
+
+
+# A cold start pulls the OCR image and boots FastAPI, so the first probe can
+# take well over a minute. Retry instead of calling one slow attempt a failure.
+HEALTH_ATTEMPTS = 4
+HEALTH_TIMEOUT_S = 60
+HEALTH_RETRY_WAIT_S = 10
+
+
+def _probe_health(ctx: Context, api_url: str) -> bool:
+    for attempt in range(1, HEALTH_ATTEMPTS + 1):
         health = run(
-            ["curl", "-fsS", "--max-time", "20", f"{api_url}/api/health"],
+            ["curl", "-fsS", "--max-time", str(HEALTH_TIMEOUT_S), f"{api_url}/api/health"],
             check=False,
             capture=True,
             ctx=ctx,
@@ -303,8 +321,19 @@ def status(ctx: Context) -> None:
         if health.returncode == 0:
             console.success("API /api/health responded")
             console.info(textwrap.shorten((health.stdout or "").strip(), width=400, placeholder="…"))
-        else:
-            console.warn("API health check failed (image missing, cold start, or CORS/network).")
+            return True
+        if attempt < HEALTH_ATTEMPTS:
+            console.info(
+                f"No health response yet (attempt {attempt}/{HEALTH_ATTEMPTS}); "
+                f"waiting {HEALTH_RETRY_WAIT_S}s for cold start…"
+            )
+            time.sleep(HEALTH_RETRY_WAIT_S)
+    console.warn(
+        f"API health check failed after {HEALTH_ATTEMPTS} attempts "
+        "(image missing, slow cold start, or CORS/network)."
+    )
+    console.info(f"Retry by hand: curl -i --max-time 90 {api_url}/api/health")
+    return False
 
 
 def seed_secrets(ctx: Context) -> None:
