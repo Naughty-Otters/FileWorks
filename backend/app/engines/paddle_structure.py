@@ -4,48 +4,26 @@ from __future__ import annotations
 
 import inspect
 import logging
-import threading
 from pathlib import Path
 from typing import Any
 
-from app.core.config import Settings
-from app.engines.base import ExtractResult, OCREngine, OutputFormat
+from app.engines.base import ExtractResult, OutputFormat
+from app.engines.lazy import LazyModelEngine
 from app.engines.utils import collect_texts, json_safe
 from app.services.markdown import pick_best_markdown
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
+from app.services.pages import PAGE_SEPARATOR
 from app.services.regions import extract_regions
 
 logger = logging.getLogger(__name__)
 
 
-class PaddleStructureEngine(OCREngine):
+class PaddleStructureEngine(LazyModelEngine):
     id = "structure"
     label = "PP-StructureV3"
 
-    def __init__(self, settings: Settings) -> None:
-        self.settings = settings
-        self._pipeline: Any = None
-        self._lock = threading.Lock()
-        self._init_error: str | None = None
-
-    @property
-    def ready(self) -> bool:
-        return self._pipeline is not None
-
-    @property
-    def init_error(self) -> str | None:
-        return self._init_error
-
     def supports_options(self) -> bool:
         return True  # all UI options map natively to Structure predict kwargs
-
-    def ensure_ready(self) -> None:
-        if self._pipeline is not None:
-            return
-        with self._lock:
-            if self._pipeline is not None:
-                return
-            self._load()
 
     def _load(self) -> None:
         from paddleocr import PPStructureV3
@@ -98,9 +76,91 @@ class PaddleStructureEngine(OCREngine):
         options: ExtractOptions | None = None,
         mime_type: str | None = None,
     ) -> ExtractResult:
+        del mime_type
         self.ensure_ready()
         assert self._pipeline is not None
         opts = options or DEFAULT_EXTRACT_OPTIONS
+
+        if file_path.suffix.lower() == ".pdf":
+            from app.services.pages import pdf_page_count
+
+            if pdf_page_count(file_path) > 1:
+                return self._extract_pdf_by_page(
+                    file_path, output_format=output_format, options=opts
+                )
+        return self._extract_path(file_path, output_format=output_format, options=opts)
+
+    def _extract_pdf_by_page(
+        self,
+        file_path: Path,
+        *,
+        output_format: OutputFormat,
+        options: ExtractOptions,
+    ) -> ExtractResult:
+        import tempfile
+
+        from app.services.cancel_token import check_cancelled
+
+        pages: list[dict[str, Any]] = []
+        markdown_parts: list[str] = []
+        json_pages: list[Any] = []
+        all_regions: list[dict[str, Any]] = []
+        image_size = None
+
+        from app.services.pages import PAGE_SEPARATOR, iter_pdf_page_bytes
+
+        payloads = list(iter_pdf_page_bytes(file_path))
+        total = len(payloads)
+        for page_no, page_bytes in payloads:
+            check_cancelled(where=f"Structure page {page_no}/{total}")
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=True) as tmp:
+                tmp.write(page_bytes)
+                tmp.flush()
+                one = self._extract_path(
+                    Path(tmp.name), output_format=output_format, options=options
+                )
+            page = (one.pages or [{"page": 1, "markdown": one.markdown or "", "json": one.json_data}])[0]
+            page = {**page, "page": page_no}
+            pages.append(page)
+            if page.get("markdown"):
+                markdown_parts.append(str(page["markdown"]))
+            json_pages.append(page.get("json"))
+            for region in one.regions or []:
+                all_regions.append({**region, "page": page_no})
+            if image_size is None and one.image_size is not None:
+                image_size = one.image_size
+            logger.info("Structure finished PDF page %s/%s", page_no, total)
+
+        markdown = PAGE_SEPARATOR.join(part for part in markdown_parts if part).strip()
+        result = ExtractResult(
+            engine=self.label,
+            provider=self.id,
+            page_count=len(pages),
+            pages=pages,
+            regions=all_regions,
+            image_size=image_size,
+            options=options.to_dict(),
+        )
+        if output_format in {"markdown", "both"}:
+            result.markdown = markdown
+        if output_format in {"json", "both"}:
+            result.json_data = {"pages": json_pages} if len(json_pages) > 1 else (
+                json_pages[0] if json_pages else {}
+            )
+        return result
+
+    def _extract_path(
+        self,
+        file_path: Path,
+        *,
+        output_format: OutputFormat,
+        options: ExtractOptions,
+    ) -> ExtractResult:
+        from app.services.cancel_token import check_cancelled
+
+        check_cancelled(where="Structure predict start")
+        assert self._pipeline is not None
+        opts = options
         path_str = str(file_path.resolve())
         predict_kwargs = opts.predict_kwargs()
 
@@ -129,6 +189,7 @@ class PaddleStructureEngine(OCREngine):
         json_pages: list[Any] = []
 
         for index, res in enumerate(output):
+            check_cancelled(where=f"Structure result page {index + 1}")
             json_data = json_safe(getattr(res, "json", None) or {})
             md_info = getattr(res, "markdown", None)
             markdown = pick_best_markdown(pipeline_markdown=md_info, json_payload=json_data)
@@ -150,7 +211,7 @@ class PaddleStructureEngine(OCREngine):
                 image_size = size
             all_regions.extend(page_regions)
 
-        markdown = "\n\n---\n\n".join(part for part in markdown_parts if part).strip()
+        markdown = PAGE_SEPARATOR.join(part for part in markdown_parts if part).strip()
         result = ExtractResult(
             engine=self.label,
             provider=self.id,

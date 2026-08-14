@@ -64,6 +64,15 @@ class TranslateLanguage(BaseModel):
     label: str
 
 
+class CancelRunResponse(BaseModel):
+    run_id: str
+    stopped: bool
+    # Honest outcome: process killed vs cooperative token written for Lambda/pages.
+    killed: bool = False
+    token_written: bool = False
+    detail: str
+
+
 class HealthResponse(BaseModel):
     status: str
     app: str
@@ -81,6 +90,10 @@ class HealthResponse(BaseModel):
     storage_backend: str | None = None
     direct_upload: bool = False
     engines: list[EngineInfo] = Field(default_factory=list)
+    # Live conversion queue, so a waiting client can say so instead of guessing.
+    converting: int = 0
+    convert_waiting: int = 0
+    convert_capacity: int = 0
 
     @field_serializer("ocr_engine")
     def _public_ocr_engine(self, _value: str | None) -> None:

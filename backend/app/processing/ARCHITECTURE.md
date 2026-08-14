@@ -44,6 +44,22 @@ Empty Markdown from an earlier reader triggers the next candidate. With `prefer_
 
 Install Docling with `uv sync --extra docling` (not in the default extra — it pulls layout models).
 
+## Pages
+
+Every reader must set ``page_count == len(pages)``. Each ``pages[]`` entry is
+``{ "page": <1-based>, "markdown": "...", "json": ... }``. Multi-page Markdown is
+joined with a thematic break (``---``).
+
+| Reader | How pages are produced |
+| --- | --- |
+| Text | Always one page |
+| Docling | Convert the whole PDF, then ``export_to_markdown(page_no=…)`` per page |
+| AnyDoc | Office stays one flowing document. PDFs are split into single-page files and converted one page at a time |
+| LLM | Vision models convert each rasterized PDF page. Native-PDF vendors (Claude) send the whole file and report ``source_page_count`` |
+| OCR | Paddle ``predict()`` already yields one result per page |
+
+``metadata.source_page_count`` is the true PDF length when the engine truncated or could not split content.
+
 ## Packages
 
 | Package | Responsibility |

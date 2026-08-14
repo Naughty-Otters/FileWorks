@@ -108,6 +108,9 @@ export type HealthResponse = {
   translate_languages?: TranslateLanguage[];
   storage_backend?: string | null;
   direct_upload?: boolean;
+  converting?: number;
+  convert_waiting?: number;
+  convert_capacity?: number;
 };
 
 export type HistoryItem = {
@@ -381,12 +384,35 @@ export async function fetchHealth(): Promise<HealthResponse> {
   return res.json();
 }
 
+export function newRunId(): string {
+  const random = globalThis.crypto?.randomUUID?.();
+  return random ? random.replace(/-/g, "") : `${Date.now()}${Math.random().toString(16).slice(2)}`;
+}
+
+/**
+ * Ask the server to stop a run. Aborting the fetch alone is not enough: behind a
+ * proxy or container port forward the disconnect may never reach the backend, and
+ * the abandoned run keeps holding the conversion slot.
+ */
+export async function cancelExtract(runId: string): Promise<boolean> {
+  const body = new FormData();
+  body.append("run_id", runId);
+  try {
+    const res = await apiFetch("/api/extract/cancel", { direct: true, method: "POST", body });
+    if (!res.ok) return false;
+    const data = (await res.json()) as { stopped?: boolean };
+    return data.stopped === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function extractDocument(
   file: File,
   outputFormat: OutputFormat = "both",
   options: ExtractOptions = DEFAULT_EXTRACT_OPTIONS,
   signal?: AbortSignal,
-  extras?: { directUpload?: boolean },
+  extras?: { directUpload?: boolean; runId?: string },
 ): Promise<ExtractResponse> {
   const useDirect =
     extras?.directUpload === true || process.env.NEXT_PUBLIC_DIRECT_UPLOAD === "1";
@@ -396,6 +422,7 @@ export async function extractDocument(
   (Object.keys(options) as Array<keyof ExtractOptions>).forEach((key) => {
     body.append(key, String(options[key]));
   });
+  if (extras?.runId) body.append("run_id", extras.runId);
 
   if (useDirect) {
     const presignRes = await apiFetch("/api/uploads/presign", {

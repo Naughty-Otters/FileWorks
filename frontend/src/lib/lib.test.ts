@@ -38,6 +38,7 @@ import {
   linePageCount,
   lineRangeForPages,
   LINES_PER_PAGE,
+  pageStartLines,
   pageWindowStart,
   replaceLineRange,
   splitLines,
@@ -407,5 +408,36 @@ describe("markdown-pages", () => {
     expect(next.endPage).toBe(8);
     expect(next.lineStart).toBe(LINES_PER_PAGE * 5);
     expect(replaceLineRange("a\nb\nc\nd", 1, 3, "B\nC")).toBe("a\nB\nC\nd");
+  });
+
+  it("windows on real page separators so a page's images stay with its text", () => {
+    const page = (n: number) => `# Page ${n}\n\n![shot](data:image/jpeg;base64,AAAA)`;
+    const doc = Array.from({ length: 12 }, (_, index) => page(index + 1)).join("\n\n---\n\n");
+    const lines = splitLines(doc);
+    expect(pageStartLines(lines)).toHaveLength(12);
+
+    const first = lineRangeForPages(0, lines);
+    expect(first.pageCount).toBe(12);
+    expect(first.startPage).toBe(0);
+    expect(first.endPage).toBe(5);
+    const visible = joinLines(lines.slice(first.lineStart, first.lineEnd));
+    expect(visible).toContain("# Page 5");
+    expect(visible).not.toContain("# Page 6");
+    // Every visible page keeps its own image rather than losing it to the window edge.
+    expect(visible.match(/data:image/g)).toHaveLength(5);
+
+    const second = lineRangeForPages(5, lines);
+    expect(second.startPage).toBe(5);
+    const later = joinLines(lines.slice(second.lineStart, second.lineEnd));
+    expect(later).toContain("# Page 6");
+    expect(later.match(/data:image/g)).toHaveLength(5);
+
+    const last = lineRangeForPages(10, lines);
+    expect(last.endPage).toBe(12);
+    expect(joinLines(lines.slice(last.lineStart, last.lineEnd))).toContain("# Page 12");
+  });
+
+  it("treats a setext underline as a heading, not a page break", () => {
+    expect(pageStartLines(splitLines("Heading\n---\n\nbody"))).toEqual([0]);
   });
 });

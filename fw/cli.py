@@ -65,12 +65,38 @@ CATEGORIES: tuple[Category, ...] = (
 
 def _actions() -> tuple[MenuAction, ...]:
     return (
-        MenuAction("compose-up", "Compose up --build", "Postgres + API + UI", compose.up, False, "stack", frozenset({LOCAL_SCOPE})),
+        MenuAction(
+            "compose-up",
+            "Compose up",
+            "Postgres + API + UI (uses cached images)",
+            compose.up,
+            False,
+            "stack",
+            frozenset({LOCAL_SCOPE}),
+        ),
         MenuAction(
             "compose-up-d",
-            "Compose up --build -d",
-            "detached",
+            "Compose up -d",
+            "detached (cached images)",
             lambda ctx: compose.up(ctx, detach=True),
+            False,
+            "stack",
+            frozenset({LOCAL_SCOPE}),
+        ),
+        MenuAction(
+            "compose-rebuild",
+            "Compose rebuild",
+            "up --build when Dockerfile / lockfiles change",
+            compose.rebuild,
+            False,
+            "stack",
+            frozenset({LOCAL_SCOPE}),
+        ),
+        MenuAction(
+            "compose-rebuild-d",
+            "Compose rebuild -d",
+            "detached rebuild",
+            lambda ctx: compose.rebuild(ctx, detach=True),
             False,
             "stack",
             frozenset({LOCAL_SCOPE}),

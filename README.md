@@ -50,7 +50,8 @@ Rich TUI (same pattern as OpenFDEServer `python -m deploy`):
 
 ```bash
 ./scripts/fw                         # interactive menu
-./scripts/fw compose-up              # Postgres + API + UI
+./scripts/fw compose-up              # Postgres + API + UI (cached images)
+./scripts/fw compose-rebuild         # only when Dockerfile / lockfiles change
 ./scripts/fw db-upgrade              # Alembic migrations
 ./scripts/fw --env dev full          # AWS Lambda + Cloudflare Pages
 ```
@@ -60,7 +61,8 @@ Rich TUI (same pattern as OpenFDEServer `python -m deploy`):
 Postgres + API + Next.js:
 
 ```bash
-./scripts/fw compose-up
+./scripts/fw compose-up              # start (reuse images; app code is bind-mounted)
+./scripts/fw compose-rebuild         # after Dockerfile / uv.lock / package-lock changes
 # optional: GOOGLE_CLIENT_ID=.... JWT_SECRET=....
 ```
 
@@ -89,7 +91,7 @@ uv sync
 #   firecrawl-anydoc, markdown
 # paddlepaddle is pulled from the official paddle CPU index (see pyproject.toml).
 
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run python -m app
 ```
 
 API:

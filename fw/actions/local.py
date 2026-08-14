@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 
 from fw import console
@@ -21,9 +22,13 @@ def native_dev(ctx: Context) -> None:
     require_cmd("uv", "npm")
     console.rule("Native dev")
     console.info("API :8000  ·  UI :3000  (Ctrl-C stops both)")
+    env = os.environ.copy()
+    env.setdefault("PYTHONUNBUFFERED", "1")
+    env.setdefault("UVICORN_RELOAD", "1")
     api = subprocess.Popen(
-        ["uv", "run", "uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+        ["uv", "run", "python", "-m", "app"],
         cwd=BACKEND_DIR,
+        env=env,
     )
     try:
         subprocess.run(["npm", "run", "dev"], cwd=FRONTEND_DIR, check=False)

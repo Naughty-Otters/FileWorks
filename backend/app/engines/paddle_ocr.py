@@ -3,46 +3,24 @@
 from __future__ import annotations
 
 import logging
-import threading
 from pathlib import Path
 from typing import Any
 
-from app.core.config import Settings
-from app.engines.base import ExtractResult, OCREngine, OutputFormat
+from app.engines.base import ExtractResult, OutputFormat
+from app.engines.lazy import LazyModelEngine
 from app.engines.utils import collect_texts, json_safe
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
+from app.services.pages import PAGE_SEPARATOR
 
 logger = logging.getLogger(__name__)
 
 
-class PaddleOCREngine(OCREngine):
+class PaddleOCREngine(LazyModelEngine):
     id = "ocr"
     label = "PP-OCRv5"
 
-    def __init__(self, settings: Settings) -> None:
-        self.settings = settings
-        self._pipeline: Any = None
-        self._lock = threading.Lock()
-        self._init_error: str | None = None
-
-    @property
-    def ready(self) -> bool:
-        return self._pipeline is not None
-
-    @property
-    def init_error(self) -> str | None:
-        return self._init_error
-
     def supports_options(self) -> bool:
         return True
-
-    def ensure_ready(self) -> None:
-        if self._pipeline is not None:
-            return
-        with self._lock:
-            if self._pipeline is not None:
-                return
-            self._load()
 
     def _load(self) -> None:
         from paddleocr import PaddleOCR
@@ -75,7 +53,90 @@ class PaddleOCREngine(OCREngine):
         opts = options or DEFAULT_EXTRACT_OPTIONS
         self.ensure_ready()
         assert self._pipeline is not None
+
+        # Multi-page PDFs: one predict per page so Stop can land between pages
+        # (Paddle's predict itself has no cancellation point).
+        if file_path.suffix.lower() == ".pdf":
+            from app.services.pages import pdf_page_count
+
+            if pdf_page_count(file_path) > 1:
+                return self._extract_pdf_by_page(
+                    file_path, output_format=output_format, options=opts
+                )
+
+        return self._extract_path(file_path, output_format=output_format, options=opts)
+
+    def _extract_pdf_by_page(
+        self,
+        file_path: Path,
+        *,
+        output_format: OutputFormat,
+        options: ExtractOptions,
+    ) -> ExtractResult:
+        import tempfile
+
+        from app.services.cancel_token import check_cancelled
+        from app.services.pages import PAGE_SEPARATOR, iter_pdf_page_bytes
+
+        pages: list[dict[str, Any]] = []
+        markdown_parts: list[str] = []
+        json_pages: list[Any] = []
+        all_regions: list[dict[str, Any]] = []
+        image_size: dict[str, float] | None = None
+
+        payloads = list(iter_pdf_page_bytes(file_path))
+        total = len(payloads)
+        for page_no, page_bytes in payloads:
+            check_cancelled(where=f"OCR page {page_no}/{total}")
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=True) as tmp:
+                tmp.write(page_bytes)
+                tmp.flush()
+                one = self._extract_path(
+                    Path(tmp.name), output_format=output_format, options=options
+                )
+            page = (one.pages or [{"page": 1, "markdown": one.markdown or "", "json": one.json_data}])[0]
+            page = {**page, "page": page_no}
+            pages.append(page)
+            if page.get("markdown"):
+                markdown_parts.append(str(page["markdown"]))
+            json_pages.append(page.get("json"))
+            for region in one.regions or []:
+                all_regions.append({**region, "page": page_no})
+            if image_size is None and one.image_size is not None:
+                image_size = one.image_size
+            logger.info("OCR finished PDF page %s/%s", page_no, total)
+
+        markdown = PAGE_SEPARATOR.join(markdown_parts).strip()
+        result = ExtractResult(
+            engine=self.label,
+            provider=self.id,
+            page_count=len(pages),
+            pages=pages,
+            regions=all_regions if options.use_region_detection else [],
+            image_size=image_size,
+            options=options.to_dict(),
+        )
+        if output_format in {"markdown", "both"}:
+            result.markdown = markdown
+        if output_format in {"json", "both"}:
+            result.json_data = {"pages": json_pages} if len(json_pages) > 1 else (
+                json_pages[0] if json_pages else {}
+            )
+        return result
+
+    def _extract_path(
+        self,
+        file_path: Path,
+        *,
+        output_format: OutputFormat,
+        options: ExtractOptions,
+    ) -> ExtractResult:
+        from app.services.cancel_token import check_cancelled
+
+        check_cancelled(where="OCR predict start")
+        assert self._pipeline is not None
         path_str = str(file_path.resolve())
+        opts = options
 
         predict_kwargs = opts.paddle_ocr_predict_kwargs()
         try:
@@ -105,6 +166,7 @@ class PaddleOCREngine(OCREngine):
         image_size: dict[str, float] | None = None
 
         for index, res in enumerate(output):
+            check_cancelled(where=f"OCR result page {index + 1}")
             page_no = index + 1
             json_data = json_safe(getattr(res, "json", None) or {})
             texts = collect_texts(json_data)
@@ -123,7 +185,7 @@ class PaddleOCREngine(OCREngine):
                 markdown_parts.append(page_md)
             json_pages.append(json_data)
 
-        markdown = "\n\n---\n\n".join(markdown_parts).strip()
+        markdown = PAGE_SEPARATOR.join(markdown_parts).strip()
         result = ExtractResult(
             engine=self.label,
             provider=self.id,
@@ -184,7 +246,6 @@ class PaddleOCREngine(OCREngine):
             return "\n\n".join(cleaned)
         return "\n".join(cleaned)
 
-    @staticmethod
     @staticmethod
     def _append_option_sections(markdown: str, options: ExtractOptions) -> str:
         """Notes only when advanced modules were requested but Structure enrichment failed."""

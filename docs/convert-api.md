@@ -203,7 +203,8 @@ Default (`download=false`):
 
 | Field | Meaning |
 |---|---|
-| `markdown` | Hub format after read (+ translation) |
+| `markdown` | Hub format after read (+ translation). Multi-page files join pages with `---` |
+| `page_count` | Number of source pages actually converted (`len(pages)`) |
 | `content` | Exported `target` (UTF-8 text) |
 | `filename` / `media_type` | Suggested download name and type |
 | `options` | Values that were applied |

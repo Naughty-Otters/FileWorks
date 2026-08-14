@@ -12,6 +12,7 @@ from app.processing.postprocess.media import EmbeddedImage, place_images
 from app.processing.reading.anydoc_markdown import document_to_markdown
 from app.processing.reading.base import Reader
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
+from app.services.pages import assemble_page_dicts, iter_pdf_page_bytes, pdf_page_count
 
 logger = logging.getLogger(__name__)
 
@@ -219,41 +220,34 @@ class AnyDocReader(Reader):
         data = source.path.read_bytes()
         fmt = self._detect_format(anydoc, source, data)
 
-        try:
-            markdown = (
-                anydoc.to_markdown_bytes(data, fmt) if fmt else anydoc.to_markdown_bytes(data)
-            )
-        except anydoc.EncryptedError as exc:
-            raise RuntimeError(f"Document is encrypted or password-protected: {exc}") from exc
-        except anydoc.ConvertError as exc:
-            raise RuntimeError(f"AnyDoc could not convert file: {exc}") from exc
-
+        markdowns = self._markdowns_by_page(anydoc, source, data, fmt)
         document = None
         # PDF has no document model in AnyDoc — Markdown only.
-        if fmt != "pdf":
+        if fmt != "pdf" and len(markdowns) <= 1:
             try:
                 document = anydoc.to_document(data, fmt) if fmt else anydoc.to_document(data)
             except anydoc.ConvertError:
                 document = None
 
-        markdown_str = str(markdown or "")
         if document is not None:
             tree_md = document_to_markdown(document)
             if tree_md.strip():
-                markdown_str = tree_md
-            markdown_str = _embed_assets_as_data_urls(markdown_str, document)
+                markdowns = [tree_md]
+            markdowns = [_embed_assets_as_data_urls(part, document) for part in markdowns]
 
-        if _markdown_looks_empty(markdown_str):
+        joined_preview = "\n".join(markdowns)
+        if _markdown_looks_empty(joined_preview):
             raise RuntimeError("AnyDoc produced empty Markdown (likely scanned/image-only PDF)")
 
         asset_count = len(getattr(document, "assets", None) or []) if document else 0
         block_count = len(getattr(document, "blocks", None) or []) if document else 0
-        metadata = {
-            "format": fmt,
-            "block_count": block_count,
-            "asset_count": asset_count,
-        }
-        page_json = {"source": self.id, **metadata, "text": markdown_str}
+        source_pages = pdf_page_count(source.path) if source.suffix == ".pdf" else len(markdowns)
+        extra = {"format": fmt, "block_count": block_count, "asset_count": asset_count}
+        pages, page_count, markdown_str = assemble_page_dicts(markdowns, source=self.id, extra=extra)
+        metadata = {**extra, "source_page_count": source_pages or page_count}
+        page_json = {"source": self.id, **metadata, "pages": [page["json"] for page in pages]}
+        if page_count == 1:
+            page_json = pages[0]["json"] if pages else {"source": self.id, **metadata, "text": markdown_str}
         return ReadResult(
             engine_id=self.id,
             engine_label=self.label,
@@ -261,11 +255,46 @@ class AnyDocReader(Reader):
                 DocumentOutput(kind=OutputKind.MARKDOWN, content=markdown_str),
                 DocumentOutput(kind=OutputKind.JSON, data=page_json),
             ],
-            pages=[{"page": 1, "markdown": markdown_str, "json": page_json}],
-            page_count=1,
+            pages=pages,
+            page_count=page_count,
             metadata=metadata,
             options=opts.to_dict(),
         )
+
+    def _markdowns_by_page(self, anydoc: Any, source: SourceFile, data: bytes, fmt: str | None) -> list[str]:
+        if fmt == "pdf":
+            split = self._pdf_page_payloads(source)
+            if split is not None:
+                markdowns: list[str] = []
+                for page_no, page_data in split:
+                    from app.services.cancel_token import check_cancelled
+
+                    check_cancelled(where=f"AnyDoc page {page_no}/{len(split)}")
+                    markdowns.append(self._convert_bytes(anydoc, page_data, fmt))
+                    logger.info("AnyDoc converted PDF page %s/%s", page_no, len(split))
+                return markdowns
+        return [self._convert_bytes(anydoc, data, fmt)]
+
+    @staticmethod
+    def _pdf_page_payloads(source: SourceFile) -> list[tuple[int, bytes]] | None:
+        try:
+            payloads = list(iter_pdf_page_bytes(source.path))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Could not split PDF into pages (%s); converting whole file", exc)
+            return None
+        if len(payloads) <= 1:
+            return None
+        return payloads
+
+    @staticmethod
+    def _convert_bytes(anydoc: Any, data: bytes, fmt: str | None) -> str:
+        try:
+            markdown = anydoc.to_markdown_bytes(data, fmt) if fmt else anydoc.to_markdown_bytes(data)
+        except anydoc.EncryptedError as exc:
+            raise RuntimeError(f"Document is encrypted or password-protected: {exc}") from exc
+        except anydoc.ConvertError as exc:
+            raise RuntimeError(f"AnyDoc could not convert file: {exc}") from exc
+        return str(markdown or "")
 
     @staticmethod
     def _detect_format(anydoc: Any, source: SourceFile, data: bytes) -> str | None:

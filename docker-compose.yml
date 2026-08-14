@@ -19,8 +19,11 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]
+    image: fileworks-backend:local
+    pull_policy: never
+    command: ["python", "-m", "app"]
     environment:
+      PORT: "8000"
       DATABASE_URL: postgresql+psycopg://fileworks:fileworks@db:5432/fileworks
       JWT_SECRET: ${JWT_SECRET:-dev-insecure-change-me}
       STORAGE_BACKEND: local
@@ -48,6 +51,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: fileworks-frontend:local
+    pull_policy: never
     environment:
       NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-1063086817026-33rehu3tmsg08gll6dc9jue97000ib8f.apps.googleusercontent.com}
@@ -56,10 +61,16 @@ services:
       - "3000:3000"
     depends_on:
       - backend
-    command: ["sh", "-c", "npm install && npm run dev -- --hostname 0.0.0.0 --port 3000"]
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
+    # Named volume starts empty and hides image node_modules; install only then.
+    command:
+      [
+        "sh",
+        "-c",
+        "if [ ! -x node_modules/.bin/next ]; then npm install; fi && npm run dev -- --hostname 0.0.0.0 --port 3000",
+      ]
 
 volumes:
   pgdata:

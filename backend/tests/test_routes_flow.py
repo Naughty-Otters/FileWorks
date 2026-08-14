@@ -43,7 +43,7 @@ class ExtractFlowTests(unittest.TestCase):
         client = TestClient(_app(principal))
         long = "abcdefghij" * 8
         with patch(
-            "app.api.routes.convert_document",
+            "app.services.convert.convert_document",
             return_value={
                 "markdown": long,
                 "json": {"text": long},
@@ -96,7 +96,7 @@ class ExtractFlowTests(unittest.TestCase):
                 "regions": [],
             }
 
-        with patch("app.api.routes.convert_document", side_effect=fake_convert), patch(
+        with patch("app.services.convert.convert_document", side_effect=fake_convert), patch(
             "app.api.routes.get_document_store"
         ) as store_fn:
             store = MagicMock()
@@ -142,7 +142,7 @@ class ExtractFlowTests(unittest.TestCase):
                 "regions": [],
             }
 
-        with patch("app.api.routes.convert_document", side_effect=fake_convert), patch(
+        with patch("app.services.convert.convert_document", side_effect=fake_convert), patch(
             "app.api.routes.get_document_store"
         ) as store_fn:
             store = MagicMock()
@@ -173,7 +173,7 @@ class ExtractFlowTests(unittest.TestCase):
         user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic")
         principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
         client = TestClient(_app(principal))
-        with patch("app.api.routes.convert_document", side_effect=RuntimeError("boom")), patch(
+        with patch("app.services.convert.convert_document", side_effect=RuntimeError("boom")), patch(
             "app.api.routes.get_document_store", return_value=MagicMock()
         ):
             res = client.post(
@@ -222,7 +222,7 @@ class ExtractFlowTests(unittest.TestCase):
             markdown="# hi",
             owner_id=str(user.id),
         )
-        with patch("app.api.routes.convert_document", return_value={"markdown": "# hi", "engine": "ocr", "page_count": 1, "json": {}, "pages": []}), patch(
+        with patch("app.services.convert.convert_document", return_value={"markdown": "# hi", "engine": "ocr", "page_count": 1, "json": {}, "pages": []}), patch(
             "app.api.routes.get_document_store", return_value=store
         ):
             res = client.post(

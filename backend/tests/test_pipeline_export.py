@@ -206,10 +206,35 @@ class OCRReaderTests(unittest.TestCase):
         reader = OCRReader()
         img = SourceFile(path=Path("a.png"), filename="a.png", suffix=".png")
         self.assertTrue(reader.can_process(img).supported)
-        pdf = SourceFile(path=Path("a.pdf"), filename="a.pdf", suffix=".pdf")
-        self.assertTrue(reader.can_process(pdf).supported)
+        with patch("app.processing.reading.ocr.pdf_majority_has_text", return_value=False):
+            pdf = SourceFile(path=Path("a.pdf"), filename="a.pdf", suffix=".pdf")
+            capability = reader.can_process(pdf)
+        self.assertTrue(capability.supported)
+        self.assertIn("OCR", capability.reason)
         txt = SourceFile(path=Path("a.txt"), filename="a.txt", suffix=".txt")
         self.assertFalse(reader.can_process(txt).supported)
+
+    def test_majority_text_pdf_skips_paddle(self) -> None:
+        reader = OCRReader()
+        page_a = "Hello from the native text layer. " * 3
+        page_b = "Second page also has extractable text. " * 3
+        source = SourceFile(path=Path("doc.pdf"), filename="doc.pdf", suffix=".pdf")
+        with patch("app.processing.reading.ocr.pdf_majority_has_text", return_value=True), patch(
+            "app.processing.reading.ocr.pdf_text_layer_stats",
+            return_value=([page_a, page_b], 2, 2),
+        ), patch("app.processing.reading.ocr.read_with_provider") as paddle:
+            result = reader.read(source)
+        paddle.assert_not_called()
+        self.assertEqual(result.engine_label, "PDF text")
+        self.assertTrue(result.metadata.get("skipped_ocr"))
+        self.assertEqual(result.page_count, 2)
+        self.assertIn("native text layer", result.markdown())
+        self.assertIn("Second page", result.markdown())
+        capability = None
+        with patch("app.processing.reading.ocr.pdf_majority_has_text", return_value=True):
+            capability = reader.can_process(source)
+        assert capability is not None
+        self.assertIn("skip OCR", capability.reason)
 
     def test_read_uses_provider(self) -> None:
         reader = OCRReader()
@@ -250,6 +275,8 @@ class TextReaderTests(unittest.TestCase):
             result = reader.read(SourceFile.from_path(path, filename="note.md"))
             self.assertEqual(result.markdown(), "# Hello\n\nworld")
             self.assertEqual(result.engine_id, "text")
+            self.assertEqual(result.page_count, 1)
+            self.assertEqual(len(result.pages), 1)
 
     def test_read_latin1_fallback(self) -> None:
         reader = TextReader()
@@ -298,6 +325,101 @@ class TextReaderTests(unittest.TestCase):
         self.assertIn("translated_to=zh", joined)
         self.assertIn("prefer_structure=true", joined)
         self.assertIn("via=remote-lambda", joined)
+
+    def test_logging_config_registers_app_logger(self) -> None:
+        from app.core.logsetup import logging_config
+
+        loggers = logging_config()["loggers"]
+        self.assertIn("app", loggers)
+        self.assertEqual(loggers["app"]["handlers"], ["default"])
+        self.assertFalse(loggers["app"]["propagate"])
+
+    def test_app_logger_keeps_stderr_handler(self) -> None:
+        from app.core.logsetup import configure_app_logging
+
+        configure_app_logging()
+        configure_app_logging()
+        app_log = logging.getLogger("app")
+        self.assertTrue(app_log.handlers)
+        self.assertFalse(app_log.propagate)
+        self.assertFalse(app_log.disabled)
+
+    def test_module_entrypoint_passes_app_log_config(self) -> None:
+        import os
+        from unittest.mock import patch
+
+        with patch("uvicorn.run") as run:
+            from app.__main__ import main
+
+            with patch.dict(os.environ, {"PORT": "9001", "UVICORN_RELOAD": "false"}):
+                main()
+        kwargs = run.call_args.kwargs
+        self.assertEqual(kwargs["port"], 9001)
+        self.assertFalse(kwargs["reload"])
+        self.assertIn("app", kwargs["log_config"]["loggers"])
+
+    def test_engine_log_survives_alembic_file_config(self) -> None:
+        """Alembic's fileConfig disables every logger missing from alembic.ini."""
+        import io
+        from logging.config import fileConfig
+
+        from app.core.logsetup import configure_app_logging, emit
+        from app.db.upgrade import ALEMBIC_INI
+
+        configure_app_logging()
+        pipeline_log = logging.getLogger("app.processing.pipeline")
+        pipeline_log.info("warm up so the logger exists")
+        fileConfig(str(ALEMBIC_INI), disable_existing_loggers=True)
+        self.assertTrue(pipeline_log.disabled, "expected fileConfig to disable app.* loggers")
+
+        configure_app_logging()
+        self.assertFalse(pipeline_log.disabled)
+        self.assertFalse(logging.getLogger("app").disabled)
+
+        buf = io.StringIO()
+        probe = logging.StreamHandler(buf)
+        probe.setLevel(logging.INFO)
+        app_log = logging.getLogger("app")
+        app_log.addHandler(probe)
+        try:
+            emit("Using engine=ocr provider=ocr file=a.png pages=1", logger=pipeline_log)
+            self.assertIn("Using engine=ocr", buf.getvalue())
+        finally:
+            app_log.removeHandler(probe)
+
+    def test_migration_env_keeps_existing_loggers(self) -> None:
+        from app.db.upgrade import MIGRATIONS_DIR
+
+        source = (MIGRATIONS_DIR / "env.py").read_text(encoding="utf-8")
+        self.assertIn("disable_existing_loggers=False", source)
+
+    def test_engine_log_survives_uvicorn_default_config(self) -> None:
+        import copy
+        import io
+        import logging.config
+
+        from uvicorn.config import LOGGING_CONFIG
+
+        from app.core.logsetup import configure_app_logging, emit
+
+        logging.config.dictConfig(copy.deepcopy(LOGGING_CONFIG))
+        configure_app_logging()
+        logging.config.dictConfig(copy.deepcopy(LOGGING_CONFIG))
+        configure_app_logging()
+
+        buf = io.StringIO()
+        probe = logging.StreamHandler(buf)
+        probe.setLevel(logging.INFO)
+        app_log = logging.getLogger("app")
+        app_log.addHandler(probe)
+        try:
+            emit(
+                "Using engine=anydoc provider=anydoc file=a.pdf pages=2 prefer_structure=false",
+                logger=logging.getLogger("app.processing.pipeline"),
+            )
+            self.assertIn("Using engine=anydoc", buf.getvalue())
+        finally:
+            app_log.removeHandler(probe)
 
 
 class AnyDocHelperTests(unittest.TestCase):
@@ -352,6 +474,40 @@ class AnyDocHelperTests(unittest.TestCase):
             ):
                 result = reader.read(source)
         self.assertIn("# Doc", result.markdown())
+        self.assertEqual(result.page_count, 1)
+
+    def test_read_pdf_pages_separately(self) -> None:
+        from app.processing.reading import anydoc as anydoc_mod
+
+        class FakeAny:
+            class EncryptedError(Exception):
+                pass
+
+            class ConvertError(Exception):
+                pass
+
+            @staticmethod
+            def format_from_bytes(_data):
+                return "pdf"
+
+            @staticmethod
+            def to_markdown_bytes(data, _fmt=None):
+                return f"# {data.decode('utf-8')}"
+
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "a.pdf"
+            path.write_bytes(b"%PDF")
+            source = SourceFile.from_path(path)
+            reader = anydoc_mod.AnyDocReader()
+            with patch.object(anydoc_mod, "import_anydoc", return_value=FakeAny), patch.object(
+                anydoc_mod, "iter_pdf_page_bytes", return_value=[(1, b"one"), (2, b"two")]
+            ), patch.object(anydoc_mod, "pdf_page_count", return_value=2):
+                result = reader.read(source)
+        self.assertEqual(result.page_count, 2)
+        self.assertIn("# one", result.markdown())
+        self.assertIn("# two", result.markdown())
+        self.assertEqual(result.pages[0]["page"], 1)
+        self.assertEqual(result.pages[1]["page"], 2)
 
 
 if __name__ == "__main__":

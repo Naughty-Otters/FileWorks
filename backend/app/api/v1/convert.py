@@ -7,9 +7,10 @@ import uuid
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from app.api.v1.catalog import (
     INPUT_EXTENSIONS,
@@ -29,9 +30,9 @@ from app.auth.quota import assert_can_extract, assert_can_use_ai, record_extract
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.processing.remote_llm import invoke_remote_convert, needs_remote_llm
-from app.services.convert import convert_document
 from app.services.export import export_markdown
 from app.services.options import ExtractOptions
+from app.services.runtime import ConversionBusy, ConversionCancelled, run_conversion
 from app.storage import get_document_store
 from app.storage.s3 import S3DocumentStore
 
@@ -111,6 +112,7 @@ async def get_convert_options(
     ),
 )
 async def convert_file(
+    request: Request,
     file: UploadFile = File(..., description="Source file bytes. Do not send an S3 key."),
     target: str = Form(
         default="markdown",
@@ -159,6 +161,10 @@ async def convert_file(
     target_lang: str = Form(
         default="",
         description="Translate after reading: original (skip) or en, zh, zh-TW, ja, ko, fr, de, es, pt, it, ru, ar, hi, vi, th, id, nl, pl, tr.",
+    ),
+    run_id: str | None = Form(
+        default=None,
+        description="Client-generated id so POST /api/extract/cancel can stop this run",
     ),
     principal: Principal = Depends(get_principal),
     db: Session | None = Depends(get_db),
@@ -214,24 +220,45 @@ async def convert_file(
                 except ValueError:
                     remote_key = store.upload_object_key("anonymous", document_id, original_name)
                 store.put_bytes(remote_key, data, mime_type)
-                result = invoke_remote_convert(
-                    bucket=store.upload_bucket,
-                    key=remote_key,
-                    filename=original_name,
-                    content_type=mime_type,
-                    output_format="both",
-                    options=options,
+                result = await run_in_threadpool(
+                    lambda: invoke_remote_convert(
+                        bucket=store.upload_bucket,
+                        key=remote_key,
+                        filename=original_name,
+                        content_type=mime_type,
+                        output_format="both",
+                        options=options,
+                        run_id=str(run_id or "").strip() or None,
+                    )
                 )
             else:
-                result = convert_document(
+                from app.services.runtime import ANONYMOUS_OWNER
+
+                owner = (
+                    f"user:{principal.user_id}"
+                    if principal.user_id
+                    else f"anon:{principal.anonymous_id or ANONYMOUS_OWNER}"
+                )
+                result = await run_conversion(
                     temp_path,
                     output_format="both",
                     options=options,
                     mime_type=mime_type,
                     filename=original_name,
+                    request=request,
+                    run_id=str(run_id or "").strip() or None,
+                    owner=owner,
                 )
         except HTTPException:
             raise
+        except ConversionCancelled as exc:
+            raise HTTPException(status_code=499, detail=str(exc)) from exc
+        except ConversionBusy as exc:
+            raise HTTPException(
+                status_code=503,
+                detail=str(exc),
+                headers={"Retry-After": "15"},
+            ) from exc
         except Exception as exc:  # noqa: BLE001
             logger.exception("v1 convert failed")
             raise HTTPException(status_code=500, detail=f"Conversion failed: {exc}") from exc

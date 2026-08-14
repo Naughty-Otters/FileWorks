@@ -5,6 +5,9 @@ from pathlib import Path
 import pytest
 
 from app.core.config import get_settings
+from app.services.cancel_token import reset_local_tokens
+from app.services.runtime import reset_conversion_gate
+from app.services.worker import shutdown_worker_pool
 
 
 @pytest.fixture(autouse=True)
@@ -14,6 +17,9 @@ def _test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("STORAGE_LOCAL_ROOT", str(tmp_path / "history"))
     monkeypatch.setenv("UPLOAD_DIR", str(tmp_path / "uploads"))
     monkeypatch.setenv("LLM_LAMBDA_FUNCTION", "")
+    # Endpoint tests patch the pipeline in-process, which a child process would
+    # not see. The subprocess path has its own tests.
+    monkeypatch.setenv("CONVERT_IN_SUBPROCESS", "false")
     get_settings.cache_clear()
     settings = get_settings()
     settings.llm_provider = None
@@ -40,5 +46,10 @@ def _test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     settings.stripe_price_basic = None
     settings.stripe_price_pro = None
     settings.stripe_price_premium = None
+    reset_local_tokens()
+    reset_conversion_gate()
     yield
+    shutdown_worker_pool()
+    reset_conversion_gate()
+    reset_local_tokens()
     get_settings.cache_clear()

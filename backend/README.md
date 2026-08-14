@@ -4,7 +4,7 @@ FastAPI service for FileWorks — convert and transform files into Markdown and 
 
 ```bash
 uv sync
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run python -m app
 ```
 
 Auth tables live in Postgres. Set `DATABASE_URL` and apply migrations (also runs automatically when the API starts):
@@ -24,3 +24,18 @@ Auth tables live in Postgres. Set `DATABASE_URL` and apply migrations (also runs
 - One-shot convert: `GET /api/v1/convert` (options check), `POST /api/v1/convert` (`file` + `target`; no `s3_key`)
 
 Option reference (inputs, targets, form fields, languages, errors): [docs/convert-api.md](../docs/convert-api.md)
+
+## Logs
+
+Start with `python -m app` (not bare `uvicorn`) so `app.*` INFO reaches stderr —
+that entrypoint hands uvicorn the config from `app/core/logsetup.py`. Each convert
+logs the reader it tried and one summary line:
+
+```
+INFO:     Trying reader=anydoc (priority=10, confidence=0.90, ...)
+INFO:     Using engine=anydoc provider=anydoc file=policy.pdf pages=21 format=pdf prefer_structure=false
+```
+
+Anything calling `logging.config.fileConfig`/`dictConfig` must pass
+`disable_existing_loggers=False`, or it silences every `app.*` logger.
+Set `UVICORN_RELOAD=1` for auto-reload; note reload can hide worker logs.

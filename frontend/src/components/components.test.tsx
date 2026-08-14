@@ -138,6 +138,13 @@ describe("MarkdownToolbar", () => {
     await user.click(screen.getByTitle("Show formatting toolbar"));
     expect(show).toHaveBeenCalled();
   });
+
+  it("wraps onto extra rows instead of scrolling sideways", () => {
+    render(<MarkdownToolbar onCommand={vi.fn()} onHide={vi.fn()} />);
+    const bar = screen.getByTitle("Bold").closest("div")?.parentElement;
+    expect(bar?.className).toContain("flex-wrap");
+    expect(bar?.className).not.toContain("overflow-x-auto");
+  });
 });
 
 describe("ThemeToggle", () => {

@@ -171,9 +171,10 @@ class LLMEngineTests(unittest.TestCase):
         self.assertTrue(engine.configured())
         with NamedTemporaryFile(suffix=".png") as handle:
             Image.new("RGB", (32, 32), (1, 2, 3)).save(handle.name)
-            with patch.object(engine, "_convert", return_value="# doc"):
+            with patch.object(engine, "_convert_pages", return_value=["# doc"]):
                 result = engine.extract(Path(handle.name), output_format="both")
         self.assertEqual(result.markdown, "# doc")
+        self.assertEqual(result.page_count, 1)
 
     def test_clean_markdown_and_providers(self) -> None:
         self.assertEqual(clean_markdown("```markdown\nHi\n```"), "Hi")

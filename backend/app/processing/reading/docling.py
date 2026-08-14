@@ -9,6 +9,7 @@ from app.processing.models import Capability, DocumentOutput, OutputKind, ReadRe
 from app.processing.reading.base import Reader
 from app.processing.reading.provider_adapter import IMAGE_AND_PDF_SUFFIXES
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
+from app.services.pages import assemble_page_dicts, docling_page_markdowns, pdf_page_count
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +74,13 @@ class DoclingReader(Reader):
         document = getattr(converted, "document", None)
         if document is None:
             raise RuntimeError("Docling returned no document")
-        markdown = str(document.export_to_markdown() or "")
-        page_json = {"source": self.id, "text": markdown}
+        markdowns = docling_page_markdowns(document)
+        extra = {"format": source.suffix}
+        pages, page_count, markdown = assemble_page_dicts(markdowns, source=self.id, extra=extra)
+        source_pages = pdf_page_count(source.path) if source.suffix == ".pdf" else page_count
+        page_json = {"source": self.id, "pages": [page["json"] for page in pages], **extra}
+        if page_count == 1:
+            page_json = pages[0]["json"] if pages else {"source": self.id, "text": markdown, **extra}
         return ReadResult(
             engine_id=self.id,
             engine_label=self.label,
@@ -82,9 +88,9 @@ class DoclingReader(Reader):
                 DocumentOutput(kind=OutputKind.MARKDOWN, content=markdown),
                 DocumentOutput(kind=OutputKind.JSON, data=page_json),
             ],
-            pages=[{"page": 1, "markdown": markdown, "json": page_json}],
-            page_count=1,
-            metadata={"format": source.suffix},
+            pages=pages,
+            page_count=page_count,
+            metadata={"format": source.suffix, "source_page_count": source_pages or page_count},
             options=opts.to_dict(),
         )
 

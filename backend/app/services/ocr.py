@@ -32,7 +32,6 @@ class OCRService:
             selection=FixedEngineStrategy(default_id),
         )
         self._last_engine_id: str | None = None
-        self._last_error: str | None = None
 
     @property
     def ready(self) -> bool:
@@ -50,8 +49,7 @@ class OCRService:
 
     @property
     def init_error(self) -> str | None:
-        if self._last_error:
-            return self._last_error
+        """Live state only. A failure from an earlier run must not be reported as current."""
         try:
             return self.registry.select_engine().init_error
         except Exception as exc:  # noqa: BLE001
@@ -65,17 +63,14 @@ class OCRService:
         self._last_engine_id = engine.id
         try:
             engine.ensure_ready()
-            self._last_error = None
         except Exception as exc:  # noqa: BLE001
-            self._last_error = str(exc)
-            # Auto-fallback: structure → ocr when default fails (still server-side).
+            # Fall back for this call only. Re-pinning the selection would make one
+            # failed warmup decide the engine for every later run in this process.
             if engine.id == "structure":
                 logger.warning("Default structure engine failed (%s); falling back to ocr", exc)
                 fallback = self.registry.get("ocr")
                 fallback.ensure_ready()
                 self._last_engine_id = fallback.id
-                self._last_error = None
-                self.registry.selection = FixedEngineStrategy("ocr")
                 return
             raise
 
@@ -98,7 +93,6 @@ class OCRService:
                 options=opts,
                 mime_type=mime_type,
             )
-            self._last_error = None
             return result.to_dict()
         except Exception as exc:  # noqa: BLE001
             if engine.id == "structure":
@@ -111,9 +105,7 @@ class OCRService:
                     options=opts,
                     mime_type=mime_type,
                 )
-                self._last_error = None
                 return result.to_dict()
-            self._last_error = str(exc)
             raise
 
 

@@ -7,6 +7,7 @@ from pathlib import Path
 from app.processing.models import Capability, DocumentOutput, OutputKind, ReadResult, SourceFile
 from app.processing.reading.base import Reader
 from app.services.options import ExtractOptions
+from app.services.pages import assemble_page_dicts
 
 TEXT_SUFFIXES = frozenset({".txt", ".md", ".markdown"})
 TEXT_MIME_TYPES = frozenset(
@@ -58,13 +59,17 @@ class TextReader(Reader):
     ) -> ReadResult:
         del options, preferred_output
         text = _read_text(source.path)
+        pages, page_count, _joined = assemble_page_dicts([text], source=self.id)
         outputs = [
             DocumentOutput(kind=OutputKind.MARKDOWN, content=text),
             DocumentOutput(kind=OutputKind.TEXT, content=text),
+            DocumentOutput(kind=OutputKind.JSON, data=pages[0]["json"]),
         ]
         return ReadResult(
             engine_id=self.id,
             engine_label=self.label,
             outputs=outputs,
+            pages=pages,
+            page_count=page_count,
             metadata={"source_suffix": source.suffix, "passthrough": True},
         )

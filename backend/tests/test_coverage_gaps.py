@@ -17,6 +17,8 @@ from app.engines.paddle_structure import PaddleStructureEngine
 from app.processing.models import DocumentOutput, OutputKind, ReadResult, SourceFile
 from app.processing.pipeline import DocumentPipeline
 from app.processing.postprocess.media import (
+    PAGE_SEPARATOR,
+    EmbeddedImage,
     decode_data_url,
     embed_read_result_media,
     extract_pdf_images,
@@ -112,7 +114,9 @@ class MediaGapTests(unittest.TestCase):
         )
         page = SimpleNamespace(
             get_size=lambda: (612.0, 792.0),
-            get_textpage=lambda: SimpleNamespace(get_text_bounded=lambda: "Hello world heading", close=lambda: None),
+            get_textpage=lambda: SimpleNamespace(
+                get_text_bounded=lambda: "Hello world heading", close=lambda: None
+            ),
             get_objects=lambda filter=None: [obj],
             close=lambda: None,
         )
@@ -127,21 +131,67 @@ class MediaGapTests(unittest.TestCase):
             images = extract_pdf_images(Path("x.pdf"))
         self.assertGreaterEqual(len(images), 0)
 
+    def test_multi_page_pdf_keeps_extracted_images(self) -> None:
+        """Joining pages must not throw away images placed into the document."""
+        with NamedTemporaryFile(suffix=".pdf", delete=False) as handle:
+            handle.write(b"%PDF-1.4\n")
+            path = Path(handle.name)
+        source = SourceFile.from_path(path, mime_type="application/pdf")
+        page_text = ["Page one text", "Page two text", "Page three text"]
+        result = ReadResult(
+            engine_id="anydoc",
+            engine_label="AnyDoc",
+            outputs=[
+                DocumentOutput(kind=OutputKind.MARKDOWN, content=PAGE_SEPARATOR.join(page_text))
+            ],
+            pages=[{"page": n, "markdown": text} for n, text in enumerate(page_text, start=1)],
+            page_count=3,
+        )
+        extracted = [
+            EmbeddedImage(alt="logo", data=_png(), mime="image/png", page=2, page_count=3),
+            EmbeddedImage(
+                alt="signature", data=_png((90, 60)), mime="image/png", page=3, page_count=3
+            ),
+        ]
+        with patch(
+            "app.processing.postprocess.media.extract_pdf_images",
+            return_value=extracted,
+        ):
+            updated = embed_read_result_media(result, source)
+
+        self.assertIn("data:image", updated.markdown())
+        self.assertEqual(updated.metadata.get("embedded_images"), 2)
+        self.assertEqual(len(updated.pages), 3)
+        # Each image belongs to the page it was extracted from, not page one.
+        self.assertEqual(count_embedded_images(updated.pages[0]["markdown"]), 0)
+        self.assertEqual(count_embedded_images(updated.pages[1]["markdown"]), 1)
+        self.assertEqual(count_embedded_images(updated.pages[2]["markdown"]), 1)
+        for index, text in enumerate(page_text):
+            self.assertIn(text, updated.pages[index]["markdown"])
+
 
 class MarkdownGapTests(unittest.TestCase):
     def test_pil_and_resolve(self) -> None:
         image = Image.new("RGB", (40, 40), (8, 8, 8))
         url = _pil_to_data_url(image)
         self.assertTrue(url.startswith("data:image/jpeg"))
-        md = resolve_markdown_media("![fig](imgs/a.jpg)", pipeline_markdown={"markdown_images": {"imgs/a.jpg": image}})
+        md = resolve_markdown_media(
+            "![fig](imgs/a.jpg)", pipeline_markdown={"markdown_images": {"imgs/a.jpg": image}}
+        )
         self.assertIn("data:image", md)
         self.assertIn("omitted", resolve_markdown_media("![x](imgs/missing.jpg)"))
         html = resolve_markdown_media('<img src="imgs/missing.jpg" />')
         self.assertIn("omitted", html)
-        empty = markdown_from_parsing_blocks({"parsing_res_list": [{"block_label": "text", "block_content": "", "block_order": 1}]})
+        empty = markdown_from_parsing_blocks(
+            {"parsing_res_list": [{"block_label": "text", "block_content": "", "block_order": 1}]}
+        )
         self.assertEqual(empty.strip(), "")
         abstract = markdown_from_parsing_blocks(
-            {"parsing_res_list": [{"block_label": "abstract", "block_content": "Summary here", "block_order": 1}]}
+            {
+                "parsing_res_list": [
+                    {"block_label": "abstract", "block_content": "Summary here", "block_order": 1}
+                ]
+            }
         )
         self.assertIn("Summary", abstract)
 
@@ -150,7 +200,13 @@ class AnyDocGapTests(unittest.TestCase):
     def test_asset_bytes_and_iter(self) -> None:
         self.assertEqual(_asset_bytes(SimpleNamespace(data=b"abc")), b"abc")
         self.assertIsNone(_asset_bytes(SimpleNamespace(data=None, bytes=None)))
-        nested = SimpleNamespace(kind="paragraph", content=[SimpleNamespace(kind="text", content=None)], list=None, table=None, blocks=None)
+        nested = SimpleNamespace(
+            kind="paragraph",
+            content=[SimpleNamespace(kind="text", content=None)],
+            list=None,
+            table=None,
+            blocks=None,
+        )
         self.assertTrue(list(_iter_blocks([nested])))
 
     def test_encrypted_and_empty(self) -> None:
@@ -201,8 +257,18 @@ class AnyDocGapTests(unittest.TestCase):
             def format_from_extension(suffix):
                 return "docx" if suffix == ".docx" else None
 
-        self.assertEqual(AnyDocReader._detect_format(FakeAny, SourceFile(path=Path("a.docx"), filename="a.docx", suffix=".docx"), b"x"), "docx")
-        self.assertEqual(AnyDocReader._detect_format(FakeAny, SourceFile(path=Path("a.csv"), filename="a.csv", suffix=".csv"), b"x"), "csv")
+        self.assertEqual(
+            AnyDocReader._detect_format(
+                FakeAny, SourceFile(path=Path("a.docx"), filename="a.docx", suffix=".docx"), b"x"
+            ),
+            "docx",
+        )
+        self.assertEqual(
+            AnyDocReader._detect_format(
+                FakeAny, SourceFile(path=Path("a.csv"), filename="a.csv", suffix=".csv"), b"x"
+            ),
+            "csv",
+        )
 
 
 class OCRFallbackTests(unittest.TestCase):
@@ -288,15 +354,30 @@ class PipelineTranslateTests(unittest.TestCase):
 
 class StructureLoadTests(unittest.TestCase):
     def test_load_failure(self) -> None:
-        engine = PaddleStructureEngine(__import__("app.core.config", fromlist=["get_settings"]).get_settings())
-        with patch.dict("sys.modules", {"paddleocr": MagicMock(PPStructureV3=MagicMock(side_effect=RuntimeError("no")))}):
+        engine = PaddleStructureEngine(
+            __import__("app.core.config", fromlist=["get_settings"]).get_settings()
+        )
+        with patch.dict(
+            "sys.modules",
+            {"paddleocr": MagicMock(PPStructureV3=MagicMock(side_effect=RuntimeError("no")))},
+        ):
             with self.assertRaises(RuntimeError):
                 engine._load()
 
     def test_ocr_structure_enrichment_none(self) -> None:
-        engine = PaddleOCREngine(__import__("app.core.config", fromlist=["get_settings"]).get_settings())
-        with patch("app.engines.paddle_structure.PaddleStructureEngine", side_effect=RuntimeError("no")):
-            self.assertIsNone(engine._try_structure_enrichment(Path("a.png"), output_format="both", options=ExtractOptions(use_seal_recognition=True)))
+        engine = PaddleOCREngine(
+            __import__("app.core.config", fromlist=["get_settings"]).get_settings()
+        )
+        with patch(
+            "app.engines.paddle_structure.PaddleStructureEngine", side_effect=RuntimeError("no")
+        ):
+            self.assertIsNone(
+                engine._try_structure_enrichment(
+                    Path("a.png"),
+                    output_format="both",
+                    options=ExtractOptions(use_seal_recognition=True),
+                )
+            )
 
 
 class StorageFactoryTests(unittest.TestCase):
@@ -329,8 +410,11 @@ class ExtraEngineTests(unittest.TestCase):
         provider.convert.return_value = "```markdown\n# hi\n```"
         with NamedTemporaryFile(suffix=".png") as handle:
             Image.new("RGB", (32, 32), (1, 2, 3)).save(handle.name)
-            with patch("app.engines.llm.engine.get_api_provider", return_value=provider), patch.object(
-                LLMEngine, "supports_vision", new_callable=PropertyMock, return_value=True
+            with (
+                patch("app.engines.llm.engine.get_api_provider", return_value=provider),
+                patch.object(
+                    LLMEngine, "supports_vision", new_callable=PropertyMock, return_value=True
+                ),
             ):
                 result = engine.extract(Path(handle.name))
         self.assertEqual(result.markdown, "# hi")
@@ -343,7 +427,10 @@ class ExtraEngineTests(unittest.TestCase):
         document.__len__.return_value = 1
         document.__getitem__.return_value = page
         pdfium = SimpleNamespace(PdfDocument=lambda _p: document)
-        with NamedTemporaryFile(suffix=".pdf") as handle, patch.dict("sys.modules", {"pypdfium2": pdfium}):
+        with (
+            NamedTemporaryFile(suffix=".pdf") as handle,
+            patch.dict("sys.modules", {"pypdfium2": pdfium}),
+        ):
             pages = render_pdf_pages(Path(handle.name), max_pages=1, max_side=32)
         self.assertEqual(len(pages), 1)
 
@@ -355,10 +442,12 @@ class ExtraEngineTests(unittest.TestCase):
 
         class Fake(LangChainChatProvider):
             id = "openai"
+
             def build_chat_model(self, request):
                 class M:
                     def invoke(self, _msgs):
                         return SimpleNamespace(content="out")
+
                 return M()
 
         spec = get_provider_spec("openai")
@@ -466,8 +555,10 @@ class ExtraEngineTests(unittest.TestCase):
         settings.database_url = "sqlite://"
         cfg = alembic_config("sqlite://")
         self.assertTrue(cfg.get_main_option("sqlalchemy.url"))
-        with patch("app.db.upgrade.command.upgrade"), patch("app.db.upgrade.command.history"), patch(
-            "app.db.upgrade.command.current"
+        with (
+            patch("app.db.upgrade.command.upgrade"),
+            patch("app.db.upgrade.command.history"),
+            patch("app.db.upgrade.command.current"),
         ):
             upgrade_db()
             self.assertEqual(main(["history"]), 0)
@@ -480,8 +571,14 @@ class ExtraEngineTests(unittest.TestCase):
         from app.services.options import ExtractOptions
 
         reader = LLMReader()
-        with patch.object(reader._engine, "configured", return_value=True), patch.object(
-            type(reader._engine), "supports_vision", new_callable=PropertyMock, return_value=True
+        with (
+            patch.object(reader._engine, "configured", return_value=True),
+            patch.object(
+                type(reader._engine),
+                "supports_vision",
+                new_callable=PropertyMock,
+                return_value=True,
+            ),
         ):
             img = SourceFile(path=Path("a.png"), filename="a.png", suffix=".png")
             self.assertTrue(reader.can_process(img, ExtractOptions(use_ai=True)).supported)

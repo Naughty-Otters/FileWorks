@@ -17,6 +17,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from app.engines.llm.catalog import LLMProviderSpec
 from app.engines.llm.media import IMAGE_SUFFIXES, encode_image_file, render_pdf_pages
 from app.engines.llm.urls import LLMHttpTarget
+from app.services.pages import PAGE_SEPARATOR
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,10 @@ class LLMApiProvider(ABC):
     def convert(self, request: ConvertRequest) -> str:
         """Send the document and return Markdown text."""
 
+    def convert_pages(self, request: ConvertRequest) -> list[str]:
+        """Convert one Markdown string per source page when the backend can split."""
+        return [self.convert(request)]
+
     def complete_text(self, request: ConvertRequest, prompt: str) -> str:
         """Text-only completion (translation and other post-process steps)."""
         raise NotImplementedError
@@ -67,6 +72,12 @@ class LangChainChatProvider(LLMApiProvider):
     native_pdf: bool = False
 
     def convert(self, request: ConvertRequest) -> str:
+        return PAGE_SEPARATOR.join(part for part in self.convert_pages(request) if part.strip()).strip()
+
+    def convert_pages(self, request: ConvertRequest) -> list[str]:
+        from app.services.cancel_token import check_cancelled
+
+        check_cancelled(where="LLM start")
         model = self.build_chat_model(request)
         logger.info(
             "LLM invoke provider=%s package=%s model=%s base_url=%s",
@@ -75,7 +86,18 @@ class LangChainChatProvider(LLMApiProvider):
             request.model,
             request.target.openai_base_url(),
         )
-        return invoke_markdown(model, self.build_parts(request))
+        if self.native_pdf and request.suffix == ".pdf":
+            return [invoke_markdown(model, self.build_parts(request))]
+        blobs = image_blobs(request)
+        if len(blobs) <= 1:
+            return [invoke_markdown(model, self.build_parts(request))]
+        pages: list[str] = []
+        total = len(blobs)
+        for index, (data, media_type) in enumerate(blobs, start=1):
+            check_cancelled(where=f"LLM page {index}/{total}")
+            prompt = f"{CONVERT_PROMPT} This is source page {index} of {total}."
+            pages.append(invoke_markdown(model, _single_image_parts(prompt, data, media_type)))
+        return pages
 
     def complete_text(self, request: ConvertRequest, prompt: str) -> str:
         model = self.build_chat_model(request)
@@ -136,14 +158,22 @@ def image_blobs(request: ConvertRequest) -> list[tuple[bytes, str]]:
 def openai_vision_parts(request: ConvertRequest) -> list[dict[str, Any]]:
     parts: list[dict[str, Any]] = [{"type": "text", "text": CONVERT_PROMPT}]
     for data, media_type in image_blobs(request):
-        b64 = base64.b64encode(data).decode("ascii")
-        parts.append(
-            {
-                "type": "image_url",
-                "image_url": {"url": f"data:{media_type};base64,{b64}"},
-            }
-        )
+        parts.extend(_image_url_parts(data, media_type))
     return parts
+
+
+def _single_image_parts(prompt: str, data: bytes, media_type: str) -> list[dict[str, Any]]:
+    return [{"type": "text", "text": prompt}, *_image_url_parts(data, media_type)]
+
+
+def _image_url_parts(data: bytes, media_type: str) -> list[dict[str, Any]]:
+    b64 = base64.b64encode(data).decode("ascii")
+    return [
+        {
+            "type": "image_url",
+            "image_url": {"url": f"data:{media_type};base64,{b64}"},
+        }
+    ]
 
 
 def anthropic_document_parts(request: ConvertRequest) -> list[dict[str, Any]]:

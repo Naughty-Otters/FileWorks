@@ -1,3 +1,4 @@
+# Keep Lambda/ECR builds lean when someone builds with this directory as context.
 **/.venv
 **/__pycache__
 **/*.pyc
@@ -11,7 +12,12 @@
 **/node_modules
 **/.next
 **/frontend
+**/fw
+**/docs
+**/scripts
 **/.git
 **/.terraform
 **/secrets
+**/tests
 **/*.md
+!**/README.md

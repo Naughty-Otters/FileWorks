@@ -343,6 +343,32 @@ class DoclingReaderTests(unittest.TestCase):
                 result = reader.read(source, options=ExtractOptions(prefer_structure=True))
         self.assertEqual(result.markdown(), "# From Docling")
         self.assertEqual(result.engine_id, "docling")
+        self.assertEqual(result.page_count, 1)
+
+    def test_read_exports_each_docling_page(self) -> None:
+        reader = DoclingReader()
+
+        def export_to_markdown(page_no: int | None = None) -> str:
+            if page_no is None:
+                return "# All"
+            return f"# Page {page_no}"
+
+        fake_doc = SimpleNamespace(pages={1: object(), 2: object()}, export_to_markdown=export_to_markdown)
+        fake_conv = MagicMock()
+        fake_conv.convert.return_value = SimpleNamespace(document=fake_doc)
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "a.pdf"
+            path.write_bytes(b"%PDF")
+            source = SourceFile.from_path(path)
+            with patch("app.processing.reading.docling._import_converter", return_value=lambda: fake_conv), patch(
+                "app.processing.reading.docling.pdf_page_count", return_value=2
+            ):
+                result = reader.read(source, options=ExtractOptions(prefer_structure=True))
+        self.assertEqual(result.page_count, 2)
+        self.assertEqual(len(result.pages), 2)
+        self.assertIn("# Page 1", result.markdown())
+        self.assertIn("# Page 2", result.markdown())
+        self.assertEqual(result.metadata.get("source_page_count"), 2)
 
 
 class OCROrderTests(unittest.TestCase):

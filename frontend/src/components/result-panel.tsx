@@ -85,11 +85,12 @@ export function ResultPanel({
     return JSON.stringify(payload, null, 2);
   }, [result]);
   const pagedText = view === "json" ? jsonText : markdown;
+  const pagedLines = useMemo(() => splitLines(pagedText), [pagedText]);
   const { startPage, endPage, lineStart, lineEnd, pageCount } = lineRangeForPages(
     pageStart,
-    splitLines(pagedText).length,
+    pagedLines,
   );
-  const visibleText = joinLines(splitLines(pagedText).slice(lineStart, lineEnd));
+  const visibleText = joinLines(pagedLines.slice(lineStart, lineEnd));
   const paginated = pageCount > PAGES_PER_VIEW;
 
   useEffect(() => {

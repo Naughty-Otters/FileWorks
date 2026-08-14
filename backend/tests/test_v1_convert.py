@@ -105,7 +105,7 @@ class V1ConvertTests(unittest.TestCase):
         principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
         client = TestClient(_app(principal))
         with patch(
-            "app.api.v1.convert.convert_document",
+            "app.services.convert.convert_document",
             return_value={"markdown": "# Hello", "engine": "text", "page_count": 1},
         ):
             res = client.post(
@@ -128,7 +128,7 @@ class V1ConvertTests(unittest.TestCase):
         principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
         client = TestClient(_app(principal))
         with patch(
-            "app.api.v1.convert.convert_document",
+            "app.services.convert.convert_document",
             return_value={"markdown": "# Hello", "engine": "text", "page_count": 1},
         ):
             res = client.post(

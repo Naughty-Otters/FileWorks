@@ -65,6 +65,17 @@ resource "aws_s3_bucket_lifecycle_configuration" "history" {
   }
 
   rule {
+    id     = "expire-cancel-tokens"
+    status = "Enabled"
+    filter {
+      prefix = "cancel/"
+    }
+    expiration {
+      days = 1
+    }
+  }
+
+  rule {
     id     = "abort-incomplete-multipart"
     status = "Enabled"
     filter {}

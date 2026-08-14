@@ -5,4 +5,5 @@ RUN npm install
 COPY . .
 EXPOSE 3000
 ENV HOSTNAME=0.0.0.0
-CMD ["sh", "-c", "npm install && npm run dev -- --hostname 0.0.0.0 --port 3000"]
+# Bind-mounted source + named node_modules volume; install only at image build.
+CMD ["npm", "run", "dev", "--", "--hostname", "0.0.0.0", "--port", "3000"]

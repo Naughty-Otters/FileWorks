@@ -39,6 +39,8 @@ async def lifespan(_: FastAPI):
     from app.db.session import init_db
 
     init_db()
+    # Alembic's fileConfig ran inside init_db; restore app.* logging.
+    configure_app_logging()
     logger.info(
         "%s starting (upload_dir=%s, storage=%s)",
         settings.app_name,
@@ -47,6 +49,9 @@ async def lifespan(_: FastAPI):
     )
     yield
     logger.info("%s shutting down", settings.app_name)
+    from app.services.worker import shutdown_worker_pool
+
+    shutdown_worker_pool()
 
 
 class PrivateNetworkMiddleware(BaseHTTPMiddleware):

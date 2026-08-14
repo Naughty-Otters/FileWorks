@@ -63,6 +63,20 @@ class Settings(BaseSettings):
     fileworks_secret_arn: str | None = None
     max_upload_mb: int = 50
     paddle_device: str = "cpu"
+    # Cap how long a run waits for another run's model load, so an abandoned
+    # load cannot hang every later request behind its lock.
+    engine_load_timeout_s: float = 120
+    # Conversion is blocking CPU work: how many may run at once, and how long a
+    # queued run waits for a slot before the caller is told the server is busy.
+    # One at a time by default: a shared Paddle model is not guaranteed thread-safe.
+    convert_max_concurrent: int = 1
+    convert_queue_timeout_s: float = 60
+    # Convert in a child process so Stop can end it. Off falls back to a thread,
+    # which cannot be interrupted once native inference starts.
+    convert_in_subprocess: bool = True
+    # Load models right after a worker spawns instead of on its first job. Costs
+    # a Paddle load even for documents that never reach OCR.
+    convert_worker_prewarm: bool = False
     # Preferred OCR provider for warmup / legacy OCRService: structure | ocr
     # Document uploads use readers: Text → Docling (prefer_structure) → AnyDoc → LLM (optional) → OCR.
     ocr_engine: str = "ocr"

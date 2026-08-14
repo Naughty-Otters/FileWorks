@@ -36,7 +36,14 @@ def render_pdf_pages(
     document = pdfium.PdfDocument(str(path))
     pages: list[tuple[bytes, str]] = []
     try:
-        count = min(len(document), max_pages)
+        total = len(document)
+        count = min(total, max_pages)
+        if total > max_pages:
+            logger.warning(
+                "PDF has %s pages; rasterizing the first %s for the LLM (llm_max_pages)",
+                total,
+                max_pages,
+            )
         for index in range(count):
             page = document[index]
             bitmap = page.render(scale=scale)

@@ -91,6 +91,9 @@ class DocumentPipeline:
         last_empty: ReadResult | None = None
         last_flat: ReadResult | None = None
         for index, (reader, capability) in enumerate(candidates):
+            from app.services.cancel_token import check_cancelled
+
+            check_cancelled(where=f"before reader={reader.id}")
             logger.info(
                 "Trying reader=%s (priority=%s, confidence=%.2f, reason=%s, prefer_structure=%s)",
                 reader.id,

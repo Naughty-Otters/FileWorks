@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from app.processing.models import ReadResult, SourceFile
+from app.services.pages import PAGE_SEPARATOR
 
 logger = logging.getLogger(__name__)
 
@@ -174,13 +175,19 @@ def restore_embedded_images(markdown: str, held: list[str], *, drop_missing: boo
     return _PLACEHOLDER_RE.sub(replace, markdown)
 
 
-def place_images(markdown: str, images: list[EmbeddedImage]) -> str:
+def place_images(
+    markdown: str,
+    images: list[EmbeddedImage],
+    *,
+    budget: int = MAX_IMAGES,
+) -> str:
     """Insert compressed images at existing refs / alt-text / page breaks, else an appendix."""
-    if not images:
+    cap = max(0, budget)
+    if not images or not cap:
         return markdown
     prepared: list[tuple[EmbeddedImage, str]] = []
     for image in images:
-        if len(prepared) >= MAX_IMAGES:
+        if len(prepared) >= cap:
             break
         normalized = normalize_image_bytes(image.data, image.mime)
         if normalized is None:
@@ -197,7 +204,7 @@ def place_images(markdown: str, images: list[EmbeddedImage]) -> str:
     used = len(prepared) - len(leftover)
     remaining: list[tuple[EmbeddedImage, str]] = []
     for image, snippet in leftover:
-        if used >= MAX_IMAGES:
+        if used >= cap:
             break
         alt = (image.alt or "").strip() or "image"
         placed = _replace_alt_hook(md, alt, snippet)
@@ -210,7 +217,7 @@ def place_images(markdown: str, images: list[EmbeddedImage]) -> str:
     leftover: list[tuple[EmbeddedImage, str]] = []
     placed_any = False
     for image, snippet in remaining:
-        if used >= MAX_IMAGES:
+        if used >= cap:
             leftover.append((image, snippet))
             continue
         next_md = _insert_near_page(md, image, snippet)
@@ -225,7 +232,7 @@ def place_images(markdown: str, images: list[EmbeddedImage]) -> str:
     by_page: dict[int, list[str]] = {}
     still: list[tuple[EmbeddedImage, str]] = []
     for image, snippet in leftover:
-        if used >= MAX_IMAGES:
+        if used >= cap:
             break
         if image.page and 1 <= image.page <= len(chunks) and len(chunks) > 1:
             by_page.setdefault(image.page, []).append(snippet)
@@ -239,7 +246,7 @@ def place_images(markdown: str, images: list[EmbeddedImage]) -> str:
             chunks[page - 1] = chunks[page - 1].rstrip() + "\n\n" + "\n\n".join(snippets)
         md = "\n\n---\n\n".join(chunks)
 
-    leftover = leftover[: max(0, MAX_IMAGES - used)]
+    leftover = leftover[: max(0, cap - used)]
     if leftover:
         groups: dict[int | None, list[str]] = {}
         for image, snippet in leftover:
@@ -252,8 +259,10 @@ def place_images(markdown: str, images: list[EmbeddedImage]) -> str:
             else:
                 parts.append("\n\n".join(snippets))
         appendix = "\n\n".join(parts).strip() + "\n"
-        md = _insert_visible_appendix(md, appendix) if not placed_any else (
-            md.rstrip() + "\n\n" + appendix
+        md = (
+            _insert_visible_appendix(md, appendix)
+            if not placed_any
+            else (md.rstrip() + "\n\n" + appendix)
         )
     return md
 
@@ -363,52 +372,108 @@ def extract_pdf_images(path: Path) -> list[EmbeddedImage]:
     return images
 
 
+def _is_page_dict(page: Any) -> bool:
+    return isinstance(page, dict) and isinstance(page.get("markdown"), str)
+
+
+def _scatter_pages(
+    markdown: str,
+    pages: list[dict[str, Any]],
+    indices: list[int],
+) -> list[dict[str, Any]]:
+    """Push a joined, image-placed document back onto the pages it came from."""
+    chunks = markdown.split(PAGE_SEPARATOR)
+    if len(chunks) != len(indices):
+        return pages
+    updated = list(pages)
+    for index, chunk in zip(indices, chunks):
+        updated[index] = {**updated[index], "markdown": chunk}
+    return updated
+
+
+def _missing_source_images(markdown: str, source: SourceFile) -> list[EmbeddedImage]:
+    """Images the reader dropped: the raster itself, or the PDF's XObjects."""
+    if "data:image" in markdown.lower():
+        return []
+    if source.is_image:
+        raster = _source_raster_image(source)
+        return [raster] if raster is not None else []
+    if source.suffix == ".pdf":
+        return extract_pdf_images(source.path)
+    return []
+
+
+def _place_on_pages(
+    pages: list[dict[str, Any]],
+    indices: list[int],
+    images: list[EmbeddedImage],
+    used: int,
+) -> tuple[list[dict[str, Any]], int, list[EmbeddedImage]]:
+    """Place each image inside its own page, so it cannot drift into another page's base64."""
+    by_page: dict[Any, list[EmbeddedImage]] = {}
+    for image in images:
+        by_page.setdefault(image.page, []).append(image)
+    updated = list(pages)
+    for index in indices:
+        mine = by_page.pop(updated[index].get("page"), [])
+        if not mine:
+            continue
+        before = str(updated[index]["markdown"])
+        placed = place_images(before, mine, budget=max(0, MAX_IMAGES - used))
+        used += count_embedded_images(placed) - count_embedded_images(before)
+        updated[index] = {**updated[index], "markdown": placed}
+    leftover = [image for group in by_page.values() for image in group]
+    return updated, used, leftover
+
+
 def embed_read_result_media(result: ReadResult, source: SourceFile) -> ReadResult:
     """Pipeline hook: source raster / PDF XObjects when missing, then compress/cap."""
     original = result.markdown() or ""
-    extra: list[EmbeddedImage] = []
-    if source.is_image and "data:image" not in original.lower():
-        raster = _source_raster_image(source)
-        if raster is not None:
-            extra.append(raster)
-    if source.suffix == ".pdf" and "data:image" not in original.lower():
-        extra.extend(extract_pdf_images(source.path))
-    markdown = place_images(original, extra) if extra else original
+    multi_page = (
+        result.page_count > 1
+        and bool(result.pages)
+        and all(_is_page_dict(page) for page in result.pages)
+    )
+
+    # Recompress what the reader already embedded, sharing one image budget.
     used = 0
     pages: list[dict[str, Any]] = []
     for page in result.pages:
-        if not isinstance(page, dict):
+        if not _is_page_dict(page):
             pages.append(page)
             continue
-        page_md = page.get("markdown")
-        if not isinstance(page_md, str):
+        page_md = str(page["markdown"])
+        if not multi_page and page_md == original:
             pages.append(page)
             continue
-        if page_md == original:
-            pages.append(page)
-            continue
-        remaining = max(0, MAX_IMAGES - used)
-        normalized = normalize_embedded_images(page_md, budget=remaining)
+        normalized = normalize_embedded_images(page_md, budget=max(0, MAX_IMAGES - used))
         used += count_embedded_images(normalized)
         pages.append({**page, "markdown": normalized})
 
-    remaining = max(0, MAX_IMAGES - used)
-    markdown = normalize_embedded_images(markdown, budget=remaining if used else MAX_IMAGES)
-
-    if (
-        pages
-        and result.page_count > 1
-        and all(isinstance(page, dict) and isinstance(page.get("markdown"), str) for page in pages)
-    ):
-        joined = "\n\n---\n\n".join(
-            str(page["markdown"]) for page in pages if page.get("markdown")
-        ).strip()
-        if joined:
-            markdown = joined
+    # Multi-page readers own the text; the join is only used to test for existing images.
+    filled: list[int] = []
+    if multi_page:
+        filled = [index for index, page in enumerate(pages) if str(page["markdown"]).strip()]
+    if filled:
+        base = PAGE_SEPARATOR.join(str(pages[index]["markdown"]) for index in filled).strip()
     else:
+        base_budget = max(0, MAX_IMAGES - used) if used else MAX_IMAGES
+        base = normalize_embedded_images(original, budget=base_budget)
+
+    extra = _missing_source_images(base, source)
+    budget = max(0, MAX_IMAGES - used) if used else MAX_IMAGES
+
+    if filled:
+        pages, used, leftover = _place_on_pages(pages, filled, extra, used)
+        markdown = PAGE_SEPARATOR.join(str(pages[index]["markdown"]) for index in filled).strip()
+        if leftover:
+            markdown = place_images(markdown, leftover, budget=max(0, MAX_IMAGES - used))
+            pages = _scatter_pages(markdown, pages, filled)
+    else:
+        markdown = place_images(base, extra, budget=budget)
         pages = [
             {**page, "markdown": markdown}
-            if isinstance(page, dict) and page.get("markdown") == original
+            if _is_page_dict(page) and page["markdown"] == original
             else page
             for page in pages
         ]
@@ -535,7 +600,9 @@ def _fill_existing_image_refs(
         url = _snippet_url(snippet)
         if not url:
             return match.group(0)
-        return _md_image(_alt_from_html_attrs(pre, post), url, _size_title_from_html_attrs(pre, post))
+        return _md_image(
+            _alt_from_html_attrs(pre, post), url, _size_title_from_html_attrs(pre, post)
+        )
 
     text = _MD_IMG_RE.sub(md_replace, markdown)
     text = _HTML_IMG_RE.sub(html_replace, text)
@@ -561,10 +628,7 @@ def _layout_title(image: EmbeddedImage) -> str | None:
 
 
 def _page_hint_from_text(text: str) -> str | None:
-    lines = [
-        re.sub(r"\s+", " ", line).strip()
-        for line in text.replace("\r", "\n").split("\n")
-    ]
+    lines = [re.sub(r"\s+", " ", line).strip() for line in text.replace("\r", "\n").split("\n")]
     lines = [line for line in lines if len(line) >= 18]
     skip_prefix = ("page ", "http://", "https://", "www.")
     for line in lines:
@@ -687,7 +751,12 @@ def _pdf_object_to_image(
     x_frac = None
     try:
         bounds = obj.get_bounds()
-        left, bottom, right, top = (float(bounds[0]), float(bounds[1]), float(bounds[2]), float(bounds[3]))
+        left, bottom, right, top = (
+            float(bounds[0]),
+            float(bounds[1]),
+            float(bounds[2]),
+            float(bounds[3]),
+        )
         disp_w = abs(right - left)
         disp_h = abs(top - bottom)
         page_w, page_h = page_size or (612.0, 792.0)
@@ -788,7 +857,9 @@ def _fold_text(text: str, files: list[MediaFile], digest_to_name: dict[str, str]
         digest = hashlib.sha1(raw).hexdigest()
         if digest in digest_to_name:
             return digest_to_name[digest]
-        ext = "jpg" if mime == "image/jpeg" else mime.split("/", 1)[-1].lower().replace("jpeg", "jpg")
+        ext = (
+            "jpg" if mime == "image/jpeg" else mime.split("/", 1)[-1].lower().replace("jpeg", "jpg")
+        )
         if ext not in {"jpg", "jpeg", "png", "gif", "webp"}:
             ext = "jpg"
         name = f"{len(files)}.{ext}"

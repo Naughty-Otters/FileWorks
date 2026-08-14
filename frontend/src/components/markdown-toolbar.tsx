@@ -63,6 +63,10 @@ function Divider() {
   return <span className="mx-0.5 h-4 w-px shrink-0 bg-[var(--line)]" aria-hidden />;
 }
 
+function ToolGroup({ children }: { children: ReactNode }) {
+  return <div className="flex items-center gap-0.5">{children}</div>;
+}
+
 export function MarkdownToolbar({ disabled, onCommand, onHide }: MarkdownToolbarProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -83,65 +87,83 @@ export function MarkdownToolbar({ disabled, onCommand, onHide }: MarkdownToolbar
   }
 
   return (
-    <div className="flex shrink-0 items-center gap-0.5 overflow-x-auto border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--bg-elevated)_70%,transparent)] px-2 py-1">
-      <ToolButton title="Bold" disabled={disabled} onClick={() => onCommand("bold")}>
-        <Bold size={13} />
-      </ToolButton>
-      <ToolButton title="Italic" disabled={disabled} onClick={() => onCommand("italic")}>
-        <Italic size={13} />
-      </ToolButton>
-      <ToolButton title="Strikethrough" disabled={disabled} onClick={() => onCommand("strike")}>
-        <Strikethrough size={13} />
-      </ToolButton>
-      <ToolButton title="Inline code" disabled={disabled} onClick={() => onCommand("code")}>
-        <Code size={13} />
-      </ToolButton>
+    <div className="flex shrink-0 flex-wrap items-center gap-x-0.5 gap-y-1 border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--bg-elevated)_70%,transparent)] px-2 py-1">
+      <ToolGroup>
+        <ToolButton title="Bold" disabled={disabled} onClick={() => onCommand("bold")}>
+          <Bold size={13} />
+        </ToolButton>
+        <ToolButton title="Italic" disabled={disabled} onClick={() => onCommand("italic")}>
+          <Italic size={13} />
+        </ToolButton>
+        <ToolButton title="Strikethrough" disabled={disabled} onClick={() => onCommand("strike")}>
+          <Strikethrough size={13} />
+        </ToolButton>
+        <ToolButton title="Inline code" disabled={disabled} onClick={() => onCommand("code")}>
+          <Code size={13} />
+        </ToolButton>
+      </ToolGroup>
       <Divider />
-      <ToolButton title="Heading 1" disabled={disabled} onClick={() => onCommand("h1")}>
-        <Heading1 size={13} />
-      </ToolButton>
-      <ToolButton title="Heading 2" disabled={disabled} onClick={() => onCommand("h2")}>
-        <Heading2 size={13} />
-      </ToolButton>
-      <ToolButton title="Heading 3" disabled={disabled} onClick={() => onCommand("h3")}>
-        <Heading3 size={13} />
-      </ToolButton>
+      <ToolGroup>
+        <ToolButton title="Heading 1" disabled={disabled} onClick={() => onCommand("h1")}>
+          <Heading1 size={13} />
+        </ToolButton>
+        <ToolButton title="Heading 2" disabled={disabled} onClick={() => onCommand("h2")}>
+          <Heading2 size={13} />
+        </ToolButton>
+        <ToolButton title="Heading 3" disabled={disabled} onClick={() => onCommand("h3")}>
+          <Heading3 size={13} />
+        </ToolButton>
+      </ToolGroup>
       <Divider />
-      <ToolButton title="Quote" disabled={disabled} onClick={() => onCommand("quote")}>
-        <Quote size={13} />
-      </ToolButton>
-      <ToolButton title="Bullet list" disabled={disabled} onClick={() => onCommand("ul")}>
-        <List size={13} />
-      </ToolButton>
-      <ToolButton title="Numbered list" disabled={disabled} onClick={() => onCommand("ol")}>
-        <ListOrdered size={13} />
-      </ToolButton>
-      <ToolButton title="Horizontal rule" disabled={disabled} onClick={() => onCommand("hr")}>
-        <Minus size={13} />
-      </ToolButton>
+      <ToolGroup>
+        <ToolButton title="Quote" disabled={disabled} onClick={() => onCommand("quote")}>
+          <Quote size={13} />
+        </ToolButton>
+        <ToolButton title="Bullet list" disabled={disabled} onClick={() => onCommand("ul")}>
+          <List size={13} />
+        </ToolButton>
+        <ToolButton title="Numbered list" disabled={disabled} onClick={() => onCommand("ol")}>
+          <ListOrdered size={13} />
+        </ToolButton>
+        <ToolButton title="Horizontal rule" disabled={disabled} onClick={() => onCommand("hr")}>
+          <Minus size={13} />
+        </ToolButton>
+      </ToolGroup>
       <Divider />
-      <ToolButton title="Insert link" disabled={disabled} onClick={insertLink}>
-        <Link2 size={13} />
-      </ToolButton>
-      <ToolButton title="Insert image" disabled={disabled} onClick={() => fileRef.current?.click()}>
-        <ImagePlus size={13} />
-      </ToolButton>
+      <ToolGroup>
+        <ToolButton title="Insert link" disabled={disabled} onClick={insertLink}>
+          <Link2 size={13} />
+        </ToolButton>
+        <ToolButton
+          title="Insert image"
+          disabled={disabled}
+          onClick={() => fileRef.current?.click()}
+        >
+          <ImagePlus size={13} />
+        </ToolButton>
+      </ToolGroup>
       <Divider />
-      <ToolButton title="Smaller image" disabled={disabled} onClick={() => onCommand("img-smaller")}>
-        <ZoomOut size={13} />
-      </ToolButton>
-      <ToolButton title="Larger image" disabled={disabled} onClick={() => onCommand("img-larger")}>
-        <ZoomIn size={13} />
-      </ToolButton>
-      <ToolButton title="Image left" disabled={disabled} onClick={() => onCommand("img-left")}>
-        <AlignLeft size={13} />
-      </ToolButton>
-      <ToolButton title="Image right" disabled={disabled} onClick={() => onCommand("img-right")}>
-        <AlignRight size={13} />
-      </ToolButton>
-      <ToolButton title="Image inline" disabled={disabled} onClick={() => onCommand("img-inline")}>
-        <StretchHorizontal size={13} />
-      </ToolButton>
+      <ToolGroup>
+        <ToolButton
+          title="Smaller image"
+          disabled={disabled}
+          onClick={() => onCommand("img-smaller")}
+        >
+          <ZoomOut size={13} />
+        </ToolButton>
+        <ToolButton title="Larger image" disabled={disabled} onClick={() => onCommand("img-larger")}>
+          <ZoomIn size={13} />
+        </ToolButton>
+        <ToolButton title="Image left" disabled={disabled} onClick={() => onCommand("img-left")}>
+          <AlignLeft size={13} />
+        </ToolButton>
+        <ToolButton title="Image right" disabled={disabled} onClick={() => onCommand("img-right")}>
+          <AlignRight size={13} />
+        </ToolButton>
+        <ToolButton title="Image inline" disabled={disabled} onClick={() => onCommand("img-inline")}>
+          <StretchHorizontal size={13} />
+        </ToolButton>
+      </ToolGroup>
       <input
         ref={fileRef}
         type="file"

@@ -11,6 +11,7 @@ from app.engines.llm.catalog import LLMProviderSpec, get_provider_spec, resolve_
 from app.engines.llm.providers import ConvertRequest, LLMClientError, clean_markdown, get_api_provider
 from app.engines.llm.urls import LLMHttpTarget, resolve_http_target, supports_file_input
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
+from app.services.pages import PAGE_SEPARATOR, assemble_page_dicts, pdf_page_count
 
 
 class LLMEngine(OCREngine):
@@ -106,53 +107,74 @@ class LLMEngine(OCREngine):
         self.ensure_ready()
         assert self._spec is not None
         suffix = file_path.suffix.lower()
-        markdown = self._convert(file_path, suffix)
-        page_json = {
-            "source": self.id,
+        markdowns = self._convert_pages(file_path, suffix)
+        source_pages = pdf_page_count(file_path) if suffix == ".pdf" else len(markdowns)
+        extra = {
             "provider": self._spec.id,
             "model": self._model(),
-            "text": markdown,
+            "source_page_count": source_pages or len(markdowns),
         }
-        result = ExtractResult(
+        pages, page_count, markdown = assemble_page_dicts(markdowns, source=self.id, extra=extra)
+        page_json: dict[str, Any] = {
+            "source": self.id,
+            **extra,
+            "pages": [page["json"] for page in pages],
+        }
+        if page_count == 1:
+            page_json = pages[0]["json"] if pages else {"source": self.id, **extra, "text": markdown}
+        return ExtractResult(
             engine="LLM",
             provider=self._spec.id,
-            page_count=1,
-            pages=[{"page": 1, "markdown": markdown, "json": page_json}],
+            page_count=page_count,
+            pages=pages,
             markdown=markdown if output_format in {"markdown", "both"} else None,
             json_data=page_json if output_format in {"json", "both"} else None,
             options=opts.to_dict(),
         )
-        return result
 
     def _http_target(self) -> LLMHttpTarget:
         assert self._spec is not None
         return resolve_http_target(self.settings, self._spec)
 
-    def _convert(self, file_path: Path, suffix: str) -> str:
+    def _convert_pages(self, file_path: Path, suffix: str) -> list[str]:
         spec = self._spec
         assert spec is not None
         api_key = self._api_key()
         assert api_key
         if not self.supports_vision:
             raise LLMClientError(self.vision_error or "LLM does not accept files")
-        raw = get_api_provider(spec.id).convert(
-            ConvertRequest(
-                spec=spec,
-                file_path=file_path,
-                suffix=suffix,
-                api_key=api_key,
-                model=self._model(),
-                max_tokens=int(self.settings.llm_max_tokens),
-                timeout_s=float(self.settings.llm_timeout_s),
-                target=self._http_target(),
-                max_pages=int(self.settings.llm_max_pages),
-                max_image_side=int(self.settings.llm_max_image_side),
-            )
+        request = ConvertRequest(
+            spec=spec,
+            file_path=file_path,
+            suffix=suffix,
+            api_key=api_key,
+            model=self._model(),
+            max_tokens=int(self.settings.llm_max_tokens),
+            timeout_s=float(self.settings.llm_timeout_s),
+            target=self._http_target(),
+            max_pages=int(self.settings.llm_max_pages),
+            max_image_side=int(self.settings.llm_max_image_side),
         )
-        markdown = clean_markdown(raw)
-        if not markdown:
+        provider = get_api_provider(spec.id)
+        raw_pages = self._invoke_page_markdowns(provider, request)
+        markdowns = [clean_markdown(raw) for raw in raw_pages]
+        markdowns = [part for part in markdowns if part] or markdowns
+        if not any(markdowns):
             raise LLMClientError(f"{spec.label} returned empty Markdown")
-        return markdown
+        return markdowns
+
+    @staticmethod
+    def _invoke_page_markdowns(provider: Any, request: ConvertRequest) -> list[str]:
+        convert_pages = getattr(provider, "convert_pages", None)
+        raw_pages: Any = None
+        if callable(convert_pages):
+            raw_pages = convert_pages(request)
+        if not isinstance(raw_pages, (list, tuple)):
+            raw_pages = [provider.convert(request)]
+        return [str(part or "") for part in raw_pages]
+
+    def _convert(self, file_path: Path, suffix: str) -> str:
+        return PAGE_SEPARATOR.join(self._convert_pages(file_path, suffix))
 
     def complete_text(self, prompt: str) -> str:
         """Text-only completion for post-process edits (structure, not vision OCR)."""

@@ -151,6 +151,9 @@ class MarkdownTranslator:
         chunks = _split_markdown(protected, max_chars=int(self.settings.translate_chunk_chars))
         translated: list[str] = []
         for index, chunk in enumerate(chunks):
+            from app.services.cancel_token import check_cancelled
+
+            check_cancelled(where=f"translate chunk {index + 1}/{len(chunks)}")
             header = TRANSLATE_PROMPT.format(language=f"{label} ({lang})")
             if len(chunks) > 1:
                 header += f" This is part {index + 1} of {len(chunks)}. Translate this part only."

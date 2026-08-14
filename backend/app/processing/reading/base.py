@@ -15,6 +15,7 @@ class Reader(ABC):
     Implementations must:
     - declare whether they can process a given file via ``can_process``
     - produce at least one ``DocumentOutput`` (default kind: Markdown)
+    - set ``page_count == len(pages)`` with one entry per source page when known
     """
 
     id: str

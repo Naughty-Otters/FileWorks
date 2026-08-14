@@ -6,10 +6,12 @@ from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
+from starlette.concurrency import run_in_threadpool
 
 from app.api.schemas import (
+    CancelRunResponse,
     EngineInfo,
     ExportRequest,
     ExtractOptionsResponse,
@@ -36,11 +38,18 @@ from app.processing.pipeline import get_document_pipeline
 from app.processing.postprocess import get_markdown_translator, language_catalog
 from app.processing.reading.anydoc import anydoc_is_available
 from app.processing.remote_llm import invoke_remote_convert, needs_remote_llm
-from app.services.convert import convert_document
 from app.services.export import export_markdown
 from app.services.ocr import get_ocr_service
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
 from app.services.regions import extract_regions
+from app.services.runtime import (
+    ANONYMOUS_OWNER,
+    ConversionBusy,
+    ConversionCancelled,
+    cancel_run,
+    get_conversion_gate,
+    run_conversion,
+)
 from app.storage import get_document_store
 from app.storage.s3 import S3DocumentStore, PRESIGN_PUT_EXPIRES
 from app.db.session import get_db
@@ -158,6 +167,13 @@ def _validate_upload(file: UploadFile, data: bytes) -> tuple[str, str]:
     return _validate_upload_bytes(file.filename or "upload.bin", data, file.content_type)
 
 
+def _run_owner(principal: Principal) -> str:
+    """Cancel scope: a signed-in user, else the anonymous browser id."""
+    if principal.user_id:
+        return f"user:{principal.user_id}"
+    return f"anon:{principal.anonymous_id or ANONYMOUS_OWNER}"
+
+
 def _health_payload(
     *,
     status: str,
@@ -167,6 +183,7 @@ def _health_payload(
     ocr_error: str | None = None,
 ) -> HealthResponse:
     pipeline = get_document_pipeline()
+    gate = get_conversion_gate()
     reading = []
     for item in pipeline.list_readers():
         engine_id = str(item.get("id"))
@@ -255,6 +272,9 @@ def _health_payload(
         storage_backend=settings.storage_backend,
         direct_upload=settings.storage_backend.lower() == "s3",
         engines=[*reading, *ocr_engines],
+        converting=gate.running,
+        convert_waiting=gate.waiting,
+        convert_capacity=gate.limit,
     )
 
 
@@ -351,8 +371,62 @@ async def presign_upload(
     )
 
 
+@router.post("/extract/cancel", response_model=CancelRunResponse)
+async def cancel_extract(
+    run_id: str = Form(..., description="The run_id sent with POST /extract"),
+    principal: Principal = Depends(get_principal),
+) -> CancelRunResponse:
+    """Stop a run started by this client.
+
+    Local conversions: kill the child process. Lambda conversions: write a
+    cancel tombstone the worker checks between pages (AWS cannot SIGKILL a
+    running invocation).
+    """
+    owner = _run_owner(principal)
+    logger.info("Stop requested for run=%s by owner=%s", run_id, owner)
+
+    def _stop() -> tuple[bool, bool]:
+        from app.services.cancel_token import mark_cancelled
+
+        local = cancel_run(run_id, owner=owner)
+        # Always write the tombstone so a remote LLM Lambda (or a late page loop)
+        # sees the Stop even when this process has no matching RunHandle.
+        remote = mark_cancelled(run_id, owner=owner, reason="stopped by the client")
+        return local, remote
+
+    local_stopped, token_written = await run_in_threadpool(_stop)
+    stopped = local_stopped or token_written
+    gate = get_conversion_gate()
+    logger.info(
+        "Stop result run=%s stopped=%s killed=%s token=%s (running=%s/%s, waiting=%s)",
+        run_id,
+        stopped,
+        local_stopped,
+        token_written,
+        gate.running,
+        gate.limit,
+        gate.waiting,
+    )
+    if local_stopped and token_written:
+        detail = "Conversion stopped (process killed and cancel token written)"
+    elif local_stopped:
+        detail = "Conversion stopped (process killed)"
+    elif token_written:
+        detail = "Conversion stop signalled (cancel token written; work exits at next page check)"
+    else:
+        detail = "No matching run is active"
+    return CancelRunResponse(
+        run_id=run_id,
+        stopped=stopped,
+        killed=local_stopped,
+        token_written=token_written,
+        detail=detail,
+    )
+
+
 @router.post("/extract", response_model=ExtractResponse)
 async def extract(
+    request: Request,
     file: UploadFile | None = File(default=None, description="Image or PDF to extract"),
     s3_key: str | None = Form(default=None, description="Object key from /uploads/presign"),
     filename: str | None = Form(default=None),
@@ -371,6 +445,10 @@ async def extract(
     use_region_detection: bool = Form(default=True),
     format_block_content: bool = Form(default=True),
     target_lang: str = Form(default=""),
+    run_id: str | None = Form(
+        default=None,
+        description="Client-generated id so POST /extract/cancel can stop this run",
+    ),
     principal: Principal = Depends(get_principal),
     db: Session | None = Depends(get_db),
 ) -> ExtractResponse:
@@ -453,24 +531,42 @@ async def extract(
                         remote_key = store.upload_object_key("anonymous", document_id, original_name)
                     store.put_bytes(remote_key, data, mime_type)
                     remote_bucket = store.upload_bucket
-                result = invoke_remote_convert(
-                    bucket=remote_bucket,
-                    key=remote_key,
-                    filename=original_name,
-                    content_type=mime_type,
-                    output_format=output_format,
-                    options=options,
+                # Network-bound, but still blocking: keep it off the event loop.
+                # Pass run_id so the LLM Lambda can honour Stop via the cancel tombstone.
+                remote_run_id = str(run_id or "").strip() or None
+                result = await run_in_threadpool(
+                    lambda: invoke_remote_convert(
+                        bucket=remote_bucket,
+                        key=remote_key,
+                        filename=original_name,
+                        content_type=mime_type,
+                        output_format=output_format,
+                        options=options,
+                        run_id=remote_run_id,
+                    )
                 )
             else:
-                result = convert_document(
+                result = await run_conversion(
                     temp_path,
                     output_format=output_format,
                     options=options,
                     mime_type=mime_type,
                     filename=original_name,
+                    request=request,
+                    run_id=str(run_id or "").strip() or None,
+                    owner=_run_owner(principal),
                 )
         except HTTPException:
             raise
+        except ConversionCancelled as exc:
+            # Nobody is listening; the status is for the log, not the client.
+            raise HTTPException(status_code=499, detail=str(exc)) from exc
+        except ConversionBusy as exc:
+            raise HTTPException(
+                status_code=503,
+                detail=str(exc),
+                headers={"Retry-After": "15"},
+            ) from exc
         except Exception as exc:  # noqa: BLE001
             logger.exception("Document conversion failed")
             raise HTTPException(status_code=500, detail=f"Conversion failed: {exc}") from exc

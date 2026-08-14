@@ -4,9 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Clock3, FileImage, PanelLeftClose, WifiOff } from "lucide-react";
 import {
+  cancelExtract,
   deleteHistoryItem,
   extractDocument,
   fetchHealth,
+  newRunId,
   fetchHistory,
   fetchHistoryDetail,
   fetchHistoryFile,
@@ -62,6 +64,7 @@ export function Workspace() {
   const [markdownMode, setMarkdownMode] = useState<MarkdownMode>("preview");
   const [markdownToolbar, setMarkdownToolbar] = useState(true);
   const convertAbortRef = useRef<AbortController | null>(null);
+  const convertRunIdRef = useRef<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [me, setMe] = useState<MeResponse | null>(null);
 
@@ -298,20 +301,31 @@ export function Workspace() {
   const canExtract =
     Boolean(file) && !loading && signedIn && Boolean(me?.permissions["extract"]) && !quotaBlocked;
 
-  function handleStopConvert() {
+  function stopActiveRun() {
     convertAbortRef.current?.abort();
+    // Tell the server too — a dropped disconnect would leave the run holding the slot.
+    const runId = convertRunIdRef.current;
+    if (runId) void cancelExtract(runId);
+    convertRunIdRef.current = null;
+  }
+
+  function handleStopConvert() {
+    stopActiveRun();
   }
 
   async function handleExtract() {
     if (!file || !me?.user || !me.permissions["extract"]) return;
-    convertAbortRef.current?.abort();
+    stopActiveRun();
     const controller = new AbortController();
     convertAbortRef.current = controller;
+    const runId = newRunId();
+    convertRunIdRef.current = runId;
     setLoading(true);
     setError(null);
     try {
       const data = await extractDocument(file, "both", extractOptions, controller.signal, {
         directUpload: health?.direct_upload === true || health?.storage_backend === "s3",
+        runId,
       });
       if (controller.signal.aborted) return;
       setResult(data);
@@ -335,6 +349,9 @@ export function Workspace() {
     } finally {
       if (convertAbortRef.current === controller) {
         convertAbortRef.current = null;
+      }
+      if (convertRunIdRef.current === runId) {
+        convertRunIdRef.current = null;
       }
       setLoading(false);
     }

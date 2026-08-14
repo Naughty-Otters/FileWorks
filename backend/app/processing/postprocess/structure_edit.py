@@ -42,6 +42,9 @@ class MarkdownStructureEditor:
         chunks = _split_markdown(protected, max_chars=int(self.settings.translate_chunk_chars))
         edited: list[str] = []
         for index, chunk in enumerate(chunks):
+            from app.services.cancel_token import check_cancelled
+
+            check_cancelled(where=f"structure-edit chunk {index + 1}/{len(chunks)}")
             header = STRUCTURE_EDIT_PROMPT
             if len(chunks) > 1:
                 header += f" This is part {index + 1} of {len(chunks)}. Edit this part only."

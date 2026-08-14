@@ -22,12 +22,47 @@ export function pageWindowStart(total: number, start: number, size = PAGES_PER_V
   return Math.max(0, Math.min(start, maxStart));
 }
 
+/**
+ * First line of each real page, found from the `---` separators the backend writes
+ * between pages. A `---` under a non-blank line is a setext heading, not a break.
+ */
+export function pageStartLines(lines: string[]): number[] {
+  const starts = [0];
+  for (let index = 1; index < lines.length; index += 1) {
+    if (lines[index].trim() !== "---" || lines[index - 1].trim() !== "") continue;
+    let next = index + 1;
+    while (next < lines.length && lines[next].trim() === "") next += 1;
+    if (next < lines.length && next > starts[starts.length - 1]) starts.push(next);
+  }
+  return starts;
+}
+
+/**
+ * Window of the document to render. Pass the split lines to page on real page
+ * boundaries; a bare line count falls back to fixed blocks for unpaged text.
+ */
 export function lineRangeForPages(
   pageStart: number,
-  lineCount: number,
+  source: number | string[],
   linesPerPage = LINES_PER_PAGE,
   pagesPerView = PAGES_PER_VIEW,
 ): { startPage: number; endPage: number; lineStart: number; lineEnd: number; pageCount: number } {
+  const lineCount = typeof source === "number" ? source : source.length;
+  const starts = typeof source === "number" ? [0] : pageStartLines(source);
+
+  if (starts.length > 1) {
+    const pageCount = starts.length;
+    const startPage = pageWindowStart(pageCount, pageStart, pagesPerView);
+    const endPage = Math.min(pageCount, startPage + pagesPerView);
+    return {
+      startPage,
+      endPage,
+      lineStart: starts[startPage],
+      lineEnd: endPage >= pageCount ? lineCount : starts[endPage],
+      pageCount,
+    };
+  }
+
   const pageCount = linePageCount(lineCount, linesPerPage);
   const startPage = pageWindowStart(pageCount, pageStart, pagesPerView);
   const lineStart = startPage * linesPerPage;
