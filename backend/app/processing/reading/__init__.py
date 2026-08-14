@@ -5,6 +5,7 @@ from app.processing.reading.base import Reader
 from app.processing.reading.llm import LLMReader
 from app.processing.reading.ocr import OCRReader
 from app.processing.reading.registry import ReaderRegistry
+from app.processing.reading.text import TextReader
 
 __all__ = [
     "AnyDocReader",
@@ -12,4 +13,5 @@ __all__ = [
     "OCRReader",
     "Reader",
     "ReaderRegistry",
+    "TextReader",
 ]

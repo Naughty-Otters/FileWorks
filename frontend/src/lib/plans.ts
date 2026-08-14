@@ -47,7 +47,7 @@ export const PLAN_CATALOG: CatalogPlan[] = [
     quota: "150 files / month",
     features: [
       "Everything in Basic",
-      "150 conversions / month (PDF, office, images, scans)",
+      "150 conversions / month (PDF, office, Markdown, TXT, images, scans)",
       "40 AI reading or translation",
       "Translate into 19 languages",
       "Unlimited downloads of each result",

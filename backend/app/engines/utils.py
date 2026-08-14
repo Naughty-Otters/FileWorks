@@ -62,4 +62,8 @@ def mime_from_path(path: str, fallback: str | None = None) -> str:
         return "image/webp"
     if lower.endswith(".bmp"):
         return "image/bmp"
+    if lower.endswith(".txt"):
+        return "text/plain"
+    if lower.endswith((".md", ".markdown")):
+        return "text/markdown"
     return fallback or "application/octet-stream"

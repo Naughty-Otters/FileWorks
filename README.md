@@ -12,14 +12,14 @@ fileworks/
 
 ## Features
 
-- Drag-and-drop upload for images, PDFs, and office docs (Word / Excel / PowerPoint / ODT / CSV / …)
+- Drag-and-drop upload for images, PDFs, Markdown, TXT, and office docs (Word / Excel / PowerPoint / ODT / CSV / …)
 - **AnyDoc** conversion to clean Markdown (via `firecrawl-anydoc`)
 - Automatic fallback for scans and images (layout + text recognition when a file has no text layer)
 - Editable Markdown preview on the right; download as Markdown / TXT / HTML / JSON / PDF (print)
 - Light / dark theme toggle
 - Google sign-in with plans: **Guest** (browse only), **Basic** (5 files/day, 3 AI or translation/month), **Pro** (150/month, 40 with AI or translation), **Premium** (600/month, 150 with AI or translation)
 - Stripe subscriptions (optional): each pay grade maps to the matching role after Checkout / webhook confirmation
-- Reading order: **AnyDoc** → **LLM** (if configured) → **OCR** (PP-OCR, then PP-StructureV3)
+- Reading order: **Text** (`.txt` / `.md`) → **AnyDoc** → **LLM** (if configured) → **OCR** (PP-OCR, then PP-StructureV3)
 
 ## Prerequisites
 
@@ -97,7 +97,7 @@ API:
 - `GET /api/health` — service status + registered engines / option support
 - `GET /api/engines` — list OCR provider strategies (Paddle Structure / PP-OCR)
 - `POST /api/warmup` — eagerly load the configured OCR provider
-- `POST /api/extract` — multipart form: `file`, optional `output_format`, parse option toggles (AnyDoc → LLM → OCR)
+- `POST /api/extract` — multipart form: `file`, optional `output_format`, parse option toggles (Text → AnyDoc → LLM → OCR)
 - `POST /api/export` — JSON body `{ markdown, format, filename? }` → downloadable `markdown|txt|html|json`
 
 Docs: http://127.0.0.1:8000/docs
@@ -110,7 +110,7 @@ OCR_ENGINE=ocr
 MAX_UPLOAD_MB=50
 ```
 
-`OCR_ENGINE` (`structure` | `ocr`) controls which Paddle provider is warmed by `/api/warmup`. Uploads try readers in order: AnyDoc → LLM (if `LLM_PROVIDER` + API key) → OCR.
+`OCR_ENGINE` (`structure` | `ocr`) controls which Paddle provider is warmed by `/api/warmup`. Uploads try readers in order: Text (`.txt` / `.md`) → AnyDoc → LLM (if `LLM_PROVIDER` + API key) → OCR.
 
 LLM providers (OpenRouter, Fireworks, DeepSeek, Kimi, GLM, OpenAI, Grok, Claude) use **LangChain** (`ChatOpenAI` / `ChatAnthropic`) with per-provider secrets — see [backend/secrets/README.md](backend/secrets/README.md).
 

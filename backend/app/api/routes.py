@@ -87,6 +87,9 @@ ALLOWED_EXTENSIONS = {
     ".rtf",
     ".epub",
     ".csv",
+    ".txt",
+    ".md",
+    ".markdown",
 }
 ALLOWED_CONTENT_TYPES = {
     "image/png",
@@ -110,6 +113,9 @@ ALLOWED_CONTENT_TYPES = {
     "application/epub+zip",
     "text/csv",
     "application/csv",
+    "text/plain",
+    "text/markdown",
+    "text/x-markdown",
     "application/octet-stream",
 }
 

@@ -109,8 +109,8 @@ export function PricingPage() {
         <div>
           <p className="font-[family-name:var(--font-display)] text-4xl tracking-tight">Prices and roles</p>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
-            Each pay grade maps to a FileWorks role. Convert PDF, office, and scans to
-            editable Markdown — with AI reading and translation in the same pass. Guest and
+            Each pay grade maps to a FileWorks role. Convert PDF, office, Markdown, TXT, and
+            scans to editable Markdown — with AI reading and translation in the same pass. Guest and
             Basic are free. Pro and Premium are subscriptions.
           </p>
           {notice ? <p className="mt-3 text-sm text-[var(--ink-muted)]">{notice}</p> : null}

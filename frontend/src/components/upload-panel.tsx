@@ -1,7 +1,7 @@
 "use client";
 
 import { FileImage, FileText, PanelLeftClose, Replace, Upload, X } from "lucide-react";
-import { useCallback, useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import type { ImageSize, RegionBox } from "@/lib/api";
 import { cn, formatBytes } from "@/lib/utils";
 import { AnnotatedImage } from "@/components/region-overlay";
@@ -39,6 +39,9 @@ const ACCEPT = [
   ".rtf",
   ".epub",
   ".csv",
+  ".txt",
+  ".md",
+  ".markdown",
 ].join(",");
 
 export function UploadPanel({
@@ -55,7 +58,29 @@ export function UploadPanel({
 }: UploadPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [textPreview, setTextPreview] = useState<string | null>(null);
   const isPdf = file?.type === "application/pdf" || file?.name.toLowerCase().endsWith(".pdf");
+  const isText = Boolean(
+    file &&
+      (/\.(txt|md|markdown)$/i.test(file.name) ||
+        file.type === "text/plain" ||
+        file.type === "text/markdown" ||
+        file.type === "text/x-markdown"),
+  );
+
+  useEffect(() => {
+    if (!file || !isText) {
+      setTextPreview(null);
+      return;
+    }
+    let cancelled = false;
+    void file.text().then((text) => {
+      if (!cancelled) setTextPreview(text);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [file, isText]);
 
   const handleFiles = useCallback(
     (list: FileList | null) => {
@@ -112,7 +137,7 @@ export function UploadPanel({
       >
         <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-t-2xl border-b border-[var(--line)] px-3 py-2">
           {file ? (
-            isPdf ? (
+            isPdf || isText ? (
               <FileText size={15} className="shrink-0 text-[var(--accent)]" />
             ) : (
               <FileImage size={15} className="shrink-0 text-[var(--accent)]" />
@@ -188,7 +213,7 @@ export function UploadPanel({
             <div>
               <p className="text-sm font-medium">Drop a file here</p>
               <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                Word, Excel, PowerPoint, PDF, CSV, images · up to 50MB
+                Word, Excel, PowerPoint, PDF, Markdown, TXT, CSV, images · up to 50MB
               </p>
             </div>
           </div>
@@ -200,6 +225,10 @@ export function UploadPanel({
                 src={previewUrl ?? undefined}
                 className="h-full min-h-0 w-full rounded-xl border border-[var(--line)] bg-white"
               />
+            ) : isText ? (
+              <pre className="h-full min-h-0 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-[var(--line)] bg-[var(--bg)] p-4 text-sm leading-6 text-[var(--ink)]">
+                {textPreview ?? "Loading…"}
+              </pre>
             ) : previewUrl ? (
               <div className="flex h-full min-h-0 items-center justify-center overflow-hidden">
                 <AnnotatedImage

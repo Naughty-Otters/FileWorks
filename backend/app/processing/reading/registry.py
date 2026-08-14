@@ -6,6 +6,7 @@ from app.processing.reading.anydoc import AnyDocReader
 from app.processing.reading.base import Reader
 from app.processing.reading.llm import LLMReader
 from app.processing.reading.ocr import OCRReader
+from app.processing.reading.text import TextReader
 
 
 class ReaderRegistry:
@@ -15,8 +16,9 @@ class ReaderRegistry:
 
     @staticmethod
     def default_readers() -> list[Reader]:
-        # Priority: AnyDoc → LLM (if configured) → OCR (PP-OCR then Structure)
+        # Priority: Text → AnyDoc → LLM (if configured) → OCR (PP-OCR then Structure)
         return [
+            TextReader(),
             AnyDocReader(),
             LLMReader(),
             OCRReader(),

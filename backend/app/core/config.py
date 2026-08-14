@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     max_upload_mb: int = 50
     paddle_device: str = "cpu"
     # Preferred OCR provider for warmup / legacy OCRService: structure | ocr
-    # Document uploads use readers: AnyDoc → LLM (optional) → OCR.
+    # Document uploads use readers: Text → AnyDoc → LLM (optional) → OCR.
     ocr_engine: str = "ocr"
     use_doc_orientation_classify: bool = False
     use_doc_unwarping: bool = False

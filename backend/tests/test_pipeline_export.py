@@ -20,6 +20,7 @@ from app.processing.pipeline import DocumentPipeline
 from app.processing.reading.base import Reader
 from app.processing.reading.ocr import OCRReader
 from app.processing.reading.registry import ReaderRegistry
+from app.processing.reading.text import TextReader
 from app.processing.models import Capability
 from app.services.markdown import (
     markdown_from_parsing_blocks,
@@ -226,6 +227,46 @@ class OCRReaderTests(unittest.TestCase):
             source = SourceFile(path=Path("a.png"), filename="a.png", suffix=".png")
             result = reader.read(source)
         self.assertEqual(result.markdown(), "# hi")
+
+
+class TextReaderTests(unittest.TestCase):
+    def test_can_process(self) -> None:
+        reader = TextReader()
+        self.assertTrue(reader.can_process(SourceFile(path=Path("a.txt"), filename="a.txt", suffix=".txt")).supported)
+        self.assertTrue(reader.can_process(SourceFile(path=Path("a.md"), filename="a.md", suffix=".md")).supported)
+        self.assertTrue(
+            reader.can_process(
+                SourceFile(path=Path("a.bin"), filename="a.bin", suffix=".bin", mime_type="text/plain")
+            ).supported
+        )
+        self.assertFalse(reader.can_process(SourceFile(path=Path("a.pdf"), filename="a.pdf", suffix=".pdf")).supported)
+
+    def test_read_passthrough(self) -> None:
+        reader = TextReader()
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "note.md"
+            path.write_text("# Hello\n\nworld", encoding="utf-8")
+            result = reader.read(SourceFile.from_path(path, filename="note.md"))
+            self.assertEqual(result.markdown(), "# Hello\n\nworld")
+            self.assertEqual(result.engine_id, "text")
+
+    def test_read_latin1_fallback(self) -> None:
+        reader = TextReader()
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "note.txt"
+            path.write_bytes("café".encode("latin-1"))
+            result = reader.read(SourceFile.from_path(path, filename="note.txt"))
+            self.assertIn("caf", result.markdown())
+
+    def test_pipeline_txt_md(self) -> None:
+        with TemporaryDirectory() as tmp:
+            pipeline = DocumentPipeline(readers=ReaderRegistry([TextReader()]))
+            txt = Path(tmp) / "note.txt"
+            txt.write_text("plain notes", encoding="utf-8")
+            self.assertEqual(pipeline.process(txt, filename="note.txt")["markdown"], "plain notes")
+            md = Path(tmp) / "note.md"
+            md.write_text("## Title", encoding="utf-8")
+            self.assertEqual(pipeline.process(md, filename="note.md")["markdown"], "## Title")
 
 
 class AnyDocHelperTests(unittest.TestCase):

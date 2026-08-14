@@ -171,6 +171,8 @@ class EngineUtilsTests(unittest.TestCase):
         self.assertEqual(mime_from_path("a.tif"), "image/tiff")
         self.assertEqual(mime_from_path("a.webp"), "image/webp")
         self.assertEqual(mime_from_path("a.bmp"), "image/bmp")
+        self.assertEqual(mime_from_path("note.txt"), "text/plain")
+        self.assertEqual(mime_from_path("readme.MD"), "text/markdown")
         self.assertEqual(mime_from_path("a.bin"), "application/octet-stream")
 
     def test_extract_result_to_dict(self) -> None:

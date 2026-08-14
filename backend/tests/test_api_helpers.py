@@ -47,6 +47,8 @@ class RouteHelperTests(unittest.TestCase):
 
     def test_validate_filename(self) -> None:
         self.assertEqual(_validate_filename("a.PDF"), ".pdf")
+        self.assertEqual(_validate_filename("note.txt"), ".txt")
+        self.assertEqual(_validate_filename("readme.MD"), ".md")
         with self.assertRaises(HTTPException):
             _validate_filename("a.exe")
 

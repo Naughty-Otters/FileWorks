@@ -212,6 +212,16 @@ describe("UploadPanel", () => {
     await user.click(screen.getByLabelText("Clear file"));
     expect(onFileSelect).toHaveBeenCalledWith(null);
   });
+
+  it("previews a markdown file and accepts txt/md in the picker", async () => {
+    const file = new File(["# Hello notes"], "note.md", { type: "text/markdown" });
+    render(<UploadPanel file={file} previewUrl={null} onFileSelect={vi.fn()} />);
+    expect(screen.getByText("note.md")).toBeInTheDocument();
+    expect(await screen.findByText("# Hello notes")).toBeInTheDocument();
+    const picker = document.querySelector('input[type="file"]');
+    expect(picker?.getAttribute("accept")).toContain(".txt");
+    expect(picker?.getAttribute("accept")).toContain(".md");
+  });
 });
 
 describe("ExtractOptionsPanel", () => {
