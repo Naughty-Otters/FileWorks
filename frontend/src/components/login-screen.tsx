@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import { fetchMe, type MeResponse } from "@/lib/api";
 import { resolveGoogleClientId } from "@/lib/google-gis";
 import { GoogleSignIn } from "@/components/google-sign-in";
+import { BrandLockup } from "@/components/brand-lockup";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteFooter } from "@/components/site-footer";
+import { MarketingNav } from "@/components/marketing-nav";
 
 export function loginRedirectPath(search = window.location.search): string {
   const next = new URLSearchParams(search).get("next") || "/";
@@ -35,18 +38,10 @@ export function LoginScreen() {
       <div className="atmosphere" aria-hidden />
       <header className="relative z-10 border-b border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
-          <a href="/" className="font-[family-name:var(--font-display)] text-xl tracking-tight md:text-2xl">
-            FileWorks
-          </a>
-          <div className="ml-auto flex items-center gap-1.5">
-            <a
-              href="/pricing"
-              className="rounded-full px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
-            >
-              Pricing
-            </a>
+          <BrandLockup />
+          <MarketingNav>
             <ThemeToggle />
-          </div>
+          </MarketingNav>
         </div>
       </header>
       <main className="relative z-10 mx-auto flex w-full max-w-[1500px] flex-1 items-center justify-center px-4 py-12 md:px-6">
@@ -89,6 +84,7 @@ export function LoginScreen() {
           </div>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

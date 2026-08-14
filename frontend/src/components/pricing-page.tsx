@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { BrandLockup } from "@/components/brand-lockup";
 import { AuthBar } from "@/components/auth-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteFooter } from "@/components/site-footer";
+import { MarketingNav } from "@/components/marketing-nav";
 import {
   confirmCheckout,
   fetchBillingCatalog,
@@ -96,13 +99,11 @@ export function PricingPage() {
       <div className="atmosphere" aria-hidden />
       <header className="relative z-10 border-b border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
-          <a href="/" className="font-[family-name:var(--font-display)] text-xl tracking-tight md:text-2xl">
-            FileWorks
-          </a>
-          <div className="ml-auto flex items-center gap-1.5">
+          <BrandLockup />
+          <MarketingNav>
             <AuthBar me={me} loginHref={loginNext("/pricing")} />
             <ThemeToggle className="h-8 w-8" />
-          </div>
+          </MarketingNav>
         </div>
       </header>
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-10 md:px-6">
@@ -111,7 +112,11 @@ export function PricingPage() {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
             Each pay grade maps to a FileWorks role. Convert PDF, office, Markdown, TXT, and
             scans to editable Markdown — with AI reading and translation in the same pass. Guest and
-            Basic are free. Pro and Premium are subscriptions.
+            Basic are free. Pro and Premium are monthly subscriptions.{" "}
+            <a href="/legal#refunds" className="text-[var(--accent-strong)] hover:underline">
+              Refunds, cancellation, and contact
+            </a>
+            .
           </p>
           {notice ? <p className="mt-3 text-sm text-[var(--ink-muted)]">{notice}</p> : null}
           {error ? <p className="mt-3 text-sm text-[var(--danger)]">{error}</p> : null}
@@ -225,6 +230,7 @@ export function PricingPage() {
           </table>
         </section>
       </main>
+      <SiteFooter />
     </div>
   );
 }

@@ -14,6 +14,8 @@ import { GoogleSignIn } from "@/components/google-sign-in";
 import { LoginScreen, loginRedirectPath } from "@/components/login-screen";
 import { ProfilePage } from "@/components/profile-page";
 import { PricingPage } from "@/components/pricing-page";
+import { LegalPage } from "@/components/legal-page";
+import { AboutPage } from "@/components/about-page";
 import { ResultPanel } from "@/components/result-panel";
 import { EditableMarkdownPreview, type MarkdownPreviewHandle } from "@/components/editable-markdown-preview";
 import { DEFAULT_EXTRACT_OPTIONS, type MeResponse } from "@/lib/api";
@@ -615,6 +617,8 @@ describe("PricingPage", () => {
     expect(screen.getAllByText("$29 / month").length).toBeGreaterThan(0);
     expect(screen.getAllByText("40 with AI or translation").length).toBeGreaterThan(0);
     expect(screen.getAllByText("150 with AI or translation").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Refunds" })).toHaveAttribute("href", "/legal#refunds");
+    expect(screen.getByRole("link", { name: "Cancellation" })).toHaveAttribute("href", "/legal#cancellation");
   });
 
   it("starts Stripe checkout for a signed-in account", async () => {
@@ -659,6 +663,33 @@ describe("PricingPage", () => {
     expect(await screen.findByRole("link", { name: "Account" })).toHaveAttribute("href", "/profile");
     expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
     expect(screen.getByText("Current role")).toBeInTheDocument();
+  });
+});
+
+describe("LegalPage", () => {
+  it("publishes Stripe-required business details", () => {
+    render(<LegalPage />);
+    expect(screen.getByRole("heading", { name: "Business and services" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Customer service contact details" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Return policy and process" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Refund and dispute policy" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Cancellation policy" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Legal and export restrictions" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Terms and conditions of promotions" })).toBeInTheDocument();
+    expect(screen.getAllByText("support@fileworks.ai").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("https://fileworks.ai").length).toBeGreaterThan(0);
+  });
+});
+
+describe("AboutPage", () => {
+  it("lists the business, services, and products without requiring sign-in", () => {
+    render(<AboutPage />);
+    expect(screen.getByRole("heading", { name: "FileWorks" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Goods and services" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Products we sell" })).toBeInTheDocument();
+    expect(screen.getAllByText("$12 / month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("$29 / month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("support@fileworks.ai").length).toBeGreaterThan(0);
   });
 });
 

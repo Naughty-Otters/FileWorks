@@ -10,7 +10,10 @@ import {
   upgradePlan,
   type MeResponse,
 } from "@/lib/api";
+import { BrandLockup } from "@/components/brand-lockup";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteFooter } from "@/components/site-footer";
+import { MarketingNav } from "@/components/marketing-nav";
 import { canSwitchPlan, formatPlanPrice, PERMISSION_LABELS, PLAN_CATALOG, planRank, planSwitchLabel } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
@@ -117,18 +120,10 @@ export function ProfilePage() {
       <div className="atmosphere" aria-hidden />
       <header className="relative z-10 border-b border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
-          <a href="/" className="font-[family-name:var(--font-display)] text-xl tracking-tight md:text-2xl">
-            FileWorks
-          </a>
-          <div className="ml-auto flex items-center gap-1.5">
-            <a
-              href="/pricing"
-              className="rounded-full px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
-            >
-              Pricing
-            </a>
+          <BrandLockup />
+          <MarketingNav>
             <ThemeToggle className="h-8 w-8" />
-          </div>
+          </MarketingNav>
         </div>
       </header>
       <main className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
@@ -321,7 +316,11 @@ export function ProfilePage() {
             <div className="mt-4">
               <p className="text-xs text-[var(--ink-muted)]">
                 Canceling stops the next charge. This period stays paid — no plan switch and no refund
-                for unused days. The role drops to Basic when the paid period ends.
+                for unused days. The role drops to Basic when the paid period ends.{" "}
+                <a href="/legal#refunds" className="text-[var(--accent-strong)] hover:underline">
+                  Refund and cancellation policy
+                </a>
+                .
               </p>
               <button
                 type="button"
@@ -351,6 +350,7 @@ export function ProfilePage() {
           </button>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

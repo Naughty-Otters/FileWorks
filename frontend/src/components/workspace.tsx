@@ -20,8 +20,10 @@ import {
   type HistoryItem,
 } from "@/lib/api";
 import { AuthBar } from "@/components/auth-bar";
+import { BrandLockup } from "@/components/brand-lockup";
 import { ConvertControls } from "@/components/convert-controls";
 import { ResultPanel } from "@/components/result-panel";
+import { SiteFooter } from "@/components/site-footer";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UploadPanel } from "@/components/upload-panel";
 import { prefetchHeavyUi } from "@/lib/prefetch";
@@ -383,9 +385,7 @@ export function Workspace() {
 
       <header className="relative z-10 shrink-0 border-b border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
-          <p className="font-[family-name:var(--font-display)] text-xl tracking-tight md:text-2xl">
-            FileWorks
-          </p>
+          <BrandLockup />
           <button
             type="button"
             aria-expanded={historyOpen}
@@ -413,6 +413,12 @@ export function Workspace() {
               className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
             >
               Pricing
+            </a>
+            <a
+              href="/legal"
+              className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+            >
+              Legal
             </a>
             {health?.status === "offline" ? (
               <span title="API offline" className="inline-flex p-1.5 text-[var(--danger)]">
@@ -526,6 +532,7 @@ export function Workspace() {
           </div>
         </div>
       </main>
+      <SiteFooter compact />
     </div>
   );
 }

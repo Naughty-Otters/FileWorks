@@ -106,7 +106,8 @@ describe("Workspace", () => {
   it("renders, converts, restores history, and toggles panels", async () => {
     const user = userEvent.setup();
     render(<Workspace />);
-    await waitFor(() => expect(screen.getByText("FileWorks")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("link", { name: "FileWorks" })).toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "About" })).toHaveAttribute("href", "/about");
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, new File(["abc"], "note.png", { type: "image/png" }));
     await waitFor(() => expect(screen.getByText("note.png")).toBeInTheDocument());
