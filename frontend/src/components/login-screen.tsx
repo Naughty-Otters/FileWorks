@@ -38,7 +38,13 @@ export function LoginScreen() {
           <a href="/" className="font-[family-name:var(--font-display)] text-xl tracking-tight md:text-2xl">
             FileWorks
           </a>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1.5">
+            <a
+              href="/pricing"
+              className="rounded-full px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+            >
+              Pricing
+            </a>
             <ThemeToggle />
           </div>
         </div>
@@ -48,7 +54,7 @@ export function LoginScreen() {
           <p className="font-[family-name:var(--font-display)] text-3xl tracking-tight">Sign in</p>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             Use Google to authenticate to this FileWorks URL. Conversion requires a signed-in account.
-            Basic includes one conversion a day with AI and translation. Pro and Premium add monthly volume.
+            Basic includes five conversions a day and a small AI allowance. Pro and Premium add monthly volume.
           </p>
           <div className="mt-8">
             {!sessionReady ? (
@@ -67,12 +73,20 @@ export function LoginScreen() {
               GOOGLE_CLIENT_ID on the API.
             </p>
           ) : null}
-          <a
-            href="/"
-            className="mt-8 inline-block text-sm text-[var(--ink-muted)] transition hover:text-[var(--accent-strong)]"
-          >
-            Continue as guest
-          </a>
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <a
+              href="/"
+              className="text-sm text-[var(--ink-muted)] transition hover:text-[var(--accent-strong)]"
+            >
+              Continue as guest
+            </a>
+            <a
+              href="/pricing"
+              className="text-sm text-[var(--ink-muted)] transition hover:text-[var(--accent-strong)]"
+            >
+              Prices and roles
+            </a>
+          </div>
         </div>
       </main>
     </div>

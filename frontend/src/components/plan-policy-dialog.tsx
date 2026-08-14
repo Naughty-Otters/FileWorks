@@ -75,6 +75,12 @@ export function PlanPolicyDialog({ gate, onClose }: PlanPolicyDialogProps) {
           </tbody>
         </table>
         <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+          <a
+            href="/pricing"
+            className="mr-auto rounded-full px-3 py-1.5 text-sm text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+          >
+            Prices and roles
+          </a>
           <button
             type="button"
             onClick={onClose}

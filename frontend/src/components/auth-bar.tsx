@@ -4,6 +4,7 @@ import type { MeResponse } from "@/lib/api";
 
 type AuthBarProps = {
   me: MeResponse | null;
+  loginHref?: string;
 };
 
 function accountTitle(me: MeResponse): string {
@@ -22,7 +23,7 @@ function initials(me: MeResponse): string {
   return source.slice(0, 1).toUpperCase();
 }
 
-export function AuthBar({ me }: AuthBarProps) {
+export function AuthBar({ me, loginHref = "/login" }: AuthBarProps) {
   if (me?.user) {
     const title = accountTitle(me);
     if (me.user.picture_url) {
@@ -47,7 +48,7 @@ export function AuthBar({ me }: AuthBarProps) {
 
   return (
     <a
-      href="/login"
+      href={loginHref}
       className="rounded-full px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
     >
       Sign in

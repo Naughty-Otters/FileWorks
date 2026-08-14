@@ -46,10 +46,10 @@ PLANS: dict[str, Plan] = {
         translate=True,
         history=True,
         export=True,
-        extracts_per_day=1,
+        extracts_per_day=5,
         extracts_per_month=None,
-        ai_per_day=1,
-        ai_per_month=None,
+        ai_per_day=None,
+        ai_per_month=3,
     ),
     "pro": Plan(
         id="pro",
@@ -61,9 +61,9 @@ PLANS: dict[str, Plan] = {
         history=True,
         export=True,
         extracts_per_day=None,
-        extracts_per_month=100,
+        extracts_per_month=150,
         ai_per_day=None,
-        ai_per_month=50,
+        ai_per_month=40,
     ),
     "premium": Plan(
         id="premium",
@@ -75,9 +75,9 @@ PLANS: dict[str, Plan] = {
         history=True,
         export=True,
         extracts_per_day=None,
-        extracts_per_month=500,
+        extracts_per_month=600,
         ai_per_day=None,
-        ai_per_month=100,
+        ai_per_month=150,
     ),
 }
 

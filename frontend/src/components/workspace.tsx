@@ -408,6 +408,12 @@ export function Workspace() {
             ) : null}
           </button>
           <div className="ml-auto flex items-center gap-1.5">
+            <a
+              href="/pricing"
+              className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+            >
+              Pricing
+            </a>
             {health?.status === "offline" ? (
               <span title="API offline" className="inline-flex p-1.5 text-[var(--danger)]">
                 <WifiOff size={14} />

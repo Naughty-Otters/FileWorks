@@ -45,7 +45,7 @@ class MarkdownTranslator:
         return self._spec
 
     def configured(self) -> bool:
-        return self._spec is not None and bool(self._api_key())
+        return self._spec is not None and bool(self._api_key()) and self._key_mismatch_error() is None
 
     @property
     def init_error(self) -> str | None:
@@ -58,7 +58,7 @@ class MarkdownTranslator:
         if not self._api_key():
             fields = " / ".join(f.upper() for f in self._spec.key_fields)
             return f"No API key for translation ({fields} or TRANSLATE_API_KEY)"
-        return None
+        return self._key_mismatch_error()
 
     def _api_key(self) -> str | None:
         generic = (self.settings.translate_api_key or "").strip()
@@ -70,6 +70,24 @@ class MarkdownTranslator:
             value = getattr(self.settings, field, None)
             if isinstance(value, str) and value.strip():
                 return value.strip()
+        return None
+
+    def _key_mismatch_error(self) -> str | None:
+        """Catch the usual .env paste mistakes before they become a 401."""
+        key = self._api_key() or ""
+        provider = self._spec.id if self._spec else ""
+        if not key or not provider:
+            return None
+        if "=" in key:
+            return (
+                "TRANSLATE_API_KEY looks like an env assignment was pasted as the value. "
+                "Set it to the raw API key for TRANSLATE_PROVIDER only."
+            )
+        if provider == "deepseek" and key.startswith(("sk-proj-", "sk-svcacct-")):
+            return (
+                "TRANSLATE_PROVIDER is deepseek but TRANSLATE_API_KEY looks like an OpenAI key. "
+                "Use a DeepSeek key from platform.deepseek.com, or set TRANSLATE_PROVIDER=openai."
+            )
         return None
 
     def _model(self) -> str:

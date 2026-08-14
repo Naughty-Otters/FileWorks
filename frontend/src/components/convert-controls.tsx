@@ -208,7 +208,7 @@ export function ConvertControls({
                 <a href="/login" className="text-[var(--accent-strong)] underline-offset-2 hover:underline">
                   Sign in
                 </a>{" "}
-                to convert files and save history. Basic includes one conversion per day with AI and translation.
+                to convert files and save history. Basic includes five conversions per day and a small AI allowance.
               </p>
             ) : null}
           </div>

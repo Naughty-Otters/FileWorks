@@ -138,6 +138,19 @@ class Settings(BaseSettings):
     # When set, vision LLM + translation run on a sibling Lambda (no VPC / NAT).
     llm_lambda_function: str | None = None
 
+    # Stripe subscriptions. STRIPE_PRICE_* may be a Dashboard id (price_...) or
+    # a monthly USD amount (12). When STRIPE_SECRET_KEY is set, paid grades go
+    # through Checkout instead of POST /me/plan.
+    stripe_secret_key: str | None = None
+    stripe_webhook_secret: str | None = None
+    stripe_price_basic: str | None = None
+    stripe_price_pro: str | None = None
+    stripe_price_premium: str | None = None
+    # Required when Stripe Managed Payments is on (sandbox default).
+    # txcd_10103000 = Software as a service (SaaS).
+    stripe_tax_code: str = "txcd_10103000"
+    public_app_url: str = "http://localhost:3000"
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: object) -> object:

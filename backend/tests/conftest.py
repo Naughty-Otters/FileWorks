@@ -35,5 +35,10 @@ def _test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     settings.llm_lambda_function = None
     settings.google_client_id = None
     settings.database_url = None
+    settings.stripe_secret_key = None
+    settings.stripe_webhook_secret = None
+    settings.stripe_price_basic = None
+    settings.stripe_price_pro = None
+    settings.stripe_price_premium = None
     yield
     get_settings.cache_clear()

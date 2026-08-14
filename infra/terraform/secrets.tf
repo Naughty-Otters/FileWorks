@@ -13,8 +13,14 @@ resource "aws_secretsmanager_secret_version" "app" {
     TRANSLATE_PROVIDER = "deepseek"
     TRANSLATE_MODEL    = "deepseek-flash"
     TRANSLATE_API_KEY  = "sk-d2ebe41365e740768d6fad969c4e5b1c"
-    GOOGLE_CLIENT_ID   = var.google_client_id
-    JWT_SECRET         = random_password.jwt.result
+    GOOGLE_CLIENT_ID      = var.google_client_id
+    JWT_SECRET            = random_password.jwt.result
+    STRIPE_SECRET_KEY     = ""
+    STRIPE_WEBHOOK_SECRET = ""
+    STRIPE_PRICE_BASIC    = ""
+    STRIPE_PRICE_PRO      = ""
+    STRIPE_PRICE_PREMIUM  = ""
+    PUBLIC_APP_URL        = ""
   })
 
   lifecycle {

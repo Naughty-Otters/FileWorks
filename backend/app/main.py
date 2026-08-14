@@ -5,9 +5,13 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 from app.api.routes import router
 from app.api.auth_routes import router as auth_router
+from app.api.billing_routes import router as billing_router
 from app.core.config import get_settings
 
 # Allow local vendor/ installs (e.g. firecrawl-anydoc) when site-packages is locked.
@@ -45,6 +49,18 @@ async def lifespan(_: FastAPI):
     logger.info("%s shutting down", settings.app_name)
 
 
+class PrivateNetworkMiddleware(BaseHTTPMiddleware):
+    """Chrome blocks localhost → 127.0.0.1 unless the preflight allows private/local network."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        if request.headers.get("access-control-request-private-network") == "true":
+            response.headers["Access-Control-Allow-Private-Network"] = "true"
+        if request.headers.get("access-control-request-local-network") == "true":
+            response.headers["Access-Control-Allow-Local-Network"] = "true"
+        return response
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
@@ -60,8 +76,10 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(PrivateNetworkMiddleware)
     app.include_router(router, prefix=settings.api_prefix)
     app.include_router(auth_router, prefix=settings.api_prefix)
+    app.include_router(billing_router, prefix=settings.api_prefix)
     return app
 
 

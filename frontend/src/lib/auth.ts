@@ -28,6 +28,15 @@ export type MeResponse = {
     remaining_ai_month: number | null;
   };
   google_client_id: string | null;
+  billing?: {
+    enabled: boolean;
+    prices: Record<string, boolean>;
+    amounts?: Record<string, number>;
+    currency?: string;
+    subscription_status?: string | null;
+    cancel_at_period_end?: boolean;
+    current_period_end?: string | null;
+  } | null;
 };
 
 export function getAccessToken(): string | null {

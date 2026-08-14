@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchMe, logoutSession, upgradePlan, type MeResponse } from "@/lib/api";
+import {
+  confirmCheckout,
+  fetchMe,
+  logoutSession,
+  openBillingPortal,
+  startCheckout,
+  upgradePlan,
+  type MeResponse,
+} from "@/lib/api";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { canSwitchPlan, PERMISSION_LABELS, PLAN_CATALOG, planSwitchLabel } from "@/lib/plans";
+import { canSwitchPlan, formatPlanPrice, PERMISSION_LABELS, PLAN_CATALOG, planRank, planSwitchLabel } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 function usageLine(used: number, limit: number | null, remaining: number | null, period: string) {
@@ -16,16 +24,44 @@ function usagePercent(used: number, limit: number | null) {
   return Math.min(100, Math.round((used / limit) * 100));
 }
 
+function formatPeriodEnd(iso: string | null | undefined) {
+  if (!iso) return "the end of this period";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "the end of this period";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
 export function ProfilePage() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get("checkout");
+    if (checkout === "cancel") setNotice("Checkout canceled. Your current plan is unchanged.");
+    if (params.get("billing") === "return") setNotice("Billing updated from Stripe.");
     void fetchMe()
-      .then((session) => {
+      .then(async (session) => {
+        if (!session.user) {
+          window.location.assign("/login?next=/profile");
+          return;
+        }
+        const sessionId = params.get("session_id");
+        if (checkout === "success" && sessionId) {
+          try {
+            await confirmCheckout(sessionId);
+            setMe(await fetchMe());
+            setNotice("Payment received. Your role is updated.");
+            return;
+          } catch {
+            setNotice("Payment received. Your role updates when Stripe confirms the subscription.");
+          }
+        } else if (checkout === "success") {
+          setNotice("Payment received. Your role updates when Stripe confirms the subscription.");
+        }
         setMe(session);
-        if (!session.user) window.location.assign("/login?next=/profile");
       })
       .catch(() => window.location.assign("/login?next=/profile"));
   }, []);
@@ -34,10 +70,31 @@ export function ProfilePage() {
     setPending(plan);
     setError(null);
     try {
+      if (me?.billing?.enabled) {
+        const checkout = await startCheckout(plan);
+        if (checkout.url) {
+          window.location.assign(checkout.url);
+          return;
+        }
+        setMe(await fetchMe());
+        return;
+      }
       setMe(await upgradePlan(plan));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Plan change failed");
     } finally {
+      setPending(null);
+    }
+  }
+
+  async function onManageBilling() {
+    setPending("portal");
+    setError(null);
+    try {
+      const portal = await openBillingPortal();
+      window.location.assign(portal.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Billing portal failed");
       setPending(null);
     }
   }
@@ -64,6 +121,12 @@ export function ProfilePage() {
             FileWorks
           </a>
           <div className="ml-auto flex items-center gap-1.5">
+            <a
+              href="/pricing"
+              className="rounded-full px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+            >
+              Pricing
+            </a>
             <ThemeToggle className="h-8 w-8" />
           </div>
         </div>
@@ -87,6 +150,12 @@ export function ProfilePage() {
               {me.plan}
             </span>
           </div>
+          {me.billing?.cancel_at_period_end ? (
+            <p className="mt-4 text-sm text-[var(--ink-muted)]">
+              Cancels {formatPeriodEnd(me.billing.current_period_end)}. You keep this role until then,
+              then Basic.
+            </p>
+          ) : null}
         </div>
 
         <section className="panel rounded-3xl px-6 py-6">
@@ -195,13 +264,19 @@ export function ProfilePage() {
         <section className="panel rounded-3xl px-6 py-6">
           <h2 className="font-[family-name:var(--font-display)] text-xl tracking-tight">Plan</h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            Switch plans anytime. The change applies to this account immediately.
+            {me.billing?.enabled
+              ? "Each pay grade maps to a FileWorks role after Stripe confirms the subscription."
+              : "Switch plans anytime. The change applies to this account immediately."}
           </p>
+          {notice ? <p className="mt-3 text-sm text-[var(--ink-muted)]">{notice}</p> : null}
           {error ? <p className="mt-3 text-sm text-[var(--danger)]">{error}</p> : null}
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {PLAN_CATALOG.map((plan) => {
               const currentPlan = plan.id === me.plan;
-              const switchable = canSwitchPlan(me.plan, plan.id);
+              const switchable =
+                canSwitchPlan(me.plan, plan.id) &&
+                (!me.billing?.enabled ||
+                  (Boolean(me.billing.prices[plan.id]) && planRank(plan.id) > planRank(me.plan)));
               return (
                 <article
                   key={plan.id}
@@ -211,14 +286,23 @@ export function ProfilePage() {
                   )}
                 >
                   <p className="text-sm font-medium">{plan.label}</p>
-                  <p className="mt-1 text-xs text-[var(--ink-muted)]">{plan.quota}</p>
+                  <p className="mt-1 text-xs text-[var(--ink-muted)]">
+                    {typeof me.billing?.amounts?.[plan.id] === "number"
+                      ? formatPlanPrice(me.billing.amounts[plan.id])
+                      : plan.price}{" "}
+                    · {plan.quota}
+                  </p>
                   <ul className="mt-3 flex-1 space-y-1 text-xs text-[var(--ink-muted)]">
                     {plan.features.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
                   {currentPlan ? (
-                    <p className="mt-4 text-xs font-medium text-[var(--accent-strong)]">Current plan</p>
+                    <p className="mt-4 text-xs font-medium text-[var(--accent-strong)]">
+                      {me.billing?.cancel_at_period_end
+                        ? `Current · cancels ${formatPeriodEnd(me.billing.current_period_end)}`
+                        : "Current plan"}
+                    </p>
                   ) : (
                     <button
                       type="button"
@@ -233,6 +317,22 @@ export function ProfilePage() {
               );
             })}
           </div>
+          {me.billing?.enabled ? (
+            <div className="mt-4">
+              <p className="text-xs text-[var(--ink-muted)]">
+                Canceling stops the next charge. This period stays paid — no plan switch and no refund
+                for unused days. The role drops to Basic when the paid period ends.
+              </p>
+              <button
+                type="button"
+                disabled={pending !== null}
+                onClick={() => void onManageBilling()}
+                className="mt-2 text-sm text-[var(--accent-strong)] hover:underline disabled:opacity-45"
+              >
+                {pending === "portal" ? "Opening billing…" : "Manage billing"}
+              </button>
+            </div>
+          ) : null}
         </section>
 
         <div className="flex items-center justify-between px-1">

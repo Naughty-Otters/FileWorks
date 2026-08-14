@@ -13,6 +13,7 @@ import { AuthBar } from "@/components/auth-bar";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { LoginScreen, loginRedirectPath } from "@/components/login-screen";
 import { ProfilePage } from "@/components/profile-page";
+import { PricingPage } from "@/components/pricing-page";
 import { ResultPanel } from "@/components/result-panel";
 import { EditableMarkdownPreview, type MarkdownPreviewHandle } from "@/components/editable-markdown-preview";
 import { DEFAULT_EXTRACT_OPTIONS, type MeResponse } from "@/lib/api";
@@ -320,7 +321,7 @@ describe("ConvertControls", () => {
     await user.click(convert);
     expect(onConvert).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog", { name: "Sign in to convert" })).toBeInTheDocument();
-    expect(screen.getByText("1 file / day")).toBeInTheDocument();
+    expect(screen.getByText("5 files / day")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -444,7 +445,7 @@ describe("ConvertControls", () => {
     );
     await user.click(screen.getByRole("button", { name: "Convert with AI" }));
     expect(screen.getByRole("dialog", { name: "Monthly AI allowance reached" })).toBeInTheDocument();
-    expect(screen.getByText(/50 with AI or translation/)).toBeInTheDocument();
+    expect(screen.getByText(/40 with AI or translation/)).toBeInTheDocument();
   });
 });
 
@@ -551,6 +552,7 @@ describe("LoginScreen", () => {
     render(<LoginScreen />);
     expect(screen.getByText("Sign in")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Continue as guest" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Prices and roles" })).toHaveAttribute("href", "/pricing");
     await waitFor(() => expect(api.fetchMe).toHaveBeenCalled());
   });
 
@@ -577,6 +579,76 @@ describe("LoginScreen", () => {
     expect(loginRedirectPath("?next=/history")).toBe("/history");
     expect(loginRedirectPath("?next=https://evil.example")).toBe("/");
     expect(loginRedirectPath("?next=//evil.example")).toBe("/");
+  });
+});
+
+describe("PricingPage", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("lists dollar prices and syncs sign-in with the workspace session", async () => {
+    vi.spyOn(api, "fetchMe").mockResolvedValue(guestMe);
+    vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
+      enabled: false,
+      currency: "usd",
+      amounts: { basic: 0, pro: 12, premium: 29 },
+      prices: { basic: false, pro: false, premium: false },
+    });
+    render(<PricingPage />);
+    expect(await screen.findByText("Prices and roles")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Choose Pro" })).toHaveAttribute("href", "/login?next=%2Fpricing");
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login?next=%2Fpricing");
+    expect(screen.getByText("Role comparison")).toBeInTheDocument();
+    expect(screen.getAllByText("$12 / month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("$29 / month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("40 with AI or translation").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("150 with AI or translation").length).toBeGreaterThan(0);
+  });
+
+  it("starts Stripe checkout for a signed-in account", async () => {
+    const user = userEvent.setup();
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, search: "" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+      plan: "basic",
+    });
+    vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
+      enabled: true,
+      currency: "usd",
+      amounts: { basic: 0, pro: 12, premium: 29 },
+      prices: { basic: false, pro: true, premium: true },
+    });
+    vi.spyOn(api, "startCheckout").mockResolvedValue({
+      url: "https://checkout.stripe.test/cs",
+      updated: false,
+      plan: "pro",
+    });
+    render(<PricingPage />);
+    await user.click(await screen.findByRole("button", { name: "Choose Pro" }));
+    expect(api.startCheckout).toHaveBeenCalledWith("pro", "/pricing");
+    expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs");
+  });
+
+  it("shows the workspace avatar when signed in", async () => {
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: "https://example.com/a.png", plan: "pro" },
+      plan: "pro",
+    });
+    vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
+      enabled: true,
+      currency: "usd",
+      amounts: { basic: 0, pro: 12, premium: 29 },
+      prices: { basic: false, pro: true, premium: true },
+    });
+    render(<PricingPage />);
+    expect(await screen.findByRole("link", { name: "Account" })).toHaveAttribute("href", "/profile");
+    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+    expect(screen.getByText("Current role")).toBeInTheDocument();
   });
 });
 
@@ -669,6 +741,45 @@ describe("ProfilePage", () => {
     expect(screen.getByText(/AI \/ translation this month/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
     expect(await screen.findByText("plan_invalid")).toBeInTheDocument();
+  });
+
+  it("sends paid upgrades through Stripe checkout", async () => {
+    const user = userEvent.setup();
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, search: "" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+      plan: "basic",
+      permissions: { extract: true, "extract.ai": true, export: true },
+      billing: { enabled: true, prices: { basic: false, pro: true, premium: true } },
+    });
+    vi.spyOn(api, "startCheckout").mockResolvedValue({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
+    render(<ProfilePage />);
+    expect(await screen.findByText(/maps to a FileWorks role/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+    expect(api.startCheckout).toHaveBeenCalledWith("pro");
+    expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs");
+    expect(screen.getByRole("button", { name: "Manage billing" })).toBeInTheDocument();
+  });
+
+  it("shows a pending Stripe cancellation on the current plan", async () => {
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
+      plan: "pro",
+      permissions: { extract: true, "extract.ai": true, export: true },
+      billing: {
+        enabled: true,
+        prices: { basic: false, pro: true, premium: true },
+        cancel_at_period_end: true,
+        current_period_end: "2030-01-01T00:00:00+00:00",
+        subscription_status: "active",
+      },
+    });
+    render(<ProfilePage />);
+    expect(await screen.findByText(/You keep this role until then/)).toBeInTheDocument();
+    expect(screen.getByText(/Current · cancels/)).toBeInTheDocument();
   });
 });
 

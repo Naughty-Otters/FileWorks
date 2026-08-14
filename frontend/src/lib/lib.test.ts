@@ -30,6 +30,8 @@ import {
   planRank,
   planSwitchLabel,
   PLAN_CATALOG,
+  PRICE_ROLES,
+  formatPlanPrice,
 } from "@/lib/plans";
 import {
   joinLines,
@@ -359,6 +361,11 @@ describe("plan policy", () => {
     expect(planSwitchLabel("basic", PLAN_CATALOG[1])).toBe("Upgrade to Pro");
     expect(planSwitchLabel("premium", PLAN_CATALOG[0])).toBe("Switch to Basic");
     expect(planRank("nope")).toBe(0);
+    expect(PRICE_ROLES.map((item) => item.role)).toEqual(["Guest", "Basic", "Pro", "Premium"]);
+    expect(PRICE_ROLES.find((item) => item.id === "pro")?.price).toBe("$12 / month");
+    expect(formatPlanPrice(0)).toBe("Free");
+    expect(formatPlanPrice(12)).toBe("$12 / month");
+    expect(formatPlanPrice(29)).toBe("$29 / month");
   });
 
   it("describes each gate", () => {
@@ -370,7 +377,7 @@ describe("plan policy", () => {
     expect(convertGateTitle("plan")).toMatch(/cannot convert/);
     expect(convertGateTitle("ready")).toMatch(/Plan rules/);
     expect(convertGateBody("login")).toMatch(/signed-in/);
-    expect(convertGateBody("quota_day")).toMatch(/one conversion/);
+    expect(convertGateBody("quota_day")).toMatch(/five conversions/);
     expect(convertGateBody("quota_month")).toMatch(/monthly/);
     expect(convertGateBody("quota_ai_day")).toMatch(/without AI/);
     expect(convertGateBody("quota_ai_month")).toMatch(/without AI/);

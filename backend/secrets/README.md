@@ -32,9 +32,9 @@ After Markdown is produced, an optional **text LLM** can translate it. This uses
 
 ```
 TRANSLATE_PROVIDER=deepseek
-TRANSLATE_MODEL=deepseek-chat    # optional
-TRANSLATE_API_KEY=               # optional; otherwise DEEPSEEK_API_KEY / provider key
-TRANSLATE_BASE_URL=              # optional
+TRANSLATE_MODEL=deepseek-v4-flash    # optional; default is deepseek-chat
+TRANSLATE_API_KEY=                   # DeepSeek key only — not LLM_API_KEY / OpenAI sk-svcacct
+TRANSLATE_BASE_URL=                  # optional
 ```
 
 `TRANSLATE_PROVIDER` uses the same catalog as `LLM_PROVIDER`. Default UI language is

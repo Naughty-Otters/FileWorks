@@ -17,7 +17,8 @@ fileworks/
 - Automatic fallback for scans and images (layout + text recognition when a file has no text layer)
 - Editable Markdown preview on the right; download as Markdown / TXT / HTML / JSON / PDF (print)
 - Light / dark theme toggle
-- Google sign-in with plans: **Guest** (browse only), **Basic** (1 file/day with AI + translation), **Pro** (100/month, 50 with AI or translation), **Premium** (500/month, 100 with AI or translation)
+- Google sign-in with plans: **Guest** (browse only), **Basic** (5 files/day, 3 AI or translation/month), **Pro** (150/month, 40 with AI or translation), **Premium** (600/month, 150 with AI or translation)
+- Stripe subscriptions (optional): each pay grade maps to the matching role after Checkout / webhook confirmation
 - Reading order: **AnyDoc** → **LLM** (if configured) → **OCR** (PP-OCR, then PP-StructureV3)
 
 ## Prerequisites
@@ -76,6 +77,8 @@ Schema migrations run when the API starts. To apply them yourself:
 Without Compose, run the API and UI separately as below. Auth (Google sign-in, plans, quotas) needs `DATABASE_URL` pointing at Postgres.
 
 Create a Google OAuth **Web** client and add authorized JavaScript origins `http://localhost:3000` (and later `https://fileworks-<env>.pages.dev`). Set `GOOGLE_CLIENT_ID` / `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
+
+Stripe (optional): set `STRIPE_SECRET_KEY` and `STRIPE_PRICE_*` on the API. Each `STRIPE_PRICE_*` value can be a Dashboard price id (`price_...`) or a monthly USD amount (`12`). The pricing page shows those amounts and sends paid grades through Checkout. Point the webhook at `/api/billing/webhook` for `checkout.session.completed` and `customer.subscription.*`. Without a secret key, profile plan switches stay local (dev).
 
 ## Backend
 

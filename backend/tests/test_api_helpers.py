@@ -248,6 +248,26 @@ class TranslateTests(unittest.TestCase):
         settings.translate_provider = ""
         settings.translate_api_key = None
 
+    def test_rejects_pasted_env_assignment(self) -> None:
+        settings = get_settings()
+        settings.translate_provider = "deepseek"
+        settings.translate_api_key = "LLM_API_KEY=sk-svcacct-exampleBcUA"
+        translator = MarkdownTranslator(settings)
+        self.assertFalse(translator.configured())
+        self.assertIn("env assignment", translator.init_error or "")
+        settings.translate_provider = ""
+        settings.translate_api_key = None
+
+    def test_rejects_openai_key_for_deepseek(self) -> None:
+        settings = get_settings()
+        settings.translate_provider = "deepseek"
+        settings.translate_api_key = "sk-svcacct-not-a-deepseek-key"
+        translator = MarkdownTranslator(settings)
+        self.assertFalse(translator.configured())
+        self.assertIn("OpenAI key", translator.init_error or "")
+        settings.translate_provider = ""
+        settings.translate_api_key = None
+
 
 class ConvertFacadeTests(unittest.TestCase):
     def test_convert_and_export_facades(self) -> None:

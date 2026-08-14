@@ -27,6 +27,7 @@ services:
       STORAGE_LOCAL_ROOT: /tmp/history
       UPLOAD_DIR: /tmp/uploads
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      PUBLIC_APP_URL: http://localhost:3000
       PADDLE_DEVICE: cpu
       OCR_ENGINE: ocr
       HOME: /tmp
@@ -47,7 +48,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-1063086817026-33rehu3tmsg08gll6dc9jue97000ib8f.apps.googleusercontent.com}
       API_PROXY_TARGET: http://backend:8000
     ports:

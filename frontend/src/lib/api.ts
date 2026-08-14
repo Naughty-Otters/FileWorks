@@ -148,7 +148,14 @@ export function getApiBase() {
   return API_BASE;
 }
 
-function apiUrl(path: string) {
+function isLocalPage(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1";
+}
+
+function apiUrl(path: string, opts?: { direct?: boolean }) {
+  if (!opts?.direct && isLocalPage()) return path;
   return `${API_BASE}${path}`;
 }
 
@@ -216,28 +223,44 @@ async function tryRefresh(): Promise<boolean> {
   return refreshInFlight;
 }
 
-async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
-  const headers = authHeaders(init?.headers);
-  try {
-    let res = await fetch(apiUrl(path), { ...init, headers });
-    if (res.status === 401 && !path.startsWith("/api/auth/")) {
-      const ok = await tryRefresh();
-      if (ok) {
-        res = await fetch(apiUrl(path), { ...init, headers: authHeaders(init?.headers) });
-      }
-    }
-    return res;
-  } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") {
-      throw err;
-    }
-    if (err instanceof Error && err.name === "AbortError") {
-      throw err;
-    }
-    throw new Error(
-      `Cannot reach API at ${API_BASE}. Start the backend (port 8000) and retry.`,
-    );
+function requestBases(direct?: boolean): string[] {
+  if (!direct && isLocalPage()) return [""];
+  const bases = [API_BASE];
+  if (API_BASE.includes("localhost")) {
+    bases.push(API_BASE.replace("localhost", "127.0.0.1"));
   }
+  if (isLocalPage()) bases.push("");
+  return [...new Set(bases)];
+}
+
+async function apiFetch(path: string, init?: RequestInit & { direct?: boolean }): Promise<Response> {
+  const { direct, ...rest } = init || {};
+  let lastNetworkError: unknown;
+  for (const base of requestBases(direct)) {
+    const headers = authHeaders(rest.headers);
+    try {
+      let res = await fetch(`${base}${path}`, { ...rest, headers });
+      if (res.status === 401 && !path.startsWith("/api/auth/")) {
+        const ok = await tryRefresh();
+        if (ok) {
+          res = await fetch(`${base}${path}`, { ...rest, headers: authHeaders(rest.headers) });
+        }
+      }
+      return res;
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw err;
+      }
+      if (err instanceof Error && err.name === "AbortError") {
+        throw err;
+      }
+      lastNetworkError = err;
+    }
+  }
+  void lastNetworkError;
+  throw new Error(
+    `Cannot reach API at ${API_BASE}. Start the backend (port 8000) and retry.`,
+  );
 }
 
 export async function fetchMe(): Promise<MeResponse> {
@@ -282,6 +305,56 @@ export async function upgradePlan(plan: string): Promise<MeResponse> {
   return fetchMe();
 }
 
+export type BillingCatalog = {
+  enabled: boolean;
+  currency: string;
+  amounts: Record<string, number>;
+  prices: Record<string, boolean>;
+};
+
+export async function fetchBillingCatalog(): Promise<BillingCatalog> {
+  const res = await apiFetch("/api/billing/catalog", { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(await readError(res, `Billing catalog failed (${res.status})`));
+  }
+  return (await res.json()) as BillingCatalog;
+}
+
+export async function startCheckout(
+  plan: string,
+  returnTo = "/profile",
+): Promise<{ url: string | null; updated: boolean; plan?: string }> {
+  const res = await apiFetch("/api/billing/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan, return_to: returnTo }),
+  });
+  if (!res.ok) {
+    throw new Error(await readError(res, `Checkout failed (${res.status})`));
+  }
+  return (await res.json()) as { url: string | null; updated: boolean; plan?: string };
+}
+
+export async function confirmCheckout(sessionId: string): Promise<{ plan: string | null }> {
+  const res = await apiFetch("/api/billing/confirm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId }),
+  });
+  if (!res.ok) {
+    throw new Error(await readError(res, `Checkout confirm failed (${res.status})`));
+  }
+  return (await res.json()) as { plan: string | null };
+}
+
+export async function openBillingPortal(): Promise<{ url: string }> {
+  const res = await apiFetch("/api/billing/portal", { method: "POST" });
+  if (!res.ok) {
+    throw new Error(await readError(res, `Billing portal failed (${res.status})`));
+  }
+  return (await res.json()) as { url: string };
+}
+
 export async function logoutSession(): Promise<void> {
   const refresh = getRefreshToken();
   if (refresh) {
@@ -324,6 +397,7 @@ export async function extractDocument(
 
   if (useDirect) {
     const presignRes = await apiFetch("/api/uploads/presign", {
+      direct: true,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -359,6 +433,7 @@ export async function extractDocument(
   }
 
   const res = await apiFetch("/api/extract", {
+    direct: true,
     method: "POST",
     body,
     signal,

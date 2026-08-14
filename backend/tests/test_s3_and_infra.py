@@ -7,6 +7,7 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+from fastapi.testclient import TestClient
 from PIL import Image
 
 from app.auth.google import verify_google_id_token
@@ -403,6 +404,21 @@ class LambdaAndAppTests(unittest.TestCase):
         with patch("app.db.session.init_db"), patch("app.storage.get_document_store"):
             app = create_app()
         self.assertEqual(app.title, get_settings().app_name)
+
+    def test_private_network_preflight_header(self) -> None:
+        with patch("app.db.session.init_db"), patch("app.storage.get_document_store"):
+            app = create_app()
+        client = TestClient(app)
+        res = client.options(
+            "/api/billing/checkout",
+            headers={
+                "Origin": "http://localhost:3000",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Private-Network": "true",
+            },
+        )
+        self.assertEqual(res.headers.get("access-control-allow-origin"), "http://localhost:3000")
+        self.assertEqual(res.headers.get("access-control-allow-private-network"), "true")
 
     def test_google_requires_client(self) -> None:
         with self.assertRaises(RuntimeError):

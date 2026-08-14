@@ -12,6 +12,7 @@ from app.auth.google import verify_google_id_token
 from app.auth.plans import can_change_plan, get_plan, permissions_for
 from app.auth.quota import quota_snapshot
 from app.auth.tokens import hash_token, issue_access_token, new_refresh_token
+from app.billing.stripe import billing_status, stripe_billing_enabled, sync_user_subscription
 from app.core.config import get_settings
 from app.db.models import RefreshToken, User
 from app.db.session import get_db
@@ -37,12 +38,23 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class BillingStatus(BaseModel):
+    enabled: bool
+    prices: dict[str, bool]
+    amounts: dict[str, int] | None = None
+    currency: str | None = None
+    subscription_status: str | None = None
+    cancel_at_period_end: bool = False
+    current_period_end: str | None = None
+
+
 class MeResponse(BaseModel):
     user: dict | None
     plan: str
     permissions: dict[str, bool]
     quota: dict
     google_client_id: str | None = None
+    billing: BillingStatus | None = None
 
 
 class PlanChangeRequest(BaseModel):
@@ -146,12 +158,18 @@ def logout(body: RefreshRequest, db: Session | None = Depends(get_db)) -> dict[s
 @router.get("/me", response_model=MeResponse)
 def me(principal: Principal = Depends(get_principal), db: Session | None = Depends(get_db)) -> MeResponse:
     settings = get_settings()
+    user = principal.user
+    billing = dict(billing_status(settings))
+    if user is not None and db is not None:
+        billing.update(sync_user_subscription(db, user))
+    plan = get_plan(user.plan) if user is not None else principal.plan
     return MeResponse(
-        user=_user_public(principal.user) if principal.user else None,
-        plan=principal.plan.id,
-        permissions=principal.permissions(),
-        quota=quota_snapshot(db, user_id=principal.user_id, plan=principal.plan),
+        user=_user_public(user) if user else None,
+        plan=plan.id,
+        permissions=permissions_for(plan),
+        quota=quota_snapshot(db, user_id=principal.user_id, plan=plan),
         google_client_id=settings.google_client_id,
+        billing=BillingStatus(**billing),
     )
 
 
@@ -165,6 +183,11 @@ def change_plan(
         raise HTTPException(status_code=503, detail="Database is not configured")
     if principal.user is None:
         raise HTTPException(status_code=401, detail="Sign in to change plan")
+    if stripe_billing_enabled():
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "billing_required", "message": "Use Stripe checkout to change plan"},
+        )
     target = (body.plan or "").strip().lower()
     user = db.get(User, principal.user.id)
     if user is None:

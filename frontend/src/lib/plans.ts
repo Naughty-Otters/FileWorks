@@ -8,9 +8,9 @@ export type PlanRule = {
 
 export const PLAN_RULES: PlanRule[] = [
   { id: "anonymous", label: "Guest", convert: "Sign in required", quota: "—", extras: "No history" },
-  { id: "basic", label: "Basic", convert: "Yes", quota: "1 file / day", extras: "AI + translation on that file" },
-  { id: "pro", label: "Pro", convert: "Yes", quota: "100 / month", extras: "50 with AI or translation" },
-  { id: "premium", label: "Premium", convert: "Yes", quota: "500 / month", extras: "100 with AI or translation" },
+  { id: "basic", label: "Basic", convert: "Yes", quota: "5 files / day", extras: "3 AI or translation / month" },
+  { id: "pro", label: "Pro", convert: "Yes", quota: "150 / month", extras: "40 with AI or translation" },
+  { id: "premium", label: "Premium", convert: "Yes", quota: "600 / month", extras: "150 with AI or translation" },
 ];
 
 export const PLAN_ORDER = ["anonymous", "basic", "pro", "premium"] as const;
@@ -19,6 +19,7 @@ export type CatalogPlan = {
   id: "basic" | "pro" | "premium";
   label: string;
   blurb: string;
+  price: string;
   quota: string;
   features: string[];
 };
@@ -27,23 +28,105 @@ export const PLAN_CATALOG: CatalogPlan[] = [
   {
     id: "basic",
     label: "Basic",
-    blurb: "One conversion per day, including AI and translation.",
-    quota: "1 file / day",
-    features: ["Full conversion results", "AI reading and translation", "Document history"],
+    blurb: "Daily conversions. A small monthly AI and translation allowance.",
+    price: "Free",
+    quota: "5 files / day",
+    features: [
+      "5 conversions / day",
+      "3 AI reading or translation / month",
+      "Translate into 19 languages",
+      "Unlimited downloads of each result",
+      "Document history",
+    ],
   },
   {
     id: "pro",
     label: "Pro",
-    blurb: "Higher volume, with a monthly AI and translation cap.",
-    quota: "100 files / month",
-    features: ["Everything in Basic", "100 conversions / month", "50 with AI or translation"],
+    blurb: "Monthly volume for regular conversion, with AI reading and translation.",
+    price: "$12 / month",
+    quota: "150 files / month",
+    features: [
+      "Everything in Basic",
+      "150 conversions / month (PDF, office, images, scans)",
+      "40 AI reading or translation",
+      "Translate into 19 languages",
+      "Unlimited downloads of each result",
+    ],
   },
   {
     id: "premium",
     label: "Premium",
-    blurb: "Highest monthly volume for teams.",
-    quota: "500 files / month",
-    features: ["Everything in Pro", "500 conversions / month", "100 with AI or translation"],
+    blurb: "Highest single-seat volume, AI reading, and translation.",
+    price: "$29 / month",
+    quota: "600 files / month",
+    features: [
+      "Everything in Pro",
+      "600 conversions / month",
+      "150 AI reading or translation",
+      "Translate into 19 languages",
+      "Unlimited downloads of each result",
+    ],
+  },
+];
+
+export type PriceRole = {
+  id: string;
+  role: string;
+  price: string;
+  quota: string;
+  ai: string;
+  history: string;
+  blurb: string;
+  features: string[];
+  cta: { href: string; label: string };
+  highlight?: boolean;
+};
+
+export const PRICE_ROLES: PriceRole[] = [
+  {
+    id: "anonymous",
+    role: "Guest",
+    price: "Free",
+    quota: "None",
+    ai: "No",
+    history: "No",
+    blurb: "Look around the workspace. Conversion needs a signed-in role.",
+    features: ["Browse the app", "No file conversion", "No saved history"],
+    cta: { href: "/", label: "Continue as guest" },
+  },
+  {
+    id: "basic",
+    role: "Basic",
+    price: "Free",
+    quota: "5 files / day",
+    ai: "3 / month",
+    history: "Unlimited downloads",
+    blurb: "Signed-in starter role. Five conversions a day, with a small AI allowance.",
+    features: PLAN_CATALOG[0].features,
+    cta: { href: "/profile", label: "Get Basic" },
+  },
+  {
+    id: "pro",
+    role: "Pro",
+    price: "$12 / month",
+    quota: "150 files / month",
+    ai: "40 with AI or translation",
+    history: "Unlimited downloads",
+    blurb: "Paid grade. Stripe assigns the Pro role after checkout.",
+    features: PLAN_CATALOG[1].features,
+    cta: { href: "/profile", label: "Choose Pro" },
+    highlight: true,
+  },
+  {
+    id: "premium",
+    role: "Premium",
+    price: "$29 / month",
+    quota: "600 files / month",
+    ai: "150 with AI or translation",
+    history: "Unlimited downloads",
+    blurb: "Highest single-seat grade. Stripe assigns the Premium role after checkout.",
+    features: PLAN_CATALOG[2].features,
+    cta: { href: "/profile", label: "Choose Premium" },
   },
 ];
 
@@ -55,6 +138,12 @@ export const PERMISSION_LABELS: Record<string, string> = {
   "history.read": "History",
   export: "Export",
 };
+
+export function formatPlanPrice(amount: number | null | undefined): string {
+  if (amount == null) return "—";
+  if (amount <= 0) return "Free";
+  return `$${amount} / month`;
+}
 
 export function planRank(id: string): number {
   const index = (PLAN_ORDER as readonly string[]).indexOf(id);
@@ -126,7 +215,7 @@ export function convertGateBody(gate: ConvertGate): string {
     case "login":
       return "Conversion needs a signed-in FileWorks account. Guest browsing is fine; converting a file is not.";
     case "quota_day":
-      return "Basic includes one conversion per day, with AI and translation. Come back tomorrow, or upgrade for a monthly allowance.";
+      return "Basic includes five conversions per day. Come back tomorrow, or upgrade for a monthly allowance.";
     case "quota_month":
       return "This account has used its monthly conversions. Upgrade or wait until next month.";
     case "quota_ai_day":

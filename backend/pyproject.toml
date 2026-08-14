@@ -33,6 +33,7 @@ dependencies = [
     "PyJWT>=2.9.0",
     "google-auth>=2.36.0",
     "awslambdaric>=3.0.0",
+    "stripe>=11.6.0",
 ]
 
 [project.scripts]

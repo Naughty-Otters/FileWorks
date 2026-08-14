@@ -15,6 +15,10 @@ import {
   logoutSession,
   refreshSession,
   upgradePlan,
+  startCheckout,
+  confirmCheckout,
+  fetchBillingCatalog,
+  openBillingPortal,
   exportMarkdownFile,
 } from "@/lib/api";
 import { setSession } from "@/lib/auth";
@@ -163,6 +167,44 @@ describe("api client", () => {
     );
     const me = await upgradePlan("pro");
     expect(me.plan).toBe("pro");
+  });
+
+  it("starts checkout and opens the billing portal", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/api/billing/checkout")) return jsonResponse({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
+      if (url.endsWith("/api/billing/portal")) return jsonResponse({ url: "https://billing.stripe.test/p" });
+      return new Response("nope", { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await startCheckout("pro")).toEqual({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
+    expect(await openBillingPortal()).toEqual({ url: "https://billing.stripe.test/p" });
+  });
+
+  it("loads the public catalog and confirms checkout", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/api/billing/catalog")) {
+          return jsonResponse({
+            enabled: true,
+            currency: "usd",
+            amounts: { basic: 0, pro: 12, premium: 29 },
+            prices: { basic: false, pro: true, premium: true },
+          });
+        }
+        if (url.endsWith("/api/billing/confirm")) return jsonResponse({ plan: "pro" });
+        return new Response("nope", { status: 404 });
+      }),
+    );
+    expect(await fetchBillingCatalog()).toEqual({
+      enabled: true,
+      currency: "usd",
+      amounts: { basic: 0, pro: 12, premium: 29 },
+      prices: { basic: false, pro: true, premium: true },
+    });
+    expect(await confirmCheckout("cs_1")).toEqual({ plan: "pro" });
   });
 
   it("parses error payloads and abort errors", async () => {
