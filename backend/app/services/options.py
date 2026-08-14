@@ -8,6 +8,7 @@ from pydantic.dataclasses import dataclass
 
 OptionKey = Literal[
     "use_ai",
+    "prefer_structure",
     "use_doc_preprocessor",
     "use_seal_recognition",
     "use_table_recognition",
@@ -19,6 +20,7 @@ OptionKey = Literal[
 
 OPTION_KEYS: tuple[OptionKey, ...] = (
     "use_ai",
+    "prefer_structure",
     "use_doc_preprocessor",
     "use_seal_recognition",
     "use_table_recognition",
@@ -36,6 +38,7 @@ class ExtractOptions:
     """Per-request document parsing toggles shared by every OCR engine."""
 
     use_ai: bool = False
+    prefer_structure: bool = False
     use_doc_preprocessor: bool = False
     use_seal_recognition: bool = False
     use_table_recognition: bool = True
@@ -91,6 +94,7 @@ class ExtractOptions:
         cls,
         *,
         use_ai: bool = False,
+        prefer_structure: bool = False,
         use_doc_preprocessor: bool = False,
         use_seal_recognition: bool = False,
         use_table_recognition: bool = True,
@@ -102,6 +106,7 @@ class ExtractOptions:
     ) -> ExtractOptions:
         return cls(
             use_ai=use_ai,
+            prefer_structure=prefer_structure,
             use_doc_preprocessor=use_doc_preprocessor,
             use_seal_recognition=use_seal_recognition,
             use_table_recognition=use_table_recognition,
@@ -117,6 +122,7 @@ class ExtractOptions:
 ENGINE_OPTION_SUPPORT: dict[str, dict[OptionKey, SupportLevel]] = {
     "structure": {key: "native" for key in OPTION_KEYS},
     "ocr": {
+        "prefer_structure": "approx",
         "use_doc_preprocessor": "native",
         "use_seal_recognition": "approx",
         "use_table_recognition": "approx",

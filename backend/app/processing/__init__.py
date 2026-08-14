@@ -11,7 +11,7 @@ Reader.can_process()          ← each reader declares capability
 EngineDecisionMaker           ← picks ordered candidates (priority + fallback)
     │
     ▼
-Reader.read()                 ← Text → AnyDoc → LLM (optional) → OCR (PP-OCR → Structure)
+Reader.read()                 ← Text → Docling (prefer_structure) → AnyDoc → LLM (optional) → OCR
     │
     ▼
 ReadResult / DocumentOutput   ← default output kind = Markdown

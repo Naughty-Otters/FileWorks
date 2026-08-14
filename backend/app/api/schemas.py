@@ -113,6 +113,7 @@ class PresignUploadResponse(BaseModel):
 
 class ExtractOptionsResponse(BaseModel):
     use_ai: bool = False
+    prefer_structure: bool = False
     use_doc_preprocessor: bool = False
     use_seal_recognition: bool = False
     use_table_recognition: bool = True

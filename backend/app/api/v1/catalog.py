@@ -87,6 +87,10 @@ OPTION_META: dict[str, dict[str, str]] = {
         "label": "Read with AI",
         "description": "Uses AI to read images and scanned PDFs.",
     },
+    "prefer_structure": {
+        "label": "Prefer structure",
+        "description": "Recover headings, lists, and layout on PDFs and scans. Slower.",
+    },
     "use_doc_preprocessor": {
         "label": "Doc preprocessor",
         "description": "Orientation and unwarping cleanup.",

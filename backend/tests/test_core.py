@@ -104,6 +104,29 @@ class DecisionTests(unittest.TestCase):
         chosen = maker.decide(source, [skip, low, high])
         self.assertEqual([r.id for r, _ in chosen], ["high", "low"])
 
+    def test_prefer_structure_postpones_anydoc_for_pdf_only(self) -> None:
+        anydoc = DummyReader(True)
+        anydoc.id = "anydoc"
+        anydoc.priority = 10
+        ocr = DummyReader(True)
+        ocr.id = "ocr"
+        ocr.priority = 50
+        maker = PriorityFallbackDecisionMaker()
+        pdf = SourceFile(path=Path("a.pdf"), filename="a.pdf", suffix=".pdf")
+        docx = SourceFile(path=Path("a.docx"), filename="a.docx", suffix=".docx")
+        off = [r.id for r, _ in maker.decide(pdf, [anydoc, ocr], ExtractOptions())]
+        self.assertEqual(off, ["anydoc", "ocr"])
+        on = [
+            r.id
+            for r, _ in maker.decide(pdf, [anydoc, ocr], ExtractOptions(prefer_structure=True))
+        ]
+        self.assertEqual(on, ["ocr", "anydoc"])
+        office = [
+            r.id
+            for r, _ in maker.decide(docx, [anydoc, ocr], ExtractOptions(prefer_structure=True))
+        ]
+        self.assertEqual(office, ["anydoc", "ocr"])
+
 
 class OptionsTests(unittest.TestCase):
     def test_normalized_lang_and_kwargs(self) -> None:

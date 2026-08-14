@@ -19,7 +19,7 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "info"]
     environment:
       DATABASE_URL: postgresql+psycopg://fileworks:fileworks@db:5432/fileworks
       JWT_SECRET: ${JWT_SECRET:-dev-insecure-change-me}
@@ -31,6 +31,7 @@ services:
       PADDLE_DEVICE: cpu
       OCR_ENGINE: ocr
       HOME: /tmp
+      PYTHONUNBUFFERED: "1"
     env_file:
       - path: backend/.env
         required: false

@@ -8,8 +8,10 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from app.core.logsetup import configure_app_logging
+
+configure_app_logging()
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
 def handler(event: dict[str, Any], _context: Any) -> dict[str, Any]:

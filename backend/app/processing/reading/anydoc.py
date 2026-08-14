@@ -9,6 +9,7 @@ from typing import Any
 
 from app.processing.models import Capability, DocumentOutput, OutputKind, ReadResult, SourceFile
 from app.processing.postprocess.media import EmbeddedImage, place_images
+from app.processing.reading.anydoc_markdown import document_to_markdown
 from app.processing.reading.base import Reader
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
 
@@ -197,7 +198,6 @@ class AnyDocReader(Reader):
         source: SourceFile,
         options: ExtractOptions | None = None,
     ) -> Capability:
-        del options
         if not anydoc_is_available():
             return Capability.no("firecrawl-anydoc is not installed")
         if source.is_image:
@@ -238,6 +238,9 @@ class AnyDocReader(Reader):
 
         markdown_str = str(markdown or "")
         if document is not None:
+            tree_md = document_to_markdown(document)
+            if tree_md.strip():
+                markdown_str = tree_md
             markdown_str = _embed_assets_as_data_urls(markdown_str, document)
 
         if _markdown_looks_empty(markdown_str):

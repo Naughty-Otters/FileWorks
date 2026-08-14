@@ -77,6 +77,102 @@ class ExtractFlowTests(unittest.TestCase):
         body = res.json()
         self.assertNotIn("Sign in", body["markdown"])
         self.assertEqual(body["markdown"], long)
+
+    def test_extract_prefer_structure_false_keeps_flag_off(self) -> None:
+        user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic")
+        principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+        client = TestClient(_app(principal))
+        captured: dict = {}
+
+        def fake_convert(*_args, **kwargs):
+            captured["options"] = kwargs.get("options")
+            return {
+                "markdown": "abcdefghij" * 8,
+                "json": {},
+                "pages": [],
+                "engine": "anydoc",
+                "provider": "anydoc",
+                "page_count": 1,
+                "regions": [],
+            }
+
+        with patch("app.api.routes.convert_document", side_effect=fake_convert), patch(
+            "app.api.routes.get_document_store"
+        ) as store_fn:
+            store = MagicMock()
+            store.save_document.return_value = DocumentRecord(
+                id="doc1",
+                filename="report.pdf",
+                content_type="application/pdf",
+                size_bytes=8,
+                source_key="s",
+                result_key="r",
+                created_at=utc_now_iso(),
+                engine="anydoc",
+                page_count=1,
+                output_format="both",
+                markdown="abcdefghij" * 8,
+                owner_id=str(user.id),
+            )
+            store_fn.return_value = store
+            res = client.post(
+                "/api/extract",
+                data={"prefer_structure": "false"},
+                files={"file": ("report.pdf", b"%PDF-1.4", "application/pdf")},
+            )
+        self.assertEqual(res.status_code, 200)
+        self.assertIsNotNone(captured.get("options"))
+        self.assertFalse(captured["options"].prefer_structure)
+
+    def test_extract_prefer_structure_true_keeps_flag_on(self) -> None:
+        user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic")
+        principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+        client = TestClient(_app(principal))
+        captured: dict = {}
+
+        def fake_convert(*_args, **kwargs):
+            captured["options"] = kwargs.get("options")
+            return {
+                "markdown": "abcdefghij" * 8,
+                "json": {},
+                "pages": [],
+                "engine": "ocr",
+                "provider": "ocr",
+                "page_count": 1,
+                "regions": [],
+            }
+
+        with patch("app.api.routes.convert_document", side_effect=fake_convert), patch(
+            "app.api.routes.get_document_store"
+        ) as store_fn:
+            store = MagicMock()
+            store.save_document.return_value = DocumentRecord(
+                id="doc1",
+                filename="report.pdf",
+                content_type="application/pdf",
+                size_bytes=8,
+                source_key="s",
+                result_key="r",
+                created_at=utc_now_iso(),
+                engine="ocr",
+                page_count=1,
+                output_format="both",
+                markdown="abcdefghij" * 8,
+                owner_id=str(user.id),
+            )
+            store_fn.return_value = store
+            res = client.post(
+                "/api/extract",
+                data={"prefer_structure": "true"},
+                files={"file": ("report.pdf", b"%PDF-1.4", "application/pdf")},
+            )
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(captured["options"].prefer_structure)
+
+    def test_extract_convert_error_is_500(self) -> None:
+        user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic")
+        principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+        client = TestClient(_app(principal))
         with patch("app.api.routes.convert_document", side_effect=RuntimeError("boom")), patch(
             "app.api.routes.get_document_store", return_value=MagicMock()
         ):

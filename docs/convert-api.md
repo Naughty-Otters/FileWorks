@@ -92,6 +92,7 @@ Booleans accept `true` / `false` / `1` / `0` / `yes` / `no` / `on`.
 | `target` | enum | `markdown` | no | Output in `content`. Aliases: `md` → markdown, `text` → txt. |
 | `download` | bool | `false` | no | If `true`, response is the file (`Content-Disposition: attachment`) instead of JSON. |
 | `use_ai` | bool | `false` | no | AI reading for images and scanned PDFs. Needs `capabilities.ai` and AI quota. |
+| `prefer_structure` | bool | `false` | no | PDF/scans try layout reading first; AnyDoc remains the fallback. Office still uses AnyDoc. |
 | `use_doc_preprocessor` | bool | `false` | no | Orientation / unwarping cleanup. |
 | `use_table_recognition` | bool | `true` | no | Recover grid / table layout. |
 | `use_formula_recognition` | bool | `false` | no | Math as LaTeX. |
@@ -101,7 +102,7 @@ Booleans accept `true` / `false` / `1` / `0` / `yes` / `no` / `on`.
 | `format_block_content` | bool | `true` | no | Markdown / HTML block formatting. |
 | `target_lang` | enum | `original` (skip) | no | Translate after reading. Needs `capabilities.translate` and AI quota. |
 
-Pipeline: **Text** (`.txt` / `.md`) → **AnyDoc** → **LLM** (if `use_ai`) → **OCR**, then optional translation, then export to `target`.
+Pipeline: **Text** (`.txt` / `.md`) → **Docling** (PDF/images when `prefer_structure`) → **AnyDoc** → **LLM** (if `use_ai`) → **OCR**, then optional structure edit / translation, then export to `target`.
 
 ---
 

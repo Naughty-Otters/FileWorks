@@ -62,8 +62,10 @@ class RouteHelperTests(unittest.TestCase):
 
     def test_form_bool(self) -> None:
         self.assertTrue(_form_bool("true"))
+        self.assertFalse(_form_bool("false"))
         self.assertFalse(_form_bool("0"))
         self.assertTrue(_form_bool(True))
+        self.assertFalse(_form_bool(False))
         self.assertTrue(_form_bool("ON"))
 
     def test_regions_from_pages(self) -> None:
@@ -310,7 +312,9 @@ class RemoteLlmTests(unittest.TestCase):
         def client(name, **kwargs):
             return lambda_client if name == "lambda" else s3
 
-        with patch("boto3.client", side_effect=client):
+        with patch("boto3.client", side_effect=client), self.assertLogs(
+            "app.processing.remote_llm", level="INFO"
+        ) as logs:
             parsed = invoke_remote_convert(
                 bucket="b",
                 key="k",
@@ -320,6 +324,8 @@ class RemoteLlmTests(unittest.TestCase):
                 options=ExtractOptions(),
             )
         self.assertEqual(parsed["markdown"], "hi")
+        self.assertTrue(any("Using engine=llm provider=llm file=a.png" in line for line in logs.output))
+        self.assertTrue(any("via=remote-lambda" in line for line in logs.output))
         settings.llm_lambda_function = ""
         settings.s3_bucket = None
 

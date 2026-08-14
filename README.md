@@ -19,7 +19,7 @@ fileworks/
 - Light / dark theme toggle
 - Google sign-in with plans: **Guest** (browse only), **Basic** (5 files/day, 3 AI or translation/month), **Pro** (150/month, 40 with AI or translation), **Premium** (600/month, 150 with AI or translation)
 - Stripe subscriptions (optional): each pay grade maps to the matching role after Checkout / webhook confirmation
-- Reading order: **Text** (`.txt` / `.md`) → **AnyDoc** → **LLM** (if configured) → **OCR** (PP-OCR, then PP-StructureV3)
+- Reading order: **Text** (`.txt` / `.md`) → **Docling** (PDF/images when Prefer structure) → **AnyDoc** → **LLM** (if configured) → **OCR**
 
 ## Prerequisites
 
@@ -97,7 +97,7 @@ API:
 - `GET /api/health` — service status + registered engines / option support
 - `GET /api/engines` — list OCR provider strategies (Paddle Structure / PP-OCR)
 - `POST /api/warmup` — eagerly load the configured OCR provider
-- `POST /api/extract` — workspace: multipart `file` or `s3_key`, parse option toggles (Text → AnyDoc → LLM → OCR)
+- `POST /api/extract` — workspace: multipart `file` or `s3_key`, parse option toggles (Text → Docling if Prefer structure → AnyDoc → LLM → OCR)
 - `POST /api/export` — workspace: JSON `{ markdown, format, filename? }` → `markdown|txt|html|json`
 - `GET /api/v1/convert` — one-shot API: list accepted inputs, targets, and which options are available
 - `POST /api/v1/convert` — one-shot API: multipart `file` + options + `target`; returns converted content (no `s3_key`)

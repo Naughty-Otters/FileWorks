@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -268,16 +269,56 @@ class TextReaderTests(unittest.TestCase):
             md.write_text("## Title", encoding="utf-8")
             self.assertEqual(pipeline.process(md, filename="note.md")["markdown"], "## Title")
 
+    def test_pipeline_logs_engine(self) -> None:
+        with TemporaryDirectory() as tmp:
+            pipeline = DocumentPipeline(readers=ReaderRegistry([TextReader()]))
+            txt = Path(tmp) / "note.txt"
+            txt.write_text("plain notes", encoding="utf-8")
+            with self.assertLogs("app.processing.pipeline", level="INFO") as logs:
+                pipeline.process(txt, filename="note.txt")
+            joined = "\n".join(logs.output)
+            self.assertIn("Using engine=text provider=text file=note.txt", joined)
+
+    def test_log_used_engine_extras(self) -> None:
+        from app.core.logsetup import configure_app_logging, log_used_engine
+
+        configure_app_logging()
+        configure_app_logging()
+        result = ReadResult(
+            engine_id="anydoc",
+            engine_label="AnyDoc",
+            metadata={"provider": "anydoc", "format": "docx", "structure_edited": True, "translated_to": "zh"},
+            options={"prefer_structure": True},
+        )
+        with self.assertLogs("app.processing.pipeline", level="INFO") as logs:
+            log_used_engine(result, filename="a.docx", logger=logging.getLogger("app.processing.pipeline"), via="remote-lambda")
+        joined = "\n".join(logs.output)
+        self.assertIn("format=docx", joined)
+        self.assertIn("structure_edited=true", joined)
+        self.assertIn("translated_to=zh", joined)
+        self.assertIn("prefer_structure=true", joined)
+        self.assertIn("via=remote-lambda", joined)
+
 
 class AnyDocHelperTests(unittest.TestCase):
     def test_empty_markdown(self) -> None:
         from app.processing.reading.anydoc import _markdown_looks_empty, AnyDocReader
+        from app.services.options import ExtractOptions
 
         self.assertTrue(_markdown_looks_empty("---|---"))
         self.assertFalse(_markdown_looks_empty("Hello world"))
         reader = AnyDocReader()
         img = SourceFile(path=Path("a.png"), filename="a.png", suffix=".png")
         self.assertFalse(reader.can_process(img).supported)
+        pdf = SourceFile(path=Path("a.pdf"), filename="a.pdf", suffix=".pdf")
+        self.assertTrue(reader.can_process(pdf).supported)
+        self.assertTrue(
+            reader.can_process(pdf, ExtractOptions(prefer_structure=True)).supported
+        )
+        docx = SourceFile(path=Path("a.docx"), filename="a.docx", suffix=".docx")
+        self.assertTrue(
+            reader.can_process(docx, ExtractOptions(prefer_structure=True)).supported
+        )
 
     def test_read_with_mocked_anydoc(self) -> None:
         from app.processing.reading import anydoc as anydoc_mod

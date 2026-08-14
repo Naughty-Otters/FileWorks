@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from app.processing.reading.anydoc import AnyDocReader
 from app.processing.reading.base import Reader
+from app.processing.reading.docling import DoclingReader
 from app.processing.reading.llm import LLMReader
 from app.processing.reading.ocr import OCRReader
 from app.processing.reading.text import TextReader
@@ -16,9 +17,10 @@ class ReaderRegistry:
 
     @staticmethod
     def default_readers() -> list[Reader]:
-        # Priority: Text → AnyDoc → LLM (if configured) → OCR (PP-OCR then Structure)
+        # Priority: Text → Docling (if prefer_structure) → AnyDoc → LLM → OCR
         return [
             TextReader(),
+            DoclingReader(),
             AnyDocReader(),
             LLMReader(),
             OCRReader(),

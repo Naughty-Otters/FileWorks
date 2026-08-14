@@ -1,4 +1,4 @@
-"""OCR reader — PP-OCR first, then PP-StructureV3 fallback."""
+"""OCR reader — PP-OCR first, or PP-StructureV3 first when prefer_structure."""
 
 from __future__ import annotations
 
@@ -7,20 +7,22 @@ import logging
 from app.processing.models import Capability, OutputKind, ReadResult, SourceFile
 from app.processing.reading.base import Reader
 from app.processing.reading.provider_adapter import IMAGE_AND_PDF_SUFFIXES, read_with_provider
+from app.services.markdown import markdown_looks_flat
 from app.services.ocr import get_ocr_service
 from app.services.options import ExtractOptions
 
 logger = logging.getLogger(__name__)
 
-# Provider try order inside this reader (not separate Readers).
-_PROVIDER_ORDER = ("ocr", "structure")
+_DEFAULT_ORDER = ("ocr", "structure")
+_STRUCTURE_FIRST = ("structure", "ocr")
 
 
 class OCRReader(Reader):
     """
     Single reading path for OCR backends (Paddle providers).
 
-    Tries PP-OCR, then PP-StructureV3 when OCR fails or returns empty Markdown.
+    Default: PP-OCR, then PP-StructureV3 when OCR fails or returns empty Markdown.
+    ``prefer_structure``: Structure first, and flat OCR text can fall through.
     """
 
     id = "ocr"
@@ -49,11 +51,14 @@ class OCRReader(Reader):
         preferred_output: OutputKind = OutputKind.MARKDOWN,
     ) -> ReadResult:
         del preferred_output
+        prefer_structure = bool(options and options.prefer_structure)
+        order = _STRUCTURE_FIRST if prefer_structure else _DEFAULT_ORDER
         registry = get_ocr_service().registry
         errors: list[str] = []
         last_empty: ReadResult | None = None
+        last_flat: ReadResult | None = None
 
-        for index, provider_id in enumerate(_PROVIDER_ORDER):
+        for index, provider_id in enumerate(order):
             provider = registry.get(provider_id)
             logger.info("OCRReader trying provider=%s", provider_id)
             try:
@@ -70,15 +75,26 @@ class OCRReader(Reader):
                 errors.append(msg)
                 continue
 
-            if not (result.markdown() or "").strip():
+            markdown = result.markdown() or ""
+            has_more = index < len(order) - 1
+            if not markdown.strip():
                 msg = f"{provider_id}: empty markdown"
                 logger.warning("OCR provider produced no text — %s", msg)
                 errors.append(msg)
                 last_empty = result
-                if index < len(_PROVIDER_ORDER) - 1:
+                if has_more:
                     continue
+                return result
+            if prefer_structure and has_more and markdown_looks_flat(markdown):
+                msg = f"{provider_id}: flat markdown (prefer_structure)"
+                logger.warning("OCR provider structure looks weak — %s", msg)
+                errors.append(msg)
+                last_flat = result
+                continue
             return result
 
+        if last_flat is not None:
+            return last_flat
         if last_empty is not None:
             return last_empty
 

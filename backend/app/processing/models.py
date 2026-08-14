@@ -38,7 +38,7 @@ class SourceFile:
     ) -> SourceFile:
         resolved = path.resolve()
         name = filename or resolved.name
-        suffix = resolved.suffix.lower()
+        suffix = Path(name).suffix.lower() or resolved.suffix.lower()
         size = resolved.stat().st_size if resolved.exists() else 0
         return cls(
             path=resolved,

@@ -29,6 +29,7 @@ from app.auth.deps import Principal, get_principal
 from app.auth.quota import assert_can_extract, assert_can_use_ai, record_extract
 from app.auth.redact import redact_extract_payload
 from app.core.config import get_settings
+from app.core.logsetup import emit
 from app.engines.llm.catalog import list_vision_providers
 from app.processing.postprocess.media import expand_embedded_media, fold_embedded_media
 from app.processing.pipeline import get_document_pipeline
@@ -361,6 +362,7 @@ async def extract(
         description="Desired output format",
     ),
     use_ai: bool = Form(default=False),
+    prefer_structure: bool = Form(default=False),
     use_doc_preprocessor: bool = Form(default=False),
     use_seal_recognition: bool = Form(default=False),
     use_table_recognition: bool = Form(default=True),
@@ -397,6 +399,7 @@ async def extract(
     temp_path = settings.upload_dir / f"{document_id}{suffix}"
     options = ExtractOptions.from_form(
         use_ai=_form_bool(use_ai),
+        prefer_structure=_form_bool(prefer_structure),
         use_doc_preprocessor=_form_bool(use_doc_preprocessor),
         use_seal_recognition=_form_bool(use_seal_recognition),
         use_table_recognition=_form_bool(use_table_recognition),
@@ -405,6 +408,11 @@ async def extract(
         use_region_detection=_form_bool(use_region_detection),
         format_block_content=_form_bool(format_block_content),
         target_lang=str(target_lang or ""),
+    )
+    emit(
+        f"Extract file={original_name} prefer_structure={options.prefer_structure is True} "
+        f"use_ai={options.use_ai is True}",
+        logger=logger,
     )
     assert_can_use_ai(
         db,

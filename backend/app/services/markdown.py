@@ -246,6 +246,28 @@ def normalize_structure_markdown(raw: Any) -> str:
     return text
 
 
+def markdown_structure_score(markdown: str) -> tuple[int, int, int, int]:
+    """Count (headings, lists, tables, characters) in Markdown."""
+    text = markdown or ""
+    headings = len(re.findall(r"^#{1,6}\s+\S", text, flags=re.M))
+    lists = len(re.findall(r"^\s*(?:[-*+]|\d+[.)])\s+\S", text, flags=re.M))
+    tables = len(re.findall(r"<table\b|^\s*\|.+\|\s*$", text, flags=re.I | re.M))
+    return headings, lists, tables, len(text.strip())
+
+
+def markdown_looks_flat(markdown: str, *, min_chars: int = 400) -> bool:
+    """True when there is substantial prose but almost no headings, lists, or tables.
+
+    Short notes and empty strings are not flat — empty is handled separately so a
+    later reader can still win, and short letters should not be rejected.
+    """
+    text = (markdown or "").strip()
+    if len(text) < min_chars:
+        return False
+    headings, lists, tables, _chars = markdown_structure_score(text)
+    return headings == 0 and lists == 0 and tables == 0
+
+
 def pick_best_markdown(*, pipeline_markdown: Any, json_payload: Any) -> str:
     """Prefer rich pipeline markdown; fall back to layout-block reconstruction."""
     primary = normalize_structure_markdown(pipeline_markdown)
@@ -255,13 +277,10 @@ def pick_best_markdown(*, pipeline_markdown: Any, json_payload: Any) -> str:
     )
 
     def richness(md: str) -> tuple[int, int, int, int, int]:
-        return (
-            len(re.findall(r"!\[|<img\b", md, flags=re.I)),
-            len(re.findall(r"(?m)^#{1,6}\s", md)),
-            len(re.findall(r"<table|^\|.+\|$", md, flags=re.I | re.M)),
-            len(re.findall(r"\*\*[^*]+\*\*|__.+__", md)),
-            len(md),
-        )
+        headings, lists, tables, chars = markdown_structure_score(md)
+        images = len(re.findall(r"!\[|<img\b", md, flags=re.I))
+        emphasis = len(re.findall(r"\*\*[^*]+\*\*|__.+__", md))
+        return (images, headings, tables, emphasis + lists, chars)
 
     if not primary:
         chosen = rebuilt

@@ -8,6 +8,7 @@ import uuid
 from typing import Any
 
 from app.core.config import get_settings
+from app.core.logsetup import log_used_engine
 from app.services.options import ExtractOptions
 
 logger = logging.getLogger(__name__)
@@ -79,4 +80,5 @@ def invoke_remote_convert(
     parsed = json.loads(raw_result.decode("utf-8"))
     if not isinstance(parsed, dict):
         raise RuntimeError("LLM Lambda result was not a JSON object")
+    log_used_engine(parsed, filename=filename, logger=logger, via="remote-lambda")
     return parsed

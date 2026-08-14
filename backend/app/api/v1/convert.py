@@ -124,6 +124,10 @@ async def convert_file(
         default=False,
         description="AI reading for images and scanned PDFs. Default false. Requires capabilities.ai.",
     ),
+    prefer_structure: bool | str = Form(
+        default=False,
+        description="Recover headings, lists, and layout on PDFs and scans. Slower. Default false.",
+    ),
     use_doc_preprocessor: bool | str = Form(
         default=False,
         description="Orientation and unwarping cleanup. Default false.",
@@ -166,6 +170,7 @@ async def convert_file(
     lang = resolve_language(target_lang)
     options = ExtractOptions.from_form(
         use_ai=_form_bool(use_ai),
+        prefer_structure=_form_bool(prefer_structure),
         use_doc_preprocessor=_form_bool(use_doc_preprocessor),
         use_seal_recognition=_form_bool(use_seal_recognition),
         use_table_recognition=_form_bool(use_table_recognition),

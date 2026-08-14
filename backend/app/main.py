@@ -14,21 +14,20 @@ from app.api.auth_routes import router as auth_router
 from app.api.billing_routes import router as billing_router
 from app.api.v1 import router as v1_router
 from app.core.config import get_settings
+from app.core.logsetup import configure_app_logging
 
 # Allow local vendor/ installs (e.g. firecrawl-anydoc) when site-packages is locked.
 _vendor = Path(__file__).resolve().parents[1] / "vendor"
 if _vendor.is_dir() and str(_vendor) not in sys.path:
     sys.path.insert(0, str(_vendor))
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-)
+configure_app_logging()
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    configure_app_logging()
     settings = get_settings()
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
     if settings.storage_backend.lower() == "local":

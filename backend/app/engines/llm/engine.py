@@ -154,6 +154,32 @@ class LLMEngine(OCREngine):
             raise LLMClientError(f"{spec.label} returned empty Markdown")
         return markdown
 
+    def complete_text(self, prompt: str) -> str:
+        """Text-only completion for post-process edits (structure, not vision OCR)."""
+        self.ensure_ready()
+        spec = self._spec
+        api_key = self._api_key()
+        assert spec is not None and api_key
+        raw = get_api_provider(spec.id).complete_text(
+            ConvertRequest(
+                spec=spec,
+                file_path=Path("."),
+                suffix=".md",
+                api_key=api_key,
+                model=self._model(),
+                max_tokens=int(self.settings.llm_max_tokens),
+                timeout_s=float(self.settings.llm_timeout_s),
+                target=self._http_target(),
+                max_pages=1,
+                max_image_side=1,
+            ),
+            prompt,
+        )
+        markdown = clean_markdown(raw)
+        if not markdown:
+            raise LLMClientError(f"{spec.label} returned empty Markdown")
+        return markdown
+
     def describe(self) -> dict[str, Any]:
         spec = self._spec
         target = self._http_target() if spec else None

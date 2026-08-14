@@ -28,6 +28,11 @@ const OPTION_META: Array<{
     hint: "Uses AI to read images and scanned PDFs",
   },
   {
+    key: "prefer_structure",
+    label: "Prefer structure",
+    hint: "Recover headings, lists, and layout on PDFs and scans. Slower",
+  },
+  {
     key: "use_doc_preprocessor",
     label: "Doc preprocessor",
     hint: "Orientation / unwarping cleanup",
