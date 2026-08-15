@@ -99,6 +99,17 @@ class S3StoreTests(unittest.TestCase):
             sanitize_user_id("bad id")
         self.assertEqual(sanitize_filename("../x.png"), "x.png")
 
+    def test_get_upload_bytes_reads_the_uploads_bucket(self) -> None:
+        """POST /extract with an s3_key reads presigned uploads, which live in their own bucket."""
+        store = S3DocumentStore(bucket="docs", prefix="fw", region="us-west-2", upload_bucket="uploads")
+        fake = FakeS3()
+        store._client = fake
+        key = store.upload_object_key("anonuser1", "doc1", "photo.png")
+        store.put_bytes(key, b"png-bytes", "image/png")
+        self.assertIn(("uploads", key), fake.objects)
+        self.assertEqual(store.get_upload_bytes(key), b"png-bytes")
+        self.assertIsNone(store.get_upload_bytes(store.upload_object_key("anonuser1", "doc1", "gone.png")))
+
     def test_roundtrip(self) -> None:
         store = S3DocumentStore(bucket="docs", prefix="fw", region="us-west-2", upload_bucket="uploads")
         fake = FakeS3()
@@ -405,6 +416,46 @@ class LambdaAndAppTests(unittest.TestCase):
         with patch("app.db.session.init_db"), patch("app.storage.get_document_store"):
             app = create_app()
         self.assertEqual(app.title, get_settings().app_name)
+
+    def test_cors_origin_regex_allows_preview_hosts(self) -> None:
+        """Pages preview hosts change every deploy; the regex covers them without an apply."""
+        settings = get_settings()
+        preview = "https://a560669e.fileworks-staging.pages.dev"
+        with patch.object(
+            settings,
+            "cors_origin_regex",
+            r"^https://([a-z0-9-]+\.)?fileworks-staging\.pages\.dev$",
+        ):
+            with patch("app.db.session.init_db"), patch("app.storage.get_document_store"):
+                app = create_app()
+            res = TestClient(app).options(
+                "/api/health",
+                headers={"Origin": preview, "Access-Control-Request-Method": "GET"},
+            )
+        self.assertEqual(res.headers.get("access-control-allow-origin"), preview)
+
+    def test_cors_rejects_unrelated_origin(self) -> None:
+        with patch("app.db.session.init_db"), patch("app.storage.get_document_store"):
+            app = create_app()
+        res = TestClient(app).options(
+            "/api/health",
+            headers={"Origin": "https://evil.example.com", "Access-Control-Request-Method": "GET"},
+        )
+        self.assertIsNone(res.headers.get("access-control-allow-origin"))
+
+    def test_unhandled_error_keeps_cors_headers(self) -> None:
+        """A crash must not read as a CORS failure, or the UI blames the network."""
+        origin = "http://localhost:3000"
+        with patch("app.db.session.init_db"), patch("app.storage.get_document_store"):
+            app = create_app()
+
+        @app.get("/api/boom")
+        def _boom() -> None:
+            raise RuntimeError("kaboom")
+
+        res = TestClient(app).get("/api/boom", headers={"Origin": origin})
+        self.assertEqual(res.status_code, 500)
+        self.assertEqual(res.headers.get("access-control-allow-origin"), origin)
 
     def test_private_network_preflight_header(self) -> None:
         with patch("app.db.session.init_db"), patch("app.storage.get_document_store"):

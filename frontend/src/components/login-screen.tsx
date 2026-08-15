@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchMe, type MeResponse } from "@/lib/api";
+import { getAccessToken } from "@/lib/auth";
 import { resolveGoogleClientId } from "@/lib/google-gis";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -9,9 +10,27 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteFooter } from "@/components/site-footer";
 import { MarketingNav } from "@/components/marketing-nav";
 
-export function loginRedirectPath(search = window.location.search): string {
-  const next = new URLSearchParams(search).get("next") || "/";
-  return next.startsWith("/") && !next.startsWith("//") ? next : "/";
+export function loginRedirectPath(
+  search = window.location.search,
+  referrer = typeof document === "undefined" ? "" : document.referrer,
+): string {
+  const next = new URLSearchParams(search).get("next");
+  if (next) return next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  // Most "Sign in" links carry no ?next=, so fall back to the page that sent us
+  // here. Same-origin only, and never back to /login itself.
+  return sameOriginPath(referrer);
+}
+
+function sameOriginPath(referrer: string): string {
+  if (!referrer || typeof window === "undefined") return "/";
+  try {
+    const url = new URL(referrer);
+    if (url.origin !== window.location.origin) return "/";
+    if (url.pathname.replace(/\/$/, "") === "/login") return "/";
+    return `${url.pathname}${url.search}${url.hash}` || "/";
+  } catch {
+    return "/";
+  }
 }
 
 function redirectAfterLogin() {
@@ -31,6 +50,26 @@ export function LoginScreen() {
       })
       .catch(() => undefined)
       .finally(() => setSessionReady(true));
+  }, []);
+
+  // Google's popup/FedCM flow can hand back a credential without our callback
+  // completing its navigation. Re-check whenever the tab regains focus so a
+  // signed-in user is never stranded on this page.
+  useEffect(() => {
+    function recheck() {
+      if (document.visibilityState === "hidden" || !getAccessToken()) return;
+      void fetchMe()
+        .then((session) => {
+          if (session.user) redirectAfterLogin();
+        })
+        .catch(() => undefined);
+    }
+    window.addEventListener("focus", recheck);
+    document.addEventListener("visibilitychange", recheck);
+    return () => {
+      window.removeEventListener("focus", recheck);
+      document.removeEventListener("visibilitychange", recheck);
+    };
   }, []);
 
   return (

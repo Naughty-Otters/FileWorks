@@ -55,6 +55,17 @@ variable "cors_origin_regex" {
   default     = ""
 }
 
+variable "cors_wildcard_origins" {
+  type        = list(string)
+  description = "S3-only CORS origins that may contain one '*' (e.g. https://*.fileworks-staging.pages.dev). Keep empty in prod."
+  default     = []
+
+  validation {
+    condition     = alltrue([for origin in var.cors_wildcard_origins : length(regexall("\\*", origin)) <= 1])
+    error_message = "S3 allows at most one '*' per allowed origin."
+  }
+}
+
 variable "max_upload_mb" {
   type    = number
   default = 50
@@ -75,6 +86,12 @@ variable "google_client_id" {
   type        = string
   default     = "1063086817026-33rehu3tmsg08gll6dc9jue97000ib8f.apps.googleusercontent.com"
   description = "Google OAuth client ID (GIS). Public; also set on the API Lambda and Pages build."
+}
+
+variable "enable_nat_gateway" {
+  type        = bool
+  default     = true
+  description = "Give the private-subnet Lambda public egress. Required for Google sign-in (fetches googleapis.com certs) and Stripe. Disabling it breaks /api/auth/google."
 }
 
 variable "db_instance_class" {

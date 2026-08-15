@@ -14,7 +14,7 @@ resource "aws_secretsmanager_secret_version" "app" {
     LLM_MODEL             = "gpt-4o"
     LLM_API_KEY           = ""
     TRANSLATE_PROVIDER    = "deepseek"
-    TRANSLATE_MODEL       = "deepseek-flash"
+    TRANSLATE_MODEL       = "deepseek-v4-flash"
     TRANSLATE_API_KEY     = ""
     GOOGLE_CLIENT_ID      = var.google_client_id
     JWT_SECRET            = random_password.jwt.result

@@ -37,6 +37,12 @@ export function GoogleSignIn({
           client_id: clientId,
           ux_mode: "popup",
           auto_select: false,
+          // Classic popup flow: the popup delivers the credential via
+          // window.opener.postMessage, which our `same-origin-allow-popups` COOP
+          // header permits. FedCM is intentionally NOT used here — when it half-
+          // engages it silently drops the credential (button "succeeds" but our
+          // callback never fires and nothing is stored).
+          use_fedcm_for_prompt: false,
           callback: async (response) => {
             if (!response.credential) {
               setError("Google did not return a sign-in credential.");

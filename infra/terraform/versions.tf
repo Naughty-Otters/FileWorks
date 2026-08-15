@@ -36,6 +36,9 @@ locals {
   region      = data.aws_region.current.region
   image_uri   = "${aws_ecr_repository.api.repository_url}:${var.image_tag}"
   cors_csv    = join(",", var.cors_origins)
+  # S3 allows one "*" per origin, so preview hosts need no per-deploy update.
+  # The API side uses var.cors_origin_regex for the same purpose.
+  s3_cors_origins = distinct(concat(var.cors_origins, var.cors_wildcard_origins))
   # Bucket alias: staging → stage so URIs match s3://fileworks-prod|stage|dev/...
   s3_alias            = var.environment == "staging" ? "stage" : var.environment
   uploads_bucket_name = var.uploads_bucket_name != "" ? var.uploads_bucket_name : "fileworks-${local.s3_alias}"

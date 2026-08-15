@@ -124,6 +124,13 @@ class PresignUploadResponse(BaseModel):
     expires_in: int = 600
 
 
+class HistoryFileUrlResponse(BaseModel):
+    url: str
+    filename: str
+    content_type: str | None = None
+    expires_in: int | None = None
+
+
 class ExtractOptionsResponse(BaseModel):
     use_ai: bool = False
     prefer_structure: bool = False

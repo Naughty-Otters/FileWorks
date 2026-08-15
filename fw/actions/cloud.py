@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import textwrap
 import time
+from pathlib import Path
 
 from fw import console
 from fw.context import (
@@ -253,6 +254,44 @@ def push_image(ctx: Context) -> None:
         ctx=ctx,
     )
     console.success(f"Pushed {image}")
+    _roll_out_image(ctx, image)
+
+
+def _roll_out_image(ctx: Context, image: str) -> None:
+    """Point live functions at the image just pushed.
+
+    Terraform holds image_uri as the ``:<env>`` tag, and that string does not
+    change between pushes, so `apply` reports no diff and the function keeps
+    running whatever digest it resolved on the day it was created. Re-pointing it
+    at the same tag makes Lambda resolve the new digest.
+    """
+    for suffix in ("api", "llm"):
+        name = f"{ctx.env.prefix}-{suffix}"
+        try:
+            run(
+                [
+                    "aws",
+                    "lambda",
+                    "update-function-code",
+                    "--function-name",
+                    name,
+                    "--image-uri",
+                    image,
+                    "--no-cli-pager",
+                ],
+                capture=True,
+                ctx=ctx,
+            )
+        except CommandError:
+            console.info(f"{name} does not exist yet — `fw apply` will create it.")
+            continue
+        run(
+            ["aws", "lambda", "wait", "function-updated", "--function-name", name],
+            capture=True,
+            ctx=ctx,
+            check=False,
+        )
+        console.success(f"{name} now runs the image just pushed")
 
 
 def plan(ctx: Context) -> None:
@@ -313,6 +352,12 @@ def status(ctx: Context) -> None:
     api_url = str(outputs.get("api_url") or "").rstrip("/")
     if api_url:
         _probe_health(ctx, api_url)
+        _check_cors(ctx, api_url, ctx.env.pages_origin)
+        _check_ui_endpoint(ctx, ctx.env.pages_origin, api_url)
+    for key, method in (("history_bucket", "GET"), ("uploads_bucket", "PUT")):
+        bucket = str(outputs.get(key) or "")
+        if bucket:
+            _check_s3_cors(ctx, bucket, ctx.env.pages_origin, method)
 
 
 # A cold start pulls the OCR image and boots FastAPI, so the first probe can
@@ -437,6 +482,113 @@ def _write_local_cors(ctx: Context, origins: list[str]) -> None:
     console.success(f"Wrote {ctx.env.local_tfvars_file}")
 
 
+def _write_runtime_config(out_dir: Path, api_url: str, canonical_origin: str) -> None:
+    """Point the built UI at the API without rebuilding any JS bundle."""
+    payload = json.dumps({"apiUrl": api_url, "canonicalOrigin": canonical_origin})
+    (out_dir / "config.js").write_text(
+        "// Written by `fw frontend` from the Terraform api_url output.\n"
+        f"window.__FILEWORKS_CONFIG__ = {payload};\n",
+        encoding="utf-8",
+    )
+    console.success(f"UI endpoint pinned to {api_url}")
+    console.info(f"Preview hosts redirect to {canonical_origin}")
+
+
+def _check_cors(ctx: Context, api_url: str, origin: str) -> bool:
+    """Preflight exactly like the browser, so drift surfaces at deploy time."""
+    probe = run(
+        [
+            "curl",
+            "-sS",
+            "-o",
+            "/dev/null",
+            "-D",
+            "-",
+            "--max-time",
+            "60",
+            "-X",
+            "OPTIONS",
+            f"{api_url}/api/health",
+            "-H",
+            f"Origin: {origin}",
+            "-H",
+            "Access-Control-Request-Method: GET",
+        ],
+        check=False,
+        capture=True,
+        ctx=ctx,
+    )
+    allowed = origin.lower() in (probe.stdout or "").lower()
+    if allowed:
+        console.success(f"CORS ok for {origin}")
+    else:
+        console.warn(
+            f"CORS check failed for {origin}. "
+            "Confirm cors_origins in envs/<env>.tfvars, then re-run apply."
+        )
+    return allowed
+
+
+def _check_s3_cors(ctx: Context, bucket: str, origin: str, method: str) -> bool:
+    """The browser talks to S3 directly, so each bucket needs its own CORS rule.
+
+    Uploads PUT to the uploads bucket and previews GET a presigned history URL.
+    Neither goes through the API, so an out-of-date bucket rule is invisible to
+    the API preflight check above and only shows up as a failed click.
+    """
+    probe = run(
+        [
+            "curl",
+            "-sS",
+            "-o",
+            "/dev/null",
+            "-D",
+            "-",
+            "--max-time",
+            "30",
+            "-X",
+            "OPTIONS",
+            f"https://{bucket}.s3.amazonaws.com/",
+            "-H",
+            f"Origin: {origin}",
+            "-H",
+            f"Access-Control-Request-Method: {method}",
+        ],
+        check=False,
+        capture=True,
+        ctx=ctx,
+    )
+    if origin.lower() in (probe.stdout or "").lower():
+        console.success(f"S3 CORS ok for {method} on {bucket}")
+        return True
+    console.warn(
+        f"S3 CORS check failed for {method} on {bucket} from {origin}. "
+        "Confirm cors_origins in envs/<env>.tfvars, then re-run apply."
+    )
+    return False
+
+
+def _check_ui_endpoint(ctx: Context, pages_origin: str, api_url: str) -> bool:
+    """Catch a UI still pinned to an older API endpoint."""
+    probe = run(
+        ["curl", "-sS", "--max-time", "30", f"{pages_origin}/config.js"],
+        check=False,
+        capture=True,
+        ctx=ctx,
+    )
+    if probe.returncode != 0:
+        console.info("Could not read the deployed config.js (UI may not be published yet).")
+        return False
+    if api_url in (probe.stdout or ""):
+        console.success(f"UI config.js matches {api_url}")
+        return True
+    console.warn(
+        f"UI at {pages_origin} is not pinned to {api_url}. "
+        "Run `fw --env <env> frontend` to refresh config.js."
+    )
+    return False
+
+
 def _parse_pages_urls(text: str) -> list[str]:
     found: list[str] = []
     for match in re.findall(r"https://[a-zA-Z0-9.-]+\.pages\.dev", text):
@@ -494,6 +646,7 @@ def frontend(ctx: Context) -> None:
     out_dir = FRONTEND_DIR / "out"
     if not out_dir.is_dir():
         raise CommandError("frontend/out missing after build — static export failed.")
+    _write_runtime_config(out_dir, api_url, ctx.env.pages_origin)
 
     deploy = wrangler(
         ctx,
@@ -508,30 +661,26 @@ def frontend(ctx: Context) -> None:
         capture=True,
     )
     combined = (deploy.stdout or "") + (deploy.stderr or "")
-    urls = _parse_pages_urls(combined)
+    preview_urls = [u for u in _parse_pages_urls(combined) if u != ctx.env.pages_origin]
+    # Always hand back the stable alias. Per-deployment hosts (<hash>.<project>.pages.dev)
+    # are deliberately kept out of CORS: they change every deploy, S3 CORS has no regex,
+    # and Google OAuth needs each origin registered by hand.
     frontend_url = ctx.env.pages_origin
-    if urls:
-        stable = [u for u in urls if u == frontend_url] or urls
-        frontend_url = stable[0]
-    # Prod CORS stays in envs/prod.tfvars only — never auto-inject preview hosts.
-    # Staging/dev write a local override so S3 CORS also allows the latest preview.
     if not ctx.env.is_production:
-        origins = [
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            ctx.env.pages_origin,
-            *urls,
-        ]
-        _write_local_cors(ctx, origins)
-        console.info("Updating API + S3 CORS for this environment's Pages origin.")
+        _write_local_cors(ctx, ["http://localhost:3000", "http://127.0.0.1:3000", frontend_url])
+        console.info("Updating API + S3 CORS for the stable Pages origin.")
         terraform_cmd(ctx, ["apply", "-auto-approve"])
     else:
-        console.info(
-            "Prod CORS is owned by envs/prod.tfvars "
-            f"(exact origins only; current Pages URL {frontend_url})."
-        )
+        console.info("Prod CORS is owned by envs/prod.tfvars (exact origins only).")
     console.success(f"Frontend published → {frontend_url}")
+    if preview_urls:
+        console.info(
+            "Per-deployment preview host: "
+            + ", ".join(preview_urls)
+            + " — sign-in only works on origins registered with Google; use the stable URL."
+        )
     console.info(f"API {api_url}")
+    _check_cors(ctx, api_url, frontend_url)
 
 
 def full(ctx: Context) -> None:

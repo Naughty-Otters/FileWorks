@@ -33,7 +33,7 @@ resource "aws_s3_bucket_cors_configuration" "history" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "PUT", "HEAD"]
-    allowed_origins = var.cors_origins
+    allowed_origins = local.s3_cors_origins
     expose_headers  = ["ETag", "Content-Type"]
     max_age_seconds = 3600
   }
@@ -121,7 +121,7 @@ resource "aws_s3_bucket_cors_configuration" "uploads" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "PUT", "HEAD"]
-    allowed_origins = var.cors_origins
+    allowed_origins = local.s3_cors_origins
     expose_headers  = ["ETag", "Content-Type"]
     max_age_seconds = 3600
   }

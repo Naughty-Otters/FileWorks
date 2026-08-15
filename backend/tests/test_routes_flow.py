@@ -15,6 +15,7 @@ from app.auth.plans import get_plan
 from app.auth.tokens import issue_access_token
 from app.db.session import get_db
 from app.storage.base import DocumentRecord, utc_now_iso
+from app.storage.s3 import S3DocumentStore
 
 
 def _app(principal: Principal) -> FastAPI:
@@ -271,11 +272,96 @@ class ExtractFlowTests(unittest.TestCase):
             self.assertNotIn("AnyDoc", str(detail.json()))
             file_res = client.get("/api/history/doc1/file")
             self.assertEqual(file_res.status_code, 200)
+            # Local storage serves its own bytes, so the URL stays same-origin.
+            url_res = client.get("/api/history/doc1/file-url")
+            self.assertEqual(url_res.status_code, 200)
+            self.assertEqual(url_res.json()["url"], "/api/history/doc1/file")
+            self.assertEqual(url_res.json()["filename"], "note.png")
             deleted = client.delete("/api/history/doc1")
             self.assertEqual(deleted.status_code, 200)
             store.get_document.return_value = None
             missing = client.get("/api/history/missing")
             self.assertEqual(missing.status_code, 404)
+
+    def test_history_file_url_returns_presigned_s3_url(self) -> None:
+        """S3 mode must hand back the URL: a 307 makes the browser preflight with Origin: null."""
+        user = SimpleNamespace(id=uuid4(), email="p@x.co", plan="pro")
+        principal = Principal(plan=get_plan("pro"), user=user)  # type: ignore[arg-type]
+        client = TestClient(_app(principal))
+        record = DocumentRecord(
+            id="doc1",
+            filename="Auto Insurance.pdf",
+            content_type="application/pdf",
+            size_bytes=9,
+            source_key="docs/doc1/source.pdf",
+            result_key="docs/doc1/result.json",
+            created_at=utc_now_iso(),
+            engine="ocr",
+            page_count=1,
+            output_format="both",
+            markdown="# hi",
+            json_data={},
+            pages=[],
+            owner_id=str(user.id),
+        )
+        store = S3DocumentStore(bucket="docs", prefix="fw", region="us-east-1", upload_bucket="uploads")
+        store._client = SimpleNamespace(
+            generate_presigned_url=lambda *a, **kw: "https://docs.s3.amazonaws.com/fw/docs/doc1/source.pdf?sig=x"
+        )
+        store.get_document = MagicMock(return_value=record)  # type: ignore[method-assign]
+        with patch("app.api.routes.get_document_store", return_value=store):
+            res = client.get("/api/history/doc1/file-url")
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertTrue(body["url"].startswith("https://"))
+        self.assertEqual(body["filename"], "Auto Insurance.pdf")
+        self.assertEqual(body["content_type"], "application/pdf")
+
+    def _s3_history_client(self) -> tuple[TestClient, object]:
+        user = SimpleNamespace(id=uuid4(), email="p@x.co", plan="pro")
+        principal = Principal(plan=get_plan("pro"), user=user)  # type: ignore[arg-type]
+        record = DocumentRecord(
+            id="doc1",
+            filename="note.pdf",
+            content_type="application/pdf",
+            size_bytes=9,
+            source_key="docs/doc1/source.pdf",
+            result_key="docs/doc1/result.json",
+            created_at=utc_now_iso(),
+            engine="ocr",
+            page_count=1,
+            output_format="both",
+            markdown="# hi",
+            json_data={},
+            pages=[],
+            owner_id=str(user.id),
+        )
+        store = S3DocumentStore(bucket="docs", prefix="fw", region="us-east-1", upload_bucket="uploads")
+        store._client = SimpleNamespace(
+            generate_presigned_url=lambda *a, **kw: "https://docs.s3.amazonaws.com/fw/x?sig=1"
+        )
+        store.get_document = MagicMock(return_value=record)  # type: ignore[method-assign]
+        return TestClient(_app(principal)), store
+
+    def test_history_file_refuses_to_redirect_a_cross_origin_fetch(self) -> None:
+        """The browser would retry the redirect at S3 with Origin: null and be refused."""
+        client, store = self._s3_history_client()
+        with patch("app.api.routes.get_document_store", return_value=store):
+            res = client.get(
+                "/api/history/doc1/file",
+                headers={"Origin": "https://fileworks-staging.pages.dev"},
+                follow_redirects=False,
+            )
+        self.assertEqual(res.status_code, 409)
+        self.assertIn("file-url", res.json()["detail"])
+
+    def test_history_file_still_redirects_a_plain_download(self) -> None:
+        """Navigations and curl send no Origin, so the redirect remains useful there."""
+        client, store = self._s3_history_client()
+        with patch("app.api.routes.get_document_store", return_value=store):
+            res = client.get("/api/history/doc1/file", follow_redirects=False)
+        self.assertEqual(res.status_code, 307)
+        self.assertTrue(res.headers["location"].startswith("https://docs.s3.amazonaws.com/"))
 
     def test_history_forbidden_without_user(self) -> None:
         principal = Principal(plan=get_plan("anonymous"), anonymous_id="anonuser1")

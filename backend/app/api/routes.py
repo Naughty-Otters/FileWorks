@@ -18,6 +18,7 @@ from app.api.schemas import (
     ExtractResponse,
     HealthResponse,
     HistoryDetailResponse,
+    HistoryFileUrlResponse,
     HistoryItem,
     HistoryListResponse,
     ImageSize,
@@ -51,7 +52,7 @@ from app.services.runtime import (
     run_conversion,
 )
 from app.storage import get_document_store
-from app.storage.s3 import S3DocumentStore, PRESIGN_PUT_EXPIRES
+from app.storage.s3 import S3DocumentStore, PRESIGN_GET_EXPIRES, PRESIGN_PUT_EXPIRES
 from app.db.session import get_db
 from sqlalchemy.orm import Session
 
@@ -461,7 +462,7 @@ async def extract(
             raise HTTPException(status_code=400, detail="s3_key requires STORAGE_BACKEND=s3")
         if not store.is_upload_key(s3_key):
             raise HTTPException(status_code=400, detail="Invalid upload key")
-        data = store.get_object_bytes(s3_key)
+        data = store.get_upload_bytes(s3_key)
         if data is None:
             raise HTTPException(status_code=400, detail="Uploaded object not found — retry the upload")
         original_name = filename or Path(s3_key).name
@@ -736,13 +737,69 @@ async def get_history_item(
     )
 
 
+def _is_cross_origin(request: Request) -> bool:
+    """True when a browser sent this from an origin other than ours.
+
+    Browsers omit Origin on plain navigations and downloads, so those still get
+    the redirect; only CORS callers, which the redirect would break, are refused.
+    """
+    origin = (request.headers.get("origin") or "").rstrip("/").lower()
+    if not origin:
+        return False
+    return origin != f"{request.url.scheme}://{request.url.netloc}".lower()
+
+
+@router.get("/history/{document_id}/file-url", response_model=HistoryFileUrlResponse)
+async def get_history_file_url(
+    document_id: str,
+    principal: Principal = Depends(get_principal),
+) -> HistoryFileUrlResponse:
+    """Hand the browser a URL instead of redirecting it.
+
+    ``/file`` answers with a 307 to a presigned S3 URL, but the fetch spec makes a
+    cross-origin redirect opaque: the follow-up preflight carries ``Origin: null``,
+    which no bucket rule can match without opening the bucket to every site. With
+    the URL in hand the browser calls S3 directly, keeping its real Origin.
+    """
+    store, record = _require_owned_record(document_id, principal)
+    if isinstance(store, S3DocumentStore):
+        return HistoryFileUrlResponse(
+            url=store.presign_get(
+                store.object_key(record.source_key),
+                filename=record.filename,
+                content_type=record.content_type,
+            ),
+            filename=record.filename,
+            content_type=record.content_type,
+            expires_in=PRESIGN_GET_EXPIRES,
+        )
+    # Local storage serves the bytes itself, so the same-origin path is enough.
+    return HistoryFileUrlResponse(
+        url=f"/api/history/{document_id}/file",
+        filename=record.filename,
+        content_type=record.content_type,
+    )
+
+
 @router.get("/history/{document_id}/file")
 async def get_history_file(
     document_id: str,
+    request: Request,
     principal: Principal = Depends(get_principal),
 ) -> Response:
     store, record = _require_owned_record(document_id, principal)
     if isinstance(store, S3DocumentStore):
+        if _is_cross_origin(request):
+            # Redirecting would strand the caller: the browser retries the presigned
+            # URL with Origin: null and S3 refuses it, which surfaces as an
+            # unexplained CORS error. Say so instead of failing in the browser.
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Cross-origin callers cannot follow the redirect to S3. "
+                    f"GET /api/history/{document_id}/file-url and fetch the URL it returns."
+                ),
+            )
         url = store.presign_get(
             store.object_key(record.source_key),
             filename=record.filename,

@@ -21,6 +21,7 @@ import { EditableMarkdownPreview, type MarkdownPreviewHandle } from "@/component
 import { DEFAULT_EXTRACT_OPTIONS, type MeResponse } from "@/lib/api";
 import { LINES_PER_PAGE, PAGES_PER_VIEW } from "@/lib/markdown-pages";
 import * as api from "@/lib/api";
+import { clearSession, setSession } from "@/lib/auth";
 import * as gis from "@/lib/google-gis";
 
 vi.mock("next-themes", () => ({
@@ -593,11 +594,37 @@ describe("LoginScreen", () => {
     await waitFor(() => expect(assign).toHaveBeenCalledWith("/workspace"));
   });
 
+  it("leaves the login page when a stored session shows up on refocus", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, search: "?next=/history" });
+    const me = vi.spyOn(api, "fetchMe").mockResolvedValue(guestMe);
+    render(<LoginScreen />);
+    await waitFor(() => expect(me).toHaveBeenCalled());
+    expect(assign).not.toHaveBeenCalled();
+
+    setSession("access", "refresh");
+    me.mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+    });
+    window.dispatchEvent(new Event("focus"));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/history"));
+    clearSession();
+  });
+
   it("only allows same-origin next paths", () => {
     expect(loginRedirectPath("")).toBe("/");
     expect(loginRedirectPath("?next=/history")).toBe("/history");
     expect(loginRedirectPath("?next=https://evil.example")).toBe("/");
     expect(loginRedirectPath("?next=//evil.example")).toBe("/");
+  });
+
+  it("falls back to the page that linked to /login", () => {
+    const origin = window.location.origin;
+    expect(loginRedirectPath("", `${origin}/pricing?plan=pro`)).toBe("/pricing?plan=pro");
+    expect(loginRedirectPath("", `${origin}/login`)).toBe("/");
+    expect(loginRedirectPath("", "https://evil.example/steal")).toBe("/");
+    expect(loginRedirectPath("", "not a url")).toBe("/");
   });
 });
 

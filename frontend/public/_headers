@@ -1,3 +1,8 @@
+# Sign In With Google opens a popup that talks back to this window. `same-origin`
+# would sever that link (blank popup / no callback); allow-popups keeps it.
+/*
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+
 # Hashed Next assets never change; cache them at the edge.
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable

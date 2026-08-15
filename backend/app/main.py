@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 from app.api.routes import router
 from app.api.auth_routes import router as auth_router
@@ -54,6 +54,23 @@ async def lifespan(_: FastAPI):
     shutdown_worker_pool()
 
 
+class UnhandledErrorMiddleware(BaseHTTPMiddleware):
+    """Turn unhandled errors into JSON *inside* the CORS layer.
+
+    Starlette's outermost handler answers a crash with a bare 500 that carries no
+    Access-Control-Allow-Origin, so the browser reports a server bug as a CORS
+    failure and the UI blames the network. Answering here keeps the response
+    inside CORSMiddleware, so callers see the real status instead.
+    """
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        try:
+            return await call_next(request)
+        except Exception:  # noqa: BLE001 - re-raised as a 500 below
+            logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+            return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+
 class PrivateNetworkMiddleware(BaseHTTPMiddleware):
     """Chrome blocks localhost → 127.0.0.1 unless the preflight allows private/local network."""
 
@@ -82,6 +99,10 @@ def create_app() -> FastAPI:
     }
     if settings.cors_origin_regex.strip():
         cors_kwargs["allow_origin_regex"] = settings.cors_origin_regex.strip()
+    # Order matters: the last add_middleware call ends up outermost. Registering
+    # the error envelope first keeps it inside CORSMiddleware, so its 500 still
+    # gets Access-Control-Allow-Origin on the way out.
+    app.add_middleware(UnhandledErrorMiddleware)
     app.add_middleware(CORSMiddleware, **cors_kwargs)
     app.add_middleware(PrivateNetworkMiddleware)
     app.include_router(router, prefix=settings.api_prefix)

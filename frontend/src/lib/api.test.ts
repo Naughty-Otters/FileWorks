@@ -20,8 +20,9 @@ import {
   fetchBillingCatalog,
   openBillingPortal,
   exportMarkdownFile,
+  unreachableMessage,
 } from "@/lib/api";
-import { setSession } from "@/lib/auth";
+import { getAccessToken, setSession } from "@/lib/auth";
 import { prefetchHeavyUi } from "@/lib/prefetch";
 import { prefetchMarkdownRuntime } from "@/lib/markdown-runtime";
 import { loadSessionFile, saveSessionFile } from "@/lib/workspace-session";
@@ -36,6 +37,13 @@ function jsonResponse(body: unknown, status = 200, headers?: HeadersInit) {
 describe("api client", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("blames the backend only when the page is local", () => {
+    expect(unreachableMessage("/api/me", true)).toContain("Start the backend");
+    const deployed = unreachableMessage("/api/me", false);
+    expect(deployed).not.toContain("Start the backend");
+    expect(deployed).toContain("CORS");
   });
 
   it("fetches me health and history", async () => {
@@ -59,6 +67,15 @@ describe("api client", () => {
           pages: [],
           storage_backend: "local",
           file_url: "/api/history/1/file",
+        });
+      }
+      if (url.endsWith("/api/history/1/file-url")) {
+        return jsonResponse({ url: "https://s3.example/history/1/source.png", filename: "a.png" });
+      }
+      if (url === "https://s3.example/history/1/source.png") {
+        return new Response(new Uint8Array([1, 2, 3]), {
+          status: 200,
+          headers: { "Content-Type": "image/png" },
         });
       }
       if (url.endsWith("/api/history/1/file")) {
@@ -146,6 +163,32 @@ describe("api client", () => {
     await exportMarkdownFile("# hi", "txt", "doc");
     expect(click).toHaveBeenCalled();
     await expect(deleteHistoryItem("9")).rejects.toThrow();
+  });
+
+  it("keeps a successful login when the profile fetch fails", async () => {
+    const user = { id: "1", email: "a@b.co", name: "A", picture_url: null, plan: "basic" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/api/auth/google")) {
+          return jsonResponse({
+            access_token: "a",
+            refresh_token: "r",
+            user,
+            plan: "basic",
+            permissions: { "extract.ai": true },
+          });
+        }
+        return new Response("boom", { status: 500 });
+      }),
+    );
+
+    const me = await loginWithGoogle("id-token");
+    expect(me.user?.email).toBe("a@b.co");
+    expect(me.plan).toBe("basic");
+    expect(me.permissions["extract.ai"]).toBe(true);
+    expect(getAccessToken()).toBe("a");
   });
 
   it("upgrades the plan and refreshes me", async () => {

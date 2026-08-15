@@ -28,6 +28,67 @@ Browsers PUT to:
 
 API Gateway is not used (29s cap). The Function URL uses the Lambda timeout.
 
+## Origins and the API endpoint
+
+Five rules keep CORS and the endpoint from drifting. Break one and browser calls fail.
+
+| Rule | Where | Why |
+|---|---|---|
+| The browser calls the Lambda Function URL **directly** | `frontend/public/config.js` | Cloudflare proxies cut responses at ~100s; conversions run to 900s, so a same-origin `/api` proxy would break them |
+| The API endpoint is **runtime** config, never baked into JS | `config.js` → `src/lib/runtime-config.ts` | Changing the endpoint is a static-file swap, not a bundle rebuild |
+| Preview hosts are covered by **patterns**, not lists | `cors_origin_regex` (API), `cors_wildcard_origins` (S3) | `<hash>.<project>.pages.dev` changes every deploy; patterns need no apply |
+| **Sign in only on registered origins** | Google Cloud console | Google forbids wildcard JavaScript origins and offers no API, so preview hosts can never sign in |
+| **Never redirect the browser to S3** | `/history/{id}/file-url` | A cross-origin redirect makes the follow-up preflight send `Origin: null`; no bucket rule matches that without opening the bucket to every site |
+
+Hand the browser a URL and let it call S3 itself, keeping its real `Origin`. The old
+`/history/{id}/file` still redirects plain downloads and `curl`, which send no
+`Origin`, but answers a cross-origin fetch with a 409 naming `/file-url` rather than
+letting it die as an unexplained CORS error.
+
+Two things make this class of bug readable when it does happen. `UnhandledErrorMiddleware`
+keeps a crashing endpoint inside the CORS layer, so a 500 arrives as a 500 instead of a
+missing-header CORS failure. And the UI blames the backend being down only on localhost;
+on a deployed origin it says the request was blocked and points at CORS or a server error.
+
+Consequence: **test on the stable `https://fileworks-<env>.pages.dev`**. `fw frontend`
+publishes the stable alias, writes `config.js` from the Terraform `api_url` output,
+and prints preview hosts only as a note. `config.js` also carries `canonicalOrigin`,
+so a browser that lands on a `*.pages.dev` preview host redirects itself to the
+stable origin instead of failing on CORS and `origin_mismatch`.
+
+The Function URL is stable across `push-image` and `apply`; it only changes if the
+function or URL resource is destroyed and recreated. `fw status` verifies all of
+this: it preflights CORS from the stable origin against both the API and the two
+S3 buckets the browser talks to directly, and compares the deployed
+`config.js` against `api_url`, warning when the UI is pinned to a stale endpoint.
+
+Prod keeps exact origins only (no preview regex, no wildcards) and `fw frontend`
+never rewrites prod CORS.
+
+## The Lambda needs public egress
+
+The API Lambda runs in private subnets so it can reach RDS. VPC endpoints only
+cover AWS services, so a private subnet with no NAT has **no route to the public
+internet** — and Google sign-in needs one: `verify_google_id_token` fetches
+Google's signing certs from `www.googleapis.com`, and Stripe calls are external too.
+
+Without it, `/api/auth/google` does not fail fast. It hangs for the full connect
+timeout and then returns `401 Invalid Google token: ... Connection to
+www.googleapis.com timed out`, which reads like a token problem rather than a
+networking one. `enable_nat_gateway` (default `true`) provisions the IGW, public
+subnet, EIP, single NAT, and the private `0.0.0.0/0` route. Turn it off only for
+an environment that never signs anyone in.
+
+Quick check that egress works, independent of any browser:
+
+```bash
+curl -sS -X POST "$API_URL/api/auth/google" \
+  -H 'Content-Type: application/json' -d '{"id_token":"dummy"}'
+```
+
+A fast `401 Invalid Google token: Token format` means egress is fine. A slow
+`401 ... timed out` means the NAT path is missing.
+
 ## IAM gap on this AWS account
 
 `zhenqi` can create S3/ECR/roles and read Secrets Manager, but **not** `lambda:*` or `iam:PassRole`. Attach the included policy first:

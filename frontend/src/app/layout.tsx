@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, IBM_Plex_Mono, Manrope } from "next/font/google";
+import { CanonicalRedirect } from "@/components/canonical-redirect";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BUSINESS_NAME, SITE_URL } from "@/lib/legal";
 import "./globals.css";
@@ -65,7 +66,13 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" suppressHydrationWarning className={`${display.variable} ${body.variable} ${mono.variable} h-full`}>
+      <head>
+        {/* Static, deploy-rewritten API endpoint. Must run before app code so the
+            first request already knows where the API lives. */}
+        <script src="/config.js" />
+      </head>
       <body className={`${body.className} min-h-full antialiased`}>
+        <CanonicalRedirect />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

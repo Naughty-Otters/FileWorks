@@ -1,4 +1,5 @@
 import { getClientUserId } from "@/lib/user-id";
+import { resolveApiBase } from "@/lib/runtime-config";
 import {
   clearSession,
   getAccessToken,
@@ -141,16 +142,12 @@ export type HistoryDetail = ExtractResponse & {
 };
 
 /**
- * Browser talks to FastAPI directly for long conversion requests.
- * NEXT_PUBLIC_API_URL defaults to local backend (avoids Next.js proxy timeouts).
+ * Browser talks to FastAPI directly for long conversion requests: Cloudflare
+ * proxies cut responses off after ~100s, so a same-origin /api proxy would break
+ * conversions. The endpoint is read at runtime (see runtime-config).
  */
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000").replace(
-  /\/$/,
-  "",
-);
-
 export function getApiBase() {
-  return API_BASE;
+  return resolveApiBase();
 }
 
 function isLocalPage(): boolean {
@@ -161,7 +158,7 @@ function isLocalPage(): boolean {
 
 function apiUrl(path: string, opts?: { direct?: boolean }) {
   if (!opts?.direct && isLocalPage()) return path;
-  return `${API_BASE}${path}`;
+  return `${resolveApiBase()}${path}`;
 }
 
 async function readError(res: Response, fallback: string) {
@@ -230,9 +227,10 @@ async function tryRefresh(): Promise<boolean> {
 
 function requestBases(direct?: boolean): string[] {
   if (!direct && isLocalPage()) return [""];
-  const bases = [API_BASE];
-  if (API_BASE.includes("localhost")) {
-    bases.push(API_BASE.replace("localhost", "127.0.0.1"));
+  const base = resolveApiBase();
+  const bases = [base];
+  if (base.includes("localhost")) {
+    bases.push(base.replace("localhost", "127.0.0.1"));
   }
   if (isLocalPage()) bases.push("");
   return [...new Set(bases)];
@@ -263,8 +261,19 @@ async function apiFetch(path: string, init?: RequestInit & { direct?: boolean })
     }
   }
   void lastNetworkError;
-  throw new Error(
-    `Cannot reach API at ${API_BASE}. Start the backend (port 8000) and retry.`,
+  throw new Error(unreachableMessage(path));
+}
+
+/** fetch() hides CORS and crash details, so name the likely cause per environment. */
+export function unreachableMessage(path: string, local = isLocalPage()): string {
+  const base = resolveApiBase();
+  if (local) {
+    return `Cannot reach API at ${base}. Start the backend (port 8000) and retry.`;
+  }
+  return (
+    `Request to ${base}${path} was blocked. The server is usually up: this is a CORS ` +
+    `rejection or a server error that never reached the CORS layer. Check the browser ` +
+    `console for the exact reason and the API logs for a crash.`
   );
 }
 
@@ -293,7 +302,42 @@ export async function loginWithGoogle(idToken: string): Promise<MeResponse> {
     permissions: Record<string, boolean>;
   };
   setSession(payload.access_token, payload.refresh_token);
-  return fetchMe();
+  // The session is already established. A failing profile fetch must not surface
+  // as a failed login, or the caller never navigates away from /login.
+  try {
+    return await fetchMe();
+  } catch {
+    return sessionFromLogin(payload);
+  }
+}
+
+const EMPTY_QUOTA: MeResponse["quota"] = {
+  used_day: 0,
+  used_month: 0,
+  limit_day: null,
+  limit_month: null,
+  remaining_day: null,
+  remaining_month: null,
+  used_ai_day: 0,
+  used_ai_month: 0,
+  limit_ai_day: null,
+  limit_ai_month: null,
+  remaining_ai_day: null,
+  remaining_ai_month: null,
+};
+
+function sessionFromLogin(payload: {
+  user: MeResponse["user"];
+  plan: string;
+  permissions: Record<string, boolean>;
+}): MeResponse {
+  return {
+    user: payload.user,
+    plan: payload.plan,
+    permissions: payload.permissions,
+    quota: { ...EMPTY_QUOTA },
+    google_client_id: null,
+  };
 }
 
 export async function upgradePlan(plan: string): Promise<MeResponse> {
@@ -503,11 +547,21 @@ export async function fetchHistoryFile(
   filename: string,
   contentType: string | null,
 ): Promise<File> {
-  const res = await apiFetch(`/api/history/${id}/file`, { cache: "no-store" });
+  const res = await apiFetch(`/api/history/${id}/file-url`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(await readError(res, `Failed to load file (${res.status})`));
   }
-  const blob = await res.blob();
+  const { url } = (await res.json()) as { url: string };
+  // An absolute URL is presigned S3, so fetch it bare. Sending our Authorization
+  // header would force a preflight, and following the API's redirect instead
+  // would make the browser send Origin: null, which S3 rejects.
+  const fileRes = /^https?:\/\//.test(url)
+    ? await fetch(url, { cache: "no-store" })
+    : await apiFetch(url, { cache: "no-store" });
+  if (!fileRes.ok) {
+    throw new Error(await readError(fileRes, `Failed to load file (${fileRes.status})`));
+  }
+  const blob = await fileRes.blob();
   const type = contentType || blob.type || "application/octet-stream";
   return new File([blob], filename, { type, lastModified: Date.now() });
 }

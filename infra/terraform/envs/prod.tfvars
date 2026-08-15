@@ -10,5 +10,7 @@ cors_origins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "https://fileworks-prod.pages.dev",
+  "https://fileworks.ai"
 ]
-cors_origin_regex = ""
+cors_origin_regex     = ""
+cors_wildcard_origins = []

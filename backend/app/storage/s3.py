@@ -153,6 +153,10 @@ class S3DocumentStore:
             ContentType=content_type or "application/octet-stream",
         )
 
+    def get_upload_bytes(self, key: str) -> bytes | None:
+        """Raw bytes for a presigned-upload key. Uploads live in their own bucket."""
+        return self._get_bytes(key, bucket=self._object_bucket(key))
+
 
     def presign_put(self, key: str, content_type: str | None) -> tuple[str, dict[str, str]]:
         params: dict[str, str] = {"Bucket": self._object_bucket(key), "Key": key}
