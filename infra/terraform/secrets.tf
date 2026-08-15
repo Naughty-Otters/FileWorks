@@ -23,7 +23,7 @@ resource "aws_secretsmanager_secret_version" "app" {
     STRIPE_PRICE_BASIC    = "0"
     STRIPE_PRICE_PRO      = "12"
     STRIPE_PRICE_PREMIUM  = "29"
-    PUBLIC_APP_URL        = var.environment == "prod" ? "https://fileworks.ai" : "https://fileworks-${var.environment}.pages.dev"
+    PUBLIC_APP_URL        = var.environment == "prod" ? "https://fileworks.ai" : "https://staging.fileworks.ai"
   })
 
   lifecycle {

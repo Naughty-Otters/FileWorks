@@ -24,6 +24,7 @@ from fw.context import (
     SECRET_EXACT_KEYS,
     TF_DIR,
     Context,
+    resolve_public_api_url,
     state_bucket_name,
 )
 from fw.tools import (
@@ -377,6 +378,7 @@ def status(ctx: Context) -> None:
         "account_id",
         "region",
         "api_url",
+        "lambda_url",
         "ecr_repository_url",
         "history_bucket",
         "uploads_bucket",
@@ -389,16 +391,26 @@ def status(ctx: Context) -> None:
         if value:
             rows.append((key, str(value)))
     rows.append(("pages_url", ctx.env.pages_origin))
+    rows.append(("public_url", ctx.env.public_origin))
     console.kv_table("Stack", rows)
-    api_url = str(outputs.get("api_url") or "").rstrip("/")
+    api_url = _resolve_api_url(ctx, outputs)
+    site_origins = _site_origins(ctx)
     if api_url:
         _probe_health(ctx, api_url)
-        _check_cors(ctx, api_url, ctx.env.pages_origin)
-        _check_ui_endpoint(ctx, ctx.env.pages_origin, api_url)
+        for origin in site_origins:
+            if origin.startswith("http://"):
+                continue
+            _check_cors(ctx, api_url, origin)
+        _check_ui_endpoint(ctx, ctx.env.public_origin, api_url)
+        if ctx.env.public_origin != ctx.env.pages_origin:
+            _check_ui_endpoint(ctx, ctx.env.pages_origin, api_url)
     for key, method in (("history_bucket", "GET"), ("uploads_bucket", "PUT")):
         bucket = str(outputs.get(key) or "")
         if bucket:
-            _check_s3_cors(ctx, bucket, ctx.env.pages_origin, method)
+            for origin in site_origins:
+                if origin.startswith("http://"):
+                    continue
+                _check_s3_cors(ctx, bucket, origin, method)
 
 
 # A cold start pulls the OCR image and boots FastAPI, so the first probe can
@@ -512,6 +524,22 @@ def seed_secrets(ctx: Context) -> None:
     console.success(f"Secret updated ({ctx.env.name}). Do not commit {sources}.")
 
 
+def _site_origins(ctx: Context, parsed: dict[str, str] | None = None) -> list[str]:
+    values = parsed if parsed is not None else _parse_dotenv_for(ctx)
+    origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        ctx.env.pages_origin,
+        ctx.env.public_origin,
+        resolve_public_api_url(values.get("PUBLIC_APP_URL", "")),
+    ]
+    unique: list[str] = []
+    for origin in origins:
+        if origin and origin not in unique:
+            unique.append(origin)
+    return unique
+
+
 def _write_local_cors(ctx: Context, origins: list[str]) -> None:
     unique: list[str] = []
     for origin in origins:
@@ -525,11 +553,22 @@ def _write_local_cors(ctx: Context, origins: list[str]) -> None:
     console.success(f"Wrote {ctx.env.local_tfvars_file}")
 
 
+def _resolve_api_url(ctx: Context, outputs: dict) -> str:
+    """Public API origin. Never pin the UI to a raw Lambda URL when a custom host exists."""
+    parsed = _parse_dotenv_for(ctx)
+    return resolve_public_api_url(
+        parsed.get("PUBLIC_API_URL", ""),
+        ctx.env.api_origin,
+        str(outputs.get("api_url") or ""),
+        str(outputs.get("lambda_url") or ""),
+    )
+
+
 def _write_runtime_config(out_dir: Path, api_url: str, canonical_origin: str) -> None:
     """Point the built UI at the API without rebuilding any JS bundle."""
     payload = json.dumps({"apiUrl": api_url, "canonicalOrigin": canonical_origin})
     (out_dir / "config.js").write_text(
-        "// Written by `fw frontend` from the Terraform api_url output.\n"
+        "// Written by `fw frontend` from PUBLIC_API_URL or Terraform api_url.\n"
         f"window.__FILEWORKS_CONFIG__ = {payload};\n",
         encoding="utf-8",
     )
@@ -645,7 +684,7 @@ def frontend(ctx: Context) -> None:
     console.rule(f"Cloudflare Pages ({ctx.env.name})")
     require_cmd("npm")
     outputs = terraform_output(ctx)
-    api_url = str(outputs.get("api_url") or "").rstrip("/")
+    api_url = _resolve_api_url(ctx, outputs)
     if not api_url:
         raise CommandError("api_url missing — apply the AWS stack first.")
 
@@ -689,7 +728,8 @@ def frontend(ctx: Context) -> None:
     out_dir = FRONTEND_DIR / "out"
     if not out_dir.is_dir():
         raise CommandError("frontend/out missing after build — static export failed.")
-    _write_runtime_config(out_dir, api_url, ctx.env.pages_origin)
+    canonical = resolve_public_api_url(parsed.get("PUBLIC_APP_URL", ""), ctx.env.public_origin)
+    _write_runtime_config(out_dir, api_url, canonical)
 
     deploy = wrangler(
         ctx,
@@ -708,10 +748,10 @@ def frontend(ctx: Context) -> None:
     # Always hand back the stable alias. Per-deployment hosts (<hash>.<project>.pages.dev)
     # are deliberately kept out of CORS: they change every deploy, S3 CORS has no regex,
     # and Google OAuth needs each origin registered by hand.
-    frontend_url = ctx.env.pages_origin
+    frontend_url = canonical
     if not ctx.env.is_production:
-        _write_local_cors(ctx, ["http://localhost:3000", "http://127.0.0.1:3000", frontend_url])
-        console.info("Updating API + S3 CORS for the stable Pages origin.")
+        _write_local_cors(ctx, _site_origins(ctx, parsed))
+        console.info("Updating API + S3 CORS for the public site and Pages origins.")
         terraform_cmd(ctx, ["apply", "-auto-approve"])
     else:
         console.info("Prod CORS is owned by envs/prod.tfvars (exact origins only).")
@@ -723,7 +763,8 @@ def frontend(ctx: Context) -> None:
             + " — sign-in only works on origins registered with Google; use the stable URL."
         )
     console.info(f"API {api_url}")
-    _check_cors(ctx, api_url, frontend_url)
+    for origin in (frontend_url, ctx.env.pages_origin):
+        _check_cors(ctx, api_url, origin)
 
 
 def full(ctx: Context) -> None:

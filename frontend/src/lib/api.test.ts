@@ -214,15 +214,36 @@ describe("api client", () => {
   });
 
   it("starts checkout and opens the billing portal", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url.endsWith("/api/billing/checkout")) return jsonResponse({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
+      if (url.endsWith("/api/billing/checkout")) {
+        expect(JSON.parse(String(init?.body))).toEqual({ plan: "pro", return_to: "/pricing" });
+        return jsonResponse({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
+      }
       if (url.endsWith("/api/billing/portal")) return jsonResponse({ url: "https://billing.stripe.test/p" });
       return new Response("nope", { status: 404 });
     });
     vi.stubGlobal("fetch", fetchMock);
-    expect(await startCheckout("pro")).toEqual({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
+    expect(await startCheckout("pro", "/pricing")).toEqual({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
     expect(await openBillingPortal()).toEqual({ url: "https://billing.stripe.test/p" });
+  });
+
+  it("surfaces checkout portal confirm and sync errors", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/api/billing/checkout")) return jsonResponse({ detail: "Stripe checkout failed: card_error" }, 502);
+        if (url.endsWith("/api/billing/portal")) return jsonResponse({ detail: "No Stripe billing on this account. Subscribe from Pricing first." }, 400);
+        if (url.endsWith("/api/billing/confirm")) return jsonResponse({ detail: "Checkout session does not belong to this account" }, 403);
+        if (url.endsWith("/api/billing/sync")) return jsonResponse({ detail: "Billing sync failed" }, 502);
+        return new Response("nope", { status: 404 });
+      }),
+    );
+    await expect(startCheckout("pro")).rejects.toThrow("Stripe checkout failed");
+    await expect(openBillingPortal()).rejects.toThrow("Subscribe from Pricing");
+    await expect(confirmCheckout("cs_1")).rejects.toThrow("does not belong");
+    await expect(syncBilling()).rejects.toThrow("Billing sync failed");
   });
 
   it("syncs billing then reloads the session", async () => {

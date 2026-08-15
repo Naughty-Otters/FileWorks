@@ -1,9 +1,10 @@
 /**
  * Runtime API endpoint resolution.
  *
- * `/config.js` is a static file the deploy rewrites from the Terraform
- * `api_url` output, so changing the API endpoint never requires rebuilding the
- * JS bundle. NEXT_PUBLIC_API_URL stays as the build-time fallback for local dev.
+ * `/config.js` is a static file the deploy rewrites from PUBLIC_API_URL or the
+ * Terraform `api_url` output, so changing the API host never requires rebuilding
+ * the JS bundle. NEXT_PUBLIC_API_URL stays as the build-time fallback for local
+ * dev.
  */
 
 export type RuntimeConfig = {

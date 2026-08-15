@@ -82,6 +82,20 @@ variable "uploads_bucket_name" {
   description = "Override uploads bucket name. Default is fileworks-<prod|stage|dev>."
 }
 
+variable "public_api_url" {
+  type        = string
+  default     = ""
+  description = "Optional public API origin that proxies to the Lambda Function URL (e.g. https://api.staging.fileworks.ai). Empty uses the Function URL."
+
+  validation {
+    condition = (
+      var.public_api_url == ""
+      || can(regex("^https://[A-Za-z0-9.-]+$", trimsuffix(var.public_api_url, "/")))
+    )
+    error_message = "public_api_url must be empty or an https origin like https://api.staging.fileworks.ai."
+  }
+}
+
 variable "google_client_id" {
   type        = string
   default     = "1063086817026-33rehu3tmsg08gll6dc9jue97000ib8f.apps.googleusercontent.com"

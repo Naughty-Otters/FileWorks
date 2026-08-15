@@ -90,6 +90,22 @@ class Environment:
         return f"https://{self.pages_project}.pages.dev"
 
     @property
+    def public_origin(self) -> str:
+        if self.name == "prod":
+            return "https://fileworks.ai"
+        if self.name == "staging":
+            return "https://staging.fileworks.ai"
+        return self.pages_origin
+
+    @property
+    def api_origin(self) -> str:
+        if self.name == "prod":
+            return "https://api.fileworks.ai"
+        if self.name == "staging":
+            return "https://api.staging.fileworks.ai"
+        return ""
+
+    @property
     def ecr_repository(self) -> str:
         return self.prefix
 
@@ -103,6 +119,26 @@ ENVIRONMENTS: dict[str, Environment] = {
     "staging": Environment(name="staging", aliases=("stage",)),
     "prod": Environment(name="prod", aliases=("production", "prd")),
 }
+
+
+def is_lambda_function_url(url: str) -> bool:
+    host = url.lower()
+    return "lambda-url." in host and ".on.aws" in host
+
+
+def resolve_public_api_url(*candidates: str) -> str:
+    """First non-empty API origin. Custom hosts win over a raw Lambda Function URL."""
+    fallback = ""
+    for raw in candidates:
+        text = (raw or "").strip().rstrip("/")
+        if not text:
+            continue
+        if is_lambda_function_url(text):
+            if not fallback:
+                fallback = text
+            continue
+        return text
+    return fallback
 
 
 def resolve_environment(token: str) -> Environment | None:

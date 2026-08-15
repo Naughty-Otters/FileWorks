@@ -22,9 +22,17 @@ output "llm_function_name" {
   value = aws_lambda_function.llm.function_name
 }
 
+output "lambda_url" {
+  value       = trimsuffix(aws_lambda_function_url.api.function_url, "/")
+  description = "Raw Lambda Function URL (no 29s API Gateway limit)."
+}
+
 output "api_url" {
-  value       = aws_lambda_function_url.api.function_url
-  description = "Lambda Function URL (no 29s API Gateway limit)."
+  value = trimsuffix(
+    var.public_api_url != "" ? var.public_api_url : aws_lambda_function_url.api.function_url,
+    "/",
+  )
+  description = "Public API origin used by the UI. Set public_api_url to a custom host; otherwise the Function URL."
 }
 
 output "history_bucket" {

@@ -32,6 +32,7 @@ import {
   planRank,
   planSwitchLabel,
   usageFitsPlan,
+  usageOverLimitReasons,
   PLAN_CATALOG,
   PRICE_ROLES,
   formatPlanPrice,
@@ -369,6 +370,13 @@ describe("plan policy", () => {
     expect(canMoveToPlan("premium", "pro", lowUsage)).toBe(true);
     expect(canMoveToPlan("premium", "pro", overPro)).toBe(false);
     expect(canMoveToPlan("pro", "premium", overPro)).toBe(true);
+    expect(canMoveToPlan("pro", "pro", lowUsage)).toBe(false);
+    expect(usageFitsPlan({ used_day: 5, used_month: 0, used_ai_day: 0, used_ai_month: 3 }, "basic")).toBe(true);
+    expect(usageOverLimitReasons(overPro, "pro")[0]).toMatch(/200 conversions this month/);
+    expect(usageOverLimitReasons({ used_day: 6, used_month: 0, used_ai_day: 0, used_ai_month: 4 }, "basic")).toEqual([
+      "6 conversions today (limit 5)",
+      "4 AI this month (limit 3)",
+    ]);
     expect(planIsPurchasable("pro", { enabled: true, prices: { pro: false }, amounts: { pro: 12 } })).toBe(true);
     expect(planIsPurchasable("basic", { enabled: true, prices: { basic: false }, amounts: { basic: 0 } })).toBe(false);
     expect(planIsPurchasable("pro", { enabled: false, prices: { pro: false } })).toBe(true);

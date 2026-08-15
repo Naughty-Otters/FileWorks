@@ -434,6 +434,22 @@ class LambdaAndAppTests(unittest.TestCase):
             )
         self.assertEqual(res.headers.get("access-control-allow-origin"), preview)
 
+    def test_cors_allows_staging_public_host(self) -> None:
+        settings = get_settings()
+        origin = "https://staging.fileworks.ai"
+        with patch.object(
+            settings,
+            "cors_origin_regex",
+            r"^https://(([a-z0-9-]+\.)?fileworks-staging\.pages\.dev|(www\.)?staging\.fileworks\.ai)$",
+        ):
+            with patch("app.db.session.init_db"), patch("app.storage.get_document_store"):
+                app = create_app()
+            res = TestClient(app).options(
+                "/api/health",
+                headers={"Origin": origin, "Access-Control-Request-Method": "GET"},
+            )
+        self.assertEqual(res.headers.get("access-control-allow-origin"), origin)
+
     def test_cors_rejects_unrelated_origin(self) -> None:
         with patch("app.db.session.init_db"), patch("app.storage.get_document_store"):
             app = create_app()

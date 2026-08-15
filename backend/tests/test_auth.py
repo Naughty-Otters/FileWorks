@@ -14,6 +14,7 @@ from app.auth.quota import (
     assert_can_use_ai,
     quota_snapshot,
     record_extract,
+    usage_fits_plan,
     usage_over_limit,
 )
 from app.auth.redact import redact_extract_payload
@@ -154,6 +155,24 @@ class QuotaTests(unittest.TestCase):
                 return 999
 
         assert_can_switch_to_plan(FakeDb(), user_id=uuid4(), current="pro", target="premium")
+
+    def test_downgrade_allows_usage_at_target_cap(self) -> None:
+        class FakeDb:
+            def scalar(self, _q):
+                return 40
+
+        assert_can_switch_to_plan(FakeDb(), user_id=uuid4(), current="premium", target="pro")
+        self.assertTrue(usage_fits_plan(FakeDb(), user_id=uuid4(), plan=get_plan("pro")))
+
+    def test_downgrade_to_basic_blocked_by_daily_usage(self) -> None:
+        class FakeDb:
+            def scalar(self, _q):
+                return 6
+
+        with self.assertRaises(HTTPException) as ctx:
+            assert_can_switch_to_plan(FakeDb(), user_id=uuid4(), current="pro", target="basic")
+        self.assertEqual(ctx.exception.detail["code"], "quota_exceeds_plan")
+        self.assertIn("extracts_day", ctx.exception.detail["limits"])
 
     def test_record_extract_adds_event(self) -> None:
         added = []

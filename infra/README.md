@@ -139,4 +139,7 @@ State key: `s3://fileworks-tfstate-<account>/fileworks/<env>/terraform.tfstate`.
 
 Terraform creates `fileworks-<env>/app` in Secrets Manager. **Seed** copies LLM/translate keys and `GOOGLE_CLIENT_ID` from `backend/.env` (never committed) and merges them into the existing secret so RDS/JWT values are not wiped. Lambda reads `FILEWORKS_SECRET_ARN` on cold start.
 
-`NEXT_PUBLIC_API_URL` is baked into the Pages build from the Lambda Function URL. Local `npm run dev` still uses `http://127.0.0.1:8000`.
+`NEXT_PUBLIC_API_URL` / `config.js` use Terraform `api_url`. Set `public_api_url`
+in `envs/<env>.tfvars` (or `PUBLIC_API_URL` in `backend/.env.<env>`) to a custom
+host such as `https://api.staging.fileworks.ai`. Empty falls back to the Lambda
+Function URL. Local `npm run dev` still uses `http://127.0.0.1:8000`.
