@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.auth.plans import Plan
+from app.auth.plans import PLAN_RANK, Plan, can_change_plan, get_plan
 from app.db.models import UsageEvent
 
 EXTRACT_ACTION = "extract"
@@ -28,8 +28,11 @@ def _period_bounds() -> tuple[datetime, datetime]:
 def _count(db: Session | None, user_id: UUID | None, action: str, since: datetime) -> int:
     if db is None or user_id is None:
         return 0
+    scalar = getattr(db, "scalar", None)
+    if not callable(scalar):
+        return 0
     return int(
-        db.scalar(
+        scalar(
             select(func.count()).select_from(UsageEvent).where(
                 UsageEvent.user_id == user_id,
                 UsageEvent.action == action,
@@ -64,6 +67,79 @@ def quota_snapshot(db: Session | None, *, user_id: UUID | None, plan: Plan) -> d
         "remaining_ai_day": _remaining(plan.ai_per_day, used_ai_day),
         "remaining_ai_month": _remaining(plan.ai_per_month, used_ai_month),
     }
+
+
+def usage_over_limit(
+    plan: Plan,
+    *,
+    used_day: int,
+    used_month: int,
+    used_ai_day: int,
+    used_ai_month: int,
+) -> list[str]:
+    """Return limit keys that current usage already exceeds on `plan`."""
+    over: list[str] = []
+    if plan.extracts_per_day is not None and used_day > plan.extracts_per_day:
+        over.append("extracts_day")
+    if plan.extracts_per_month is not None and used_month > plan.extracts_per_month:
+        over.append("extracts_month")
+    if plan.ai_per_day is not None and used_ai_day > plan.ai_per_day:
+        over.append("ai_day")
+    if plan.ai_per_month is not None and used_ai_month > plan.ai_per_month:
+        over.append("ai_month")
+    return over
+
+
+def usage_fits_plan(db: Session | None, *, user_id: UUID | None, plan: Plan) -> bool:
+    snap = quota_snapshot(db, user_id=user_id, plan=plan)
+    return not usage_over_limit(
+        plan,
+        used_day=int(snap["used_day"] or 0),
+        used_month=int(snap["used_month"] or 0),
+        used_ai_day=int(snap["used_ai_day"] or 0),
+        used_ai_month=int(snap["used_ai_month"] or 0),
+    )
+
+
+def assert_can_switch_to_plan(
+    db: Session | None,
+    *,
+    user_id: UUID | None,
+    current: str,
+    target: str,
+) -> None:
+    if not can_change_plan(current, target):
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "plan_invalid", "current": current, "target": target},
+        )
+    if PLAN_RANK.get(target, 0) >= PLAN_RANK.get(current, 0):
+        return
+    plan = get_plan(target)
+    snap = quota_snapshot(db, user_id=user_id, plan=plan)
+    over = usage_over_limit(
+        plan,
+        used_day=int(snap["used_day"] or 0),
+        used_month=int(snap["used_month"] or 0),
+        used_ai_day=int(snap["used_ai_day"] or 0),
+        used_ai_month=int(snap["used_ai_month"] or 0),
+    )
+    if over:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "quota_exceeds_plan",
+                "current": current,
+                "target": target,
+                "limits": over,
+                "used": {
+                    "day": snap["used_day"],
+                    "month": snap["used_month"],
+                    "ai_day": snap["used_ai_day"],
+                    "ai_month": snap["used_ai_month"],
+                },
+            },
+        )
 
 
 def assert_can_extract(db: Session | None, *, user_id: UUID | None, plan: Plan) -> None:

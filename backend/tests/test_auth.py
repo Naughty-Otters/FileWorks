@@ -8,7 +8,14 @@ from uuid import uuid4
 from fastapi import HTTPException
 
 from app.auth.plans import can_change_plan, get_plan, permissions_for
-from app.auth.quota import assert_can_extract, assert_can_use_ai, quota_snapshot, record_extract
+from app.auth.quota import (
+    assert_can_extract,
+    assert_can_switch_to_plan,
+    assert_can_use_ai,
+    quota_snapshot,
+    record_extract,
+    usage_over_limit,
+)
 from app.auth.redact import redact_extract_payload
 from app.auth.tokens import decode_access_token, hash_token, issue_access_token, new_refresh_token
 from app.core.config import Settings, get_settings
@@ -115,6 +122,38 @@ class QuotaTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as ctx:
             assert_can_extract(FakeDb(), user_id=uuid4(), plan=plan)
         self.assertEqual(ctx.exception.detail["code"], "quota_month")
+
+    def test_downgrade_allowed_when_usage_fits(self) -> None:
+        assert_can_switch_to_plan(None, user_id=None, current="premium", target="pro")
+        self.assertEqual(
+            usage_over_limit(
+                get_plan("pro"),
+                used_day=0,
+                used_month=150,
+                used_ai_day=0,
+                used_ai_month=40,
+            ),
+            [],
+        )
+
+    def test_downgrade_blocked_when_usage_exceeds_target(self) -> None:
+        class FakeDb:
+            def scalar(self, _q):
+                return 200
+
+        with self.assertRaises(HTTPException) as ctx:
+            assert_can_switch_to_plan(FakeDb(), user_id=uuid4(), current="premium", target="pro")
+        self.assertEqual(ctx.exception.status_code, 400)
+        self.assertEqual(ctx.exception.detail["code"], "quota_exceeds_plan")
+        self.assertIn("extracts_month", ctx.exception.detail["limits"])
+        self.assertIn("ai_month", ctx.exception.detail["limits"])
+
+    def test_upgrade_ignores_usage(self) -> None:
+        class FakeDb:
+            def scalar(self, _q):
+                return 999
+
+        assert_can_switch_to_plan(FakeDb(), user_id=uuid4(), current="pro", target="premium")
 
     def test_record_extract_adds_event(self) -> None:
         added = []

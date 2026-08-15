@@ -7,6 +7,7 @@ import {
   logoutSession,
   openBillingPortal,
   startCheckout,
+  syncBilling,
   upgradePlan,
   type MeResponse,
 } from "@/lib/api";
@@ -14,7 +15,7 @@ import { BrandLockup } from "@/components/brand-lockup";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteFooter } from "@/components/site-footer";
 import { MarketingNav } from "@/components/marketing-nav";
-import { canSwitchPlan, formatPlanPrice, PERMISSION_LABELS, PLAN_CATALOG, planRank, planSwitchLabel } from "@/lib/plans";
+import { canMoveToPlan, formatPlanPrice, PERMISSION_LABELS, PLAN_CATALOG, planIsPurchasable, planSwitchLabel, usageOverLimitReasons } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 function usageLine(used: number, limit: number | null, remaining: number | null, period: string) {
@@ -44,8 +45,8 @@ export function ProfilePage() {
     const params = new URLSearchParams(window.location.search);
     const checkout = params.get("checkout");
     if (checkout === "cancel") setNotice("Checkout canceled. Your current plan is unchanged.");
-    if (params.get("billing") === "return") setNotice("Billing updated from Stripe.");
-    void fetchMe()
+    const fromPortal = params.get("billing") === "return";
+    void (fromPortal ? syncBilling() : fetchMe())
       .then(async (session) => {
         if (!session.user) {
           window.location.assign("/login?next=/profile");
@@ -55,14 +56,26 @@ export function ProfilePage() {
         if (checkout === "success" && sessionId) {
           try {
             await confirmCheckout(sessionId);
-            setMe(await fetchMe());
+            setMe(await syncBilling().catch(() => fetchMe()));
             setNotice("Payment received. Your role is updated.");
             return;
           } catch {
-            setNotice("Payment received. Your role updates when Stripe confirms the subscription.");
+            try {
+              setMe(await syncBilling());
+              setNotice("Payment received. Your role is updated.");
+              return;
+            } catch {
+              setNotice("Payment received. Your role updates when Stripe confirms the subscription.");
+            }
           }
         } else if (checkout === "success") {
           setNotice("Payment received. Your role updates when Stripe confirms the subscription.");
+        } else if (fromPortal) {
+          setNotice(
+            session.billing?.cancel_at_period_end
+              ? `Billing updated. This role stays until ${formatPeriodEnd(session.billing.current_period_end)}, then Basic.`
+              : "Billing updated from Stripe.",
+          );
         }
         setMe(session);
       })
@@ -75,11 +88,10 @@ export function ProfilePage() {
     try {
       if (me?.billing?.enabled) {
         const checkout = await startCheckout(plan);
-        if (checkout.url) {
-          window.location.assign(checkout.url);
-          return;
+        if (!checkout.url) {
+          throw new Error("Stripe did not return a billing URL");
         }
-        setMe(await fetchMe());
+        window.location.assign(checkout.url);
         return;
       }
       setMe(await upgradePlan(plan));
@@ -260,8 +272,8 @@ export function ProfilePage() {
           <h2 className="font-[family-name:var(--font-display)] text-xl tracking-tight">Plan</h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
             {me.billing?.enabled
-              ? "Each pay grade maps to a FileWorks role after Stripe confirms the subscription."
-              : "Switch plans anytime. The change applies to this account immediately."}
+              ? "Upgrade anytime. Downgrade when this period's usage fits the lower plan."
+              : "Switch plans anytime. A downgrade needs usage within that plan's limits."}
           </p>
           {notice ? <p className="mt-3 text-sm text-[var(--ink-muted)]">{notice}</p> : null}
           {error ? <p className="mt-3 text-sm text-[var(--danger)]">{error}</p> : null}
@@ -269,9 +281,8 @@ export function ProfilePage() {
             {PLAN_CATALOG.map((plan) => {
               const currentPlan = plan.id === me.plan;
               const switchable =
-                canSwitchPlan(me.plan, plan.id) &&
-                (!me.billing?.enabled ||
-                  (Boolean(me.billing.prices[plan.id]) && planRank(plan.id) > planRank(me.plan)));
+                planIsPurchasable(plan.id, me.billing) && canMoveToPlan(me.plan, plan.id, me.quota);
+              const usageBlock = usageOverLimitReasons(me.quota, plan.id);
               return (
                 <article
                   key={plan.id}
@@ -299,14 +310,21 @@ export function ProfilePage() {
                         : "Current plan"}
                     </p>
                   ) : (
-                    <button
-                      type="button"
-                      disabled={!switchable || pending !== null}
-                      onClick={() => onUpgrade(plan.id)}
-                      className="mt-4 rounded-full bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-45 dark:text-[#06281d]"
-                    >
-                      {pending === plan.id ? "Updating…" : planSwitchLabel(me.plan, plan)}
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        disabled={!switchable || pending !== null}
+                        onClick={() => onUpgrade(plan.id)}
+                        className="mt-4 rounded-full bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-45 dark:text-[#06281d]"
+                      >
+                        {pending === plan.id ? "Updating…" : planSwitchLabel(me.plan, plan)}
+                      </button>
+                      {!switchable && planIsPurchasable(plan.id, me.billing) && usageBlock.length > 0 ? (
+                        <p className="mt-2 text-[11px] leading-4 text-[var(--ink-muted)]">
+                          Usage is over this plan: {usageBlock.join("; ")}.
+                        </p>
+                      ) : null}
+                    </>
                   )}
                 </article>
               );
@@ -315,8 +333,9 @@ export function ProfilePage() {
           {me.billing?.enabled ? (
             <div className="mt-4">
               <p className="text-xs text-[var(--ink-muted)]">
-                Canceling stops the next charge. This period stays paid — no plan switch and no refund
-                for unused days. The role drops to Basic when the paid period ends.{" "}
+                Switch Pro and Premium here or in Manage billing. Canceling stops the next charge —
+                this period stays paid, with no refund for unused days. The role drops to Basic when
+                the paid period ends.{" "}
                 <a href="/legal#refunds" className="text-[var(--accent-strong)] hover:underline">
                   Refund and cancellation policy
                 </a>

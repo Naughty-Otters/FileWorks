@@ -4,9 +4,9 @@ resource "aws_secretsmanager_secret" "app" {
   recovery_window_in_days = var.environment == "prod" ? 30 : 0
 }
 
-// Placeholders only: `fw seed-secrets` merges the real keys from backend/.env,
-// and ignore_changes keeps Terraform from overwriting them afterwards.
-// Never commit live keys here — this file is in version control.
+// Placeholders only: `fw seed-secrets` merges keys from backend/.env and
+// backend/.env.<env>, and ignore_changes keeps Terraform from overwriting
+// them afterwards. Never commit live keys here — this file is in version control.
 resource "aws_secretsmanager_secret_version" "app" {
   secret_id = aws_secretsmanager_secret.app.id
   secret_string = jsonencode({
@@ -20,10 +20,10 @@ resource "aws_secretsmanager_secret_version" "app" {
     JWT_SECRET            = random_password.jwt.result
     STRIPE_SECRET_KEY     = ""
     STRIPE_WEBHOOK_SECRET = ""
-    STRIPE_PRICE_BASIC    = ""
-    STRIPE_PRICE_PRO      = ""
-    STRIPE_PRICE_PREMIUM  = ""
-    PUBLIC_APP_URL        = ""
+    STRIPE_PRICE_BASIC    = "0"
+    STRIPE_PRICE_PRO      = "12"
+    STRIPE_PRICE_PREMIUM  = "29"
+    PUBLIC_APP_URL        = var.environment == "prod" ? "https://fileworks.ai" : "https://fileworks-${var.environment}.pages.dev"
   })
 
   lifecycle {

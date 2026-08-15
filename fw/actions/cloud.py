@@ -46,11 +46,12 @@ def _iam_user_from_arn(arn: str) -> str | None:
     return None
 
 
-def _parse_dotenv() -> dict[str, str]:
+def _parse_dotenv(path: Path | None = None) -> dict[str, str]:
     values: dict[str, str] = {}
-    if not BACKEND_ENV.exists():
+    target = path or BACKEND_ENV
+    if not target.exists():
         return values
-    for line in BACKEND_ENV.read_text(encoding="utf-8").splitlines():
+    for line in target.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#") or "=" not in stripped:
             continue
@@ -60,6 +61,46 @@ def _parse_dotenv() -> dict[str, str]:
         if key:
             values[key] = value
     return values
+
+
+def _dotenv_paths(ctx: Context) -> list[Path]:
+    paths = [BACKEND_ENV]
+    overlay = ctx.env.dotenv_overlay
+    if overlay not in paths:
+        paths.append(overlay)
+    return [path for path in paths if path.exists()]
+
+
+def _parse_dotenv_for(ctx: Context) -> dict[str, str]:
+    merged: dict[str, str] = {}
+    for path in _dotenv_paths(ctx):
+        merged.update(_parse_dotenv(path))
+    return merged
+
+
+def _dotenv_label(ctx: Context) -> str:
+    paths = _dotenv_paths(ctx)
+    if not paths:
+        return str(BACKEND_ENV.relative_to(ROOT_DIR))
+    return " + ".join(str(path.relative_to(ROOT_DIR)) for path in paths)
+
+
+def _guard_prod_secrets(ctx: Context, payload: dict[str, str]) -> None:
+    if not ctx.env.is_production:
+        return
+    stripe_key = payload.get("STRIPE_SECRET_KEY", "")
+    if stripe_key.startswith("sk_test_"):
+        raise CommandError(
+            "Refusing to seed a Stripe test key into prod. "
+            f"Put the live key in {ctx.env.dotenv_overlay.relative_to(ROOT_DIR)} "
+            "(STRIPE_SECRET_KEY=sk_live_...)."
+        )
+    app_url = payload.get("PUBLIC_APP_URL", "")
+    if app_url.startswith(("http://localhost", "http://127.0.0.1")):
+        raise CommandError(
+            "Refusing to seed a localhost PUBLIC_APP_URL into prod. "
+            f"Set the live site URL in {ctx.env.dotenv_overlay.relative_to(ROOT_DIR)}."
+        )
 
 
 def check(ctx: Context) -> None:
@@ -399,14 +440,16 @@ def seed_secrets(ctx: Context) -> None:
     secret_arn = str(outputs.get("secret_arn") or "")
     if not secret_arn:
         raise CommandError("secret_arn missing — apply the stack first.")
-    parsed = _parse_dotenv()
+    parsed = _parse_dotenv_for(ctx)
     payload = {
         key: value
         for key, value in parsed.items()
         if value and (key in SECRET_EXACT_KEYS or key.startswith(SECRET_ENV_PREFIXES))
     }
+    sources = _dotenv_label(ctx)
     if not payload:
-        raise CommandError(f"No LLM/translate/Google keys found in {BACKEND_ENV}")
+        raise CommandError(f"No LLM/translate/Google/Stripe keys found in {sources}")
+    _guard_prod_secrets(ctx, payload)
     existing: dict[str, str] = {}
     current = run(
         [
@@ -434,7 +477,7 @@ def seed_secrets(ctx: Context) -> None:
         except json.JSONDecodeError:
             existing = {}
     merged = {**existing, **payload}
-    console.info(f"Updating {len(payload)} keys from .env (values are not printed).")
+    console.info(f"Updating {len(payload)} keys from {sources} (values are not printed).")
     run(
         [
             "aws",
@@ -466,7 +509,7 @@ def seed_secrets(ctx: Context) -> None:
                 capture=True,
                 ctx=ctx,
             )
-    console.success("Secret updated. Do not commit backend/.env.")
+    console.success(f"Secret updated ({ctx.env.name}). Do not commit {sources}.")
 
 
 def _write_local_cors(ctx: Context, origins: list[str]) -> None:
@@ -628,7 +671,7 @@ def frontend(ctx: Context) -> None:
     else:
         console.info(f"Pages project {project} already exists (or create skipped).")
 
-    parsed = _parse_dotenv()
+    parsed = _parse_dotenv_for(ctx)
     google_client_id = str(outputs.get("google_client_id") or parsed.get("GOOGLE_CLIENT_ID") or "").strip()
     frontend_env = {
         "FILEWORKS_STATIC_EXPORT": "1",
@@ -699,7 +742,9 @@ def full(ctx: Context) -> None:
         apply(ctx)
     finally:
         ctx.auto_yes = previous
-    if BACKEND_ENV.exists() and console.confirm("Seed LLM/translate secrets from backend/.env?", default=True):
+    if _dotenv_paths(ctx) and console.confirm(
+        f"Seed secrets from {_dotenv_label(ctx)}?", default=True
+    ):
         seed_secrets(ctx)
     if console.confirm("Build and publish the frontend to Cloudflare Pages?", default=True):
         frontend(ctx)

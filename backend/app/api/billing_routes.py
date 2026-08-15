@@ -12,6 +12,7 @@ from app.billing.stripe import (
     create_checkout_session,
     create_portal_session,
     handle_webhook_event,
+    sync_user_subscription,
 )
 from app.db.models import User
 from app.db.session import get_db
@@ -47,6 +48,13 @@ class CatalogResponse(BaseModel):
 
 class PortalResponse(BaseModel):
     url: str
+
+
+class SyncResponse(BaseModel):
+    plan: str | None = None
+    subscription_status: str | None = None
+    cancel_at_period_end: bool = False
+    current_period_end: str | None = None
 
 
 def _require_user(principal: Principal, db: Session | None) -> User:
@@ -91,7 +99,17 @@ def billing_portal(
     db: Session | None = Depends(get_db),
 ) -> PortalResponse:
     user = _require_user(principal, db)
-    return PortalResponse(**create_portal_session(user))
+    return PortalResponse(**create_portal_session(db, user))
+
+
+@router.post("/billing/sync", response_model=SyncResponse)
+def sync_billing(
+    principal: Principal = Depends(get_principal),
+    db: Session | None = Depends(get_db),
+) -> SyncResponse:
+    user = _require_user(principal, db)
+    view = sync_user_subscription(db, user)
+    return SyncResponse(plan=user.plan, **view)
 
 
 @router.post("/billing/webhook")

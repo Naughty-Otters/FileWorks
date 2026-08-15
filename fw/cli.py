@@ -59,7 +59,7 @@ CATEGORIES: tuple[Category, ...] = (
     Category("database", "Database", "Alembic migrations", frozenset({LOCAL_SCOPE, CLOUD_SCOPE})),
     Category("infra", "Infra", "IAM, Terraform, Lambda, ECR", frozenset({CLOUD_SCOPE})),
     Category("frontend", "Frontend", "Cloudflare Pages", frozenset({CLOUD_SCOPE})),
-    Category("secrets", "Secrets", "Seed from backend/.env", frozenset({CLOUD_SCOPE})),
+    Category("secrets", "Secrets", "Seed from backend/.env + .env.<env>", frozenset({CLOUD_SCOPE})),
 )
 
 
@@ -121,7 +121,7 @@ def _actions() -> tuple[MenuAction, ...]:
         MenuAction("status", "Show URLs / health", "", cloud.status, True, "infra", frozenset({CLOUD_SCOPE})),
         MenuAction("destroy", "Destroy this environment", "", cloud.destroy, True, "infra", frozenset({CLOUD_SCOPE})),
         MenuAction("frontend", "Publish frontend", "Cloudflare Pages", cloud.frontend, True, "frontend", frozenset({CLOUD_SCOPE})),
-        MenuAction("seed-secrets", "Seed secrets from backend/.env", "", cloud.seed_secrets, True, "secrets", frozenset({CLOUD_SCOPE})),
+        MenuAction("seed-secrets", "Seed secrets from backend/.env + .env.<env>", "", cloud.seed_secrets, True, "secrets", frozenset({CLOUD_SCOPE})),
     )
 
 

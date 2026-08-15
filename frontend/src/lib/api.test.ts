@@ -19,6 +19,7 @@ import {
   confirmCheckout,
   fetchBillingCatalog,
   openBillingPortal,
+  syncBilling,
   exportMarkdownFile,
   unreachableMessage,
 } from "@/lib/api";
@@ -222,6 +223,24 @@ describe("api client", () => {
     vi.stubGlobal("fetch", fetchMock);
     expect(await startCheckout("pro")).toEqual({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
     expect(await openBillingPortal()).toEqual({ url: "https://billing.stripe.test/p" });
+  });
+
+  it("syncs billing then reloads the session", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/api/billing/sync")) return jsonResponse({ plan: "basic", cancel_at_period_end: false });
+      if (url.endsWith("/api/me")) {
+        return jsonResponse({
+          user: { id: "1", email: "a@b.co", name: "A", picture_url: null, plan: "basic" },
+          plan: "basic",
+          permissions: {},
+          quota: {},
+        });
+      }
+      return new Response("nope", { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    expect((await syncBilling()).plan).toBe("basic");
   });
 
   it("loads the public catalog and confirms checkout", async () => {

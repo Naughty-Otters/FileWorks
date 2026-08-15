@@ -11,10 +11,11 @@ import {
   fetchBillingCatalog,
   fetchMe,
   startCheckout,
+  syncBilling,
   type BillingCatalog,
   type MeResponse,
 } from "@/lib/api";
-import { formatPlanPrice, planRank, PRICE_ROLES } from "@/lib/plans";
+import { formatPlanPrice, PLAN_CATALOG, planIsPurchasable, planSwitchLabel, PRICE_ROLES, usageFitsPlan, usageOverLimitReasons } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 function loginNext(path: string) {
@@ -35,17 +36,36 @@ export function PricingPage() {
       setCatalog(cat);
       if (handledReturn.current) return;
       const params = new URLSearchParams(window.location.search);
+      if (params.get("billing") === "return" && session.user) {
+        handledReturn.current = true;
+        try {
+          const next = await syncBilling();
+          setMe(next);
+          setNotice(
+            next.billing?.cancel_at_period_end
+              ? "Billing updated. This role stays until the period ends, then Basic."
+              : "Billing updated from Stripe.",
+          );
+        } catch {
+          setNotice("Returned from Stripe. Refresh if your role looks stale.");
+        }
+        return;
+      }
       if (params.get("checkout") === "success") {
         handledReturn.current = true;
         const sessionId = params.get("session_id");
         if (sessionId && session.user) {
           try {
             await confirmCheckout(sessionId);
-            setMe(await fetchMe());
+            setMe(await syncBilling().catch(() => fetchMe()));
             setNotice("Payment received. Your role is updated.");
             return;
           } catch {
-            // Webhook may still apply the role if confirm is unavailable.
+            try {
+              setMe(await syncBilling());
+            } catch {
+              // Webhook may still apply the role.
+            }
           }
         }
         setNotice("Payment received. Your role updates when Stripe confirms the subscription.");
@@ -74,12 +94,10 @@ export function PricingPage() {
     setError(null);
     try {
       const checkout = await startCheckout(plan, "/pricing");
-      if (checkout.url) {
-        window.location.assign(checkout.url);
-        return;
+      if (!checkout.url) {
+        throw new Error("Stripe did not return a billing URL");
       }
-      setMe(await fetchMe());
-      setNotice(`You're on ${checkout.plan || plan}.`);
+      window.location.assign(checkout.url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed");
     } finally {
@@ -126,10 +144,17 @@ export function PricingPage() {
           {PRICE_ROLES.map((item) => {
             const signedIn = Boolean(me?.user);
             const current = signedIn && me?.plan === item.id;
-            const stripeReady =
-              Boolean(catalog?.enabled && catalog.prices[item.id]) &&
-              (item.id === "pro" || item.id === "premium") &&
-              planRank(item.id) > planRank(me?.plan || "anonymous");
+            const catalogPlan = PLAN_CATALOG.find((plan) => plan.id === item.id);
+            const paidPlan = item.id === "pro" || item.id === "premium";
+            const purchasable = planIsPurchasable(item.id, catalog);
+            const usageOk = !signedIn || !me || usageFitsPlan(me.quota, item.id);
+            const stripeReady = Boolean(catalog?.enabled && paidPlan && purchasable && !current && usageOk);
+            const blockedByUsage = Boolean(
+              signedIn && catalog?.enabled && paidPlan && purchasable && !current && !usageOk,
+            );
+            const actionLabel =
+              signedIn && catalogPlan ? planSwitchLabel(me?.plan || "anonymous", catalogPlan) : item.cta.label;
+            const usageBlock = me ? usageOverLimitReasons(me.quota, item.id) : [];
             return (
               <article
                 key={item.id}
@@ -182,8 +207,21 @@ export function PricingPage() {
                       "disabled:cursor-not-allowed disabled:opacity-45",
                     )}
                   >
-                    {pending === item.id ? "Redirecting…" : item.cta.label}
+                    {pending === item.id ? "Redirecting…" : actionLabel}
                   </button>
+                ) : blockedByUsage ? (
+                  <div className="mt-5">
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex w-full justify-center rounded-full border border-[var(--line)] px-3 py-2 text-sm font-medium text-[var(--ink)] opacity-45"
+                    >
+                      {actionLabel}
+                    </button>
+                    <p className="mt-2 text-center text-xs leading-4 text-[var(--ink-muted)]">
+                      Usage is over this plan: {usageBlock.join("; ")}.
+                    </p>
+                  </div>
                 ) : (
                   <a
                     href="/profile"

@@ -154,6 +154,68 @@ export function canSwitchPlan(current: string, target: string): boolean {
   return target !== current && PLAN_CATALOG.some((plan) => plan.id === target);
 }
 
+export type PlanLimits = {
+  extractsPerDay: number | null;
+  extractsPerMonth: number | null;
+  aiPerDay: number | null;
+  aiPerMonth: number | null;
+};
+
+export const PLAN_LIMITS: Record<string, PlanLimits> = {
+  basic: { extractsPerDay: 5, extractsPerMonth: null, aiPerDay: null, aiPerMonth: 3 },
+  pro: { extractsPerDay: null, extractsPerMonth: 150, aiPerDay: null, aiPerMonth: 40 },
+  premium: { extractsPerDay: null, extractsPerMonth: 600, aiPerDay: null, aiPerMonth: 150 },
+};
+
+export type UsageSnapshot = {
+  used_day: number;
+  used_month: number;
+  used_ai_day: number;
+  used_ai_month: number;
+};
+
+export function usageOverLimitReasons(quota: UsageSnapshot, targetId: string): string[] {
+  const limits = PLAN_LIMITS[targetId];
+  if (!limits) return ["Unknown plan"];
+  const reasons: string[] = [];
+  if (limits.extractsPerDay != null && quota.used_day > limits.extractsPerDay) {
+    reasons.push(`${quota.used_day} conversions today (limit ${limits.extractsPerDay})`);
+  }
+  if (limits.extractsPerMonth != null && quota.used_month > limits.extractsPerMonth) {
+    reasons.push(`${quota.used_month} conversions this month (limit ${limits.extractsPerMonth})`);
+  }
+  if (limits.aiPerDay != null && quota.used_ai_day > limits.aiPerDay) {
+    reasons.push(`${quota.used_ai_day} AI today (limit ${limits.aiPerDay})`);
+  }
+  if (limits.aiPerMonth != null && quota.used_ai_month > limits.aiPerMonth) {
+    reasons.push(`${quota.used_ai_month} AI this month (limit ${limits.aiPerMonth})`);
+  }
+  return reasons;
+}
+
+export function usageFitsPlan(quota: UsageSnapshot, targetId: string): boolean {
+  return usageOverLimitReasons(quota, targetId).length === 0;
+}
+
+export function canMoveToPlan(current: string, target: string, quota: UsageSnapshot): boolean {
+  if (!canSwitchPlan(current, target)) return false;
+  if (planRank(target) >= planRank(current)) return true;
+  return usageFitsPlan(quota, target);
+}
+
+export function planIsPurchasable(
+  planId: string,
+  billing?: {
+    enabled?: boolean;
+    prices?: Record<string, boolean>;
+    amounts?: Record<string, number>;
+  } | null,
+): boolean {
+  if (!billing?.enabled) return true;
+  if (billing.prices?.[planId]) return true;
+  return (billing.amounts?.[planId] ?? 0) > 0;
+}
+
 export function planSwitchLabel(current: string, target: CatalogPlan): string {
   if (planRank(target.id) > planRank(current)) return `Upgrade to ${target.label}`;
   return `Switch to ${target.label}`;

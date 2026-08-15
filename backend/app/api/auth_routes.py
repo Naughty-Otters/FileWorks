@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.auth.deps import Principal, get_principal
 from app.auth.google import verify_google_id_token
-from app.auth.plans import can_change_plan, get_plan, permissions_for
-from app.auth.quota import quota_snapshot
+from app.auth.plans import get_plan, permissions_for
+from app.auth.quota import assert_can_switch_to_plan, quota_snapshot
 from app.auth.tokens import hash_token, issue_access_token, new_refresh_token
 from app.billing.stripe import billing_status, stripe_billing_enabled, sync_user_subscription
 from app.core.config import get_settings
@@ -192,11 +192,7 @@ def change_plan(
     user = db.get(User, principal.user.id)
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
-    if not can_change_plan(user.plan, target):
-        raise HTTPException(
-            status_code=400,
-            detail={"code": "plan_invalid", "current": user.plan, "target": target},
-        )
+    assert_can_switch_to_plan(db, user_id=user.id, current=user.plan, target=target)
     user.plan = target
     db.add(user)
     tokens = _issue_pair(db, user)

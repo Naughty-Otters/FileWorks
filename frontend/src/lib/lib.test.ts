@@ -26,9 +26,12 @@ import {
   convertGate,
   convertGateBody,
   convertGateTitle,
+  canMoveToPlan,
   canSwitchPlan,
+  planIsPurchasable,
   planRank,
   planSwitchLabel,
+  usageFitsPlan,
   PLAN_CATALOG,
   PRICE_ROLES,
   formatPlanPrice,
@@ -359,6 +362,16 @@ describe("plan policy", () => {
     expect(canSwitchPlan("basic", "pro")).toBe(true);
     expect(canSwitchPlan("premium", "pro")).toBe(true);
     expect(canSwitchPlan("basic", "basic")).toBe(false);
+    const lowUsage = { used_day: 1, used_month: 20, used_ai_day: 0, used_ai_month: 4 };
+    const overPro = { used_day: 1, used_month: 200, used_ai_day: 0, used_ai_month: 4 };
+    expect(usageFitsPlan(lowUsage, "pro")).toBe(true);
+    expect(usageFitsPlan(overPro, "pro")).toBe(false);
+    expect(canMoveToPlan("premium", "pro", lowUsage)).toBe(true);
+    expect(canMoveToPlan("premium", "pro", overPro)).toBe(false);
+    expect(canMoveToPlan("pro", "premium", overPro)).toBe(true);
+    expect(planIsPurchasable("pro", { enabled: true, prices: { pro: false }, amounts: { pro: 12 } })).toBe(true);
+    expect(planIsPurchasable("basic", { enabled: true, prices: { basic: false }, amounts: { basic: 0 } })).toBe(false);
+    expect(planIsPurchasable("pro", { enabled: false, prices: { pro: false } })).toBe(true);
     expect(planSwitchLabel("basic", PLAN_CATALOG[1])).toBe("Upgrade to Pro");
     expect(planSwitchLabel("premium", PLAN_CATALOG[0])).toBe("Switch to Basic");
     expect(planRank("nope")).toBe(0);

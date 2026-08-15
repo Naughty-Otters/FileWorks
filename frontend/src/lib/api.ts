@@ -404,6 +404,14 @@ export async function openBillingPortal(): Promise<{ url: string }> {
   return (await res.json()) as { url: string };
 }
 
+export async function syncBilling(): Promise<MeResponse> {
+  const res = await apiFetch("/api/billing/sync", { method: "POST" });
+  if (!res.ok) {
+    throw new Error(await readError(res, `Billing sync failed (${res.status})`));
+  }
+  return fetchMe();
+}
+
 export async function logoutSession(): Promise<void> {
   const refresh = getRefreshToken();
   if (refresh) {

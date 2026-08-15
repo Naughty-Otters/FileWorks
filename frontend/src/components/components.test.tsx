@@ -676,7 +676,7 @@ describe("PricingPage", () => {
       plan: "pro",
     });
     render(<PricingPage />);
-    await user.click(await screen.findByRole("button", { name: "Choose Pro" }));
+    await user.click(await screen.findByRole("button", { name: "Upgrade to Pro" }));
     expect(api.startCheckout).toHaveBeenCalledWith("pro", "/pricing");
     expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs");
   });
@@ -697,6 +697,74 @@ describe("PricingPage", () => {
     expect(await screen.findByRole("link", { name: "Account" })).toHaveAttribute("href", "/profile");
     expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
     expect(screen.getByText("Current role")).toBeInTheDocument();
+  });
+
+  it("lets a paid account switch to the other paid plan", async () => {
+    const user = userEvent.setup();
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, search: "" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "premium" },
+      plan: "premium",
+    });
+    vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
+      enabled: true,
+      currency: "usd",
+      amounts: { basic: 0, pro: 12, premium: 29 },
+      prices: { basic: false, pro: true, premium: true },
+    });
+    vi.spyOn(api, "startCheckout").mockResolvedValue({
+      url: "https://checkout.stripe.test/cs_switch",
+      updated: false,
+      plan: "pro",
+    });
+    render(<PricingPage />);
+    await user.click(await screen.findByRole("button", { name: "Switch to Pro" }));
+    expect(api.startCheckout).toHaveBeenCalledWith("pro", "/pricing");
+    expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs_switch");
+  });
+
+  it("syncs Stripe after returning from a plan-change confirmation", async () => {
+    vi.stubGlobal("location", { assign: vi.fn(), search: "?billing=return" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
+      plan: "pro",
+    });
+    vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
+      enabled: true,
+      currency: "usd",
+      amounts: { basic: 0, pro: 12, premium: 29 },
+      prices: { basic: false, pro: true, premium: true },
+    });
+    vi.spyOn(api, "syncBilling").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "premium" },
+      plan: "premium",
+      billing: { enabled: true, prices: { basic: false, pro: true, premium: true } },
+    });
+    render(<PricingPage />);
+    expect(await screen.findByText("Billing updated from Stripe.")).toBeInTheDocument();
+    expect(api.syncBilling).toHaveBeenCalled();
+  });
+
+  it("disables a downgrade on pricing when usage exceeds the lower plan", async () => {
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "premium" },
+      plan: "premium",
+      quota: { ...guestMe.quota, used_month: 200, used_ai_month: 10 },
+    });
+    vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
+      enabled: true,
+      currency: "usd",
+      amounts: { basic: 0, pro: 12, premium: 29 },
+      prices: { basic: false, pro: true, premium: true },
+    });
+    render(<PricingPage />);
+    expect(await screen.findByRole("button", { name: "Switch to Pro" })).toBeDisabled();
+    expect(screen.getByText(/Usage is over this plan/)).toBeInTheDocument();
   });
 });
 
@@ -831,11 +899,66 @@ describe("ProfilePage", () => {
     });
     vi.spyOn(api, "startCheckout").mockResolvedValue({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
     render(<ProfilePage />);
-    expect(await screen.findByText(/maps to a FileWorks role/)).toBeInTheDocument();
+    expect(await screen.findByText(/Downgrade when this period's usage fits/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
     expect(api.startCheckout).toHaveBeenCalledWith("pro");
     expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs");
     expect(screen.getByRole("button", { name: "Manage billing" })).toBeInTheDocument();
+  });
+
+  it("syncs Stripe after returning from the billing portal", async () => {
+    vi.stubGlobal("location", { assign: vi.fn(), search: "?billing=return" });
+    vi.spyOn(api, "syncBilling").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
+      plan: "pro",
+      permissions: { extract: true, "extract.ai": true, export: true },
+      billing: {
+        enabled: true,
+        prices: { basic: false, pro: true, premium: true },
+        cancel_at_period_end: true,
+        current_period_end: "2030-01-01T00:00:00+00:00",
+      },
+    });
+    render(<ProfilePage />);
+    expect(await screen.findByText(/This role stays until/)).toBeInTheDocument();
+    expect(api.syncBilling).toHaveBeenCalled();
+  });
+
+  it("blocks a downgrade when usage exceeds the lower plan", async () => {
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "premium" },
+      plan: "premium",
+      permissions: { extract: true, "extract.ai": true, export: true },
+      quota: { ...guestMe.quota, used_month: 200, used_ai_month: 10, limit_month: 600, remaining_month: 400 },
+      billing: { enabled: true, prices: { basic: false, pro: true, premium: true }, amounts: { basic: 0, pro: 12, premium: 29 } },
+    });
+    render(<ProfilePage />);
+    expect(await screen.findByRole("button", { name: "Switch to Pro" })).toBeDisabled();
+    expect(screen.getByText(/Usage is over this plan/)).toBeInTheDocument();
+  });
+
+  it("lets a paid account switch to another paid plan", async () => {
+    const user = userEvent.setup();
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, search: "" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "premium" },
+      plan: "premium",
+      permissions: { extract: true, "extract.ai": true, export: true },
+      billing: { enabled: true, prices: { basic: false, pro: true, premium: true } },
+    });
+    vi.spyOn(api, "startCheckout").mockResolvedValue({
+      url: "https://checkout.stripe.test/cs_switch",
+      updated: false,
+      plan: "pro",
+    });
+    render(<ProfilePage />);
+    await user.click(await screen.findByRole("button", { name: "Switch to Pro" }));
+    expect(api.startCheckout).toHaveBeenCalledWith("pro");
+    expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs_switch");
   });
 
   it("shows a pending Stripe cancellation on the current plan", async () => {

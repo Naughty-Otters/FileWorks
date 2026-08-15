@@ -4,6 +4,8 @@ uploads/
 __pycache__/
 .venv/
 .env
+.env.*
+!.env.example
 .ruff_cache/
 .mypy_cache/
 .pytest_cache/

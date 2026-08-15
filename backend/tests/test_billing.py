@@ -92,6 +92,32 @@ class StripeMappingTests(unittest.TestCase):
         self.assertEqual(user.stripe_customer_id, "cus_1")
         self.assertEqual(user.stripe_subscription_id, "sub_1")
 
+    def test_apply_subscription_prefers_price_metadata_over_stale_plan(self) -> None:
+        user = _user("pro")
+        plan = apply_subscription(
+            user,
+            {
+                "id": "sub_2",
+                "status": "active",
+                "customer": "cus_2",
+                "metadata": {"plan": "pro"},
+                "items": {
+                    "data": [
+                        {
+                            "price": {
+                                "id": "price_adhoc",
+                                "metadata": {"fileworks_plan": "premium"},
+                                "product": {"name": "FileWorks Premium", "metadata": {"fileworks_plan": "premium"}},
+                            }
+                        }
+                    ]
+                },
+            },
+            _settings(stripe_price_pro="20", stripe_price_premium="50"),
+        )
+        self.assertEqual(plan, "premium")
+        self.assertEqual(user.plan, "premium")
+
     def test_apply_subscription_uses_metadata_when_price_is_ad_hoc(self) -> None:
         user = _user()
         plan = apply_subscription(
@@ -333,16 +359,26 @@ class BillingRouteTests(unittest.TestCase):
         with patch("app.billing.stripe.get_settings", return_value=_settings()), patch(
             "app.billing.stripe._stripe_mod"
         ) as stripe_mod:
-            stripe_mod.return_value.checkout.Session.create.return_value = session
+            stripe = stripe_mod.return_value
+            stripe.Customer.list.return_value = {"data": []}
+            stripe.Customer.create.return_value = {"id": "cus_new"}
+            stripe.checkout.Session.create.return_value = session
             client = TestClient(self._app(user))
             res = client.post("/api/billing/checkout", json={"plan": "pro"})
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["url"], "https://checkout.stripe.test/cs_1")
         self.assertFalse(res.json()["updated"])
+        self.assertEqual(user.stripe_customer_id, "cus_new")
+        self.assertEqual(stripe.checkout.Session.create.call_args.kwargs["customer"], "cus_new")
 
     def test_checkout_uses_price_data_for_dollar_amounts(self) -> None:
         user = _user()
         stripe = MagicMock()
+        stripe.Customer.list.return_value = {"data": []}
+        stripe.Customer.create.return_value = {"id": "cus_new"}
+        stripe.Product.list.return_value = {"data": []}
+        stripe.Product.create.return_value = {"id": "prod_pro"}
+        stripe.Price.create.return_value = {"id": "price_created"}
         stripe.checkout.Session.create.return_value = {"url": "https://checkout.stripe.test/cs_amt"}
         with patch(
             "app.billing.stripe.get_settings",
@@ -352,11 +388,7 @@ class BillingRouteTests(unittest.TestCase):
             res = client.post("/api/billing/checkout", json={"plan": "pro", "return_to": "/pricing"})
         self.assertEqual(res.status_code, 200)
         kwargs = stripe.checkout.Session.create.call_args.kwargs
-        self.assertEqual(kwargs["line_items"][0]["price_data"]["unit_amount"], 2000)
-        self.assertEqual(
-            kwargs["line_items"][0]["price_data"]["product_data"]["tax_code"],
-            "txcd_10103000",
-        )
+        self.assertEqual(kwargs["line_items"][0]["price"], "price_created")
         self.assertIn("/pricing?checkout=success", kwargs["success_url"])
 
     def test_catalog_is_public(self) -> None:
@@ -418,39 +450,134 @@ class BillingRouteTests(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         stripe.Subscription.cancel.assert_called_once_with("sub_old", prorate=False)
 
-    def test_existing_subscription_updates_price(self) -> None:
+    def test_existing_subscriber_confirms_plan_in_portal(self) -> None:
         user = _user("pro")
         user.stripe_subscription_id = "sub_1"
         user.stripe_customer_id = "cus_1"
         stripe = MagicMock()
-        stripe.Subscription.retrieve.return_value = {"items": {"data": [{"id": "si_1"}]}}
-        stripe.Subscription.modify.return_value = {
+        stripe.Subscription.retrieve.return_value = {
             "id": "sub_1",
             "status": "active",
-            "customer": "cus_1",
-            "items": {"data": [{"price": {"id": "price_premium"}}]},
+            "items": {"data": [{"id": "si_1"}]},
         }
+        stripe.Price.retrieve.side_effect = lambda pid, **_: {"id": pid, "product": f"prod_{pid}"}
+        stripe.billing_portal.Configuration.list.return_value = {
+            "data": [{"id": "bpc_1", "metadata": {"fileworks": "no_refund_cancel"}}]
+        }
+        stripe.billing_portal.Session.create.return_value = {"url": "https://billing.stripe.test/confirm"}
         with patch("app.billing.stripe.get_settings", return_value=_settings()), patch(
             "app.billing.stripe._stripe_mod", return_value=stripe
         ):
             client = TestClient(self._app(user))
             res = client.post("/api/billing/checkout", json={"plan": "premium"})
         self.assertEqual(res.status_code, 200)
-        self.assertTrue(res.json()["updated"])
-        self.assertEqual(user.plan, "premium")
-        self.assertFalse(stripe.Subscription.modify.call_args.kwargs["cancel_at_period_end"])
+        self.assertEqual(res.json()["url"], "https://billing.stripe.test/confirm")
+        self.assertFalse(res.json()["updated"])
+        stripe.checkout.Session.create.assert_not_called()
+        flow = stripe.billing_portal.Session.create.call_args.kwargs["flow_data"]
+        self.assertEqual(flow["type"], "subscription_update_confirm")
+        self.assertEqual(flow["subscription_update_confirm"]["subscription"], "sub_1")
+        self.assertEqual(flow["subscription_update_confirm"]["items"][0]["price"], "price_premium")
+
+    def test_existing_subscriber_does_not_open_second_checkout(self) -> None:
+        user = _user("pro")
+        user.stripe_subscription_id = "sub_1"
+        user.stripe_customer_id = "cus_1"
+        stripe = MagicMock()
+        stripe.Subscription.retrieve.return_value = {
+            "id": "sub_1",
+            "status": "active",
+            "items": {"data": [{"id": "si_1"}]},
+        }
+        stripe.Price.retrieve.side_effect = lambda pid, **_: {"id": pid, "product": f"prod_{pid}"}
+        stripe.billing_portal.Configuration.list.return_value = {
+            "data": [{"id": "bpc_1", "metadata": {"fileworks": "no_refund_cancel"}}]
+        }
+        stripe.billing_portal.Session.create.side_effect = RuntimeError("portal down")
+        with patch("app.billing.stripe.get_settings", return_value=_settings()), patch(
+            "app.billing.stripe._stripe_mod", return_value=stripe
+        ):
+            client = TestClient(self._app(user))
+            res = client.post("/api/billing/checkout", json={"plan": "premium"})
+        self.assertEqual(res.status_code, 502)
+        stripe.checkout.Session.create.assert_not_called()
+
+    def test_canceled_subscriber_uses_checkout(self) -> None:
+        user = _user("basic")
+        user.stripe_customer_id = "cus_1"
+        user.stripe_subscription_id = "sub_old"
+        stripe = MagicMock()
+        stripe.Subscription.retrieve.return_value = {"id": "sub_old", "status": "canceled"}
+        stripe.Subscription.list.return_value = {"data": [{"id": "sub_old", "status": "canceled"}]}
+        stripe.checkout.Session.create.return_value = {"url": "https://checkout.stripe.test/cs_new"}
+        with patch("app.billing.stripe.get_settings", return_value=_settings()), patch(
+            "app.billing.stripe._stripe_mod", return_value=stripe
+        ):
+            client = TestClient(self._app(user))
+            res = client.post("/api/billing/checkout", json={"plan": "pro"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["url"], "https://checkout.stripe.test/cs_new")
+        stripe.billing_portal.Session.create.assert_not_called()
+
+    def test_checkout_blocks_downgrade_over_quota(self) -> None:
+        user = _user("premium")
+
+        class FakeDb:
+            def get(self, *_a, **_k):
+                return user
+
+            def add(self, *_a, **_k):
+                return None
+
+            def scalar(self, _q):
+                return 200
+
+        with patch("app.billing.stripe.get_settings", return_value=_settings()), patch(
+            "app.billing.stripe._stripe_mod", return_value=MagicMock()
+        ):
+            client = TestClient(self._app(user, FakeDb()))
+            res = client.post("/api/billing/checkout", json={"plan": "pro"})
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()["detail"]["code"], "quota_exceeds_plan")
 
     def test_portal_requires_customer(self) -> None:
         user = _user()
-        with patch("app.billing.stripe.get_settings", return_value=_settings()):
+        stripe = MagicMock()
+        stripe.Customer.list.return_value = {"data": []}
+        with patch("app.billing.stripe.get_settings", return_value=_settings()), patch(
+            "app.billing.stripe._stripe_mod", return_value=stripe
+        ):
             client = TestClient(self._app(user))
             res = client.post("/api/billing/portal")
         self.assertEqual(res.status_code, 400)
+        self.assertIn("Subscribe from Pricing", res.json()["detail"])
+
+    def test_portal_attaches_customer_by_email(self) -> None:
+        user = _user("pro")
+        stripe = MagicMock()
+        stripe.Customer.list.return_value = {"data": [{"id": "cus_from_email"}]}
+        stripe.Price.retrieve.side_effect = lambda pid, **_: {"id": pid, "product": f"prod_{pid}"}
+        stripe.billing_portal.Configuration.list.return_value = {
+            "data": [{"id": "bpc_1", "metadata": {"fileworks": "no_refund_cancel"}}]
+        }
+        stripe.billing_portal.Session.create.return_value = {"url": "https://billing.stripe.test/p"}
+        with patch("app.billing.stripe.get_settings", return_value=_settings()), patch(
+            "app.billing.stripe._stripe_mod", return_value=stripe
+        ):
+            client = TestClient(self._app(user))
+            res = client.post("/api/billing/portal")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(user.stripe_customer_id, "cus_from_email")
+        self.assertEqual(
+            stripe.billing_portal.Session.create.call_args.kwargs["customer"],
+            "cus_from_email",
+        )
 
     def test_portal_returns_url(self) -> None:
         user = _user("pro")
         user.stripe_customer_id = "cus_1"
         stripe = MagicMock()
+        stripe.Price.retrieve.side_effect = lambda pid, **_: {"id": pid, "product": f"prod_{pid}"}
         stripe.billing_portal.Configuration.list.return_value = {
             "data": [{"id": "bpc_1", "metadata": {"fileworks": "no_refund_cancel"}}]
         }
@@ -466,11 +593,15 @@ class BillingRouteTests(unittest.TestCase):
         self.assertEqual(stripe.billing_portal.Session.create.call_args.kwargs["configuration"], "bpc_1")
         stripe.billing_portal.Configuration.create.assert_not_called()
         stripe.billing_portal.Configuration.modify.assert_called_once_with("bpc_1", features=ANY)
+        update = stripe.billing_portal.Configuration.modify.call_args.kwargs["features"]["subscription_update"]
+        self.assertTrue(update["enabled"])
+        self.assertEqual(update["default_allowed_updates"], ["price"])
 
     def test_portal_creates_no_refund_cancel_config(self) -> None:
         user = _user("pro")
         user.stripe_customer_id = "cus_1"
         stripe = MagicMock()
+        stripe.Price.retrieve.side_effect = lambda pid, **_: {"id": pid, "product": f"prod_{pid}"}
         stripe.billing_portal.Configuration.list.return_value = {"data": []}
         stripe.billing_portal.Configuration.create.return_value = {"id": "bpc_new"}
         stripe.billing_portal.Session.create.return_value = {"url": "https://billing.stripe.test/p"}
@@ -484,7 +615,16 @@ class BillingRouteTests(unittest.TestCase):
         cancel = created["features"]["subscription_cancel"]
         self.assertEqual(cancel["mode"], "at_period_end")
         self.assertEqual(cancel["proration_behavior"], "none")
-        self.assertFalse(created["features"]["subscription_update"]["enabled"])
+        update = created["features"]["subscription_update"]
+        self.assertTrue(update["enabled"])
+        self.assertEqual(update["default_allowed_updates"], ["price"])
+        self.assertEqual(
+            update["products"],
+            [
+                {"product": "prod_price_pro", "prices": ["price_pro"]},
+                {"product": "prod_price_premium", "prices": ["price_premium"]},
+            ],
+        )
         self.assertEqual(stripe.billing_portal.Session.create.call_args.kwargs["configuration"], "bpc_new")
 
     def test_webhook_rejects_bad_signature(self) -> None:
@@ -495,6 +635,26 @@ class BillingRouteTests(unittest.TestCase):
             client = TestClient(app)
             res = client.post("/api/billing/webhook", content=b"{}", headers={"stripe-signature": "nope"})
         self.assertEqual(res.status_code, 400)
+
+    def test_sync_route_returns_current_plan(self) -> None:
+        user = _user("pro")
+        user.stripe_customer_id = "cus_1"
+        user.stripe_subscription_id = "sub_1"
+        stripe = MagicMock()
+        stripe.Subscription.retrieve.return_value = {
+            "id": "sub_1",
+            "status": "canceled",
+            "customer": "cus_1",
+        }
+        stripe.Subscription.list.return_value = {"data": []}
+        with patch("app.billing.stripe.get_settings", return_value=_settings()), patch(
+            "app.billing.stripe._stripe_mod", return_value=stripe
+        ):
+            client = TestClient(self._app(user))
+            res = client.post("/api/billing/sync")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["plan"], "basic")
+        self.assertEqual(user.plan, "basic")
 
     def test_instant_plan_change_blocked_when_stripe_on(self) -> None:
         user = _user()

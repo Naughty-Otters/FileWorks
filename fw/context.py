@@ -50,8 +50,9 @@ SECRET_ENV_PREFIXES = (
     "XAI_",
     "ANTHROPIC_",
     "CLAUDE_",
+    "STRIPE_",
 )
-SECRET_EXACT_KEYS = {"GOOGLE_CLIENT_ID"}
+SECRET_EXACT_KEYS = {"GOOGLE_CLIENT_ID", "PUBLIC_APP_URL"}
 
 
 @dataclass(frozen=True)
@@ -74,6 +75,11 @@ class Environment:
     @property
     def local_tfvars_file(self) -> Path:
         return TF_DIR / "envs" / f"{self.name}.local.tfvars"
+
+    @property
+    def dotenv_overlay(self) -> Path:
+        """Optional backend/.env.<env> overrides used when seeding this environment."""
+        return BACKEND_DIR / f".env.{self.name}"
 
     @property
     def pages_project(self) -> str:
