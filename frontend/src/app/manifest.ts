@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next";
 import { BUSINESS_NAME } from "@/lib/legal";
 
+// `output: export` requires metadata routes to be statically rendered.
+export const dynamic = "force-static";
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: BUSINESS_NAME,

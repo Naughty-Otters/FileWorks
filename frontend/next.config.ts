@@ -42,16 +42,20 @@ const nextConfig = {
     };
     return config;
   },
-  async rewrites() {
-    if (staticExport) return [];
-    const api = process.env.API_PROXY_TARGET || "http://127.0.0.1:8000";
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${api}/api/:path*`,
-      },
-    ];
-  },
+  // Omitted entirely for `output: export`, which warns about any rewrites key.
+  ...(staticExport
+    ? {}
+    : {
+        async rewrites() {
+          const api = process.env.API_PROXY_TARGET || "http://127.0.0.1:8000";
+          return [
+            {
+              source: "/api/:path*",
+              destination: `${api}/api/:path*`,
+            },
+          ];
+        },
+      }),
 };
 
 export default nextConfig;

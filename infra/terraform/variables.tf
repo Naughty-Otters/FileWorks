@@ -45,8 +45,14 @@ variable "ephemeral_storage_mb" {
 
 variable "cors_origins" {
   type        = list(string)
-  description = "Browser origins allowed to call the API and PUT to S3 (localhost + Cloudflare Pages)."
+  description = "Exact browser origins allowed for the API and S3. Per-env: set in envs/<env>.tfvars."
   default     = ["http://localhost:3000", "http://127.0.0.1:3000"]
+}
+
+variable "cors_origin_regex" {
+  type        = string
+  description = "Optional regex for API CORS (FastAPI only; S3 has no regex). Use on staging for Cloudflare Pages preview hosts."
+  default     = ""
 }
 
 variable "max_upload_mb" {

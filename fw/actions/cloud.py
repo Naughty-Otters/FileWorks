@@ -181,6 +181,16 @@ def bootstrap(ctx: Context) -> None:
     console.success("Remote state bucket is ready.")
 
 
+def _require_buildx(ctx: Context) -> None:
+    """Lambda only accepts Docker V2 schema 2, which needs buildx to pin."""
+    probe = run(["docker", "buildx", "version"], check=False, capture=True, ctx=ctx)
+    if probe.returncode != 0:
+        raise CommandError(
+            "docker buildx is required (Lambda rejects the OCI manifests plain "
+            "`docker build` now produces). Install Docker Desktop or the buildx plugin."
+        )
+
+
 def _ecr_login(ctx: Context, repo_url: str) -> None:
     registry = repo_url.split("/", 1)[0]
     password = run(
@@ -202,6 +212,7 @@ def _ecr_login(ctx: Context, repo_url: str) -> None:
 
 def push_image(ctx: Context) -> None:
     require_cmd("docker")
+    _require_buildx(ctx)
     console.rule(f"Build & push Lambda image ({ctx.env.name})")
     terraform_init(ctx)
     run(
@@ -220,8 +231,8 @@ def push_image(ctx: Context) -> None:
     repo_url = f"{ctx.account_id}.dkr.ecr.{ctx.region}.amazonaws.com/{ctx.env.ecr_repository}"
     image = f"{repo_url}:{ctx.env.name}"
     _ecr_login(ctx, repo_url)
-    # Lambda rejects OCI index / attestation manifests from recent BuildKit defaults.
-    # Force a single linux/amd64 Docker V2 schema 2 image (no provenance/SBOM).
+    # Lambda rejects OCI index / attestation manifests from recent BuildKit
+    # defaults, so pin one linux/amd64 image with Docker V2 schema 2 media types.
     run(
         [
             "docker",
@@ -235,7 +246,8 @@ def push_image(ctx: Context) -> None:
             str(DOCKERFILE),
             "-t",
             image,
-            "--push",
+            "--output",
+            f"type=image,name={image},oci-mediatypes=false,push=true",
             str(ROOT_DIR),
         ],
         ctx=ctx,
@@ -501,15 +513,23 @@ def frontend(ctx: Context) -> None:
     if urls:
         stable = [u for u in urls if u == frontend_url] or urls
         frontend_url = stable[0]
-    origins = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        ctx.env.pages_origin,
-        *urls,
-    ]
-    _write_local_cors(ctx, origins)
-    console.info("Updating Lambda Function URL + S3 CORS for the Pages origin.")
-    terraform_cmd(ctx, ["apply", "-auto-approve"])
+    # Prod CORS stays in envs/prod.tfvars only — never auto-inject preview hosts.
+    # Staging/dev write a local override so S3 CORS also allows the latest preview.
+    if not ctx.env.is_production:
+        origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            ctx.env.pages_origin,
+            *urls,
+        ]
+        _write_local_cors(ctx, origins)
+        console.info("Updating API + S3 CORS for this environment's Pages origin.")
+        terraform_cmd(ctx, ["apply", "-auto-approve"])
+    else:
+        console.info(
+            "Prod CORS is owned by envs/prod.tfvars "
+            f"(exact origins only; current Pages URL {frontend_url})."
+        )
     console.success(f"Frontend published → {frontend_url}")
     console.info(f"API {api_url}")
 

@@ -171,7 +171,7 @@ export const EditableMarkdownPreview = forwardRef<MarkdownPreviewHandle, Editabl
         if (command === "code") {
           const text = window.getSelection()?.toString() || "code";
           document.execCommand("insertHTML", false, `<code>${text}</code>`);
-        } else if (inline[command] && command !== "code") {
+        } else if (inline[command]) {
           document.execCommand(inline[command]!, false);
         } else if (block[command]) {
           document.execCommand("formatBlock", false, block[command]);

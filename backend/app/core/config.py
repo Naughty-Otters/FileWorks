@@ -57,6 +57,8 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
+    # Optional regex for preview hosts (e.g. staging Cloudflare Pages). Empty = off.
+    cors_origin_regex: str = ""
     upload_dir: Path = (
         Path("/tmp/uploads") if _IN_LAMBDA else Path(__file__).resolve().parents[2] / "uploads"
     )

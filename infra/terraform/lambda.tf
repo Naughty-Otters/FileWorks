@@ -37,6 +37,7 @@ resource "aws_lambda_function" "api" {
       S3_UPLOAD_PREFIX     = "upload/files"
       FILEWORKS_SECRET_ARN = aws_secretsmanager_secret.app.arn
       CORS_ORIGINS         = local.cors_csv
+      CORS_ORIGIN_REGEX    = var.cors_origin_regex
       UPLOAD_DIR           = "/tmp/uploads"
       HOME                 = "/tmp"
       PADDLE_DEVICE        = "cpu"
@@ -64,17 +65,12 @@ resource "aws_lambda_function" "api" {
   ]
 }
 
+# No `cors` block on purpose: FastAPI's CORSMiddleware already answers with
+# Access-Control-Allow-Origin (from CORS_ORIGINS). Setting it here too makes the
+# Function URL append a second value, which browsers reject.
 resource "aws_lambda_function_url" "api" {
   function_name      = aws_lambda_function.api.function_name
   authorization_type = "NONE"
-
-  cors {
-    allow_credentials = false
-    allow_origins     = var.cors_origins
-    allow_methods     = ["*"]
-    allow_headers     = ["*"]
-    max_age           = 86400
-  }
 }
 
 # Same image, no VPC — public HTTPS to LLM vendors. Invoked by the API Lambda

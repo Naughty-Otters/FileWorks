@@ -1,7 +1,8 @@
 # Container image for FileWorks API on AWS Lambda (Lambda Web Adapter).
 # Build from repo root (Lambda needs Docker V2 schema 2, not OCI attestations):
 #   docker buildx build --platform linux/amd64 --provenance=false --sbom=false \
-#     -f infra/docker/Dockerfile -t fileworks-api --load .
+#     -f infra/docker/Dockerfile -t fileworks-api \
+#     --output type=image,name=fileworks-api,oci-mediatypes=false,push=true .
 FROM public.ecr.aws/docker/library/python:3.12-slim-bookworm
 
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 \

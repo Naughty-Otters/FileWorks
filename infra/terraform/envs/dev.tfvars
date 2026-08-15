@@ -9,3 +9,4 @@ cors_origins = [
   "http://127.0.0.1:3000",
   "https://fileworks-dev.pages.dev",
 ]
+cors_origin_regex = "^https://([a-z0-9-]+\\.)?fileworks-dev\\.pages\\.dev$"

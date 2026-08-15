@@ -4,15 +4,18 @@ resource "aws_secretsmanager_secret" "app" {
   recovery_window_in_days = var.environment == "prod" ? 30 : 0
 }
 
+// Placeholders only: `fw seed-secrets` merges the real keys from backend/.env,
+// and ignore_changes keeps Terraform from overwriting them afterwards.
+// Never commit live keys here — this file is in version control.
 resource "aws_secretsmanager_secret_version" "app" {
   secret_id = aws_secretsmanager_secret.app.id
   secret_string = jsonencode({
-    LLM_PROVIDER       = "openai"
-    LLM_MODEL          = "gpt-4o"
-    LLM_API_KEY        = "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"
-    TRANSLATE_PROVIDER = "deepseek"
-    TRANSLATE_MODEL    = "deepseek-flash"
-    TRANSLATE_API_KEY  = "sk-d2ebe41365e740768d6fad969c4e5b1c"
+    LLM_PROVIDER          = "openai"
+    LLM_MODEL             = "gpt-4o"
+    LLM_API_KEY           = ""
+    TRANSLATE_PROVIDER    = "deepseek"
+    TRANSLATE_MODEL       = "deepseek-flash"
+    TRANSLATE_API_KEY     = ""
     GOOGLE_CLIENT_ID      = var.google_client_id
     JWT_SECRET            = random_password.jwt.result
     STRIPE_SECRET_KEY     = ""
