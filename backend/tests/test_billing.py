@@ -425,6 +425,7 @@ class BillingRouteTests(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["amounts"]["pro"], 20)
         self.assertTrue(res.json()["prices"]["pro"])
+        self.assertEqual(res.json()["api"]["amounts"]["api_builder"], 19)
 
     def test_confirm_applies_checkout_session(self) -> None:
         user = _user()

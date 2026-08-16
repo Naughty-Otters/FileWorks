@@ -43,17 +43,27 @@ class ConvertLanguage(BaseModel):
     label: str
 
 
+class ConvertCredits(BaseModel):
+    standard_per_page: int = 1
+    ai_per_page: int = 3
+    used: int | None = None
+    limit: int | None = None
+    remaining: int | None = None
+
+
 class ConvertCatalogResponse(BaseModel):
     """What POST /api/v1/convert accepts right now."""
 
     max_upload_mb: int
     plan: str | None = None
+    api_plan: str | None = None
     inputs: list[ConvertInputGroup]
     input_extensions: list[str]
     targets: list[ConvertTarget]
     languages: list[ConvertLanguage]
     options: list[ConvertOption]
     capabilities: ConvertCapabilities
+    credits: ConvertCredits | None = None
 
 
 class ConvertSource(BaseModel):
@@ -87,6 +97,7 @@ class ConvertResponse(BaseModel):
     options: ConvertAppliedOptions
     engine: str
     page_count: int
+    credits_used: int = 0
 
     @field_serializer("engine")
     def _public_engine(self, _value: str) -> str:

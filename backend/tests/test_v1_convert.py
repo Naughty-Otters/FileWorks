@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.v1 import router as v1_router
+from app.auth.api_plans import get_api_plan
 from app.auth.deps import Principal, get_principal
 from app.auth.plans import get_plan
 from app.db.session import get_db
@@ -20,6 +21,16 @@ def _app(principal: Principal) -> FastAPI:
     app.dependency_overrides[get_principal] = lambda: principal
     app.dependency_overrides[get_db] = lambda: None
     return app
+
+
+def _api_principal(*, workspace: str = "basic", api: str = "api_free") -> Principal:
+    user = SimpleNamespace(id=uuid4(), email="b@x.co", plan=workspace, api_plan=api)
+    return Principal(
+        plan=get_plan(workspace),
+        user=user,  # type: ignore[arg-type]
+        api_plan=get_api_plan(api),
+        via_api_key=True,
+    )
 
 
 class V1ConvertTests(unittest.TestCase):
@@ -40,8 +51,9 @@ class V1ConvertTests(unittest.TestCase):
         self.assertIn("prefer_structure", option_names)
         self.assertIn("target_lang", option_names)
         self.assertIn("use_table_recognition", option_names)
-        self.assertFalse(body["capabilities"]["ai"])
-        self.assertFalse(body["capabilities"]["translate"])
+        self.assertIn("credits", body)
+        self.assertEqual(body["credits"]["standard_per_page"], 1)
+        self.assertEqual(body["credits"]["ai_per_page"], 3)
 
     def test_guest_cannot_convert(self) -> None:
         principal = Principal(plan=get_plan("anonymous"), anonymous_id="anon")
@@ -50,19 +62,28 @@ class V1ConvertTests(unittest.TestCase):
             "/api/v1/convert",
             files={"file": ("note.txt", b"hello", "text/plain")},
         )
-        self.assertEqual(res.status_code, 403)
-        self.assertEqual(res.json()["detail"]["feature"], "extract")
+        self.assertEqual(res.status_code, 401)
+        self.assertEqual(res.json()["detail"]["code"], "api_key_required")
+
+    def test_workspace_jwt_cannot_convert(self) -> None:
+        user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic", api_plan="api_free")
+        principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+        client = TestClient(_app(principal))
+        res = client.post(
+            "/api/v1/convert",
+            files={"file": ("note.txt", b"hello", "text/plain")},
+        )
+        self.assertEqual(res.status_code, 401)
+        self.assertEqual(res.json()["detail"]["code"], "api_key_required")
 
     def test_rejects_s3_key_only_request(self) -> None:
-        user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic")
-        principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+        principal = _api_principal()
         client = TestClient(_app(principal))
         res = client.post("/api/v1/convert", data={"s3_key": "uploads/foo.pdf"})
         self.assertEqual(res.status_code, 422)
 
     def test_rejects_unknown_target_with_available_list(self) -> None:
-        user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic")
-        principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+        principal = _api_principal()
         client = TestClient(_app(principal))
         res = client.post(
             "/api/v1/convert",
@@ -76,8 +97,7 @@ class V1ConvertTests(unittest.TestCase):
         self.assertNotIn("pdf", detail["available"])
 
     def test_rejects_pdf_target(self) -> None:
-        user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic")
-        principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+        principal = _api_principal()
         client = TestClient(_app(principal))
         res = client.post(
             "/api/v1/convert",
@@ -88,25 +108,24 @@ class V1ConvertTests(unittest.TestCase):
         self.assertEqual(res.json()["detail"]["code"], "unsupported_target")
 
     def test_rejects_use_ai_when_unavailable(self) -> None:
-        user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic")
-        principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+        principal = _api_principal()
         client = TestClient(_app(principal))
-        res = client.post(
-            "/api/v1/convert",
-            data={"use_ai": "true"},
-            files={"file": ("note.txt", b"hello", "text/plain")},
-        )
+        with patch("app.api.v1.catalog._ai_ready", return_value=(False, "AI reading is not configured")):
+            res = client.post(
+                "/api/v1/convert",
+                data={"use_ai": "true"},
+                files={"file": ("note.txt", b"hello", "text/plain")},
+            )
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()["detail"]["code"], "option_unavailable")
         self.assertEqual(res.json()["detail"]["field"], "use_ai")
 
     def test_one_shot_returns_html(self) -> None:
-        user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic")
-        principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+        principal = _api_principal()
         client = TestClient(_app(principal))
         with patch(
-            "app.services.convert.convert_document",
-            return_value={"markdown": "# Hello", "engine": "text", "page_count": 1},
+            "app.api.v1.convert.run_conversion",
+            new=AsyncMock(return_value={"markdown": "# Hello", "engine": "text", "page_count": 1}),
         ):
             res = client.post(
                 "/api/v1/convert",
@@ -121,15 +140,15 @@ class V1ConvertTests(unittest.TestCase):
         self.assertIn("<html", body["content"])
         self.assertIn("Hello", body["content"])
         self.assertEqual(body["engine"], "FileWorks")
+        self.assertEqual(body["credits_used"], 1)
         self.assertNotIn("s3_key", body)
 
     def test_download_flag_returns_file(self) -> None:
-        user = SimpleNamespace(id=uuid4(), email="b@x.co", plan="basic")
-        principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+        principal = _api_principal()
         client = TestClient(_app(principal))
         with patch(
-            "app.services.convert.convert_document",
-            return_value={"markdown": "# Hello", "engine": "text", "page_count": 1},
+            "app.api.v1.convert.run_conversion",
+            new=AsyncMock(return_value={"markdown": "# Hello", "engine": "text", "page_count": 1}),
         ):
             res = client.post(
                 "/api/v1/convert",

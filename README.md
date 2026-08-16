@@ -52,7 +52,8 @@ Rich TUI (same pattern as OpenFDEServer `python -m deploy`):
 ./scripts/fw                         # interactive menu
 ./scripts/fw compose-up              # Postgres + API + UI (cached images)
 ./scripts/fw compose-rebuild         # only when Dockerfile / lockfiles change
-./scripts/fw db-upgrade              # Alembic migrations
+./scripts/fw db-upgrade              # Alembic against local Postgres
+./scripts/fw --env staging push-image  # staging/prod: RDS migrates on Lambda boot
 ./scripts/fw --env dev full          # AWS Lambda + Cloudflare Pages
 ```
 
@@ -70,17 +71,23 @@ Postgres + API + Next.js:
 - API: http://localhost:8000
 - Postgres: `postgresql://fileworks:fileworks@127.0.0.1:5432/fileworks`
 
-Schema migrations run when the API starts. To apply them yourself:
+Schema migrations run when the API starts. Locally:
 
 ```bash
 ./scripts/fw db-upgrade
 ```
 
+Staging/prod RDS is private. `./scripts/fw --env staging db-upgrade` does not
+open a tunnel — ship the image (`push-image`) and the next API cold start
+applies `alembic upgrade head`.
+
 Without Compose, run the API and UI separately as below. Auth (Google sign-in, plans, quotas) needs `DATABASE_URL` pointing at Postgres.
 
 Create a Google OAuth **Web** client and add authorized JavaScript origins `http://localhost:3000` (and later `https://fileworks-<env>.pages.dev`). Set `GOOGLE_CLIENT_ID` / `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
 
-Stripe (optional): set `STRIPE_SECRET_KEY` and `STRIPE_PRICE_*` on the API. Each `STRIPE_PRICE_*` value can be a Dashboard price id (`price_...`) or a monthly USD amount (`12`). The pricing page shows those amounts and sends paid grades through Checkout. Point the webhook at `/api/billing/webhook` for `checkout.session.completed` and `customer.subscription.*`. Without a secret key, profile plan switches stay local (dev).
+Stripe (optional): set `STRIPE_SECRET_KEY` and `STRIPE_PRICE_*` on the API. Each `STRIPE_PRICE_*` value can be a Dashboard price id (`price_...`) or a monthly USD amount (`12`). Workspace prices are `STRIPE_PRICE_BASIC|PRO|PREMIUM`. Convert API prices are `STRIPE_PRICE_API_BUILDER|SCALE|BUSINESS`. The two products are separate Stripe subscriptions on the same customer. Point the webhook at `/api/billing/webhook` for `checkout.session.completed` and `customer.subscription.*`. Without a secret key, profile plan switches stay local (dev).
+
+API keys: signed-in users generate long-lived `fw_live_` keys on Profile. `POST /api/v1/convert` requires a key and bills page credits on the API plan (1/page, 3/page with AI or translation). Workspace JWT is for the app only.
 
 ## Backend
 

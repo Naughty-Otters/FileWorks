@@ -33,7 +33,6 @@ import { scheduleTokenRefresh, type MeResponse } from "@/lib/auth";
 import { aiQuotaLeft } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 import {
-  loadSessionFile,
   loadWorkspacePrefs,
   saveSessionFile,
   saveWorkspacePrefs,
@@ -54,7 +53,7 @@ export function Workspace() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [storageBackend, setStorageBackend] = useState<string | null>(null);
@@ -67,6 +66,8 @@ export function Workspace() {
   const convertRunIdRef = useRef<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [meLoaded, setMeLoaded] = useState(false);
+  const historyUserRef = useRef<string | null | undefined>(undefined);
 
   const refreshHistory = useCallback(async () => {
     try {
@@ -80,49 +81,37 @@ export function Workspace() {
     }
   }, []);
 
-  const applyHistoryDetail = useCallback(
-    async (
-      id: string,
-      options?: { draftOverride?: string; keepView?: boolean },
-    ) => {
-      const [detail, restored] = await Promise.all([
-        fetchHistoryDetail(id),
-        fetchHistoryFile(id, "document", null),
-      ]);
-      const fileFromHistory = new File([restored], detail.filename, {
-        type: detail.content_type || restored.type,
-        lastModified: Date.now(),
-      });
-      const nextResult: ExtractResponse = {
-        id: detail.id,
-        filename: detail.filename,
-        content_type: detail.content_type,
-        size_bytes: detail.size_bytes,
-        engine: detail.engine || "FileWorks",
-        page_count: detail.page_count,
-        format: (detail.format as ExtractResponse["format"]) || "both",
-        markdown: detail.markdown,
-        json: detail.json,
-        pages: detail.pages,
-        created_at: detail.created_at,
-        storage_backend: detail.storage_backend,
-        regions: detail.regions || [],
-        image_size: detail.image_size || null,
-      };
-      setFile(fileFromHistory);
-      setResult(nextResult);
-      setSelectedId(id);
-      setMarkdownDraft(
-        options?.draftOverride !== undefined ? options.draftOverride : detail.markdown || "",
-      );
-      if (!options?.keepView) {
-        if (!detail.markdown && detail.json) setView("json");
-        else setView("markdown");
-      }
-      return nextResult;
-    },
-    [],
-  );
+  const applyHistoryDetail = useCallback(async (id: string) => {
+    const [detail, restored] = await Promise.all([
+      fetchHistoryDetail(id),
+      fetchHistoryFile(id, "document", null),
+    ]);
+    const fileFromHistory = new File([restored], detail.filename, {
+      type: detail.content_type || restored.type,
+      lastModified: Date.now(),
+    });
+    setFile(fileFromHistory);
+    setResult({
+      id: detail.id,
+      filename: detail.filename,
+      content_type: detail.content_type,
+      size_bytes: detail.size_bytes,
+      engine: detail.engine || "FileWorks",
+      page_count: detail.page_count,
+      format: (detail.format as ExtractResponse["format"]) || "both",
+      markdown: detail.markdown,
+      json: detail.json,
+      pages: detail.pages,
+      created_at: detail.created_at,
+      storage_backend: detail.storage_backend,
+      regions: detail.regions || [],
+      image_size: detail.image_size || null,
+    });
+    setSelectedId(id);
+    setMarkdownDraft(detail.markdown || "");
+    if (!detail.markdown && detail.json) setView("json");
+    else setView("markdown");
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -156,7 +145,10 @@ export function Workspace() {
       .then((data) => {
         if (active) setMe(data);
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setMeLoaded(true);
+      });
     scheduleTokenRefresh(async () => {
       const ok = await refreshSession();
       if (ok) {
@@ -170,84 +162,43 @@ export function Workspace() {
   }, [refreshHistory]);
 
   useEffect(() => {
-    if (!me) return;
+    if (!meLoaded) return;
+    const userId = me?.user?.id ?? null;
+    if (historyUserRef.current === undefined) {
+      historyUserRef.current = userId;
+      return;
+    }
+    if (userId === historyUserRef.current) return;
+    historyUserRef.current = userId;
     void refreshHistory();
-  }, [me?.user?.id, me?.plan, refreshHistory]);
+  }, [me?.user?.id, meLoaded, refreshHistory]);
 
   useEffect(() => {
-    let cancelled = false;
-    async function restoreSession() {
-      const prefs = loadWorkspacePrefs();
-      setView(prefs.view);
-      setHistoryOpen(prefs.historyOpen);
-      setPreviewOpen(prefs.previewOpen);
-      setExtractOptions(prefs.extractOptions);
-      setMarkdownMode(prefs.markdownMode);
-      setMarkdownToolbar(prefs.markdownToolbar !== false);
-      setMarkdownDraft(prefs.markdownDraft);
-      setSelectedId(prefs.selectedId);
-      if (prefs.result && !prefs.selectedId) {
-        setResult(prefs.result);
-      }
-
-      try {
-        if (prefs.selectedId) {
-          await applyHistoryDetail(prefs.selectedId, {
-            draftOverride: prefs.markdownDraft || undefined,
-            keepView: true,
-          });
-        } else {
-          const cached = await loadSessionFile();
-          if (cached && !cancelled) setFile(cached);
-          if (prefs.result && !cancelled) setResult(prefs.result);
-        }
-      } catch {
-        const cached = await loadSessionFile();
-        if (!cancelled) {
-          if (cached) setFile(cached);
-          if (prefs.result) setResult(prefs.result);
-        }
-      } finally {
-        if (!cancelled) setSessionReady(true);
-      }
-    }
-    void restoreSession();
-    return () => {
-      cancelled = true;
-    };
-  }, [applyHistoryDetail]);
+    const prefs = loadWorkspacePrefs();
+    setView(prefs.view);
+    setHistoryOpen(prefs.historyOpen);
+    setPreviewOpen(prefs.previewOpen);
+    setExtractOptions(prefs.extractOptions);
+    setMarkdownMode(prefs.markdownMode);
+    setMarkdownToolbar(prefs.markdownToolbar !== false);
+    void saveSessionFile(null).catch(() => undefined);
+    setSessionReady(true);
+  }, []);
 
   useEffect(() => {
     if (!sessionReady) return;
-    const bulky = markdownDraft.includes("data:image") || Boolean(result?.markdown?.includes("data:image"));
     saveWorkspacePrefs({
-      selectedId,
+      selectedId: null,
       view,
       historyOpen,
       previewOpen,
       extractOptions,
       markdownMode,
       markdownToolbar,
-      markdownDraft: bulky ? "" : markdownDraft,
-      result: selectedId ? null : bulky && result ? { ...result, markdown: "" } : result,
+      markdownDraft: "",
+      result: null,
     });
-  }, [
-    sessionReady,
-    selectedId,
-    view,
-    historyOpen,
-    previewOpen,
-    extractOptions,
-    markdownMode,
-    markdownToolbar,
-    markdownDraft,
-    result,
-  ]);
-
-  useEffect(() => {
-    if (!sessionReady) return;
-    void saveSessionFile(file).catch(() => undefined);
-  }, [sessionReady, file]);
+  }, [sessionReady, view, historyOpen, previewOpen, extractOptions, markdownMode, markdownToolbar]);
 
   useEffect(() => {
     if (!sessionReady) return;
@@ -407,7 +358,7 @@ export function Workspace() {
             type="button"
             aria-expanded={historyOpen}
             aria-controls="history-panel"
-            aria-label={historyOpen ? "Hide history" : "Show history"}
+            aria-label={historyOpen ? "Collapse history" : "Show full history"}
             onClick={() => setHistoryOpen((open) => !open)}
             className={cn(
               "relative inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs transition",
@@ -418,7 +369,7 @@ export function Workspace() {
           >
             {historyOpen ? <PanelLeftClose size={15} /> : <Clock3 size={15} />}
             <span className="hidden sm:inline">History</span>
-            {!historyOpen && history.length > 0 ? (
+            {history.length > 0 ? (
               <span className="rounded-full bg-[var(--accent)] px-1.5 text-[10px] leading-4 text-white dark:text-[#06281d]">
                 {history.length}
               </span>
@@ -430,6 +381,12 @@ export function Workspace() {
               className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
             >
               Pricing
+            </a>
+            <a
+              href="/docs"
+              className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+            >
+              API
             </a>
             <a
               href="/legal"
@@ -480,26 +437,26 @@ export function Workspace() {
         <div
           className={cn(
             "grid min-h-0 flex-1 gap-3 overflow-hidden lg:gap-4",
-            historyOpen && previewOpen && "grid-rows-3 lg:grid-rows-1 lg:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)]",
-            historyOpen && !previewOpen && "grid-rows-2 lg:grid-rows-1 lg:grid-cols-[220px_minmax(0,1fr)]",
-            !historyOpen && previewOpen && "grid-rows-2 lg:grid-rows-1 lg:grid-cols-2",
-            !historyOpen && !previewOpen && "grid-rows-1",
+            historyOpen && previewOpen && "grid-rows-[minmax(140px,0.9fr)_minmax(0,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)]",
+            historyOpen && !previewOpen && "grid-rows-[minmax(140px,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:grid-cols-[220px_minmax(0,1fr)]",
+            !historyOpen && previewOpen && "grid-rows-[auto_minmax(0,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1fr)]",
+            !historyOpen && !previewOpen && "grid-rows-[auto_minmax(0,1fr)] lg:grid-rows-1 lg:grid-cols-[4.5rem_minmax(0,1fr)]",
           )}
         >
-          {historyOpen ? (
-            <div id="history-panel" className="min-h-0 overflow-hidden">
-              <HistoryPanel
-                items={history}
-                selectedId={selectedId}
-                loading={historyLoading}
-                storageBackend={storageBackend}
-                requiresLogin={!me?.permissions?.["history.read"]}
-                onSelect={handleSelectHistory}
-                onDelete={handleDeleteHistory}
-                onCollapse={() => setHistoryOpen(false)}
-              />
-            </div>
-          ) : null}
+          <div id="history-panel" className="min-h-0 overflow-hidden">
+            <HistoryPanel
+              items={history}
+              selectedId={selectedId}
+              loading={historyLoading}
+              storageBackend={storageBackend}
+              requiresLogin={!me?.permissions?.["history.read"]}
+              compact={!historyOpen}
+              onSelect={handleSelectHistory}
+              onDelete={handleDeleteHistory}
+              onCollapse={() => setHistoryOpen(false)}
+              onExpand={() => setHistoryOpen(true)}
+            />
+          </div>
           {previewOpen ? (
             <div id="source-preview-panel" className="min-h-0 overflow-hidden">
               <UploadPanel

@@ -11,8 +11,15 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.auth.api_plans import (
+    API_CHANGEABLE_PLANS,
+    API_PAID_PLANS,
+    API_PLAN_RANK,
+    FALLBACK_API_PLAN,
+    is_api_plan,
+)
 from app.auth.plans import CHANGEABLE_PLANS, PLAN_RANK
-from app.auth.quota import assert_can_switch_to_plan
+from app.auth.quota import assert_can_switch_to_api_plan, assert_can_switch_to_plan
 from app.core.config import Settings, get_settings
 from app.db.models import User
 
@@ -22,10 +29,25 @@ ACTIVE_STATUSES = frozenset({"active", "trialing", "past_due"})
 PENDING_STATUSES = frozenset({"incomplete", "incomplete_expired"})
 ENDED_STATUSES = frozenset({"canceled", "unpaid", "incomplete_expired"})
 FALLBACK_PLAN = "basic"
-DISPLAY_DEFAULTS = {"basic": 0, "pro": 12, "premium": 29}
+PRODUCT_WORKSPACE = "workspace"
+PRODUCT_API = "api"
+DISPLAY_DEFAULTS = {
+    "basic": 0,
+    "pro": 12,
+    "premium": 29,
+    "api_free": 0,
+    "api_builder": 19,
+    "api_scale": 49,
+    "api_business": 99,
+}
+WORKSPACE_PLANS = ("basic", "pro", "premium")
+API_BILLING_PLANS = ("api_free", "api_builder", "api_scale", "api_business")
+ALL_PRICE_PLANS = ("basic", "pro", "premium", "api_builder", "api_scale", "api_business")
 # Portal: cancel at period end with no refund. Paid grades can switch; no proration.
 PORTAL_CONFIG_KEY = "no_refund_cancel"
+API_PORTAL_CONFIG_KEY = "api_no_refund_cancel"
 PAID_PLANS = ("pro", "premium")
+API_PORTAL_PLANS = ("api_builder", "api_scale", "api_business")
 PORTAL_FEATURES = {
     "invoice_history": {"enabled": True},
     "payment_method_update": {"enabled": True},
@@ -82,7 +104,7 @@ def price_map(settings: Settings | None = None) -> dict[str, str]:
     settings = settings or get_settings()
     return {
         plan: price_id
-        for plan in ("basic", "pro", "premium")
+        for plan in ALL_PRICE_PLANS
         if (price_id := stripe_price_id(plan, settings))
     }
 
@@ -90,7 +112,21 @@ def price_map(settings: Settings | None = None) -> dict[str, str]:
 def purchasable_plans(settings: Settings | None = None) -> dict[str, bool]:
     settings = settings or get_settings()
     flags: dict[str, bool] = {}
-    for plan in ("basic", "pro", "premium"):
+    for plan in WORKSPACE_PLANS:
+        if stripe_price_id(plan, settings):
+            flags[plan] = True
+        else:
+            flags[plan] = plan_amount_dollars(plan, settings) > 0
+    return flags
+
+
+def api_purchasable_plans(settings: Settings | None = None) -> dict[str, bool]:
+    settings = settings or get_settings()
+    flags: dict[str, bool] = {}
+    for plan in API_BILLING_PLANS:
+        if plan == FALLBACK_API_PLAN:
+            flags[plan] = False
+            continue
         if stripe_price_id(plan, settings):
             flags[plan] = True
         else:
@@ -102,7 +138,7 @@ def stripe_billing_enabled(settings: Settings | None = None) -> bool:
     settings = settings or get_settings()
     if not settings.stripe_secret_key:
         return False
-    return any(purchasable_plans(settings).values())
+    return any(purchasable_plans(settings).values()) or any(api_purchasable_plans(settings).values())
 
 
 def billing_catalog(settings: Settings | None = None) -> dict[str, Any]:
@@ -110,8 +146,12 @@ def billing_catalog(settings: Settings | None = None) -> dict[str, Any]:
     return {
         "enabled": stripe_billing_enabled(settings),
         "currency": "usd",
-        "amounts": {plan: plan_amount_dollars(plan, settings) for plan in ("basic", "pro", "premium")},
+        "amounts": {plan: plan_amount_dollars(plan, settings) for plan in WORKSPACE_PLANS},
         "prices": purchasable_plans(settings),
+        "api": {
+            "amounts": {plan: plan_amount_dollars(plan, settings) for plan in API_BILLING_PLANS},
+            "prices": api_purchasable_plans(settings),
+        },
     }
 
 
@@ -170,7 +210,7 @@ def _plan_from_meta(payload: dict[str, Any]) -> str | None:
         return None
     for key in ("fileworks_plan", "plan"):
         plan = str(meta.get(key) or "").strip().lower()
-        if plan in CHANGEABLE_PLANS:
+        if plan in CHANGEABLE_PLANS or plan in API_CHANGEABLE_PLANS:
             return plan
     return None
 
@@ -179,10 +219,66 @@ def _plan_from_name(name: str | None) -> str | None:
     text = (name or "").strip().lower()
     if not text:
         return None
-    for plan in ("premium", "pro", "basic"):
-        if plan in text:
+    for label, plan in (
+        ("api business", "api_business"),
+        ("api scale", "api_scale"),
+        ("api builder", "api_builder"),
+        ("premium", "premium"),
+        ("pro", "pro"),
+        ("basic", "basic"),
+    ):
+        if label in text:
             return plan
     return None
+
+
+def _product_display_name(plan: str) -> str:
+    if plan.startswith("api_"):
+        return f"FileWorks API {plan.removeprefix('api_').replace('_', ' ').title()}"
+    return f"FileWorks {plan.title()}"
+
+
+def _resolved_plan(subscription: dict[str, Any], settings: Settings) -> str | None:
+    return _plan_from_subscription_item(subscription, settings) or _plan_from_meta(subscription)
+
+
+def _subscription_product(
+    subscription: dict[str, Any],
+    settings: Settings,
+    user: User | None = None,
+) -> str:
+    sid = str(subscription.get("id") or "")
+    if user is not None and sid:
+        if sid == (user.stripe_api_subscription_id or ""):
+            return PRODUCT_API
+        if sid == (user.stripe_subscription_id or ""):
+            return PRODUCT_WORKSPACE
+    meta = subscription.get("metadata") or {}
+    if isinstance(meta, dict):
+        tagged = str(meta.get("fileworks_product") or "").strip().lower()
+        if tagged in {PRODUCT_API, PRODUCT_WORKSPACE}:
+            return tagged
+    plan = _resolved_plan(subscription, settings)
+    if plan and is_api_plan(plan):
+        return PRODUCT_API
+    return PRODUCT_WORKSPACE
+
+
+def _subscription_plan(
+    subscription: dict[str, Any],
+    settings: Settings | None = None,
+    user: User | None = None,
+) -> str:
+    settings = settings or get_settings()
+    product = _subscription_product(subscription, settings, user)
+    resolved = _resolved_plan(subscription, settings)
+    if product == PRODUCT_API:
+        if resolved and is_api_plan(resolved):
+            return resolved
+        return FALLBACK_API_PLAN
+    if resolved and resolved in CHANGEABLE_PLANS:
+        return resolved
+    return FALLBACK_PLAN
 
 
 def _plan_from_price_object(price: Any, settings: Settings) -> str | None:
@@ -211,17 +307,8 @@ def _plan_from_subscription_item(subscription: dict[str, Any], settings: Setting
     return _plan_from_price_object(items[0].get("price"), settings)
 
 
-def _subscription_plan(subscription: dict[str, Any], settings: Settings | None = None) -> str:
-    settings = settings or get_settings()
-    return (
-        _plan_from_subscription_item(subscription, settings)
-        or _plan_from_meta(subscription)
-        or FALLBACK_PLAN
-    )
-
-
 def apply_subscription(user: User, subscription: dict[str, Any], settings: Settings | None = None) -> str:
-    """Set user.plan from the Stripe subscription price. Returns the assigned plan."""
+    """Set workspace or API plan from a Stripe subscription. Returns the assigned plan."""
     settings = settings or get_settings()
     status = str(subscription.get("status") or "")
     customer = subscription.get("customer")
@@ -229,12 +316,23 @@ def apply_subscription(user: User, subscription: dict[str, Any], settings: Setti
         customer = customer.get("id")
     if customer:
         user.stripe_customer_id = str(customer)
+    product = _subscription_product(subscription, settings, user)
     # Checkout creates an incomplete subscription before payment. Do not demote an existing role.
     if status in PENDING_STATUSES:
-        return user.plan
+        return user.api_plan if product == PRODUCT_API else user.plan
+    assigned = _subscription_plan(subscription, settings, user)
+    if product == PRODUCT_API:
+        if status in ACTIVE_STATUSES:
+            user.api_plan = assigned
+            user.stripe_api_subscription_id = str(subscription.get("id") or "") or None
+            return user.api_plan
+        user.api_plan = FALLBACK_API_PLAN
+        if status in ENDED_STATUSES:
+            user.stripe_api_subscription_id = None
+        return user.api_plan
     if status in ACTIVE_STATUSES:
         # cancel_at_period_end stays "active" until the paid period ends.
-        user.plan = _subscription_plan(subscription, settings)
+        user.plan = assigned
         user.stripe_subscription_id = str(subscription.get("id") or "") or None
         return user.plan
     user.plan = FALLBACK_PLAN
@@ -269,10 +367,16 @@ def subscription_view(subscription: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
-def _prefer_subscription(rows: list[dict[str, Any]], settings: Settings) -> dict[str, Any]:
+def _prefer_subscription(
+    rows: list[dict[str, Any]],
+    settings: Settings,
+    product: str = PRODUCT_WORKSPACE,
+) -> dict[str, Any]:
+    ranks = API_PLAN_RANK if product == PRODUCT_API else PLAN_RANK
+
     def sort_key(row: dict[str, Any]) -> tuple[int, int]:
         keep = 0 if row.get("cancel_at_period_end") else 1
-        rank = PLAN_RANK.get(_subscription_plan(row, settings), 0)
+        rank = ranks.get(_subscription_plan(row, settings), 0)
         return (keep, rank)
 
     return max(rows, key=sort_key)
@@ -293,46 +397,42 @@ def _list_customer_subscriptions(stripe, customer_id: str) -> list[dict[str, Any
     return [_normalize_subscription(item) for item in data]
 
 
-def _load_subscription(stripe, user: User, settings: Settings) -> dict[str, Any] | None:
-    """Return the subscription to apply.
-
-    Raises RuntimeError when Stripe cannot be reached, so callers do not demote a paid role.
-    """
-    retrieved: dict[str, Any] | None = None
-    if user.stripe_subscription_id:
-        try:
-            retrieved = _normalize_subscription(
-                stripe.Subscription.retrieve(
-                    user.stripe_subscription_id,
-                    expand=["items.data.price.product"],
-                )
+def _retrieve_subscription(stripe, subscription_id: str | None) -> dict[str, Any] | None:
+    if not subscription_id:
+        return None
+    try:
+        return _normalize_subscription(
+            stripe.Subscription.retrieve(
+                subscription_id,
+                expand=["items.data.price.product"],
             )
-        except Exception as exc:  # noqa: BLE001
-            logger.info("Stripe subscription %s lookup failed: %s", user.stripe_subscription_id, exc)
-            retrieved = None
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.info("Stripe subscription %s lookup failed: %s", subscription_id, exc)
+        return None
 
+
+def _load_subscription_pool(stripe, user: User) -> list[dict[str, Any]]:
+    """All known subscriptions for this customer. Raises if Stripe cannot be reached."""
+    retrieved_ws = _retrieve_subscription(stripe, user.stripe_subscription_id)
+    retrieved_api = _retrieve_subscription(stripe, user.stripe_api_subscription_id)
     listed: list[dict[str, Any]] | None = None
     if user.stripe_customer_id:
         try:
             listed = _list_customer_subscriptions(stripe, user.stripe_customer_id)
         except Exception as exc:  # noqa: BLE001
-            if retrieved is None:
+            if retrieved_ws is None and retrieved_api is None:
                 raise RuntimeError("Stripe subscription list failed") from exc
             listed = None
-
     pool: list[dict[str, Any]] = []
     if listed:
         pool.extend(listed)
-    if retrieved and not any(row.get("id") == retrieved.get("id") for row in pool):
-        pool.append(retrieved)
-    active = [row for row in pool if str(row.get("status") or "") in ACTIVE_STATUSES]
-    if active:
-        return _prefer_subscription(active, settings)
-    if retrieved is not None:
-        return retrieved
-    if listed is not None:
-        return listed[0] if listed else None
-    raise RuntimeError("Stripe subscription lookup failed")
+    for retrieved in (retrieved_ws, retrieved_api):
+        if retrieved and not any(row.get("id") == retrieved.get("id") for row in pool):
+            pool.append(retrieved)
+    if not pool and retrieved_ws is None and retrieved_api is None and listed is None:
+        raise RuntimeError("Stripe subscription lookup failed")
+    return pool
 
 
 def _find_customer_by_email(stripe, email: str) -> str | None:
@@ -384,34 +484,67 @@ def _ensure_stripe_customer(
     return customer_id
 
 
+def _apply_product_from_pool(
+    user: User,
+    pool: list[dict[str, Any]],
+    product: str,
+    settings: Settings,
+) -> dict[str, Any]:
+    matching = [row for row in pool if _subscription_product(row, settings, user) == product]
+    active = [row for row in matching if str(row.get("status") or "") in ACTIVE_STATUSES]
+    stored_id = user.stripe_api_subscription_id if product == PRODUCT_API else user.stripe_subscription_id
+    if active:
+        sub = _prefer_subscription(active, settings, product)
+        apply_subscription(user, sub, settings)
+        return subscription_view(sub)
+    stored = next((row for row in matching if str(row.get("id") or "") == stored_id), None)
+    if stored is not None:
+        apply_subscription(user, stored, settings)
+        return subscription_view(stored)
+    if product == PRODUCT_API:
+        user.api_plan = FALLBACK_API_PLAN
+        user.stripe_api_subscription_id = None
+    else:
+        user.plan = FALLBACK_PLAN
+        user.stripe_subscription_id = None
+    return subscription_view(None)
+
+
 def sync_user_subscription(db: Session, user: User) -> dict[str, Any]:
-    """Pull the Stripe subscription into user.plan so the UI does not wait on webhooks."""
+    """Pull Stripe workspace and API subscriptions so the UI does not wait on webhooks."""
     settings = get_settings()
     if not stripe_billing_enabled(settings):
         return {}
     try:
         stripe = _stripe_mod(settings)
-        if not user.stripe_customer_id and not user.stripe_subscription_id:
+        if (
+            not user.stripe_customer_id
+            and not user.stripe_subscription_id
+            and not user.stripe_api_subscription_id
+        ):
             if not _ensure_stripe_customer(db, user, stripe, create=False):
                 return {}
-        sub = _load_subscription(stripe, user, settings)
+        pool = _load_subscription_pool(stripe, user)
     except Exception:  # noqa: BLE001
         logger.exception("Stripe subscription sync failed")
         return {}
-    if sub is None:
-        user.plan = FALLBACK_PLAN
-        user.stripe_subscription_id = None
-        db.add(user)
-        return subscription_view(None)
-    apply_subscription(user, sub, settings)
+    workspace = _apply_product_from_pool(user, pool, PRODUCT_WORKSPACE, settings)
+    api = _apply_product_from_pool(user, pool, PRODUCT_API, settings)
     db.add(user)
-    return subscription_view(sub)
+    return {
+        **workspace,
+        "api_plan": user.api_plan,
+        "api_subscription_status": api.get("subscription_status"),
+        "api_cancel_at_period_end": bool(api.get("cancel_at_period_end")),
+        "api_current_period_end": api.get("current_period_end"),
+    }
 
 
-def _cancel_other_subscriptions(user: User, keep_id: str | None) -> None:
-    """Stop superseded subs so a new Checkout does not leave two monthly charges."""
+def _cancel_other_subscriptions(user: User, keep_id: str | None, product: str) -> None:
+    """Stop superseded subs of the same product so Checkout does not double-charge."""
     if not keep_id or not user.stripe_customer_id:
         return
+    settings = get_settings()
     try:
         stripe = _stripe_mod()
         for row in _list_customer_subscriptions(stripe, user.stripe_customer_id):
@@ -419,6 +552,8 @@ def _cancel_other_subscriptions(user: User, keep_id: str | None) -> None:
             if not sid or sid == keep_id:
                 continue
             if str(row.get("status") or "") not in ACTIVE_STATUSES:
+                continue
+            if _subscription_product(row, settings, user) != product:
                 continue
             try:
                 stripe.Subscription.cancel(sid, prorate=False)
@@ -471,10 +606,11 @@ def _find_or_create_plan_price(stripe, plan: str, amount: int, settings: Setting
             )
         )
         return product_id, str(created_price["id"])
+    product_meta = {"fileworks_plan": plan, "fileworks_product": _product_bucket(plan)}
     product = _as_dict(
         stripe.Product.create(
-            name=f"FileWorks {plan.title()}",
-            metadata={"fileworks_plan": plan},
+            name=_product_display_name(plan),
+            metadata=product_meta,
             tax_code=settings.stripe_tax_code,
         )
     )
@@ -484,26 +620,31 @@ def _find_or_create_plan_price(stripe, plan: str, amount: int, settings: Setting
             currency="usd",
             unit_amount=unit,
             recurring={"interval": "month"},
-            metadata={"fileworks_plan": plan},
+            metadata=product_meta,
         )
     )
     return str(product["id"]), str(price["id"])
 
 
-def _portal_products(stripe, settings: Settings) -> list[dict[str, Any]]:
+def _product_bucket(plan: str) -> str:
+    return PRODUCT_API if is_api_plan(plan) else PRODUCT_WORKSPACE
+
+
+def _portal_products(stripe, settings: Settings, product: str = PRODUCT_WORKSPACE) -> list[dict[str, Any]]:
     products: list[dict[str, Any]] = []
-    purchasable = purchasable_plans(settings)
-    for plan in PAID_PLANS:
+    plans = API_PORTAL_PLANS if product == PRODUCT_API else PAID_PLANS
+    purchasable = api_purchasable_plans(settings) if product == PRODUCT_API else purchasable_plans(settings)
+    for plan in plans:
         if not purchasable.get(plan):
             continue
         price_id = stripe_price_id(plan, settings)
         if price_id:
             price = _as_dict(stripe.Price.retrieve(price_id))
-            product = price.get("product")
-            if isinstance(product, dict):
-                product = product.get("id")
-            if product:
-                products.append({"product": str(product), "prices": [price_id]})
+            stripe_product = price.get("product")
+            if isinstance(stripe_product, dict):
+                stripe_product = stripe_product.get("id")
+            if stripe_product:
+                products.append({"product": str(stripe_product), "prices": [price_id]})
             continue
         amount = plan_amount_dollars(plan, settings)
         if amount <= 0:
@@ -513,7 +654,7 @@ def _portal_products(stripe, settings: Settings) -> list[dict[str, Any]]:
     return products
 
 
-def _portal_features(stripe, settings: Settings) -> dict[str, Any]:
+def _portal_features(stripe, settings: Settings, product: str = PRODUCT_WORKSPACE) -> dict[str, Any]:
     features = {
         "invoice_history": dict(PORTAL_FEATURES["invoice_history"]),
         "payment_method_update": dict(PORTAL_FEATURES["payment_method_update"]),
@@ -525,7 +666,7 @@ def _portal_features(stripe, settings: Settings) -> dict[str, Any]:
         },
     }
     try:
-        products = _portal_products(stripe, settings)
+        products = _portal_products(stripe, settings, product)
     except Exception:  # noqa: BLE001
         logger.exception("Failed to resolve Stripe portal products")
         products = []
@@ -553,20 +694,25 @@ def _subscription_price_id_for_plan(stripe, plan: str, settings: Settings) -> st
         return None
 
 
-def _active_subscription(stripe, user: User) -> dict[str, Any] | None:
+def _active_subscription(stripe, user: User, product: str = PRODUCT_WORKSPACE) -> dict[str, Any] | None:
+    settings = get_settings()
+    stored_id = user.stripe_api_subscription_id if product == PRODUCT_API else user.stripe_subscription_id
     retrieved: dict[str, Any] | None = None
-    if user.stripe_subscription_id:
+    if stored_id:
         try:
             sub = _normalize_subscription(
                 stripe.Subscription.retrieve(
-                    user.stripe_subscription_id,
+                    stored_id,
                     expand=["items.data.price.product"],
                 )
             )
-            if str(sub.get("status") or "") in ACTIVE_STATUSES:
+            if (
+                str(sub.get("status") or "") in ACTIVE_STATUSES
+                and _subscription_product(sub, settings, user) == product
+            ):
                 retrieved = sub
         except Exception:  # noqa: BLE001
-            logger.info("Stored Stripe subscription %s is not usable", user.stripe_subscription_id)
+            logger.info("Stored Stripe subscription %s is not usable", stored_id)
     listed_active: list[dict[str, Any]] = []
     if user.stripe_customer_id:
         try:
@@ -574,11 +720,12 @@ def _active_subscription(stripe, user: User) -> dict[str, Any] | None:
                 row
                 for row in _list_customer_subscriptions(stripe, user.stripe_customer_id)
                 if str(row.get("status") or "") in ACTIVE_STATUSES
+                and _subscription_product(row, settings, user) == product
             ]
         except Exception:  # noqa: BLE001
             listed_active = []
     if listed_active:
-        preferred = _prefer_subscription(listed_active, get_settings())
+        preferred = _prefer_subscription(listed_active, settings, product)
         if _subscription_item_id(preferred) or not retrieved:
             return preferred
     return retrieved
@@ -606,11 +753,12 @@ def _plan_change_confirm_url(
     if not item_id or not sub_id:
         return None
     return_url = f"{_app_url(settings)}{dest}?billing=return"
+    product = _subscription_product(subscription, settings)
     session = _as_dict(
         stripe.billing_portal.Session.create(
             customer=customer_id,
             return_url=return_url,
-            configuration=_portal_configuration_id(stripe, settings),
+            configuration=_portal_configuration_id(stripe, settings, product),
             flow_data={
                 "type": "subscription_update_confirm",
                 "subscription_update_confirm": {
@@ -630,15 +778,16 @@ def _checkout_line_item(plan: str, settings: Settings) -> dict[str, Any]:
     amount = plan_amount_dollars(plan, settings)
     if amount <= 0:
         raise HTTPException(status_code=400, detail={"code": "price_missing", "plan": plan})
+    bucket = _product_bucket(plan)
     return {
         "price_data": {
             "currency": "usd",
             "unit_amount": amount * 100,
             "recurring": {"interval": "month"},
             "product_data": {
-                "name": f"FileWorks {plan.title()}",
+                "name": _product_display_name(plan),
                 "tax_code": settings.stripe_tax_code,
-                "metadata": {"plan": plan},
+                "metadata": {"plan": plan, "fileworks_plan": plan, "fileworks_product": bucket},
             },
         },
         "quantity": 1,
@@ -655,9 +804,19 @@ def create_checkout_session(
     if not stripe_billing_enabled(settings):
         raise HTTPException(status_code=503, detail="Stripe is not configured")
     target = (plan or "").strip().lower()
-    assert_can_switch_to_plan(db, user_id=user.id, current=user.plan, target=target)
-    if not purchasable_plans(settings).get(target):
-        raise HTTPException(status_code=400, detail={"code": "price_missing", "plan": target})
+    bucket = _product_bucket(target)
+    if bucket == PRODUCT_API:
+        if target not in API_PAID_PLANS:
+            raise HTTPException(status_code=400, detail={"code": "price_missing", "plan": target})
+        assert_can_switch_to_api_plan(
+            db, user_id=user.id, current=user.api_plan or FALLBACK_API_PLAN, target=target
+        )
+        if not api_purchasable_plans(settings).get(target):
+            raise HTTPException(status_code=400, detail={"code": "price_missing", "plan": target})
+    else:
+        assert_can_switch_to_plan(db, user_id=user.id, current=user.plan, target=target)
+        if not purchasable_plans(settings).get(target):
+            raise HTTPException(status_code=400, detail={"code": "price_missing", "plan": target})
     dest = _safe_return_path(return_to)
     try:
         stripe = _stripe_mod(settings)
@@ -665,7 +824,7 @@ def create_checkout_session(
         if not customer_id:
             raise HTTPException(status_code=502, detail="Could not create a Stripe customer")
         price_id = _subscription_price_id_for_plan(stripe, target, settings)
-        current = _active_subscription(stripe, user)
+        current = _active_subscription(stripe, user, bucket)
         if current:
             if not price_id:
                 raise HTTPException(status_code=502, detail="Could not resolve a Stripe price for this plan")
@@ -697,8 +856,15 @@ def create_checkout_session(
                 mode="subscription",
                 customer=customer_id,
                 client_reference_id=str(user.id),
-                metadata={"user_id": str(user.id), "plan": target},
-                subscription_data={"metadata": {"user_id": str(user.id), "plan": target}},
+                metadata={"user_id": str(user.id), "plan": target, "fileworks_product": bucket},
+                subscription_data={
+                    "metadata": {
+                        "user_id": str(user.id),
+                        "plan": target,
+                        "fileworks_plan": target,
+                        "fileworks_product": bucket,
+                    }
+                },
                 line_items=(
                     [{"price": price_id, "quantity": 1}]
                     if price_id
@@ -720,30 +886,39 @@ def create_checkout_session(
     return {"url": url, "updated": False, "plan": target}
 
 
-def _portal_configuration_id(stripe, settings: Settings) -> str:
-    features = _portal_features(stripe, settings)
+def _portal_configuration_id(
+    stripe, settings: Settings, product: str = PRODUCT_WORKSPACE
+) -> str:
+    features = _portal_features(stripe, settings, product)
+    config_key = API_PORTAL_CONFIG_KEY if product == PRODUCT_API else PORTAL_CONFIG_KEY
+    headline = "FileWorks API billing" if product == PRODUCT_API else "FileWorks billing"
     listed = _as_dict(stripe.billing_portal.Configuration.list(limit=20))
     for cfg in listed.get("data") or []:
         obj = _as_dict(cfg)
-        if (obj.get("metadata") or {}).get("fileworks") != PORTAL_CONFIG_KEY:
+        if (obj.get("metadata") or {}).get("fileworks") != config_key:
             continue
         config_id = str(obj["id"])
         stripe.billing_portal.Configuration.modify(config_id, features=features)
         return config_id
     created = _as_dict(
         stripe.billing_portal.Configuration.create(
-            business_profile={"headline": "FileWorks billing"},
+            business_profile={"headline": headline},
             features=features,
-            metadata={"fileworks": PORTAL_CONFIG_KEY},
+            metadata={"fileworks": config_key},
         )
     )
     return str(created["id"])
 
 
-def create_portal_session(db: Session, user: User) -> dict[str, str]:
+def create_portal_session(
+    db: Session,
+    user: User,
+    product: str = PRODUCT_WORKSPACE,
+) -> dict[str, str]:
     settings = get_settings()
     if not stripe_billing_enabled(settings):
         raise HTTPException(status_code=503, detail="Stripe is not configured")
+    bucket = PRODUCT_API if product == PRODUCT_API else PRODUCT_WORKSPACE
     try:
         stripe = _stripe_mod(settings)
         customer_id = _ensure_stripe_customer(db, user, stripe, create=False)
@@ -756,7 +931,7 @@ def create_portal_session(db: Session, user: User) -> dict[str, str]:
             stripe.billing_portal.Session.create(
                 customer=customer_id,
                 return_url=f"{_app_url(settings)}/profile?billing=return",
-                configuration=_portal_configuration_id(stripe, settings),
+                configuration=_portal_configuration_id(stripe, settings, bucket),
             )
         )
     except HTTPException:
@@ -795,22 +970,35 @@ def apply_checkout_session(db: Session, obj: dict[str, Any]) -> str | None:
         return None
     if customer:
         user.stripe_customer_id = str(customer)
+    settings = get_settings()
     subscription = obj.get("subscription")
     if isinstance(subscription, dict):
-        assigned = apply_subscription(user, subscription, get_settings())
+        assigned = apply_subscription(user, subscription, settings)
+        keep_id = str(subscription.get("id") or "") or None
+        product = _subscription_product(subscription, settings, user)
     elif subscription:
-        user.stripe_subscription_id = str(subscription)
-        assigned = _plan_from_meta(obj) or user.plan
-        if assigned in CHANGEABLE_PLANS:
-            user.plan = assigned
+        assigned = _plan_from_meta(obj)
+        product = PRODUCT_API if assigned and is_api_plan(assigned) else PRODUCT_WORKSPACE
+        if product == PRODUCT_API:
+            user.stripe_api_subscription_id = str(subscription)
+            if assigned and is_api_plan(assigned):
+                user.api_plan = assigned
+        else:
+            user.stripe_subscription_id = str(subscription)
+            if assigned in CHANGEABLE_PLANS:
+                user.plan = assigned
+        keep_id = str(subscription)
     else:
-        assigned = _plan_from_meta(obj) or user.plan
-        if assigned in CHANGEABLE_PLANS:
+        assigned = _plan_from_meta(obj)
+        product = PRODUCT_API if assigned and is_api_plan(assigned) else PRODUCT_WORKSPACE
+        if assigned and is_api_plan(assigned):
+            user.api_plan = assigned
+        elif assigned in CHANGEABLE_PLANS:
             user.plan = assigned
-    keep_id = user.stripe_subscription_id
-    if isinstance(subscription, dict):
-        keep_id = str(subscription.get("id") or keep_id or "") or keep_id
-    _cancel_other_subscriptions(user, keep_id)
+        keep_id = (
+            user.stripe_api_subscription_id if product == PRODUCT_API else user.stripe_subscription_id
+        )
+    _cancel_other_subscriptions(user, keep_id, product)
     db.add(user)
     return assigned
 
@@ -848,11 +1036,11 @@ def handle_webhook_event(db: Session, event: dict[str, Any]) -> str | None:
             return None
         incoming_id = str(obj.get("id") or "")
         status = str(obj.get("status") or "")
-        current_id = user.stripe_subscription_id
+        known_ids = {user.stripe_subscription_id, user.stripe_api_subscription_id} - {None, ""}
         if (
-            current_id
+            known_ids
             and incoming_id
-            and incoming_id != current_id
+            and incoming_id not in known_ids
             and status not in ACTIVE_STATUSES
         ):
             logger.info("Ignoring Stripe event for superseded subscription %s", incoming_id)

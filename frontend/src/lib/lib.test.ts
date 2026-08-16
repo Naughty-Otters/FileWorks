@@ -26,6 +26,7 @@ import {
   convertGate,
   convertGateBody,
   convertGateTitle,
+  canMoveToApiPlan,
   canMoveToPlan,
   canSwitchPlan,
   planIsPurchasable,
@@ -34,6 +35,7 @@ import {
   usageFitsPlan,
   usageOverLimitReasons,
   PLAN_CATALOG,
+  API_PLAN_CATALOG,
   PRICE_ROLES,
   formatPlanPrice,
 } from "@/lib/plans";
@@ -125,10 +127,12 @@ describe("auth and user id", () => {
 
 describe("workspace prefs", () => {
   it("roundtrips prefs", () => {
+    window.localStorage.removeItem("fileworks.workspace.v1");
     const prefs = loadWorkspacePrefs();
     expect(prefs.markdownToolbar).toBe(true);
-    saveWorkspacePrefs({ ...prefs, historyOpen: true, markdownToolbar: false });
-    expect(loadWorkspacePrefs().historyOpen).toBe(true);
+    expect(prefs.historyOpen).toBe(true);
+    saveWorkspacePrefs({ ...prefs, historyOpen: false, markdownToolbar: false });
+    expect(loadWorkspacePrefs().historyOpen).toBe(false);
     expect(loadWorkspacePrefs().markdownToolbar).toBe(false);
   });
 
@@ -405,6 +409,22 @@ describe("plan policy", () => {
     expect(convertGateBody("quota_ai_month")).toMatch(/without AI/);
     expect(convertGateBody("plan")).toMatch(/does not include/);
     expect(convertGateBody("ready")).toMatch(/plan rules/);
+  });
+});
+
+describe("API plans", () => {
+  it("ranks and blocks a credits downgrade", () => {
+    expect(API_PLAN_CATALOG.map((plan) => plan.id)).toEqual([
+      "api_free",
+      "api_builder",
+      "api_scale",
+      "api_business",
+    ]);
+    expect(canMoveToApiPlan("api_free", "api_builder")).toBe(true);
+    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 10, limit_credits: 8000, remaining_credits: 7990 })).toBe(true);
+    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 500, limit_credits: 8000, remaining_credits: 7500 })).toBe(false);
+    expect(planIsPurchasable("api_builder", { enabled: true, prices: { api_builder: true } })).toBe(true);
+    expect(planIsPurchasable("api_free", { enabled: true, prices: { api_free: false }, amounts: { api_free: 0 } })).toBe(false);
   });
 });
 

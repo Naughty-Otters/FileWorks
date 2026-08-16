@@ -304,6 +304,7 @@ def _menu(
                 level = "account"
                 continue
             scope, _env_name = picked
+            ctx.scope = scope
             level = "layer"
             continue
 
@@ -370,7 +371,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     default_env = cloud_env or ENVIRONMENTS["dev"]
     region = args.region or DEFAULT_REGION
-    ctx = Context(env=default_env, region=region, auto_yes=args.yes)
+    ctx = Context(
+        env=default_env,
+        region=region,
+        auto_yes=args.yes,
+        scope=scope or LOCAL_SCOPE,
+    )
 
     console.header("FileWorks", "account  →  environment  →  layer  →  action")
 
@@ -381,10 +387,11 @@ def main(argv: list[str] | None = None) -> int:
                 _establish_session(ctx, args.profile)
                 if cloud_env is None:
                     ctx.env = _choose_cloud_environment(ctx.env)
-                else:
-                    ctx.env = cloud_env
+                ctx.env = cloud_env or ctx.env
+                ctx.scope = CLOUD_SCOPE
             elif cloud_env is not None:
                 ctx.env = cloud_env
+                ctx.scope = CLOUD_SCOPE
             action.handler(ctx)
             return 0
 
@@ -392,6 +399,7 @@ def main(argv: list[str] | None = None) -> int:
             _establish_session(ctx, args.profile)
         if cloud_env is not None:
             ctx.env = cloud_env
+            ctx.scope = CLOUD_SCOPE
 
         if scope is not None:
             start_at = "layer"

@@ -7,11 +7,13 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.auth.api_plans import API_PLAN_RANK, ApiPlan, can_change_api_plan, get_api_plan
 from app.auth.plans import PLAN_RANK, Plan, can_change_plan, get_plan
 from app.db.models import UsageEvent
 
 EXTRACT_ACTION = "extract"
 AI_ACTION = "extract.ai"
+API_CONVERT_ACTION = "api.convert"
 
 
 def _utcnow() -> datetime:
@@ -36,6 +38,24 @@ def _count(db: Session | None, user_id: UUID | None, action: str, since: datetim
             select(func.count()).select_from(UsageEvent).where(
                 UsageEvent.user_id == user_id,
                 UsageEvent.action == action,
+                UsageEvent.created_at >= since,
+            )
+        )
+        or 0
+    )
+
+
+def _sum_credits(db: Session | None, user_id: UUID | None, since: datetime) -> int:
+    if db is None or user_id is None:
+        return 0
+    scalar = getattr(db, "scalar", None)
+    if not callable(scalar):
+        return 0
+    return int(
+        scalar(
+            select(func.coalesce(func.sum(UsageEvent.credits), 0)).where(
+                UsageEvent.user_id == user_id,
+                UsageEvent.action == API_CONVERT_ACTION,
                 UsageEvent.created_at >= since,
             )
         )
@@ -99,6 +119,80 @@ def usage_fits_plan(db: Session | None, *, user_id: UUID | None, plan: Plan) -> 
         used_ai_day=int(snap["used_ai_day"] or 0),
         used_ai_month=int(snap["used_ai_month"] or 0),
     )
+
+
+def api_quota_snapshot(db: Session | None, *, user_id: UUID | None, plan: ApiPlan) -> dict[str, int | None]:
+    _, start_month = _period_bounds()
+    used = _sum_credits(db, user_id, start_month)
+    limit = plan.credits_per_month
+    return {
+        "used_credits": used,
+        "limit_credits": limit,
+        "remaining_credits": _remaining(limit, used),
+    }
+
+
+def api_usage_over_limit(plan: ApiPlan, *, used_credits: int) -> bool:
+    return used_credits > plan.credits_per_month
+
+
+def assert_can_switch_to_api_plan(
+    db: Session | None,
+    *,
+    user_id: UUID | None,
+    current: str,
+    target: str,
+) -> None:
+    if not can_change_api_plan(current, target):
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "api_plan_invalid", "current": current, "target": target},
+        )
+    if API_PLAN_RANK.get(target, 0) >= API_PLAN_RANK.get(current, 0):
+        return
+    plan = get_api_plan(target)
+    snap = api_quota_snapshot(db, user_id=user_id, plan=plan)
+    if api_usage_over_limit(plan, used_credits=int(snap["used_credits"] or 0)):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "api_quota_exceeds_plan",
+                "current": current,
+                "target": target,
+                "used_credits": snap["used_credits"],
+                "limit_credits": plan.credits_per_month,
+            },
+        )
+
+
+def assert_api_credits(
+    db: Session | None,
+    *,
+    user_id: UUID | None,
+    plan: ApiPlan,
+) -> None:
+    snap = api_quota_snapshot(db, user_id=user_id, plan=plan)
+    if snap["remaining_credits"] == 0:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "quota_credits",
+                "plan": plan.id,
+                "limit": plan.credits_per_month,
+                "used": snap["used_credits"],
+            },
+        )
+
+
+def record_api_credits(
+    db: Session | None,
+    *,
+    user_id: UUID | None,
+    credits: int,
+) -> None:
+    if db is None or user_id is None or credits <= 0:
+        return
+    db.add(UsageEvent(user_id=user_id, action=API_CONVERT_ACTION, credits=credits))
 
 
 def assert_can_switch_to_plan(

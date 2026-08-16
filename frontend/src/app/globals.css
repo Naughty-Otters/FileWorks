@@ -386,3 +386,76 @@ body {
 .animate-pulse-soft {
   animation: pulse-soft 1.4s ease-in-out infinite;
 }
+
+.api-inline {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.86em;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  padding: 0.12em 0.4em;
+  border-radius: 0.3rem;
+}
+
+.api-link {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+
+.api-link:hover {
+  color: var(--accent);
+}
+
+.api-code {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: color-mix(in oklab, var(--bg-elevated) 78%, black 10%);
+}
+
+.dark .api-code {
+  background: color-mix(in oklab, var(--bg-elevated) 70%, black 30%);
+}
+
+.api-code pre {
+  margin: 0;
+  overflow-x: auto;
+  padding: 0.9rem 1rem 1rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink);
+  tab-size: 2;
+}
+
+.api-code .tok-kw {
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.api-code .tok-str {
+  color: #9a5b12;
+}
+
+.dark .api-code .tok-str {
+  color: #e3b46a;
+}
+
+.api-code .tok-cmt {
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+.api-code .tok-url {
+  color: var(--accent-strong);
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1.5px;
+}
+
+.api-code .tok-url:hover {
+  color: var(--accent);
+}

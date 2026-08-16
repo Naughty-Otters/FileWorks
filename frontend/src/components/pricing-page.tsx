@@ -15,7 +15,7 @@ import {
   type BillingCatalog,
   type MeResponse,
 } from "@/lib/api";
-import { formatPlanPrice, PLAN_CATALOG, planIsPurchasable, planSwitchLabel, PRICE_ROLES, usageFitsPlan, usageOverLimitReasons } from "@/lib/plans";
+import { API_PLAN_CATALOG, apiPlanSwitchLabel, canMoveToApiPlan, formatPlanPrice, PLAN_CATALOG, planIsPurchasable, planSwitchLabel, PRICE_ROLES, usageFitsPlan, usageOverLimitReasons } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 function loginNext(path: string) {
@@ -77,11 +77,13 @@ export function PricingPage() {
         return;
       }
       const subscribe = params.get("subscribe");
+      const apiIds = API_PLAN_CATALOG.map((plan) => plan.id);
       if (
         session.user &&
-        (subscribe === "pro" || subscribe === "premium") &&
+        subscribe &&
+        (subscribe === "pro" || subscribe === "premium" || apiIds.includes(subscribe as (typeof apiIds)[number])) &&
         cat?.enabled &&
-        cat.prices[subscribe]
+        (cat.prices[subscribe] || cat.api?.prices?.[subscribe])
       ) {
         handledReturn.current = true;
         await goCheckout(subscribe);
@@ -107,7 +109,7 @@ export function PricingPage() {
 
   function priceFor(id: string, fallback: string) {
     if (id === "anonymous") return "Free";
-    const amount = catalog?.amounts?.[id];
+    const amount = catalog?.amounts?.[id] ?? catalog?.api?.amounts?.[id];
     if (typeof amount === "number") return formatPlanPrice(amount);
     return fallback;
   }
@@ -128,9 +130,9 @@ export function PricingPage() {
         <div>
           <p className="font-[family-name:var(--font-display)] text-4xl tracking-tight">Prices and roles</p>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
-            Each pay grade maps to a FileWorks role. Convert PDF, office, Markdown, TXT, and
-            scans to editable Markdown — with AI reading and translation in the same pass. Guest and
-            Basic are free. Pro and Premium are monthly subscriptions.{" "}
+            Two products, one account. Workspace roles (Basic, Pro, Premium) cover the FileWorks
+            app. Convert API plans are billed separately with page credits and a long-lived API
+            key. You can hold both at once.{" "}
             <a href="/legal#refunds" className="text-[var(--accent-strong)] hover:underline">
               Refunds, cancellation, and contact
             </a>
@@ -140,6 +142,13 @@ export function PricingPage() {
           {error ? <p className="mt-3 text-sm text-[var(--danger)]">{error}</p> : null}
         </div>
 
+        <div>
+          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Workspace</h2>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
+            File conversions in the app. Guest and Basic are free. Pro and Premium are monthly
+            subscriptions.
+          </p>
+        </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {PRICE_ROLES.map((item) => {
             const signedIn = Boolean(me?.user);
@@ -233,6 +242,101 @@ export function PricingPage() {
                     )}
                   >
                     {item.cta.label}
+                  </a>
+                )}
+              </article>
+            );
+          })}
+        </div>
+
+        <div>
+          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Convert API</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
+            Separate product. Authenticate with a key from Profile. Credits: 1 per page, 3 per page
+            with AI or translation. Combines with any workspace role.{" "}
+            <a href="/docs" className="text-[var(--accent-strong)] hover:underline">
+              API docs
+            </a>
+            .
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {API_PLAN_CATALOG.map((item) => {
+            const signedIn = Boolean(me?.user);
+            const current = signedIn && (me?.api_plan || "api_free") === item.id;
+            const paidPlan = item.id !== "api_free";
+            const purchasable = planIsPurchasable(item.id, {
+              enabled: catalog?.enabled,
+              prices: catalog?.api?.prices,
+              amounts: catalog?.api?.amounts,
+            });
+            const usageOk = !signedIn || !me || canMoveToApiPlan(me.api_plan || "api_free", item.id, me.api_quota) || current;
+            const stripeReady = Boolean(catalog?.enabled && paidPlan && purchasable && !current && usageOk);
+            const actionLabel = signedIn
+              ? apiPlanSwitchLabel(me?.api_plan || "api_free", item)
+              : item.id === "api_free"
+                ? "Get a key"
+                : `Choose ${item.label}`;
+            return (
+              <article
+                key={item.id}
+                className={cn(
+                  "panel flex flex-col rounded-3xl px-5 py-5",
+                  item.highlight ? "border-[var(--accent)]" : "",
+                )}
+              >
+                <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+                  {priceFor(item.id, item.price)}
+                </p>
+                <p className="mt-2 font-[family-name:var(--font-display)] text-2xl tracking-tight">{item.label}</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">{item.blurb}</p>
+                <ul className="mt-4 flex-1 space-y-1.5 text-sm text-[var(--ink-muted)]">
+                  {item.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+                {current ? (
+                  <p className="mt-5 text-center text-sm font-medium text-[var(--accent-strong)]">Current API plan</p>
+                ) : !signedIn ? (
+                  <a
+                    href={loginNext(stripeReady ? `/pricing?subscribe=${item.id}` : "/docs")}
+                    className={cn(
+                      "mt-5 inline-flex justify-center rounded-full px-3 py-2 text-sm font-medium",
+                      item.highlight
+                        ? "bg-[var(--accent)] text-white dark:text-[#06281d]"
+                        : "border border-[var(--line)] text-[var(--ink)] hover:bg-[var(--accent-soft)]",
+                    )}
+                  >
+                    {actionLabel}
+                  </a>
+                ) : item.id === "api_free" ? (
+                  <a
+                    href="/profile"
+                    className="mt-5 inline-flex justify-center rounded-full border border-[var(--line)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
+                  >
+                    Generate a key
+                  </a>
+                ) : stripeReady ? (
+                  <button
+                    type="button"
+                    disabled={pending !== null}
+                    onClick={() => void goCheckout(item.id)}
+                    className={cn(
+                      "mt-5 inline-flex justify-center rounded-full px-3 py-2 text-sm font-medium",
+                      item.highlight
+                        ? "bg-[var(--accent)] text-white dark:text-[#06281d]"
+                        : "border border-[var(--line)] text-[var(--ink)] hover:bg-[var(--accent-soft)]",
+                      "disabled:cursor-not-allowed disabled:opacity-45",
+                    )}
+                  >
+                    {pending === item.id ? "Redirecting…" : actionLabel}
+                  </button>
+                ) : (
+                  <a
+                    href="/profile"
+                    className="mt-5 inline-flex justify-center rounded-full border border-[var(--line)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
+                  >
+                    {actionLabel}
                   </a>
                 )}
               </article>

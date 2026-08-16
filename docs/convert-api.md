@@ -20,21 +20,21 @@ Always call GET first. `available` / `allowed` on each option reflect this serve
 
 | | |
 |---|---|
-| Header | `Authorization: Bearer <access_token>` |
-| Token | From Google sign-in (`POST /api/auth/google`) |
-| GET `/api/v1/convert` | Works without a token (guest catalog) |
-| POST `/api/v1/convert` | Signed-in plan with convert permission |
+| Header | `Authorization: Bearer <api_key>` |
+| Key | Create on Profile. Prefix `fw_live_`. Does not expire until you revoke it. |
+| GET `/api/v1/convert` | Works without a key (guest catalog) |
+| POST `/api/v1/convert` | API key required. Workspace Google access tokens are rejected. |
 
-Quota is shared with the workspace:
+Convert API is a **separate product** from the workspace (Basic / Pro / Premium). Keys bill page credits on the API plan. Workspace file quotas do not apply.
 
-| Plan | Convert | AI or translation |
+| API plan | Price | Credits / month |
 |---|---|---|
-| Guest | No | No |
-| Basic | 5 / day | 3 / month |
-| Pro | 150 / month | 40 / month |
-| Premium | 600 / month | 150 / month |
+| API Free | $0 | 100 |
+| API Builder | $19 | 2,000 |
+| API Scale | $49 | 8,000 |
+| API Business | $99 | 20,000 |
 
-`use_ai=true` or a real `target_lang` counts as one AI/translation use.
+Credits: **1 per page** for a standard convert (minimum 1). **3 per page** when `use_ai=true` or a real `target_lang` is set. Unused credits do not roll over. An API plan can be combined with any workspace role.
 
 ---
 
@@ -44,7 +44,7 @@ Returns what `POST` accepts **right now**.
 
 ```bash
 curl -s http://127.0.0.1:8000/api/v1/convert
-curl -s -H "Authorization: Bearer TOKEN" http://127.0.0.1:8000/api/v1/convert
+curl -s -H "Authorization: Bearer fw_live_YOUR_API_KEY" http://127.0.0.1:8000/api/v1/convert
 ```
 
 Response fields:
@@ -52,7 +52,9 @@ Response fields:
 | Field | Meaning |
 |---|---|
 | `max_upload_mb` | Upload cap (default **50**) |
-| `plan` | `anonymous`, `basic`, `pro`, or `premium` |
+| `plan` | Workspace role: `anonymous`, `basic`, `pro`, or `premium` |
+| `api_plan` | API product: `api_free`, `api_builder`, `api_scale`, or `api_business` |
+| `credits` | Page-credit prices and remaining API allowance |
 | `inputs` | Grouped source extensions |
 | `input_extensions` | Flat allow-list |
 | `targets` | Output formats (`available` may be false) |
@@ -74,7 +76,7 @@ On each option:
 `multipart/form-data`. Send the file bytes as `file`. There is no `s3_key`.
 
 ```bash
-curl -s -H "Authorization: Bearer TOKEN" \
+curl -s -H "Authorization: Bearer fw_live_YOUR_API_KEY" \
   -F file=@report.pdf \
   -F target=html \
   -F use_ai=false \
@@ -205,6 +207,7 @@ Default (`download=false`):
 |---|---|
 | `markdown` | Hub format after read (+ translation). Multi-page files join pages with `---` |
 | `page_count` | Number of source pages actually converted (`len(pages)`) |
+| `credits_used` | API credits billed for this request |
 | `content` | Exported `target` (UTF-8 text) |
 | `filename` / `media_type` | Suggested download name and type |
 | `options` | Values that were applied |
@@ -223,10 +226,9 @@ Default (`download=false`):
 | 400 | `unsupported_language` | Unknown `target_lang` (`available` = language ids) |
 | 400 | `option_unavailable` | `use_ai` or `target_lang` requested but the server cannot do it |
 | 400 | — | Empty file |
-| 401 | — | Missing / expired token |
-| 403 | `plan_forbidden` | Guest, or plan cannot use AI / translate (`feature`: `extract`, `extract.ai`, `extract.translate`) |
-| 403 | `quota_day` / `quota_month` | Convert quota used up |
-| 403 | `quota_ai_day` / `quota_ai_month` | AI / translation quota used up |
+| 401 | `api_key_required` | Missing API key (workspace JWT is not enough) |
+| 401 | — | Invalid or revoked API key |
+| 403 | `quota_credits` | API credit allowance used up |
 | 413 | — | Over `max_upload_mb` |
 | 422 | — | Missing `file` (including a body that only has `s3_key`) |
 | 500 | — | Conversion failed |
@@ -252,7 +254,7 @@ Example:
 Markdown, defaults:
 
 ```bash
-curl -s -H "Authorization: Bearer TOKEN" \
+curl -s -H "Authorization: Bearer fw_live_YOUR_API_KEY" \
   -F file=@notes.txt \
   http://127.0.0.1:8000/api/v1/convert
 ```
@@ -260,7 +262,7 @@ curl -s -H "Authorization: Bearer TOKEN" \
 HTML + translation:
 
 ```bash
-curl -s -H "Authorization: Bearer TOKEN" \
+curl -s -H "Authorization: Bearer fw_live_YOUR_API_KEY" \
   -F file=@scan.png \
   -F target=html \
   -F use_ai=true \
@@ -271,7 +273,7 @@ curl -s -H "Authorization: Bearer TOKEN" \
 Save the exported file:
 
 ```bash
-curl -s -H "Authorization: Bearer TOKEN" \
+curl -s -H "Authorization: Bearer fw_live_YOUR_API_KEY" \
   -F file=@deck.pptx \
   -F target=txt \
   -F download=true \
@@ -285,7 +287,7 @@ Python:
 import requests
 
 base = "http://127.0.0.1:8000"
-headers = {"Authorization": f"Bearer {token}"}
+headers = {"Authorization": f"Bearer {api_key}"}
 
 catalog = requests.get(f"{base}/api/v1/convert", headers=headers).json()
 assert catalog["capabilities"]["translate"]  # if you will set target_lang

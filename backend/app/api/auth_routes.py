@@ -7,10 +7,16 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.auth.api_plans import FALLBACK_API_PLAN, get_api_plan
 from app.auth.deps import Principal, get_principal
 from app.auth.google import verify_google_id_token
 from app.auth.plans import get_plan, permissions_for
-from app.auth.quota import assert_can_switch_to_plan, quota_snapshot
+from app.auth.quota import (
+    api_quota_snapshot,
+    assert_can_switch_to_api_plan,
+    assert_can_switch_to_plan,
+    quota_snapshot,
+)
 from app.auth.tokens import hash_token, issue_access_token, new_refresh_token
 from app.billing.stripe import billing_status, stripe_billing_enabled, sync_user_subscription
 from app.core.config import get_settings
@@ -46,6 +52,11 @@ class BillingStatus(BaseModel):
     subscription_status: str | None = None
     cancel_at_period_end: bool = False
     current_period_end: str | None = None
+    api_plan: str | None = None
+    api_subscription_status: str | None = None
+    api_cancel_at_period_end: bool = False
+    api_current_period_end: str | None = None
+    api: dict | None = None
 
 
 class MeResponse(BaseModel):
@@ -55,9 +66,15 @@ class MeResponse(BaseModel):
     quota: dict
     google_client_id: str | None = None
     billing: BillingStatus | None = None
+    api_plan: str = FALLBACK_API_PLAN
+    api_quota: dict
 
 
 class PlanChangeRequest(BaseModel):
+    plan: str
+
+
+class ApiPlanChangeRequest(BaseModel):
     plan: str
 
 
@@ -114,6 +131,7 @@ def login_google(body: GoogleLoginRequest, db: Session | None = Depends(get_db))
             name=claims.get("name"),
             picture_url=claims.get("picture"),
             plan="basic",
+            history_indexed=True,
         )
         db.add(user)
         db.flush()
@@ -163,6 +181,7 @@ def me(principal: Principal = Depends(get_principal), db: Session | None = Depen
     if user is not None and db is not None:
         billing.update(sync_user_subscription(db, user))
     plan = get_plan(user.plan) if user is not None else principal.plan
+    api_plan = get_api_plan(getattr(user, "api_plan", None) if user is not None else None)
     return MeResponse(
         user=_user_public(user) if user else None,
         plan=plan.id,
@@ -170,6 +189,8 @@ def me(principal: Principal = Depends(get_principal), db: Session | None = Depen
         quota=quota_snapshot(db, user_id=principal.user_id, plan=plan),
         google_client_id=settings.google_client_id,
         billing=BillingStatus(**billing),
+        api_plan=api_plan.id,
+        api_quota=api_quota_snapshot(db, user_id=principal.user_id, plan=api_plan),
     )
 
 
@@ -198,3 +219,43 @@ def change_plan(
     tokens = _issue_pair(db, user)
     db.commit()
     return tokens
+
+
+@router.post("/me/api-plan", response_model=MeResponse)
+def change_api_plan(
+    body: ApiPlanChangeRequest,
+    principal: Principal = Depends(get_principal),
+    db: Session | None = Depends(get_db),
+) -> MeResponse:
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database is not configured")
+    if principal.user is None:
+        raise HTTPException(status_code=401, detail="Sign in to change API plan")
+    if stripe_billing_enabled():
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "billing_required", "message": "Use Stripe checkout to change API plan"},
+        )
+    target = (body.plan or "").strip().lower()
+    user = db.get(User, principal.user.id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    assert_can_switch_to_api_plan(
+        db, user_id=user.id, current=user.api_plan or FALLBACK_API_PLAN, target=target
+    )
+    user.api_plan = target
+    db.add(user)
+    settings = get_settings()
+    plan = get_plan(user.plan)
+    api_plan = get_api_plan(user.api_plan)
+    billing = dict(billing_status(settings))
+    return MeResponse(
+        user=_user_public(user),
+        plan=plan.id,
+        permissions=permissions_for(plan),
+        quota=quota_snapshot(db, user_id=user.id, plan=plan),
+        google_client_id=settings.google_client_id,
+        billing=BillingStatus(**billing),
+        api_plan=api_plan.id,
+        api_quota=api_quota_snapshot(db, user_id=user.id, plan=api_plan),
+    )

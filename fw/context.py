@@ -177,6 +177,12 @@ class Context:
     auto_yes: bool = False
     root: Path = ROOT_DIR
     extras: dict[str, str] = field(default_factory=dict)
+    # "local" = Compose/native Postgres. "cloud" = RDS for ctx.env (private VPC).
+    scope: str = "local"
+
+    @property
+    def is_cloud(self) -> bool:
+        return self.scope == "cloud"
 
     @property
     def account_id(self) -> str:

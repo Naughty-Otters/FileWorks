@@ -1,0 +1,28 @@
+{
+  "$schema": "../../../frontend/node_modules/wrangler/config-schema.json",
+  "name": "fileworks-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-15",
+  "observability": { "enabled": true },
+  "env": {
+    "staging": {
+      "name": "fileworks-api-staging",
+      "vars": {
+        "ORIGIN": "https://example.invalid"
+      },
+      "routes": [
+        { "pattern": "api.staging.fileworks.ai", "custom_domain": true },
+        { "pattern": "staging.fileworks.ai/api/*", "zone_name": "fileworks.ai" }
+      ]
+    },
+    "prod": {
+      "name": "fileworks-api-prod",
+      "vars": {
+        "ORIGIN": "https://example.invalid"
+      },
+      "routes": [
+        { "pattern": "api.fileworks.ai", "custom_domain": true }
+      ]
+    }
+  }
+}

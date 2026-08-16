@@ -11,6 +11,7 @@ from typing import Any
 from fastapi import HTTPException
 
 from app.api.schemas import public_error
+from app.auth.api_plans import AI_CREDITS_PER_PAGE, STANDARD_CREDITS_PER_PAGE
 from app.auth.plans import Plan
 from app.core.config import get_settings
 from app.processing.pipeline import get_document_pipeline
@@ -196,7 +197,13 @@ def resolve_language(target_lang: str | None) -> str:
     return known[normalized.lower()]
 
 
-def convert_catalog(*, plan: Plan | None = None) -> dict[str, Any]:
+def convert_catalog(
+    *,
+    plan: Plan | None = None,
+    api_plan: str | None = None,
+    via_api_key: bool = False,
+    credits: dict[str, int | None] | None = None,
+) -> dict[str, Any]:
     settings = get_settings()
     ai_available, ai_reason = _ai_ready()
     translate_available, translate_reason = _translate_ready()
@@ -229,11 +236,11 @@ def convert_catalog(*, plan: Plan | None = None) -> dict[str, Any]:
         meta = OPTION_META[key]
         if key == "use_ai":
             available = ai_available
-            allowed = (plan.ai if plan is not None else True) and available
+            allowed = available and (via_api_key or plan is None or plan.ai)
             reason = None if available else ai_reason
         else:
             available = True
-            allowed = True if plan is None else bool(plan.extract)
+            allowed = True if via_api_key or plan is None else bool(plan.extract)
             reason = None
         options.append(
             {
@@ -256,7 +263,7 @@ def convert_catalog(*, plan: Plan | None = None) -> dict[str, Any]:
             "default": "original",
             "values": [item["id"] for item in language_catalog()],
             "available": translate_available,
-            "allowed": (plan.translate if plan is not None else True) and translate_available,
+            "allowed": (via_api_key or plan is None or plan.translate) and translate_available,
             "unavailable_reason": None if translate_available else translate_reason,
         }
     )
@@ -264,6 +271,7 @@ def convert_catalog(*, plan: Plan | None = None) -> dict[str, Any]:
     return {
         "max_upload_mb": settings.max_upload_mb,
         "plan": None if plan is None else plan.id,
+        "api_plan": api_plan,
         "inputs": [
             {"id": group_id, "label": label, "extensions": list(extensions)}
             for group_id, label, extensions in INPUT_GROUPS
@@ -275,6 +283,13 @@ def convert_catalog(*, plan: Plan | None = None) -> dict[str, Any]:
         "capabilities": {
             "ai": ai_available,
             "translate": translate_available,
+        },
+        "credits": {
+            "standard_per_page": STANDARD_CREDITS_PER_PAGE,
+            "ai_per_page": AI_CREDITS_PER_PAGE,
+            "used": None if credits is None else credits.get("used_credits"),
+            "limit": None if credits is None else credits.get("limit_credits"),
+            "remaining": None if credits is None else credits.get("remaining_credits"),
         },
     }
 

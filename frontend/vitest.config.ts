@@ -21,6 +21,7 @@ export default defineConfig({
         "src/app/login/page.tsx",
         "src/app/profile/page.tsx",
         "src/app/pricing/page.tsx",
+        "src/app/docs/page.tsx",
         "src/lib/empty-polyfill.ts",
       ],
       thresholds: {

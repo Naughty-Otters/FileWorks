@@ -2,7 +2,7 @@ import { BrandLockup } from "@/components/brand-lockup";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteFooter } from "@/components/site-footer";
 import { MarketingNav } from "@/components/marketing-nav";
-import { PLAN_CATALOG, PRICE_ROLES } from "@/lib/plans";
+import { API_PLAN_CATALOG, PLAN_CATALOG, PRICE_ROLES } from "@/lib/plans";
 import { BUSINESS_NAME, SITE_HOST, SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
 
 export function AboutPage() {
@@ -43,8 +43,9 @@ export function AboutPage() {
             JSON, or print-ready PDF.
           </p>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            What we charge for: access to the hosted conversion service (quotas and AI /
-            translation allowances) billed as a monthly software subscription through Stripe.
+            What we charge for: workspace access (file quotas and AI / translation allowances) and
+            Convert API access (page credits and API keys), each billed as a monthly software
+            subscription through Stripe. The two products can be held together.
           </p>
         </section>
 
@@ -53,8 +54,9 @@ export function AboutPage() {
             Products we sell
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Every plan is listed below. Paid grades are Pro and Premium. Basic is a free signed-in
-            plan. Guest can browse the site but cannot convert files.
+            Two products. Workspace: Guest, Basic, Pro, Premium. Convert API: Free, Builder, Scale,
+            Business. Paid grades are billed monthly through Stripe. Guest can browse the site but
+            cannot convert files in the app.
           </p>
           <div className="mt-5 overflow-x-auto">
             <table className="w-full min-w-[520px] border-collapse text-left text-sm">
@@ -74,6 +76,13 @@ export function AboutPage() {
                     <td className="py-2.5 text-[var(--ink-muted)]">{item.blurb}</td>
                   </tr>
                 ))}
+                {API_PLAN_CATALOG.map((item) => (
+                  <tr key={item.id} className="border-t border-[var(--line)]">
+                    <td className="py-2.5 pr-3 font-medium">{item.label}</td>
+                    <td className="py-2.5 pr-3 text-[var(--ink-muted)]">{item.price}</td>
+                    <td className="py-2.5 text-[var(--ink-muted)]">{item.blurb}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -83,6 +92,13 @@ export function AboutPage() {
                 <span className="font-medium text-[var(--ink)]">{plan.label}</span>
                 {" — "}
                 {plan.price}. {plan.quota}. {plan.features[1] || plan.features[0]}
+              </li>
+            ))}
+            {API_PLAN_CATALOG.map((plan) => (
+              <li key={plan.id}>
+                <span className="font-medium text-[var(--ink)]">{plan.label}</span>
+                {" — "}
+                {plan.price}. {plan.quota}. {plan.features[0]}
               </li>
             ))}
           </ul>

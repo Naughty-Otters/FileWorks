@@ -53,6 +53,12 @@ from app.services.runtime import (
 )
 from app.storage import get_document_store
 from app.storage.s3 import S3DocumentStore, PRESIGN_GET_EXPIRES, PRESIGN_PUT_EXPIRES
+from app.db.history import (
+    backfill_history_index,
+    delete_history_summary,
+    list_history_summaries,
+    upsert_history_summary,
+)
 from app.db.session import get_db
 from sqlalchemy.orm import Session
 
@@ -605,6 +611,7 @@ async def extract(
                     document_id,
                     [(item.name, item.data, item.content_type) for item in folded.files],
                 )
+                upsert_history_summary(db, record)
             except Exception as exc:  # noqa: BLE001
                 logger.exception("Failed to persist document history")
                 raise HTTPException(status_code=500, detail=f"Failed to save history: {exc}") from exc
@@ -675,12 +682,28 @@ async def export_document(
 async def list_history(
     limit: int = 100,
     principal: Principal = Depends(get_principal),
+    db: Session | None = Depends(get_db),
 ) -> HistoryListResponse:
     settings = get_settings()
     if not principal.plan.history or not principal.user_id:
         return HistoryListResponse(items=[], storage_backend=settings.storage_backend)
-    store = get_document_store()
     limit = max(1, min(limit, 500))
+    items = list_history_summaries(db, user_id=principal.user_id, limit=limit)
+    if items is not None:
+        user = principal.user
+        if user is not None and not getattr(user, "history_indexed", True):
+            store = get_document_store()
+            backfill_history_index(
+                db,
+                user=user,
+                records=store.list_documents(limit=500),
+            )
+            items = list_history_summaries(db, user_id=principal.user_id, limit=limit) or []
+        return HistoryListResponse(
+            items=[HistoryItem(**item) for item in items],
+            storage_backend=settings.storage_backend,
+        )
+    store = get_document_store()
     owner = str(principal.user_id)
     records = [
         record
@@ -709,8 +732,10 @@ def _require_owned_record(document_id: str, principal: Principal):
 async def get_history_item(
     document_id: str,
     principal: Principal = Depends(get_principal),
+    db: Session | None = Depends(get_db),
 ) -> HistoryDetailResponse:
     store, record = _require_owned_record(document_id, principal)
+    upsert_history_summary(db, record)
     markdown, json_data, pages = expand_embedded_media(
         record.markdown,
         record.json_data,
@@ -822,9 +847,11 @@ async def get_history_file(
 async def delete_history_item(
     document_id: str,
     principal: Principal = Depends(get_principal),
+    db: Session | None = Depends(get_db),
 ) -> dict[str, str]:
     store, _record = _require_owned_record(document_id, principal)
     deleted = store.delete_document(document_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Document not found")
+    delete_history_summary(db, user_id=principal.user_id, document_id=document_id)
     return {"status": "deleted", "id": document_id}

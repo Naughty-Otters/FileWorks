@@ -113,6 +113,7 @@ Non-interactive:
 ```bash
 ./scripts/fw --env dev full
 ./scripts/fw --env staging plan
+./scripts/fw --env staging push-image   # RDS migrates on the next API Lambda boot
 ./scripts/fw --env prod frontend
 ```
 
@@ -143,3 +144,10 @@ Terraform creates `fileworks-<env>/app` in Secrets Manager. **Seed** copies LLM/
 in `envs/<env>.tfvars` (or `PUBLIC_API_URL` in `backend/.env.<env>`) to a custom
 host such as `https://api.staging.fileworks.ai`. Empty falls back to the Lambda
 Function URL. Local `npm run dev` still uses `http://127.0.0.1:8000`.
+
+`fw frontend` also deploys `infra/cloudflare/api-proxy` when a custom API host is
+set. The Worker forwards `/api/*` to the Function URL (Lambda rejects a custom
+`Host` header). Staging public host is `https://api.staging.fileworks.ai`. If
+that hostname already has a manual A/CNAME, delete it in Cloudflare DNS and
+re-run `fw frontend` so the Worker can take the hostname as a Custom Domain
+(needed for TLS on the nested `api.staging` name).

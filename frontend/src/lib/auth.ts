@@ -36,7 +36,21 @@ export type MeResponse = {
     subscription_status?: string | null;
     cancel_at_period_end?: boolean;
     current_period_end?: string | null;
+    api_plan?: string | null;
+    api_subscription_status?: string | null;
+    api_cancel_at_period_end?: boolean;
+    api_current_period_end?: string | null;
+    api?: {
+      amounts?: Record<string, number>;
+      prices?: Record<string, boolean>;
+    };
   } | null;
+  api_plan?: string;
+  api_quota?: {
+    used_credits: number;
+    limit_credits: number | null;
+    remaining_credits: number | null;
+  };
 };
 
 export function getAccessToken(): string | null {

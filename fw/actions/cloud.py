@@ -24,6 +24,7 @@ from fw.context import (
     SECRET_EXACT_KEYS,
     TF_DIR,
     Context,
+    is_lambda_function_url,
     resolve_public_api_url,
     state_bucket_name,
 )
@@ -553,6 +554,33 @@ def _write_local_cors(ctx: Context, origins: list[str]) -> None:
     console.success(f"Wrote {ctx.env.local_tfvars_file}")
 
 
+API_PROXY_CONFIG = ROOT_DIR / "infra" / "cloudflare" / "api-proxy" / "wrangler.jsonc"
+
+
+def _deploy_api_proxy(ctx: Context, outputs: dict) -> None:
+    """Proxy the custom API host to the Function URL so TLS and Host headers work."""
+    public = _resolve_api_url(ctx, outputs)
+    origin = str(outputs.get("lambda_url") or "").rstrip("/")
+    if not public or not origin or not ctx.env.api_origin:
+        return
+    if is_lambda_function_url(public):
+        return
+    if not API_PROXY_CONFIG.is_file():
+        raise CommandError(f"API proxy config missing: {API_PROXY_CONFIG}")
+    console.info(f"Publishing API proxy {public} → {origin}")
+    wrangler(
+        ctx,
+        "deploy",
+        "--config",
+        str(API_PROXY_CONFIG),
+        "--env",
+        ctx.env.name,
+        "--var",
+        f"ORIGIN:{origin}",
+    )
+    console.success(f"API proxy published → {public}")
+
+
 def _resolve_api_url(ctx: Context, outputs: dict) -> str:
     """Public API origin. Never pin the UI to a raw Lambda URL when a custom host exists."""
     parsed = _parse_dotenv_for(ctx)
@@ -692,6 +720,7 @@ def frontend(ctx: Context) -> None:
     if who.returncode != 0:
         console.warn("Not logged into Cloudflare. Opening `wrangler login`…")
         wrangler(ctx, "login")
+    _deploy_api_proxy(ctx, outputs)
 
     project = ctx.env.pages_project
     created = wrangler(

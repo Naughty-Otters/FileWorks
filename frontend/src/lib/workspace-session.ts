@@ -26,7 +26,7 @@ export type WorkspacePrefs = {
 const DEFAULT_PREFS: WorkspacePrefs = {
   selectedId: null,
   view: "markdown",
-  historyOpen: false,
+  historyOpen: true,
   previewOpen: true,
   extractOptions: DEFAULT_EXTRACT_OPTIONS,
   markdownMode: "preview",

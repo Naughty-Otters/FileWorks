@@ -25,8 +25,9 @@ from app.api.v1.schemas import (
     ConvertResponse,
     ConvertSource,
 )
+from app.auth.api_plans import convert_credits, get_api_plan
 from app.auth.deps import Principal, get_principal
-from app.auth.quota import assert_can_extract, assert_can_use_ai, record_extract
+from app.auth.quota import api_quota_snapshot, assert_api_credits, record_api_credits
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.processing.remote_llm import invoke_remote_convert, needs_remote_llm
@@ -96,9 +97,23 @@ def _s3_store() -> S3DocumentStore | None:
 )
 async def get_convert_options(
     principal: Principal = Depends(get_principal),
+    db: Session | None = Depends(get_db),
 ) -> ConvertCatalogResponse:
     """Check accepted inputs, output targets, and which options are available now."""
-    return ConvertCatalogResponse(**convert_catalog(plan=principal.plan))
+    api_plan = principal.api_plan
+    if api_plan is None and principal.user is not None:
+        api_plan = get_api_plan(getattr(principal.user, "api_plan", None))
+    credits = None
+    if principal.user_id is not None and api_plan is not None:
+        credits = api_quota_snapshot(db, user_id=principal.user_id, plan=api_plan)
+    return ConvertCatalogResponse(
+        **convert_catalog(
+            plan=principal.plan,
+            api_plan=None if api_plan is None else api_plan.id,
+            via_api_key=principal.via_api_key,
+            credits=credits,
+        )
+    )
 
 
 @router.post(
@@ -169,9 +184,18 @@ async def convert_file(
     principal: Principal = Depends(get_principal),
     db: Session | None = Depends(get_db),
 ) -> ConvertResponse | Response:
-    """Convert and export in one call. Workspace extract/export/presign are unchanged."""
+    """Convert and export in one call. Requires a FileWorks API key from Profile."""
     settings = get_settings()
-    assert_can_extract(db, user_id=principal.user_id, plan=principal.plan)
+    if not principal.via_api_key or principal.user is None:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "code": "api_key_required",
+                "message": "POST /api/v1/convert needs an API key. Create one on Profile.",
+            },
+        )
+    api_plan = principal.api_plan or get_api_plan(getattr(principal.user, "api_plan", None))
+    assert_api_credits(db, user_id=principal.user_id, plan=api_plan)
     target_info = resolve_target(target)
     lang = resolve_language(target_lang)
     options = ExtractOptions.from_form(
@@ -187,13 +211,7 @@ async def convert_file(
         target_lang=lang,
     )
     assert_options_available(use_ai=options.use_ai, target_lang=options.normalized_target_lang())
-    assert_can_use_ai(
-        db,
-        user_id=principal.user_id,
-        plan=principal.plan,
-        use_ai=options.use_ai,
-        translate=bool(options.normalized_target_lang()),
-    )
+    enhanced = options.use_ai or bool(options.normalized_target_lang())
 
     data = await file.read()
     original_name, suffix = _validate_file(file, data)
@@ -264,6 +282,8 @@ async def convert_file(
             raise HTTPException(status_code=500, detail=f"Conversion failed: {exc}") from exc
 
         markdown = result.get("markdown") or ""
+        page_count = int(result.get("page_count", 0))
+        credits_used = convert_credits(page_count=page_count, enhanced=enhanced)
         title = Path(original_name).stem or "document"
         try:
             exported, media_type, ext = export_markdown(
@@ -274,11 +294,10 @@ async def convert_file(
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-        record_extract(
+        record_api_credits(
             db,
             user_id=principal.user_id,
-            anonymous_id=principal.anonymous_id,
-            enhanced=options.use_ai or bool(options.normalized_target_lang()),
+            credits=credits_used,
         )
 
         out_name = f"{title}.{ext}"
@@ -309,7 +328,8 @@ async def convert_file(
             content=content,
             options=ConvertAppliedOptions(**options.to_dict()),
             engine=str(result.get("engine") or "unknown"),
-            page_count=int(result.get("page_count", 0)),
+            page_count=page_count,
+            credits_used=credits_used,
         )
     finally:
         if temp_path.exists():

@@ -1,4 +1,8 @@
-"""Alembic migrations against local (or configured) Postgres."""
+"""Alembic migrations against local Postgres.
+
+Cloud RDS is private (no public hostname). Staging/prod schema is applied when
+the API Lambda starts (`init_db` → alembic upgrade head).
+"""
 
 from __future__ import annotations
 
@@ -16,6 +20,26 @@ def _db_env() -> dict[str, str]:
     return extra
 
 
+def _cloud_rds_notice(ctx: Context, action: str) -> bool:
+    """True when this is a cloud env — do not talk to 127.0.0.1."""
+    if not ctx.is_cloud:
+        return False
+    console.rule(f"Database {action} ({ctx.env.name})")
+    console.kv_table(
+        "RDS",
+        [
+            ("Environment", ctx.env.name),
+            ("Reachable from laptop", "no (private VPC)"),
+            ("How schema updates", "API Lambda cold start runs alembic upgrade head"),
+        ],
+    )
+    console.info(
+        f"Deploy the image that contains the new migration, then the next API "
+        f"start applies it:\n  ./scripts/fw --env {ctx.env.name} push-image"
+    )
+    return True
+
+
 def _alembic(ctx: Context, args: list[str]) -> None:
     require_cmd("uv")
     run(
@@ -27,6 +51,8 @@ def _alembic(ctx: Context, args: list[str]) -> None:
 
 
 def upgrade(ctx: Context) -> None:
+    if _cloud_rds_notice(ctx, "upgrade"):
+        return
     console.rule("Database upgrade")
     console.kv_table(
         "Migration",
@@ -43,16 +69,22 @@ def upgrade(ctx: Context) -> None:
 
 
 def current(ctx: Context) -> None:
+    if _cloud_rds_notice(ctx, "current"):
+        return
     console.rule("Database current")
     _alembic(ctx, ["current"])
 
 
 def history(ctx: Context) -> None:
+    if _cloud_rds_notice(ctx, "history"):
+        return
     console.rule("Database history")
     _alembic(ctx, ["history"])
 
 
 def downgrade(ctx: Context) -> None:
+    if _cloud_rds_notice(ctx, "downgrade"):
+        return
     console.rule("Database downgrade")
     revision = console.ask_text("Target revision", default="-1")
     if not console.confirm(f"Downgrade to {revision}?", default=False):
@@ -64,6 +96,8 @@ def downgrade(ctx: Context) -> None:
 
 def revision(ctx: Context) -> None:
     console.rule("New Alembic revision")
+    if ctx.is_cloud:
+        console.info("Revision files are written in this repo. Cloud RDS picks them up on the next Lambda boot after you deploy.")
     message = console.ask_text("Revision message")
     if not message.strip():
         console.error("Message is required.")

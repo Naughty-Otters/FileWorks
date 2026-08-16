@@ -162,6 +162,9 @@ class Settings(BaseSettings):
     stripe_price_basic: str | None = None
     stripe_price_pro: str | None = None
     stripe_price_premium: str | None = None
+    stripe_price_api_builder: str | None = None
+    stripe_price_api_scale: str | None = None
+    stripe_price_api_business: str | None = None
     # Required when Stripe Managed Payments is on (sandbox default).
     # txcd_10103000 = Software as a service (SaaS).
     stripe_tax_code: str = "txcd_10103000"

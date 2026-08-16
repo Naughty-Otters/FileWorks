@@ -24,6 +24,81 @@ export type CatalogPlan = {
   features: string[];
 };
 
+export type ApiCatalogPlan = {
+  id: "api_free" | "api_builder" | "api_scale" | "api_business";
+  label: string;
+  blurb: string;
+  price: string;
+  quota: string;
+  features: string[];
+  highlight?: boolean;
+};
+
+export const API_PLAN_CATALOG: ApiCatalogPlan[] = [
+  {
+    id: "api_free",
+    label: "API Free",
+    blurb: "Try the convert API with a long-lived key. Stacks with any workspace role.",
+    price: "Free",
+    quota: "100 credits / month",
+    features: [
+      "100 credits / month",
+      "1 credit per page (3 with AI or translation)",
+      "2 API keys that do not expire",
+      "Combine with Basic, Pro, or Premium",
+    ],
+  },
+  {
+    id: "api_builder",
+    label: "API Builder",
+    blurb: "For scripts and light production volume.",
+    price: "$19 / month",
+    quota: "2,000 credits / month",
+    features: [
+      "2,000 credits / month",
+      "1 credit per page (3 with AI or translation)",
+      "5 API keys that do not expire",
+      "Billed separately from workspace Pro / Premium",
+    ],
+  },
+  {
+    id: "api_scale",
+    label: "API Scale",
+    blurb: "Higher monthly page volume for product integrations.",
+    price: "$49 / month",
+    quota: "8,000 credits / month",
+    features: [
+      "8,000 credits / month",
+      "1 credit per page (3 with AI or translation)",
+      "10 API keys that do not expire",
+      "Billed separately from workspace Pro / Premium",
+    ],
+    highlight: true,
+  },
+  {
+    id: "api_business",
+    label: "API Business",
+    blurb: "Highest self-serve convert volume.",
+    price: "$99 / month",
+    quota: "20,000 credits / month",
+    features: [
+      "20,000 credits / month",
+      "1 credit per page (3 with AI or translation)",
+      "20 API keys that do not expire",
+      "Billed separately from workspace Pro / Premium",
+    ],
+  },
+];
+
+export const API_PLAN_ORDER = ["api_free", "api_builder", "api_scale", "api_business"] as const;
+
+export const API_PLAN_LIMITS: Record<string, { creditsPerMonth: number }> = {
+  api_free: { creditsPerMonth: 100 },
+  api_builder: { creditsPerMonth: 2000 },
+  api_scale: { creditsPerMonth: 8000 },
+  api_business: { creditsPerMonth: 20000 },
+};
+
 export const PLAN_CATALOG: CatalogPlan[] = [
   {
     id: "basic",
@@ -214,6 +289,46 @@ export function planIsPurchasable(
   if (!billing?.enabled) return true;
   if (billing.prices?.[planId]) return true;
   return (billing.amounts?.[planId] ?? 0) > 0;
+}
+
+export function apiPlanRank(id: string): number {
+  const index = (API_PLAN_ORDER as readonly string[]).indexOf(id as (typeof API_PLAN_ORDER)[number]);
+  return index < 0 ? 0 : index;
+}
+
+export function canSwitchApiPlan(current: string, target: string): boolean {
+  return target !== current && API_PLAN_CATALOG.some((plan) => plan.id === target);
+}
+
+export type ApiUsageSnapshot = {
+  used_credits: number;
+  limit_credits: number | null;
+  remaining_credits: number | null;
+};
+
+export function apiUsageOverLimitReasons(quota: ApiUsageSnapshot | undefined, targetId: string): string[] {
+  const limits = API_PLAN_LIMITS[targetId];
+  if (!limits) return ["Unknown API plan"];
+  const used = quota?.used_credits ?? 0;
+  if (used > limits.creditsPerMonth) {
+    return [`${used} API credits this month (limit ${limits.creditsPerMonth})`];
+  }
+  return [];
+}
+
+export function canMoveToApiPlan(
+  current: string,
+  target: string,
+  quota?: ApiUsageSnapshot,
+): boolean {
+  if (!canSwitchApiPlan(current, target)) return false;
+  if (apiPlanRank(target) >= apiPlanRank(current)) return true;
+  return apiUsageOverLimitReasons(quota, target).length === 0;
+}
+
+export function apiPlanSwitchLabel(current: string, target: ApiCatalogPlan): string {
+  if (apiPlanRank(target.id) > apiPlanRank(current)) return `Upgrade to ${target.label}`;
+  return `Switch to ${target.label}`;
 }
 
 export function planSwitchLabel(current: string, target: CatalogPlan): string {

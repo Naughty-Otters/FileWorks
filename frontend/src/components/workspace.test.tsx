@@ -25,6 +25,34 @@ const guestMe: MeResponse = {
   google_client_id: null,
 };
 
+const pastItem = {
+  id: "h1",
+  filename: "old.pdf",
+  content_type: "application/pdf",
+  size_bytes: 12,
+  created_at: "2026-01-01T12:00:00.000Z",
+  engine: "anydoc",
+  page_count: 1,
+  storage_backend: "local",
+  has_markdown: true,
+  has_json: false,
+};
+
+const convertedSummary = {
+  id: "d1",
+  filename: "a.png",
+  content_type: "image/png",
+  size_bytes: 3,
+  created_at: "2026-08-15T12:00:00.000Z",
+  engine: "ocr",
+  page_count: 1,
+  storage_backend: "local",
+  has_markdown: true,
+  has_json: true,
+};
+
+const historyState = { items: [pastItem] };
+
 vi.mock("next-themes", () => ({
   useTheme: () => ({ resolvedTheme: "light", setTheme: vi.fn() }),
   ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -49,35 +77,25 @@ vi.mock("@/lib/api", async () => {
     })),
     fetchMe: vi.fn(async () => guestMe),
     fetchHistory: vi.fn(async () => ({
-      items: [
-        {
-          id: "h1",
-          filename: "old.pdf",
-          content_type: "application/pdf",
-          size_bytes: 12,
-          created_at: "2026-01-01T12:00:00.000Z",
-          engine: "anydoc",
-          page_count: 1,
-          storage_backend: "local",
-          has_markdown: true,
-          has_json: false,
-        },
-      ],
+      items: historyState.items,
       storage_backend: "local",
     })),
     refreshSession: vi.fn(async () => false),
-    extractDocument: vi.fn(async () => ({
-      id: "d1",
-      filename: "a.png",
-      content_type: "image/png",
-      size_bytes: 3,
-      engine: "ocr",
-      page_count: 1,
-      format: "both",
-      markdown: "# hi",
-      json: { a: 1 },
-      pages: [],
-    })),
+    extractDocument: vi.fn(async () => {
+      historyState.items = [convertedSummary, ...historyState.items.filter((item) => item.id !== convertedSummary.id)];
+      return {
+        id: "d1",
+        filename: "a.png",
+        content_type: "image/png",
+        size_bytes: 3,
+        engine: "ocr",
+        page_count: 1,
+        format: "both",
+        markdown: "# hi",
+        json: { a: 1 },
+        pages: [],
+      };
+    }),
     deleteHistoryItem: vi.fn(async () => undefined),
     fetchHistoryDetail: vi.fn(async () => ({
       id: "h1",
@@ -103,24 +121,51 @@ vi.mock("@/lib/prefetch", () => ({
 }));
 
 describe("Workspace", () => {
-  it("renders, converts, restores history, and toggles panels", async () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    historyState.items = [{ ...pastItem }];
+    vi.mocked(api.fetchHistoryDetail).mockClear();
+    vi.mocked(api.fetchHistoryFile).mockClear();
+    vi.mocked(api.fetchHistory).mockClear();
+    vi.mocked(api.extractDocument).mockClear();
+    vi.mocked(api.deleteHistoryItem).mockClear();
+  });
+
+  it("lands empty with history visible and only loads blobs on click", async () => {
     const user = userEvent.setup();
     render(<Workspace />);
     await waitFor(() => expect(screen.getByRole("link", { name: "FileWorks" })).toBeInTheDocument());
+    expect(screen.getAllByRole("link", { name: "API" })[0]).toHaveAttribute("href", "/docs");
     expect(screen.getByRole("link", { name: "About" })).toHaveAttribute("href", "/about");
+    expect(screen.getByText("Drop a file here")).toBeInTheDocument();
+    expect(screen.getByText(/Drop a file and convert/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
+    expect(api.fetchHistoryDetail).not.toHaveBeenCalled();
+    expect(api.fetchHistoryFile).not.toHaveBeenCalled();
+
+    await user.click(screen.getByLabelText("Hide history"));
+    expect(screen.getByText("old.pdf")).toBeInTheDocument();
+    expect(screen.getByLabelText("Show full history")).toBeInTheDocument();
+
+    await user.click(screen.getByText("old.pdf"));
+    await waitFor(() => expect(api.fetchHistoryDetail).toHaveBeenCalled());
+    expect(api.fetchHistoryFile).toHaveBeenCalled();
+    await user.click(screen.getByLabelText("Delete old.pdf"));
+    await waitFor(() => expect(api.deleteHistoryItem).toHaveBeenCalled());
+  });
+
+  it("converts a new file and prepends it in history", async () => {
+    const user = userEvent.setup();
+    render(<Workspace />);
+    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, new File(["abc"], "note.png", { type: "image/png" }));
     await waitFor(() => expect(screen.getByText("note.png")).toBeInTheDocument());
     await user.click(screen.getByText("Convert"));
     await waitFor(() => expect(screen.getByText("1 page")).toBeInTheDocument());
     expect(screen.queryByText(/AnyDoc|PP-OCR|Paddle/i)).not.toBeInTheDocument();
-
-    await user.click(screen.getByLabelText("Show history"));
-    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
-    await user.click(screen.getByText("old.pdf"));
-    await waitFor(() => expect(api.fetchHistoryDetail).toHaveBeenCalled());
-    await user.click(screen.getByLabelText("Delete old.pdf"));
-    await waitFor(() => expect(api.deleteHistoryItem).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getAllByText("a.png").length).toBeGreaterThan(0));
+    expect(screen.getByText("old.pdf")).toBeInTheDocument();
 
     await user.click(screen.getByLabelText("Hide source preview"));
     await waitFor(() => expect(screen.getByText("Show preview")).toBeInTheDocument());

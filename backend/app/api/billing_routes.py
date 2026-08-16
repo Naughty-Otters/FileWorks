@@ -37,6 +37,12 @@ class ConfirmRequest(BaseModel):
 
 class ConfirmResponse(BaseModel):
     plan: str | None = None
+    api_plan: str | None = None
+
+
+class CatalogApiBucket(BaseModel):
+    amounts: dict[str, int]
+    prices: dict[str, bool]
 
 
 class CatalogResponse(BaseModel):
@@ -44,6 +50,7 @@ class CatalogResponse(BaseModel):
     currency: str = "usd"
     amounts: dict[str, int]
     prices: dict[str, bool]
+    api: CatalogApiBucket
 
 
 class PortalResponse(BaseModel):
@@ -55,6 +62,10 @@ class SyncResponse(BaseModel):
     subscription_status: str | None = None
     cancel_at_period_end: bool = False
     current_period_end: str | None = None
+    api_plan: str | None = None
+    api_subscription_status: str | None = None
+    api_cancel_at_period_end: bool = False
+    api_current_period_end: str | None = None
 
 
 def _require_user(principal: Principal, db: Session | None) -> User:
@@ -90,16 +101,18 @@ def confirm_checkout(
     db: Session | None = Depends(get_db),
 ) -> ConfirmResponse:
     user = _require_user(principal, db)
-    return ConfirmResponse(plan=confirm_checkout_session(db, user, body.session_id))
+    assigned = confirm_checkout_session(db, user, body.session_id)
+    return ConfirmResponse(plan=user.plan, api_plan=user.api_plan or assigned)
 
 
 @router.post("/billing/portal", response_model=PortalResponse)
 def billing_portal(
+    product: str = "workspace",
     principal: Principal = Depends(get_principal),
     db: Session | None = Depends(get_db),
 ) -> PortalResponse:
     user = _require_user(principal, db)
-    return PortalResponse(**create_portal_session(db, user))
+    return PortalResponse(**create_portal_session(db, user, product=product))
 
 
 @router.post("/billing/sync", response_model=SyncResponse)
@@ -109,7 +122,16 @@ def sync_billing(
 ) -> SyncResponse:
     user = _require_user(principal, db)
     view = sync_user_subscription(db, user)
-    return SyncResponse(plan=user.plan, **view)
+    return SyncResponse(
+        plan=user.plan,
+        api_plan=user.api_plan,
+        subscription_status=view.get("subscription_status"),
+        cancel_at_period_end=bool(view.get("cancel_at_period_end")),
+        current_period_end=view.get("current_period_end"),
+        api_subscription_status=view.get("api_subscription_status"),
+        api_cancel_at_period_end=bool(view.get("api_cancel_at_period_end")),
+        api_current_period_end=view.get("api_current_period_end"),
+    )
 
 
 @router.post("/billing/webhook")

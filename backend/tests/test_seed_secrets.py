@@ -12,6 +12,7 @@ from fw.context import (
     ENVIRONMENTS,
     SECRET_ENV_PREFIXES,
     SECRET_EXACT_KEYS,
+    Context,
     resolve_public_api_url,
 )
 
@@ -74,3 +75,9 @@ class SeedSecretTests(unittest.TestCase):
         self.assertEqual(ENVIRONMENTS["prod"].api_origin, "https://api.fileworks.ai")
         self.assertEqual(ENVIRONMENTS["dev"].public_origin, ENVIRONMENTS["dev"].pages_origin)
         self.assertEqual(ENVIRONMENTS["dev"].api_origin, "")
+        self.assertTrue((ROOT / "infra/cloudflare/api-proxy/wrangler.jsonc").is_file())
+        self.assertTrue((ROOT / "infra/cloudflare/api-proxy/src/index.js").is_file())
+        local = Context(env=ENVIRONMENTS["staging"], scope="local")
+        cloud = Context(env=ENVIRONMENTS["staging"], scope="cloud")
+        self.assertFalse(local.is_cloud)
+        self.assertTrue(cloud.is_cloud)

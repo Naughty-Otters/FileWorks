@@ -125,22 +125,24 @@ export function LegalPage() {
             Refund and dispute policy
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Pro and Premium are prepaid monthly subscriptions billed through Stripe. Basic is free.
-            Fees pay for access during that billing period, including conversion quota and AI /
-            translation allowance.
+            Workspace Pro and Premium, and Convert API Builder / Scale / Business, are prepaid
+            monthly subscriptions billed through Stripe. Basic and API Free are free. Fees pay for
+            access during that billing period: workspace conversion quota, or API page credits. The
+            two products can be combined on one account and are billed separately.
           </p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--ink-muted)]">
             <li>
-              We do not refund unused days, unused conversions, or unused AI / translation allowance
-              after a paid period has started.
+              We do not refund unused days, unused conversions, unused AI / translation allowance,
+              or unused API credits after a paid period has started.
             </li>
             <li>
               Canceling stops the next renewal. The current period stays paid until it ends. There
               is no prorated refund.
             </li>
             <li>
-              Checking out a different paid plan starts the new plan immediately and ends the prior
-              subscription. We do not issue a prorated credit for unused time on the old plan.
+              Checking out a different paid plan of the same product starts the new plan immediately
+              and ends the prior subscription for that product. The other product is unchanged. We
+              do not issue a prorated credit for unused time on the old plan.
             </li>
             <li>
               Duplicate or unauthorized charges: email {SUPPORT_EMAIL} with the Stripe receipt or
@@ -160,13 +162,14 @@ export function LegalPage() {
             Cancellation policy
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            You can cancel a paid FileWorks subscription at any time. Cancellation takes effect at
-            the end of the current billing period. There is no cancellation fee.
+            You can cancel a paid workspace or API subscription at any time. Cancellation takes
+            effect at the end of the current billing period. There is no cancellation fee. Canceling
+            one product does not cancel the other.
           </p>
           <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-[var(--ink-muted)]">
             <li>Sign in and open Profile.</li>
-            <li>Choose Manage billing to open the Stripe customer portal.</li>
-            <li>Cancel the subscription. Access continues until the period end date shown there.</li>
+            <li>Choose Manage billing (workspace) or Manage API billing (convert API).</li>
+            <li>Cancel that subscription. Access continues until the period end date shown there.</li>
           </ol>
           <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
             When the paid period ends, the account role returns to Basic. History already saved

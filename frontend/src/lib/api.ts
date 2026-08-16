@@ -359,7 +359,22 @@ export type BillingCatalog = {
   currency: string;
   amounts: Record<string, number>;
   prices: Record<string, boolean>;
+  api?: {
+    amounts: Record<string, number>;
+    prices: Record<string, boolean>;
+  };
 };
+
+export type ApiKeyPublic = {
+  id: string;
+  name: string;
+  prefix: string;
+  last4: string;
+  created_at: string | null;
+  last_used_at: string | null;
+};
+
+export type CreatedApiKey = ApiKeyPublic & { token: string };
 
 export async function fetchBillingCatalog(): Promise<BillingCatalog> {
   const res = await apiFetch("/api/billing/catalog", { cache: "no-store" });
@@ -396,8 +411,9 @@ export async function confirmCheckout(sessionId: string): Promise<{ plan: string
   return (await res.json()) as { plan: string | null };
 }
 
-export async function openBillingPortal(): Promise<{ url: string }> {
-  const res = await apiFetch("/api/billing/portal", { method: "POST" });
+export async function openBillingPortal(product = "workspace"): Promise<{ url: string }> {
+  const query = product === "api" ? "?product=api" : "";
+  const res = await apiFetch(`/api/billing/portal${query}`, { method: "POST" });
   if (!res.ok) {
     throw new Error(await readError(res, `Billing portal failed (${res.status})`));
   }
@@ -410,6 +426,45 @@ export async function syncBilling(): Promise<MeResponse> {
     throw new Error(await readError(res, `Billing sync failed (${res.status})`));
   }
   return fetchMe();
+}
+
+export async function upgradeApiPlan(plan: string): Promise<MeResponse> {
+  const res = await apiFetch("/api/me/api-plan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan }),
+  });
+  if (!res.ok) {
+    throw new Error(await readError(res, `API plan change failed (${res.status})`));
+  }
+  return (await res.json()) as MeResponse;
+}
+
+export async function listApiKeys(): Promise<ApiKeyPublic[]> {
+  const res = await apiFetch("/api/keys", { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(await readError(res, `API keys failed (${res.status})`));
+  }
+  return (await res.json()) as ApiKeyPublic[];
+}
+
+export async function createApiKey(name?: string): Promise<CreatedApiKey> {
+  const res = await apiFetch("/api/keys", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: name || undefined }),
+  });
+  if (!res.ok) {
+    throw new Error(await readError(res, `Create API key failed (${res.status})`));
+  }
+  return (await res.json()) as CreatedApiKey;
+}
+
+export async function revokeApiKey(id: string): Promise<void> {
+  const res = await apiFetch(`/api/keys/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    throw new Error(await readError(res, `Revoke API key failed (${res.status})`));
+  }
 }
 
 export async function logoutSession(): Promise<void> {

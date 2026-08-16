@@ -16,6 +16,7 @@ import { ProfilePage } from "@/components/profile-page";
 import { PricingPage } from "@/components/pricing-page";
 import { LegalPage } from "@/components/legal-page";
 import { AboutPage } from "@/components/about-page";
+import { ApiPage } from "@/components/api-page";
 import { ResultPanel } from "@/components/result-panel";
 import { EditableMarkdownPreview, type MarkdownPreviewHandle } from "@/components/editable-markdown-preview";
 import { DEFAULT_EXTRACT_OPTIONS, type MeResponse } from "@/lib/api";
@@ -105,6 +106,25 @@ describe("HistoryPanel", () => {
     expect(screen.queryByText(/anydoc|AnyDoc|PP-OCR/i)).not.toBeInTheDocument();
     await user.click(screen.getByLabelText("Hide history"));
     expect(onCollapse).toHaveBeenCalled();
+  });
+
+  it("keeps filenames visible in compact rail", async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const onExpand = vi.fn();
+    render(
+      <HistoryPanel
+        items={[item]}
+        selectedId={null}
+        compact
+        onSelect={onSelect}
+        onDelete={vi.fn()}
+        onExpand={onExpand}
+      />,
+    );
+    expect(screen.getByText("doc.pdf")).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Expand history"));
+    expect(onExpand).toHaveBeenCalled();
   });
 });
 
@@ -895,7 +915,38 @@ describe("AboutPage", () => {
     expect(screen.getByRole("heading", { name: "Products we sell" })).toBeInTheDocument();
     expect(screen.getAllByText("$12 / month").length).toBeGreaterThan(0);
     expect(screen.getAllByText("$29 / month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("$19 / month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("API Scale").length).toBeGreaterThan(0);
     expect(screen.getAllByText("support@fileworks.ai").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "API" })[0]).toHaveAttribute("href", "/docs");
+  });
+});
+
+describe("ApiPage", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("documents convert with curl, Python, and JavaScript", async () => {
+    vi.spyOn(api, "fetchHealth").mockResolvedValue({
+      status: "ok",
+      app: "FileWorks",
+      ocr_ready: true,
+      ocr_engine: "ocr",
+      ocr_error: null,
+    });
+    vi.spyOn(api, "fetchMe").mockResolvedValue(guestMe);
+    render(<ApiPage />);
+    expect(screen.getByRole("heading", { name: "One request, converted file out" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "API" })[0]).toHaveAttribute("href", "/docs");
+    expect(await screen.findByText("Reachable")).toBeInTheDocument();
+    const samples = document.querySelectorAll(".api-code");
+    const sampleText = Array.from(samples).map((node) => node.textContent || "").join("\n");
+    expect(sampleText).toContain('curl -s -H "Authorization: Bearer YOUR_API_KEY"');
+    expect(sampleText).toContain("import requests");
+    expect(sampleText).toContain("const body = new FormData");
+    expect(screen.getByText("POST")).toBeInTheDocument();
+    expect(screen.getAllByText("/api/v1/convert").length).toBeGreaterThan(0);
   });
 });
 
@@ -903,6 +954,10 @@ describe("ProfilePage", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  beforeEach(() => {
+    vi.spyOn(api, "listApiKeys").mockResolvedValue([]);
   });
 
   it("shows usage role and lets a basic account upgrade", async () => {
@@ -1063,6 +1118,46 @@ describe("ProfilePage", () => {
     await user.click(await screen.findByRole("button", { name: "Switch to Pro" }));
     expect(api.startCheckout).toHaveBeenCalledWith("pro");
     expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs_switch");
+  });
+
+  it("creates and shows a one-time API key secret", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+      plan: "basic",
+      api_plan: "api_free",
+      api_quota: { used_credits: 0, limit_credits: 100, remaining_credits: 100 },
+    });
+    vi.spyOn(api, "createApiKey").mockResolvedValue({
+      id: "k1",
+      name: "CI",
+      prefix: "fw_live_abcd",
+      last4: "Wxyz",
+      created_at: "2026-08-15T00:00:00Z",
+      last_used_at: null,
+      token: "fw_live_abcdsecretWxyz",
+    });
+    vi.spyOn(api, "listApiKeys")
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([
+        {
+          id: "k1",
+          name: "CI",
+          prefix: "fw_live_abcd",
+          last4: "Wxyz",
+          created_at: "2026-08-15T00:00:00Z",
+          last_used_at: null,
+        },
+      ]);
+    render(<ProfilePage />);
+    expect(await screen.findByRole("heading", { name: "API keys" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "API plan" })).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText("Key name (optional)"), "CI");
+    await user.click(screen.getByRole("button", { name: "Generate key" }));
+    expect(api.createApiKey).toHaveBeenCalledWith("CI");
+    expect(await screen.findByText("fw_live_abcdsecretWxyz")).toBeInTheDocument();
+    expect(screen.getByText(/Copy this key now/)).toBeInTheDocument();
   });
 
   it("confirms checkout on profile then syncs", async () => {
