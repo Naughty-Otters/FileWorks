@@ -1,5 +1,6 @@
 const ACCESS_KEY = "fileworks.access_token";
 const REFRESH_KEY = "fileworks.refresh_token";
+const HINT_KEY = "fileworks.session_hint";
 
 export type PlanId = "anonymous" | "basic" | "pro" | "premium";
 
@@ -71,6 +72,61 @@ export function setSession(access: string, refresh: string) {
 export function clearSession() {
   sessionStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  clearSessionHint();
+}
+
+/** A token exists, so this browser is signed in until the API says otherwise. */
+export function hasStoredSession(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return Boolean(getAccessToken() || getRefreshToken());
+  } catch {
+    return false;
+  }
+}
+
+export type SessionUser = NonNullable<MeResponse["user"]>;
+
+/**
+ * Last known identity, kept so the header can paint the avatar on the first frame
+ * instead of guessing "signed out" while /api/me is in flight. Display only —
+ * every request still authorizes with the real token.
+ */
+export function readSessionHint(): SessionUser | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(HINT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SessionUser> | null;
+    if (!parsed || typeof parsed.id !== "string" || typeof parsed.email !== "string") return null;
+    return {
+      id: parsed.id,
+      email: parsed.email,
+      name: typeof parsed.name === "string" ? parsed.name : null,
+      picture_url: typeof parsed.picture_url === "string" ? parsed.picture_url : null,
+      plan: typeof parsed.plan === "string" ? parsed.plan : "basic",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function writeSessionHint(user: SessionUser): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(HINT_KEY, JSON.stringify(user));
+  } catch {
+    // Private mode or a full quota: the header just falls back to a placeholder.
+  }
+}
+
+export function clearSessionHint(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(HINT_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 let refreshTimer: number | null = null;

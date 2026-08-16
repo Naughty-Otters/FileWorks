@@ -31,9 +31,14 @@ if (!window.URL.createObjectURL) {
   window.URL.revokeObjectURL = () => undefined;
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   window.localStorage.clear();
   window.sessionStorage.clear();
+  // The session store is module state, so it outlives a single render tree. Import
+  // it here rather than at the top: a static import would bind the store to the
+  // real @/lib/api before a test file's vi.mock is registered.
+  const { resetSessionStore } = await import("@/lib/session");
+  resetSessionStore();
 });
 
 if (!navigator.clipboard) {

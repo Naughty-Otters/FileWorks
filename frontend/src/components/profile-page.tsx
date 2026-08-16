@@ -15,8 +15,8 @@ import {
   upgradePlan,
   type ApiKeyPublic,
   type CreatedApiKey,
-  type MeResponse,
 } from "@/lib/api";
+import { clearSessionState, reloadSession, setSessionMe, useSession } from "@/lib/session";
 import { BrandLockup } from "@/components/brand-lockup";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteFooter } from "@/components/site-footer";
@@ -42,7 +42,7 @@ function formatPeriodEnd(iso: string | null | undefined) {
 }
 
 export function ProfilePage() {
-  const [me, setMe] = useState<MeResponse | null>(null);
+  const { me, displayUser } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -56,38 +56,48 @@ export function ProfilePage() {
     const checkout = params.get("checkout");
     if (checkout === "cancel") setNotice("Checkout canceled. Your current plan is unchanged.");
     const fromPortal = params.get("billing") === "return";
-    void (fromPortal ? syncBilling() : fetchMe())
+    void (fromPortal ? syncBilling() : reloadSession())
       .then(async (session) => {
         if (!session.user) {
           window.location.assign("/login?next=/profile");
           return;
         }
+        setSessionMe(session);
         const sessionId = params.get("session_id");
         if (checkout === "success" && sessionId) {
           try {
             await confirmCheckout(sessionId);
-            setMe(await syncBilling().catch(() => fetchMe()));
+            setSessionMe(await syncBilling().catch(() => fetchMe()));
             setNotice("Payment received. Your role is updated.");
             return;
           } catch {
             try {
-              setMe(await syncBilling());
+              setSessionMe(await syncBilling());
               setNotice("Payment received. Your role is updated.");
               return;
             } catch {
               setNotice("Payment received. Your role updates when Stripe confirms the subscription.");
             }
           }
-        } else if (checkout === "success") {
+          return;
+        }
+        if (checkout === "success") {
           setNotice("Payment received. Your role updates when Stripe confirms the subscription.");
-        } else if (fromPortal) {
+          return;
+        }
+        if (fromPortal) {
           setNotice(
             session.billing?.cancel_at_period_end
               ? `Billing updated. This role stays until ${formatPeriodEnd(session.billing.current_period_end)}, then Basic.`
               : "Billing updated from Stripe.",
           );
+          return;
         }
-        setMe(session);
+        // /api/me answers from our database so the page paints without waiting on
+        // Stripe. Reconcile in the background in case a webhook was missed.
+        void syncBilling()
+          .then(setSessionMe)
+          .catch(() => undefined);
       })
       .catch(() => window.location.assign("/login?next=/profile"));
   }, []);
@@ -111,7 +121,7 @@ export function ProfilePage() {
         window.location.assign(checkout.url);
         return;
       }
-      setMe(await upgradePlan(plan));
+      setSessionMe(await upgradePlan(plan));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Plan change failed");
     } finally {
@@ -143,7 +153,7 @@ export function ProfilePage() {
         window.location.assign(checkout.url);
         return;
       }
-      setMe(await upgradeApiPlan(plan));
+      setSessionMe(await upgradeApiPlan(plan));
     } catch (err) {
       setError(err instanceof Error ? err.message : "API plan change failed");
     } finally {
@@ -181,10 +191,13 @@ export function ProfilePage() {
   }
 
   if (!me?.user) {
+    const who = displayUser?.name || displayUser?.email;
     return (
       <div className="app-shell relative">
         <div className="atmosphere" aria-hidden />
-        <p className="relative z-10 p-8 text-sm text-[var(--ink-muted)]">Loading account…</p>
+        <p className="relative z-10 p-8 text-sm text-[var(--ink-muted)]">
+          {who ? `Loading account for ${who}…` : "Loading account…"}
+        </p>
       </div>
     );
   }
@@ -627,6 +640,7 @@ export function ProfilePage() {
             type="button"
             onClick={async () => {
               await logoutSession();
+              clearSessionState();
               window.location.assign("/");
             }}
             className="text-sm text-[var(--ink-muted)] hover:text-[var(--accent-strong)]"

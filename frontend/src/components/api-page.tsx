@@ -6,8 +6,9 @@ import { BrandLockup } from "@/components/brand-lockup";
 import { MarketingNav } from "@/components/marketing-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { fetchHealth, fetchMe, listApiKeys, type HealthResponse, type MeResponse } from "@/lib/api";
+import { fetchHealth, listApiKeys, type HealthResponse } from "@/lib/api";
 import { resolveApiBase } from "@/lib/runtime-config";
+import { reloadSession, useSession } from "@/lib/session";
 import { SUPPORT_EMAIL } from "@/lib/legal";
 
 type CodeLang = "bash" | "python" | "javascript";
@@ -113,7 +114,7 @@ export function ApiPage() {
   const [apiBase, setApiBase] = useState("https://api.fileworks.ai");
   const [dedicatedBase, setDedicatedBase] = useState("https://api.fileworks.ai");
   const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [me, setMe] = useState<MeResponse | null>(null);
+  const { me } = useSession();
   const [keyHint, setKeyHint] = useState("YOUR_API_KEY");
 
   useEffect(() => {
@@ -138,9 +139,8 @@ export function ApiPage() {
         });
       }
     })();
-    void fetchMe()
+    void reloadSession()
       .then(async (session) => {
-        setMe(session);
         if (!session.user) return;
         try {
           const keys = await listApiKeys();

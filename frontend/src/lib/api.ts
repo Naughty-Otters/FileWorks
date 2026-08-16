@@ -161,6 +161,17 @@ function apiUrl(path: string, opts?: { direct?: boolean }) {
   return `${resolveApiBase()}${path}`;
 }
 
+/** Carries the HTTP status so callers can tell "signed out" from "network hiccup". */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 async function readError(res: Response, fallback: string) {
   try {
     const text = await res.text();
@@ -280,7 +291,7 @@ export function unreachableMessage(path: string, local = isLocalPage()): string 
 export async function fetchMe(): Promise<MeResponse> {
   const res = await apiFetch("/api/me", { cache: "no-store" });
   if (!res.ok) {
-    throw new Error(await readError(res, `Session check failed (${res.status})`));
+    throw new ApiError(res.status, await readError(res, `Session check failed (${res.status})`));
   }
   return res.json();
 }

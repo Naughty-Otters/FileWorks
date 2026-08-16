@@ -387,6 +387,42 @@ body {
   animation: pulse-soft 1.4s ease-in-out infinite;
 }
 
+@keyframes progress-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+
+/* Conversion is one blocking request with no page-level reporting, so the bar is
+   deliberately indeterminate rather than a percentage we cannot know. */
+.progress-indeterminate {
+  position: relative;
+  overflow: hidden;
+  background: var(--accent-soft);
+}
+
+.progress-indeterminate::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 25%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: progress-sweep 1.3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-indeterminate::after {
+    width: 100%;
+    background: var(--accent);
+    opacity: 0.5;
+    animation: none;
+  }
+}
+
 .api-inline {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.85em;

@@ -1,47 +1,59 @@
 "use client";
 
-import type { MeResponse } from "@/lib/api";
+import type { MeResponse, SessionUser } from "@/lib/auth";
+import type { SessionStatus } from "@/lib/session";
 
 type AuthBarProps = {
   me: MeResponse | null;
+  status?: SessionStatus;
+  user?: SessionUser | null;
   loginHref?: string;
 };
 
-function accountTitle(me: MeResponse): string {
-  const who = me.user?.name || me.user?.email || "Signed in";
+function accountTitle(user: SessionUser, me: MeResponse | null): string {
+  const who = user.name || user.email || "Signed in";
   const quota =
-    me.quota.limit_day != null
-      ? `${me.quota.used_day}/${me.quota.limit_day} today`
-      : me.quota.limit_month != null
-        ? `${me.quota.used_month}/${me.quota.limit_month} this month`
-        : null;
-  return [who, me.plan, quota].filter(Boolean).join(" · ");
+    me == null
+      ? null
+      : me.quota.limit_day != null
+        ? `${me.quota.used_day}/${me.quota.limit_day} today`
+        : me.quota.limit_month != null
+          ? `${me.quota.used_month}/${me.quota.limit_month} this month`
+          : null;
+  return [who, me?.plan ?? user.plan, quota].filter(Boolean).join(" · ");
 }
 
-function initials(me: MeResponse): string {
-  const source = me.user?.name || me.user?.email || "?";
+function initials(user: SessionUser): string {
+  const source = user.name || user.email || "?";
   return source.slice(0, 1).toUpperCase();
 }
 
-export function AuthBar({ me, loginHref = "/login" }: AuthBarProps) {
-  if (me?.user) {
-    const title = accountTitle(me);
-    if (me.user.picture_url) {
-      return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <a href="/profile" aria-label="Account">
-          <img src={me.user.picture_url} alt="" title={title} className="h-8 w-8 rounded-full" />
-        </a>
-      );
-    }
+const avatarClass =
+  "relative inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[var(--accent-soft)] text-xs font-medium text-[var(--accent-strong)]";
+
+export function AuthBar({ me, status, user, loginHref = "/login" }: AuthBarProps) {
+  const account = user ?? me?.user ?? null;
+  const resolved: SessionStatus = status ?? (me ? (me.user ? "signed-in" : "guest") : "unknown");
+
+  // Never guess "signed out" before local storage is read: that guess is what makes
+  // a refresh flash "Sign in" and then swap to the avatar a moment later.
+  if (resolved === "unknown") {
+    return <span aria-hidden className="inline-block h-8 w-8 rounded-full bg-[var(--accent-soft)]" />;
+  }
+
+  if (resolved === "signed-in") {
+    const title = account ? accountTitle(account, me) : "Account";
     return (
-      <a
-        href="/profile"
-        aria-label="Account"
-        title={title}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-soft)] text-xs font-medium text-[var(--accent-strong)]"
-      >
-        {initials(me)}
+      <a href="/profile" aria-label="Account" title={title} className={avatarClass}>
+        {account ? initials(account) : null}
+        {account?.picture_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={account.picture_url}
+            alt=""
+            className="absolute inset-0 h-full w-full rounded-full object-cover"
+          />
+        ) : null}
       </a>
     );
   }

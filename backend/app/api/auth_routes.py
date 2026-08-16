@@ -18,7 +18,7 @@ from app.auth.quota import (
     quota_snapshot,
 )
 from app.auth.tokens import hash_token, issue_access_token, new_refresh_token
-from app.billing.stripe import billing_status, stripe_billing_enabled, sync_user_subscription
+from app.billing.stripe import billing_status, stripe_billing_enabled
 from app.core.config import get_settings
 from app.db.models import RefreshToken, User
 from app.db.session import get_db
@@ -175,11 +175,15 @@ def logout(body: RefreshRequest, db: Session | None = Depends(get_db)) -> dict[s
 
 @router.get("/me", response_model=MeResponse)
 def me(principal: Principal = Depends(get_principal), db: Session | None = Depends(get_db)) -> MeResponse:
+    """Answer from our own database only.
+
+    Every page load hits this to decide signed-in chrome, so it must not wait on a
+    Stripe round trip. Subscription state arrives via webhooks; clients that show
+    billing detail reconcile with POST /api/billing/sync in the background.
+    """
     settings = get_settings()
     user = principal.user
     billing = dict(billing_status(settings))
-    if user is not None and db is not None:
-        billing.update(sync_user_subscription(db, user))
     plan = get_plan(user.plan) if user is not None else principal.plan
     api_plan = get_api_plan(getattr(user, "api_plan", None) if user is not None else None)
     return MeResponse(

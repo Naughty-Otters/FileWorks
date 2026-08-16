@@ -12,9 +12,7 @@ import {
   fetchHistory,
   fetchHistoryDetail,
   fetchHistoryFile,
-  fetchMe,
   isAbortError,
-  refreshSession,
   DEFAULT_EXTRACT_OPTIONS,
   type ExtractOptions,
   type ExtractResponse,
@@ -29,7 +27,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UploadPanel } from "@/components/upload-panel";
 import { prefetchHeavyUi } from "@/lib/prefetch";
-import { scheduleTokenRefresh, type MeResponse } from "@/lib/auth";
+import { reloadSession, useSession } from "@/lib/session";
 import { aiQuotaLeft } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 import {
@@ -49,6 +47,7 @@ export function Workspace() {
   const [result, setResult] = useState<ExtractResponse | null>(null);
   const [view, setView] = useState<"markdown" | "json">("markdown");
   const [loading, setLoading] = useState(false);
+  const [busyKind, setBusyKind] = useState<"convert" | "restore">("convert");
   const [error, setError] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -65,8 +64,8 @@ export function Workspace() {
   const convertAbortRef = useRef<AbortController | null>(null);
   const convertRunIdRef = useRef<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
-  const [me, setMe] = useState<MeResponse | null>(null);
-  const [meLoaded, setMeLoaded] = useState(false);
+  const { status: authStatus, me, displayUser } = useSession();
+  const meLoaded = authStatus !== "unknown" && me !== null;
   const historyUserRef = useRef<string | null | undefined>(undefined);
 
   const refreshHistory = useCallback(async () => {
@@ -141,21 +140,6 @@ export function Workspace() {
         }
       });
     refreshHistory();
-    fetchMe()
-      .then((data) => {
-        if (active) setMe(data);
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        if (active) setMeLoaded(true);
-      });
-    scheduleTokenRefresh(async () => {
-      const ok = await refreshSession();
-      if (ok) {
-        const data = await fetchMe().catch(() => null);
-        if (data) setMe(data);
-      }
-    });
     return () => {
       active = false;
     };
@@ -271,6 +255,7 @@ export function Workspace() {
     convertAbortRef.current = controller;
     const runId = newRunId();
     convertRunIdRef.current = runId;
+    setBusyKind("convert");
     setLoading(true);
     setError(null);
     try {
@@ -286,8 +271,7 @@ export function Workspace() {
       if (!data.markdown && data.json) setView("json");
       else setView("markdown");
       await refreshHistory();
-      const nextMe = await fetchMe().catch(() => null);
-      if (nextMe) setMe(nextMe);
+      await reloadSession().catch(() => undefined);
     } catch (err) {
       if (isAbortError(err) || controller.signal.aborted) {
         setError(null);
@@ -319,6 +303,7 @@ export function Workspace() {
   }
 
   async function handleSelectHistory(id: string) {
+    setBusyKind("restore");
     setLoading(true);
     setError(null);
     setActiveRegionId(null);
@@ -395,7 +380,7 @@ export function Workspace() {
                 <WifiOff size={14} />
               </span>
             ) : null}
-            <AuthBar me={me} />
+            <AuthBar me={me} status={authStatus} user={displayUser} />
             <ThemeToggle className="h-8 w-8" />
           </div>
         </div>
@@ -431,6 +416,10 @@ export function Workspace() {
             <ResultPanel
               result={result}
               loading={loading}
+              busyLabel={
+                busyKind === "restore" ? "Opening your document…" : "Converting your file…"
+              }
+              busyHint={busyKind === "restore" ? null : "Use Stop to cancel"}
               error={error}
               view={view}
               onViewChange={setView}
@@ -475,7 +464,7 @@ export function Workspace() {
                 selectedId={selectedId}
                 loading={historyLoading}
                 storageBackend={storageBackend}
-                requiresLogin={!me?.permissions?.["history.read"]}
+                requiresLogin={authStatus === "guest" || (me != null && !me.permissions?.["history.read"])}
                 onSelect={handleSelectHistory}
                 onDelete={handleDeleteHistory}
                 onCollapse={() => setHistoryOpen(false)}

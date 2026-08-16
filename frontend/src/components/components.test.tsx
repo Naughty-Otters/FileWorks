@@ -1,5 +1,5 @@
 import { createRef } from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HistoryPanel } from "@/components/history-panel";
 import { MarkdownToolbar, ShowMarkdownToolbarButton } from "@/components/markdown-toolbar";
@@ -471,6 +471,29 @@ describe("ConvertControls", () => {
 });
 
 describe("AuthBar", () => {
+  const ada = { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" };
+
+  it("shows neither state until the session is known", () => {
+    render(<AuthBar me={null} status="unknown" user={null} />);
+    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Account" })).not.toBeInTheDocument();
+  });
+
+  it("paints the cached avatar before the profile arrives", () => {
+    render(<AuthBar me={null} status="signed-in" user={ada} />);
+    expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/profile");
+    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+  });
+
+  it("keeps initials behind the photo so the circle is never blank", () => {
+    render(
+      <AuthBar me={null} status="signed-in" user={{ ...ada, picture_url: "https://example.com/a.png" }} />,
+    );
+    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(document.querySelector('img[src="https://example.com/a.png"]')).toBeInTheDocument();
+  });
+
   it("links guests to the login page without an inline Google button", () => {
     render(<AuthBar me={{ ...guestMe, google_client_id: "cid.apps.googleusercontent.com" }} />);
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
@@ -1347,6 +1370,57 @@ describe("ResultPanel", () => {
     expect(screen.getByText("boom")).toBeInTheDocument();
     rerender(<ResultPanel result={null} loading error={null} view="markdown" onViewChange={vi.fn()} />);
     expect(screen.getByText(/Converting your file/)).toBeInTheDocument();
+  });
+
+  it("shows a progress indicator only while a run is active", () => {
+    const { rerender } = render(
+      <ResultPanel result={null} loading={false} error={null} view="markdown" onViewChange={vi.fn()} />,
+    );
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    rerender(<ResultPanel result={null} loading error={null} view="markdown" onViewChange={vi.fn()} />);
+    expect(screen.getByRole("progressbar")).toHaveAccessibleName("Converting your file…");
+    expect(screen.getByText("Use Stop to cancel")).toBeInTheDocument();
+  });
+
+  it("labels the indicator for the running operation", () => {
+    render(
+      <ResultPanel
+        result={null}
+        loading
+        busyLabel="Opening your document…"
+        busyHint={null}
+        error={null}
+        view="markdown"
+        onViewChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("progressbar")).toHaveAccessibleName("Opening your document…");
+    expect(screen.queryByText(/Use Stop to cancel/)).not.toBeInTheDocument();
+  });
+
+  it("counts elapsed time up while converting and resets after", () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = render(
+        <ResultPanel result={null} loading error={null} view="markdown" onViewChange={vi.fn()} />,
+      );
+      expect(screen.getByText("Use Stop to cancel")).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(screen.getByText("3s elapsed · Use Stop to cancel")).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(60000);
+      });
+      expect(screen.getByText("1m 03s elapsed · Use Stop to cancel")).toBeInTheDocument();
+      rerender(
+        <ResultPanel result={null} loading={false} error={null} view="markdown" onViewChange={vi.fn()} />,
+      );
+      rerender(<ResultPanel result={null} loading error={null} view="markdown" onViewChange={vi.fn()} />);
+      expect(screen.getByText("Use Stop to cancel")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("shows five line-pages then swaps to the next set", async () => {

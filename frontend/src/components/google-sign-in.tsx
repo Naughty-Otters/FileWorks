@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { loginWithGoogle, type MeResponse } from "@/lib/api";
 import { loadGoogleIdentity } from "@/lib/google-gis";
+import { setSessionMe } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 type GoogleSignInProps = {
@@ -52,6 +53,9 @@ export function GoogleSignIn({
             setError(null);
             try {
               const me = await loginWithGoogle(response.credential);
+              // Publish before navigating so the next page paints the avatar
+              // from cache instead of starting out as a guest.
+              setSessionMe(me);
               onSignedInRef.current(me);
             } catch (err) {
               setError(err instanceof Error ? err.message : "Google sign-in failed");

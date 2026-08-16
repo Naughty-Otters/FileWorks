@@ -5,9 +5,20 @@ import {
   clearSession,
   getAccessToken,
   getRefreshToken,
+  hasStoredSession,
+  readSessionHint,
   scheduleTokenRefresh,
   setSession,
+  writeSessionHint,
+  type MeResponse,
 } from "@/lib/auth";
+import {
+  clearSessionState,
+  getSessionState,
+  reloadSession,
+  resetSessionStore,
+  setSessionMe,
+} from "@/lib/session";
 import {
   loadSessionFile,
   saveSessionFile,
@@ -15,6 +26,7 @@ import {
   saveWorkspacePrefs,
 } from "@/lib/workspace-session";
 import { formatFileProviders, getApiBase, isAbortError, downloadTextFile } from "@/lib/api";
+import * as api from "@/lib/api";
 import { renderMarkdownToHtml } from "@/lib/markdown-to-html";
 import { markdownToHtml } from "@/lib/markdown-runtime";
 import {
@@ -122,6 +134,123 @@ describe("auth and user id", () => {
     vi.advanceTimersByTime(1000);
     expect(fn).toHaveBeenCalled();
     vi.useRealTimers();
+  });
+
+  it("roundtrips the display hint and drops it with the session", () => {
+    expect(readSessionHint()).toBeNull();
+    expect(hasStoredSession()).toBe(false);
+    setSession("acc", "ref");
+    expect(hasStoredSession()).toBe(true);
+    writeSessionHint({ id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" });
+    expect(readSessionHint()?.name).toBe("Ada");
+    clearSession();
+    expect(readSessionHint()).toBeNull();
+    expect(hasStoredSession()).toBe(false);
+  });
+
+  it("ignores a corrupt or half-written hint", () => {
+    window.localStorage.setItem("fileworks.session_hint", "{not json");
+    expect(readSessionHint()).toBeNull();
+    window.localStorage.setItem("fileworks.session_hint", JSON.stringify({ name: "Ada" }));
+    expect(readSessionHint()).toBeNull();
+  });
+});
+
+const signedInMe: MeResponse = {
+  user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
+  plan: "pro",
+  permissions: { extract: true },
+  quota: {
+    used_day: 0,
+    used_month: 0,
+    limit_day: 10,
+    limit_month: null,
+    remaining_day: 10,
+    remaining_month: null,
+    used_ai_day: 0,
+    used_ai_month: 0,
+    limit_ai_day: null,
+    limit_ai_month: null,
+    remaining_ai_day: null,
+    remaining_ai_month: null,
+  },
+  google_client_id: null,
+};
+
+describe("session store", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetSessionStore();
+  });
+
+  it("reports a stored token as signed in before the API answers", () => {
+    setSession("acc", "ref");
+    writeSessionHint(signedInMe.user!);
+    const state = getSessionState();
+    expect(state.status).toBe("signed-in");
+    expect(state.me).toBeNull();
+    expect(state.hint?.name).toBe("Ada");
+  });
+
+  it("reports no token as a guest without any request", () => {
+    expect(getSessionState().status).toBe("guest");
+  });
+
+  it("drops a hint left behind without a token", () => {
+    writeSessionHint(signedInMe.user!);
+    expect(getSessionState().status).toBe("guest");
+    expect(readSessionHint()).toBeNull();
+  });
+
+  it("shares one request across concurrent callers", async () => {
+    const fetchMe = vi.spyOn(api, "fetchMe").mockResolvedValue(signedInMe);
+    const [a, b] = await Promise.all([reloadSession(), reloadSession()]);
+    expect(fetchMe).toHaveBeenCalledTimes(1);
+    expect(a).toBe(b);
+    expect(getSessionState().status).toBe("signed-in");
+    expect(readSessionHint()?.email).toBe("a@b.co");
+  });
+
+  it("signs out on a rejected credential", async () => {
+    setSession("acc", "ref");
+    writeSessionHint(signedInMe.user!);
+    vi.spyOn(api, "fetchMe").mockRejectedValue(new api.ApiError(401, "expired"));
+    await expect(reloadSession()).rejects.toThrow("expired");
+    expect(getSessionState().status).toBe("guest");
+    expect(readSessionHint()).toBeNull();
+  });
+
+  it("keeps the signed-in header when the network fails", async () => {
+    setSession("acc", "ref");
+    writeSessionHint(signedInMe.user!);
+    vi.spyOn(api, "fetchMe").mockRejectedValue(new Error("offline"));
+    await expect(reloadSession()).rejects.toThrow("offline");
+    expect(getSessionState().status).toBe("signed-in");
+    expect(readSessionHint()?.name).toBe("Ada");
+  });
+
+  it("goes back to guest on sign out", () => {
+    setSession("acc", "ref");
+    setSessionMe(signedInMe);
+    expect(getSessionState().status).toBe("signed-in");
+    clearSessionState();
+    expect(getSessionState().status).toBe("guest");
+    expect(getSessionState().me).toBeNull();
+    expect(readSessionHint()).toBeNull();
+  });
+
+  it("does not let a slow load overwrite a newer result", async () => {
+    let release: (me: MeResponse) => void = () => undefined;
+    vi.spyOn(api, "fetchMe").mockReturnValue(
+      new Promise<MeResponse>((resolve) => {
+        release = resolve;
+      }),
+    );
+    const pending = reloadSession();
+    setSessionMe({ ...signedInMe, plan: "premium" });
+    release(signedInMe);
+    await pending;
+    expect(getSessionState().me?.plan).toBe("premium");
   });
 });
 

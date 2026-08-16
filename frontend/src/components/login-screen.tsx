@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchMe, type MeResponse } from "@/lib/api";
 import { getAccessToken } from "@/lib/auth";
+import { reloadSession, useSession } from "@/lib/session";
 import { resolveGoogleClientId } from "@/lib/google-gis";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -38,14 +38,13 @@ function redirectAfterLogin() {
 }
 
 export function LoginScreen() {
-  const [me, setMe] = useState<MeResponse | null>(null);
+  const { me } = useSession();
   const [sessionReady, setSessionReady] = useState(false);
   const clientId = resolveGoogleClientId(me?.google_client_id);
 
   useEffect(() => {
-    void fetchMe()
+    void reloadSession()
       .then((session) => {
-        setMe(session);
         if (session.user) redirectAfterLogin();
       })
       .catch(() => undefined)
@@ -58,7 +57,7 @@ export function LoginScreen() {
   useEffect(() => {
     function recheck() {
       if (document.visibilityState === "hidden" || !getAccessToken()) return;
-      void fetchMe()
+      void reloadSession()
         .then((session) => {
           if (session.user) redirectAfterLogin();
         })

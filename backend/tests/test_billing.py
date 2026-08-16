@@ -873,7 +873,7 @@ class BillingRouteTests(unittest.TestCase):
             bad = TestClient(self._app(user)).post("/api/billing/confirm", json={"session_id": "cs_bad"})
         self.assertEqual(bad.status_code, 400)
 
-    def test_me_syncs_cancel_at_period_end(self) -> None:
+    def test_sync_reports_cancel_at_period_end(self) -> None:
         user = _user("pro")
         user.stripe_customer_id = "cus_1"
         user.stripe_subscription_id = "sub_1"
@@ -892,12 +892,30 @@ class BillingRouteTests(unittest.TestCase):
             "app.api.auth_routes.get_settings", return_value=settings
         ), patch("app.billing.stripe._stripe_mod", return_value=stripe):
             client = TestClient(self._app(user))
+            res = client.post("/api/billing/sync")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["plan"], "pro")
+        self.assertTrue(res.json()["cancel_at_period_end"])
+        self.assertTrue(res.json()["current_period_end"])
+
+    def test_me_never_calls_stripe(self) -> None:
+        """Session checks gate the signed-in UI, so they must not wait on Stripe."""
+        user = _user("pro")
+        user.stripe_customer_id = "cus_1"
+        user.stripe_subscription_id = "sub_1"
+        stripe = MagicMock()
+        settings = _settings()
+        with patch("app.billing.stripe.get_settings", return_value=settings), patch(
+            "app.api.auth_routes.get_settings", return_value=settings
+        ), patch("app.billing.stripe._stripe_mod", return_value=stripe):
+            client = TestClient(self._app(user))
             res = client.get("/api/me")
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["plan"], "pro")
         self.assertTrue(res.json()["billing"]["enabled"])
-        self.assertTrue(res.json()["billing"]["cancel_at_period_end"])
-        self.assertTrue(res.json()["billing"]["current_period_end"])
+        stripe.Subscription.retrieve.assert_not_called()
+        stripe.Subscription.list.assert_not_called()
+        stripe.Customer.list.assert_not_called()
 
     def test_portal_picks_email_customer_with_active_sub(self) -> None:
         user = _user("pro")

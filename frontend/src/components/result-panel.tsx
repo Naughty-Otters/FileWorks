@@ -32,6 +32,8 @@ import { RegionList } from "@/components/region-overlay";
 type ResultPanelProps = {
   result: ExtractResponse | null;
   loading: boolean;
+  busyLabel?: string;
+  busyHint?: string | null;
   error: string | null;
   view: "markdown" | "json";
   onViewChange: (view: "markdown" | "json") => void;
@@ -59,9 +61,32 @@ const DOWNLOAD_OPTIONS: Array<{ id: DownloadFormat | "pdf"; label: string }> = [
   { id: "pdf", label: "PDF (print)" },
 ];
 
+function formatElapsed(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, "0")}s`;
+}
+
+/** Counts up while a run is active and resets when it ends. */
+function useElapsedSeconds(active: boolean): number {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!active) return;
+    const timer = window.setInterval(() => setSeconds((value) => value + 1), 1000);
+    return () => {
+      window.clearInterval(timer);
+      setSeconds(0);
+    };
+  }, [active]);
+
+  return seconds;
+}
+
 export function ResultPanel({
   result,
   loading,
+  busyLabel = "Converting your file…",
+  busyHint = "Use Stop to cancel",
   error,
   view,
   onViewChange,
@@ -84,6 +109,7 @@ export function ResultPanel({
   const [pageStart, setPageStart] = useState(0);
   const previewRef = useRef<MarkdownPreviewHandle>(null);
   const sourceRef = useRef<HTMLTextAreaElement>(null);
+  const elapsed = useElapsedSeconds(loading);
 
   const sourceMarkdown = result?.markdown?.trim() || "";
   const markdown = markdownDraft || sourceMarkdown;
@@ -295,11 +321,26 @@ export function ResultPanel({
             />
           ) : null}
           {loading ? (
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-[var(--ink-muted)]">
-              <Loader2 size={28} className="animate-spin text-[var(--accent)]" />
-              <p className="animate-pulse-soft text-sm">Converting your file…</p>
-              <p className="text-xs text-[var(--ink-muted)]">Use Stop to cancel</p>
-            </div>
+            <>
+              <div
+                role="progressbar"
+                aria-label={busyLabel}
+                className="progress-indeterminate h-0.5 w-full shrink-0"
+              />
+              <div
+                aria-live="polite"
+                aria-busy
+                className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-[var(--ink-muted)]"
+              >
+                <Loader2 size={28} className="animate-spin text-[var(--accent)]" />
+                <p className="animate-pulse-soft text-sm">{busyLabel}</p>
+                <p className="text-xs tabular-nums text-[var(--ink-muted)]">
+                  {[elapsed > 0 ? `${formatElapsed(elapsed)} elapsed` : null, busyHint]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+            </>
           ) : error ? (
             <div className="flex min-h-0 flex-1 items-center justify-center px-8 text-center">
               <p className="max-w-md text-sm text-[var(--danger)]">{error}</p>

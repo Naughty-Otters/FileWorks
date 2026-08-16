@@ -13,8 +13,8 @@ import {
   startCheckout,
   syncBilling,
   type BillingCatalog,
-  type MeResponse,
 } from "@/lib/api";
+import { reloadSession, setSessionMe, useSession } from "@/lib/session";
 import { API_PLAN_CATALOG, apiPlanSwitchLabel, canMoveToApiPlan, formatPlanPrice, PLAN_CATALOG, planIsPurchasable, planSwitchLabel, PRICE_ROLES, usageFitsPlan, usageOverLimitReasons } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +23,7 @@ function loginNext(path: string) {
 }
 
 export function PricingPage() {
-  const [me, setMe] = useState<MeResponse | null>(null);
+  const { status: authStatus, me, displayUser } = useSession();
   const [catalog, setCatalog] = useState<BillingCatalog | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -31,8 +31,7 @@ export function PricingPage() {
   const handledReturn = useRef(false);
 
   useEffect(() => {
-    void Promise.all([fetchMe(), fetchBillingCatalog().catch(() => null)]).then(async ([session, cat]) => {
-      setMe(session);
+    void Promise.all([reloadSession(), fetchBillingCatalog().catch(() => null)]).then(async ([session, cat]) => {
       setCatalog(cat);
       if (handledReturn.current) return;
       const params = new URLSearchParams(window.location.search);
@@ -40,7 +39,7 @@ export function PricingPage() {
         handledReturn.current = true;
         try {
           const next = await syncBilling();
-          setMe(next);
+          setSessionMe(next);
           setNotice(
             next.billing?.cancel_at_period_end
               ? "Billing updated. This role stays until the period ends, then Basic."
@@ -57,12 +56,12 @@ export function PricingPage() {
         if (sessionId && session.user) {
           try {
             await confirmCheckout(sessionId);
-            setMe(await syncBilling().catch(() => fetchMe()));
+            setSessionMe(await syncBilling().catch(() => fetchMe()));
             setNotice("Payment received. Your role is updated.");
             return;
           } catch {
             try {
-              setMe(await syncBilling());
+              setSessionMe(await syncBilling());
             } catch {
               // Webhook may still apply the role.
             }
@@ -88,7 +87,7 @@ export function PricingPage() {
         handledReturn.current = true;
         await goCheckout(subscribe);
       }
-    });
+    }).catch(() => undefined);
   }, []);
 
   async function goCheckout(plan: string) {
@@ -121,7 +120,12 @@ export function PricingPage() {
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
           <BrandLockup />
           <MarketingNav>
-            <AuthBar me={me} loginHref={loginNext("/pricing")} />
+            <AuthBar
+              me={me}
+              status={authStatus}
+              user={displayUser}
+              loginHref={loginNext("/pricing")}
+            />
             <ThemeToggle className="h-8 w-8" />
           </MarketingNav>
         </div>
