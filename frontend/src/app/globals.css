@@ -14,6 +14,19 @@
   --glow: rgba(15, 110, 86, 0.18);
   --shadow: 0 18px 50px rgba(28, 36, 32, 0.08);
   --grid: rgba(28, 36, 32, 0.045);
+
+  /* GitHub uses the OS monospace font, not a webfont. Matching it is the point
+     of the code blocks looking "like GitHub". */
+  --font-code: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  /* GitHub Light syntax palette. */
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
+  --code-border: #d1d9e0;
+  --code-header-bg: #f6f8fa;
+  --code-kw: #cf222e;
+  --code-str: #0a3069;
+  --code-cmt: #6e7781;
 }
 
 .dark {
@@ -30,6 +43,15 @@
   --glow: rgba(62, 207, 154, 0.16);
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
   --grid: rgba(232, 239, 233, 0.035);
+
+  /* GitHub Dark ("dark default") syntax palette. */
+  --code-bg: #0d1117;
+  --code-fg: #e6edf3;
+  --code-border: #30363d;
+  --code-header-bg: #161b22;
+  --code-kw: #ff7b72;
+  --code-str: #a5d6ff;
+  --code-cmt: #8b949e;
 }
 
 @theme inline {
@@ -446,13 +468,9 @@ body {
 
 .api-code {
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid var(--code-border);
   border-radius: 6px;
-  background: color-mix(in oklab, var(--bg-elevated) 92%, var(--ink) 5%);
-}
-
-.dark .api-code {
-  background: color-mix(in oklab, var(--bg-elevated) 88%, black 18%);
+  background: var(--code-bg);
 }
 
 .api-code-bar {
@@ -462,8 +480,8 @@ body {
   gap: 12px;
   min-height: 40px;
   padding: 0 12px;
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in oklab, var(--bg) 55%, var(--bg-elevated));
+  border-bottom: 1px solid var(--code-border);
+  background: var(--code-header-bg);
 }
 
 .api-code-meta {
@@ -476,16 +494,16 @@ body {
 .api-code-lang {
   font-size: 12px;
   font-weight: 600;
-  color: var(--ink-muted);
+  color: var(--code-cmt);
 }
 
 .api-code-file {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-code);
   font-size: 12px;
-  color: var(--ink);
+  color: var(--code-fg);
 }
 
 .api-code-copy {
@@ -493,12 +511,12 @@ body {
   flex-shrink: 0;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--code-border);
   border-radius: 6px;
-  background: var(--bg-elevated);
+  background: color-mix(in oklab, var(--code-bg) 60%, var(--bg-elevated));
   padding: 3px 8px;
   font-size: 12px;
-  color: var(--ink-muted);
+  color: var(--code-fg);
 }
 
 .api-code-copy:hover {
@@ -506,41 +524,37 @@ body {
   color: var(--accent-strong);
 }
 
+/* GitHub's code block metrics: 12px on the system mono stack, 1.45 line box. */
 .api-code pre {
   margin: 0;
   overflow-x: auto;
   padding: 16px;
-  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px;
+  font-family: var(--font-code);
+  font-size: 12px;
   line-height: 1.45;
-  color: var(--ink);
+  color: var(--code-fg);
   tab-size: 4;
+  -webkit-font-smoothing: auto;
 }
 
 .api-code code {
   font-family: inherit;
   font-size: inherit;
+  font-variant-ligatures: none;
   background: none;
   padding: 0;
   border-radius: 0;
+  color: inherit;
 }
 
 .api-code .tok-kw {
-  color: #cf222e;
-}
-
-.dark .api-code .tok-kw {
-  color: #ff7b72;
+  color: var(--code-kw);
 }
 
 .api-code .tok-str {
-  color: #0a3069;
-}
-
-.dark .api-code .tok-str {
-  color: #a5d6ff;
+  color: var(--code-str);
 }
 
 .api-code .tok-cmt {
-  color: var(--ink-muted);
+  color: var(--code-cmt);
 }
