@@ -184,11 +184,19 @@ class DocumentPipeline:
         format_id: str,
         title: str = "document",
         read_result: ReadResult | None = None,
+        source_bytes: bytes | None = None,
+        source_suffix: str | None = None,
     ) -> ExportArtifact:
         exporter = self.exporters.resolve(format_id)
         if not exporter.can_export(OutputKind.MARKDOWN):
             raise ValueError(f"Exporter '{exporter.id}' cannot export Markdown source")
-        return exporter.export(markdown=markdown, title=title, read_result=read_result)
+        return exporter.export(
+            markdown=markdown,
+            title=title,
+            read_result=read_result,
+            source_bytes=source_bytes,
+            source_suffix=source_suffix,
+        )
 
 
 _pipeline: DocumentPipeline | None = None

@@ -25,6 +25,8 @@ class FormatExporter(ABC):
         markdown: str,
         title: str = "document",
         read_result: ReadResult | None = None,
+        source_bytes: bytes | None = None,
+        source_suffix: str | None = None,
     ) -> ExportArtifact:
         """Build download bytes from Markdown (default pipeline output)."""
 

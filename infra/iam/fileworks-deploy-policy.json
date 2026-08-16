@@ -102,6 +102,54 @@
       "Effect": "Allow",
       "Action": ["sts:GetCallerIdentity"],
       "Resource": "*"
+    },
+    {
+      "Sid": "ServiceQuotas",
+      "Effect": "Allow",
+      "Action": [
+        "servicequotas:GetServiceQuota",
+        "servicequotas:GetAWSDefaultServiceQuota",
+        "servicequotas:ListServiceQuotas",
+        "servicequotas:RequestServiceQuotaIncrease",
+        "servicequotas:GetRequestedServiceQuotaChange",
+        "servicequotas:ListRequestedServiceQuotaChangeHistory",
+        "servicequotas:ListRequestedServiceQuotaChangeHistoryByQuota"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "LambdaAutoScaling",
+      "Effect": "Allow",
+      "Action": [
+        "application-autoscaling:RegisterScalableTarget",
+        "application-autoscaling:DeregisterScalableTarget",
+        "application-autoscaling:DescribeScalableTargets",
+        "application-autoscaling:PutScalingPolicy",
+        "application-autoscaling:DeleteScalingPolicy",
+        "application-autoscaling:DescribeScalingPolicies",
+        "application-autoscaling:DescribeScalingActivities",
+        "application-autoscaling:ListTagsForResource",
+        "application-autoscaling:TagResource",
+        "application-autoscaling:UntagResource",
+        "cloudwatch:PutMetricAlarm",
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:GetMetricData",
+        "cloudwatch:DeleteAlarms",
+        "cloudwatch:ListTagsForResource",
+        "cloudwatch:TagResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AutoScalingServiceLinkedRole",
+      "Effect": "Allow",
+      "Action": ["iam:CreateServiceLinkedRole"],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "iam:AWSServiceName": "lambda.application-autoscaling.amazonaws.com"
+        }
+      }
     }
   ]
 }

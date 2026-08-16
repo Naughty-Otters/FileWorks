@@ -43,9 +43,10 @@ class V1ConvertTests(unittest.TestCase):
         self.assertIn(".pdf", body["input_extensions"])
         self.assertIn(".txt", body["input_extensions"])
         target_ids = [item["id"] for item in body["targets"]]
-        self.assertEqual(target_ids, ["markdown", "txt", "html", "json", "pdf"])
+        self.assertEqual(target_ids, ["markdown", "txt", "html", "json", "docx", "png", "jpeg", "pdf"])
         pdf = next(item for item in body["targets"] if item["id"] == "pdf")
         self.assertFalse(pdf["available"])
+        self.assertTrue(next(item for item in body["targets"] if item["id"] == "docx")["available"])
         option_names = [item["name"] for item in body["options"]]
         self.assertIn("use_ai", option_names)
         self.assertIn("prefer_structure", option_names)
@@ -87,7 +88,7 @@ class V1ConvertTests(unittest.TestCase):
         client = TestClient(_app(principal))
         res = client.post(
             "/api/v1/convert",
-            data={"target": "docx"},
+            data={"target": "xlsx"},
             files={"file": ("note.txt", b"hello", "text/plain")},
         )
         self.assertEqual(res.status_code, 400)
@@ -159,3 +160,26 @@ class V1ConvertTests(unittest.TestCase):
         self.assertIn("text/plain", res.headers["content-type"])
         self.assertIn("attachment", res.headers["content-disposition"])
         self.assertIn(b"Hello", res.content)
+
+    def test_download_docx_and_png(self) -> None:
+        principal = _api_principal()
+        client = TestClient(_app(principal))
+        with patch(
+            "app.api.v1.convert.run_conversion",
+            new=AsyncMock(return_value={"markdown": "# Hello", "engine": "text", "page_count": 1}),
+        ):
+            docx = client.post(
+                "/api/v1/convert",
+                data={"target": "docx", "download": "true"},
+                files={"file": ("note.md", b"# Hello", "text/markdown")},
+            )
+            png = client.post(
+                "/api/v1/convert",
+                data={"target": "png", "download": "true"},
+                files={"file": ("note.md", b"# Hello", "text/markdown")},
+            )
+        self.assertEqual(docx.status_code, 200)
+        self.assertTrue(docx.content.startswith(b"PK"))
+        self.assertIn("attachment", docx.headers["content-disposition"])
+        self.assertEqual(png.status_code, 200)
+        self.assertTrue(png.content.startswith(b"\x89PNG"))

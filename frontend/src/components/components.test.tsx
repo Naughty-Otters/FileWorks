@@ -943,8 +943,11 @@ describe("ApiPage", () => {
     const samples = document.querySelectorAll(".api-code");
     const sampleText = Array.from(samples).map((node) => node.textContent || "").join("\n");
     expect(sampleText).toContain('curl -s -H "Authorization: Bearer YOUR_API_KEY"');
+    expect(sampleText).toContain("-F download=true");
+    expect(sampleText).toContain("jq -r .markdown");
     expect(sampleText).toContain("import requests");
     expect(sampleText).toContain("const body = new FormData");
+    expect(screen.getByText("X-Api-Key")).toBeInTheDocument();
     expect(screen.getByText("POST")).toBeInTheDocument();
     expect(screen.getAllByText("/api/v1/convert").length).toBeGreaterThan(0);
   });
@@ -1153,6 +1156,9 @@ describe("ProfilePage", () => {
     render(<ProfilePage />);
     expect(await screen.findByRole("heading", { name: "API keys" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "API plan" })).toBeInTheDocument();
+    expect(screen.getByText("API credits this month")).toBeInTheDocument();
+    expect(screen.getAllByText(/0 \/ 100 this month/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Convert API: 100 credits \/ month/)).toBeInTheDocument();
     await user.type(screen.getByPlaceholderText("Key name (optional)"), "CI");
     await user.click(screen.getByRole("button", { name: "Generate key" }));
     expect(api.createApiKey).toHaveBeenCalledWith("CI");

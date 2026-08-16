@@ -94,6 +94,7 @@ class ConvertResponse(BaseModel):
     media_type: str
     markdown: str
     content: str
+    content_encoding: str = "utf-8"
     options: ConvertAppliedOptions
     engine: str
     page_count: int

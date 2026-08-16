@@ -21,11 +21,16 @@ FRONTEND_DIR = ROOT_DIR / "frontend"
 DEFAULT_REGION = "us-east-1"
 DEFAULT_DATABASE_URL = "postgresql+psycopg://fileworks:fileworks@127.0.0.1:5432/fileworks"
 POLICY_NAME = "FileWorksDeploy"
+LAMBDA_CONCURRENT_SERVICE = "lambda"
+LAMBDA_CONCURRENT_QUOTA_CODE = "L-B99A9384"
+DEFAULT_LAMBDA_ACCOUNT_CONCURRENCY = 1000
 
 REQUIRED_IAM_ACTIONS = (
     "lambda:CreateFunction",
     "lambda:UpdateFunctionCode",
     "lambda:CreateFunctionUrlConfig",
+    "lambda:PublishVersion",
+    "lambda:UpdateAlias",
     "iam:PassRole",
     "iam:CreateRole",
     "ecr:CreateRepository",
@@ -33,6 +38,9 @@ REQUIRED_IAM_ACTIONS = (
     "s3:CreateBucket",
     "secretsmanager:CreateSecret",
     "logs:CreateLogGroup",
+    "servicequotas:GetServiceQuota",
+    "servicequotas:RequestServiceQuotaIncrease",
+    "application-autoscaling:RegisterScalableTarget",
 )
 
 SECRET_ENV_PREFIXES = (

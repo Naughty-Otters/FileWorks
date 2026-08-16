@@ -9,14 +9,16 @@ resource "aws_cloudwatch_log_group" "llm" {
 }
 
 resource "aws_lambda_function" "api" {
-  function_name = "${local.name_prefix}-api"
-  role          = aws_iam_role.lambda.arn
-  package_type  = "Image"
-  image_uri     = local.image_uri
-  architectures = ["x86_64"]
-  memory_size   = var.lambda_memory_mb
-  timeout       = var.lambda_timeout_s
-  description   = "FileWorks conversion API (${var.environment})"
+  function_name                  = "${local.name_prefix}-api"
+  role                           = aws_iam_role.lambda.arn
+  package_type                   = "Image"
+  image_uri                      = local.image_uri
+  architectures                  = ["x86_64"]
+  memory_size                    = var.lambda_memory_mb
+  timeout                        = var.lambda_timeout_s
+  publish                        = true
+  reserved_concurrent_executions = var.lambda_reserved_concurrency
+  description                    = "FileWorks conversion API (${var.environment})"
 
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
@@ -65,6 +67,14 @@ resource "aws_lambda_function" "api" {
   ]
 }
 
+# Traffic alias: provisioned concurrency cannot target $LATEST.
+resource "aws_lambda_alias" "api_live" {
+  name             = "live"
+  function_name    = aws_lambda_function.api.function_name
+  function_version = aws_lambda_function.api.version
+  description      = "Function URL and provisioned-concurrency autoscaling"
+}
+
 # No `cors` block on purpose: FastAPI's CORSMiddleware already answers with
 # Access-Control-Allow-Origin (from CORS_ORIGINS). Setting it here too makes the
 # Function URL append a second value, which browsers reject.
@@ -73,17 +83,28 @@ resource "aws_lambda_function_url" "api" {
   authorization_type = "NONE"
 }
 
+# Alias URL for autoscaling. `lambda_url` / `api_url` point here; the $LATEST
+# URL above stays so the Cloudflare Worker origin does not 502 mid-apply.
+# After `fw frontend` is using this URL, the $LATEST URL can be removed.
+resource "aws_lambda_function_url" "api_live" {
+  function_name      = aws_lambda_function.api.function_name
+  qualifier          = aws_lambda_alias.api_live.name
+  authorization_type = "NONE"
+}
+
 # Same image, no VPC — public HTTPS to LLM vendors. Invoked by the API Lambda
 # through the Lambda interface VPC endpoint (not a Function URL, which needs NAT).
 resource "aws_lambda_function" "llm" {
-  function_name = "${local.name_prefix}-llm"
-  role          = aws_iam_role.lambda.arn
-  package_type  = "Image"
-  image_uri     = local.image_uri
-  architectures = ["x86_64"]
-  memory_size   = var.lambda_memory_mb
-  timeout       = var.lambda_timeout_s
-  description   = "FileWorks vision LLM + translation (${var.environment})"
+  function_name                  = "${local.name_prefix}-llm"
+  role                           = aws_iam_role.lambda.arn
+  package_type                   = "Image"
+  image_uri                      = local.image_uri
+  architectures                  = ["x86_64"]
+  memory_size                    = var.lambda_memory_mb
+  timeout                        = var.lambda_timeout_s
+  publish                        = true
+  reserved_concurrent_executions = var.lambda_reserved_concurrency
+  description                    = "FileWorks vision LLM + translation (${var.environment})"
 
   image_config {
     command = ["python", "-m", "awslambdaric", "app.lambda_worker.handler"]

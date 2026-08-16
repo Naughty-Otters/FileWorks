@@ -397,6 +397,38 @@ class PrincipalTests(unittest.TestCase):
             get_principal(Req(), db=db)  # type: ignore[arg-type]
         self.assertEqual(ctx.exception.status_code, 401)
 
+    def test_raw_api_key_without_bearer(self) -> None:
+        user = SimpleNamespace(id=uuid4(), plan="pro", api_plan="api_free")
+        key = SimpleNamespace(user_id=user.id)
+
+        class Req:
+            headers = {"authorization": "fw_live_rawKeyWithoutBearer"}
+
+        db = MagicMock()
+        db.get.return_value = user
+        with patch("app.auth.deps.lookup_api_key", return_value=key), patch(
+            "app.auth.deps.touch_api_key"
+        ):
+            principal = get_principal(Req(), db=db)  # type: ignore[arg-type]
+        self.assertTrue(principal.via_api_key)
+        self.assertEqual(principal.user_id, user.id)
+
+    def test_x_api_key_header(self) -> None:
+        user = SimpleNamespace(id=uuid4(), plan="basic", api_plan="api_free")
+        key = SimpleNamespace(user_id=user.id)
+
+        class Req:
+            headers = {"x-api-key": "fw_live_fromXApiKeyHeader"}
+
+        db = MagicMock()
+        db.get.return_value = user
+        with patch("app.auth.deps.lookup_api_key", return_value=key), patch(
+            "app.auth.deps.touch_api_key"
+        ):
+            principal = get_principal(Req(), db=db)  # type: ignore[arg-type]
+        self.assertTrue(principal.via_api_key)
+        self.assertEqual(principal.plan.id, "basic")
+
 
 class PublicSchemaTests(unittest.TestCase):
     def test_helpers_hide_stack_names(self) -> None:

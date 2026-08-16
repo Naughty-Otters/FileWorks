@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Check, ClipboardCopy } from "lucide-react";
 import { BrandLockup } from "@/components/brand-lockup";
 import { MarketingNav } from "@/components/marketing-nav";
 import { SiteFooter } from "@/components/site-footer";
@@ -9,21 +10,24 @@ import { fetchHealth, fetchMe, listApiKeys, type HealthResponse, type MeResponse
 import { resolveApiBase } from "@/lib/runtime-config";
 import { SUPPORT_EMAIL } from "@/lib/legal";
 
-const TOKEN_RE =
-  /(\/\/[^\n]*|#[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|https?:\/\/[^\s"'`\\]+|\b(?:import|from|as|with|open|print|const|await|fetch|then|return|true|false|new|console|curl)\b)/g;
+type CodeLang = "bash" | "python" | "javascript";
 
-function highlightCode(code: string): ReactNode[] {
-  const parts = code.split(TOKEN_RE);
+const KEYWORDS: Record<CodeLang, RegExp> = {
+  bash: /\b(?:curl|jq)\b/,
+  python: /\b(?:import|from|as|with|open|print|assert|True|False|None|return|def|class)\b/,
+  javascript: /\b(?:const|let|var|await|async|fetch|return|true|false|new|console|then|function)\b/,
+};
+
+function highlightCode(code: string, lang: CodeLang): ReactNode[] {
+  const comment = lang === "javascript" ? /\/\/[^\n]*/ : /(?:^|(?<=\s))#[^\n]*/;
+  const tokenRe = new RegExp(
+    `(${comment.source}|"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'|\`(?:\\\\.|[^\`\\\\])*\`|${KEYWORDS[lang].source})`,
+    "gm",
+  );
+  const parts = code.split(tokenRe);
   return parts.map((part, index) => {
     if (!part) return <Fragment key={index} />;
-    if (/^https?:\/\//.test(part)) {
-      return (
-        <a key={index} href={part} className="tok-url">
-          {part}
-        </a>
-      );
-    }
-    if (part.startsWith("//") || part.startsWith("#")) {
+    if ((lang === "javascript" && part.startsWith("//")) || (lang !== "javascript" && /^\s*#/.test(part))) {
       return (
         <span key={index} className="tok-cmt">
           {part}
@@ -31,31 +35,13 @@ function highlightCode(code: string): ReactNode[] {
       );
     }
     if (/^["'`]/.test(part) && part.length >= 2) {
-      const quote = part[0];
-      const inner = part.slice(1, -1);
-      const urlMatch = inner.match(/https?:\/\/[^\s"'`\\]+/);
-      if (urlMatch) {
-        const url = urlMatch[0];
-        const at = inner.indexOf(url);
-        return (
-          <span key={index} className="tok-str">
-            {quote}
-            {inner.slice(0, at)}
-            <a href={url} className="tok-url">
-              {url}
-            </a>
-            {inner.slice(at + url.length)}
-            {quote}
-          </span>
-        );
-      }
       return (
         <span key={index} className="tok-str">
           {part}
         </span>
       );
     }
-    if (/^(import|from|as|with|open|print|const|await|fetch|then|return|true|false|new|console|curl)$/.test(part)) {
+    if (KEYWORDS[lang].test(part)) {
       return (
         <span key={index} className="tok-kw">
           {part}
@@ -66,28 +52,38 @@ function highlightCode(code: string): ReactNode[] {
   });
 }
 
-function CodeBlock({ label, code }: { label: string; code: string }) {
+function CodeBlock({
+  lang,
+  label,
+  code,
+}: {
+  lang: CodeLang;
+  label?: string;
+  code: string;
+}) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="api-code mt-3">
-      <div className="flex items-center justify-between border-b border-[var(--line)] px-3 py-1.5">
-        <p className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-          {label}
+      <div className="api-code-bar">
+        <p className="api-code-meta">
+          <span className="api-code-lang">{lang}</span>
+          {label ? <span className="api-code-file">{label}</span> : null}
         </p>
         <button
           type="button"
-          className="api-link text-[11px]"
+          className="api-code-copy"
           onClick={async () => {
             await navigator.clipboard.writeText(code);
             setCopied(true);
             window.setTimeout(() => setCopied(false), 1500);
           }}
         >
-          {copied ? "Copied" : "Copy"}
+          {copied ? <Check size={14} /> : <ClipboardCopy size={14} />}
+          {copied ? "Copied!" : "Copy"}
         </button>
       </div>
       <pre>
-        <code>{highlightCode(code)}</code>
+        <code>{highlightCode(code, lang)}</code>
       </pre>
     </div>
   );
@@ -159,11 +155,19 @@ export function ApiPage() {
   const examples = useMemo(() => {
     const auth = "YOUR_API_KEY";
     return {
-      curl: `curl -s -H "Authorization: Bearer ${auth}" \\
+      curlFile: `curl -s -H "Authorization: Bearer ${auth}" \\
   -F file=@report.pdf \\
   -F target=markdown \\
+  -F download=true \\
+  -o report.md \\
   ${apiBase}/api/v1/convert`,
+      curlJson: `curl -s -H "Authorization: Bearer ${auth}" \\
+  -F file=@report.pdf \\
+  -F target=markdown \\
+  ${apiBase}/api/v1/convert \\
+  | jq -r .markdown`,
       python: `import requests
+from pathlib import Path
 
 base = "${apiBase}"
 headers = {"Authorization": "Bearer ${auth}"}
@@ -179,7 +183,9 @@ with open("report.pdf", "rb") as fh:
         data={"target": "markdown", "use_ai": "false", "target_lang": "original"},
     )
 res.raise_for_status()
-print(res.json()["markdown"])`,
+markdown = res.json()["markdown"]
+Path("report.md").write_text(markdown, encoding="utf-8")
+print(markdown)`,
       js: `const base = "${apiBase}";
 const headers = { Authorization: "Bearer ${auth}" };
 
@@ -219,9 +225,11 @@ console.log(data.markdown);`,
           </h1>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             Upload a PDF, office file, image, or text file to{" "}
-            <code className="api-inline">POST /api/v1/convert</code>. The response is Markdown
-            plus an exported format. Create an API key on Profile. Workspace access tokens are not
-            accepted here.
+            <code className="api-inline">POST /api/v1/convert</code>. JSON includes{" "}
+            <code className="api-inline">markdown</code> and exported{" "}
+            <code className="api-inline">content</code>. Pass{" "}
+            <code className="api-inline">download=true</code> to write the converted file
+            instead. Create an API key on Profile. Workspace access tokens are not accepted here.
           </p>
         </div>
 
@@ -267,10 +275,13 @@ console.log(data.markdown);`,
         <section className="panel rounded-3xl px-5 py-5">
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Auth</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Send <code className="api-inline">Authorization: Bearer &lt;api_key&gt;</code>.
-            Keys start with <code className="api-inline">fw_live_</code> and do not expire. GET
-            catalog works without a key. POST convert bills page credits on your API plan, separate
-            from the workspace role.
+            Send <code className="api-inline">Authorization: Bearer fw_live_…</code>. A raw
+            key in <code className="api-inline">Authorization</code> or{" "}
+            <code className="api-inline">X-Api-Key</code> also works — do not omit the key, and
+            do not send a workspace Google token. Keys start with{" "}
+            <code className="api-inline">fw_live_</code> and do not expire. GET catalog works
+            without a key. POST convert bills page credits on your API plan, separate from the
+            workspace role.
           </p>
           {me?.user ? (
             <div className="mt-4">
@@ -297,13 +308,16 @@ console.log(data.markdown);`,
         <section className="panel rounded-3xl px-5 py-5">
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Examples</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Replace YOUR_API_KEY, then POST a real file. Call{" "}
-            <code className="api-inline">GET /api/v1/convert</code> first to see accepted
-            inputs and whether AI / translation are on.
+            Replace YOUR_API_KEY, then POST a real file. Default JSON embeds Markdown in{" "}
+            <code className="api-inline">markdown</code> (and the export in{" "}
+            <code className="api-inline">content</code>). Use{" "}
+            <code className="api-inline">download=true</code> to save the file, or pipe JSON
+            through <code className="api-inline">jq</code>.
           </p>
-          <CodeBlock label="curl" code={examples.curl} />
-          <CodeBlock label="Python" code={examples.python} />
-          <CodeBlock label="JavaScript" code={examples.js} />
+          <CodeBlock lang="bash" label="save file" code={examples.curlFile} />
+          <CodeBlock lang="bash" label="print markdown" code={examples.curlJson} />
+          <CodeBlock lang="python" code={examples.python} />
+          <CodeBlock lang="javascript" code={examples.js} />
         </section>
 
         <section className="panel overflow-x-auto rounded-3xl px-5 py-5">
@@ -347,7 +361,9 @@ console.log(data.markdown);`,
           <p className="mt-4 text-sm leading-6 text-[var(--ink-muted)]">
             Useful form fields: <code className="api-inline">target</code> (
             <code className="api-inline">markdown</code>, <code className="api-inline">txt</code>,{" "}
-            <code className="api-inline">html</code>, <code className="api-inline">json</code>),{" "}
+            <code className="api-inline">html</code>, <code className="api-inline">json</code>,{" "}
+            <code className="api-inline">docx</code>, <code className="api-inline">png</code>,{" "}
+            <code className="api-inline">jpeg</code>),{" "}
             <code className="api-inline">download=true</code> to get the file,{" "}
             <code className="api-inline">use_ai=true</code> for scans,{" "}
             <code className="api-inline">target_lang=en</code> to translate. Max upload is 50 MB.

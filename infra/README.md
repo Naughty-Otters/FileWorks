@@ -89,6 +89,35 @@ curl -sS -X POST "$API_URL/api/auth/google" \
 A fast `401 Invalid Google token: Token format` means egress is fine. A slow
 `401 ... timed out` means the NAT path is missing.
 
+## Concurrency and autoscaling
+
+Lambda **already scales on demand**. This account’s Concurrent executions quota
+(`L-B99A9384`) is **1000** — the AWS default. Requesting 100 is a decrease and
+AWS rejects it (`desired value greater than the default quota value of 1000`).
+
+A console value of **10** is almost always **reserved concurrency** on the
+function (a hard cap). This stack sets `lambda_reserved_concurrency = -1`
+(unreserved) so API and LLM share the 1000 pool.
+
+`fw lambda-quota` only requests an increase when the current quota is below
+the Terraform `lambda_account_concurrency` target (default 1000). You need a
+support request only if you want **more than 1000**.
+
+```bash
+./scripts/fw --env staging lambda-quota
+```
+
+Staging/prod also enable **provisioned-concurrency autoscaling** on the API
+`live` alias (`lambda_provisioned_min` / `max` in `envs/<env>.tfvars`). That
+keeps warm instances under load; it does **not** raise the account ceiling.
+Provisioned capacity counts against the same quota — leave headroom for the
+LLM function (one convert can use API + LLM at once).
+
+The API Function URL for new deploys is the `live` alias (required for
+provisioned concurrency). Apply also keeps the older `$LATEST` Function URL so
+the Cloudflare Worker does not 502 mid-cutover. Run `fw frontend` after apply
+so `api.<env>.fileworks.ai` points at the alias URL.
+
 ## IAM gap on this AWS account
 
 `zhenqi` can create S3/ECR/roles and read Secrets Manager, but **not** `lambda:*` or `iam:PassRole`. Attach the included policy first:
@@ -106,11 +135,13 @@ A fast `401 Invalid Google token: Token format` means egress is fine. A slow
 ./scripts/fw
 ```
 
-First-time path: **Attach deploy IAM policy** → **Full deploy**. That bootstraps Terraform state, builds/pushes the Lambda image, applies AWS, seeds secrets from `backend/.env`, then builds the UI and deploys it to Pages.
+First-time path: **Attach deploy IAM policy** → **Full deploy**. That bootstraps Terraform state, builds/pushes the Lambda image, applies AWS, seeds secrets from `backend/.env`, then builds the UI and deploys it to Pages. `lambda-quota` is optional: this account is already at the AWS default of 1000.
 
 Non-interactive:
 
 ```bash
+./scripts/fw attach-policy
+./scripts/fw --env staging lambda-quota   # no-op unless quota is below 1000
 ./scripts/fw --env dev full
 ./scripts/fw --env staging plan
 ./scripts/fw --env staging push-image   # RDS migrates on the next API Lambda boot

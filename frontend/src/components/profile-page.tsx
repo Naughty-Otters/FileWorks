@@ -192,6 +192,7 @@ export function ProfilePage() {
   const name = me.user.name || me.user.email;
   const initial = name.slice(0, 1).toUpperCase();
   const current = PLAN_CATALOG.find((plan) => plan.id === me.plan);
+  const currentApiPlan = API_PLAN_CATALOG.find((plan) => plan.id === (me.api_plan || "api_free"));
 
   return (
     <div className="app-shell relative">
@@ -235,6 +236,7 @@ export function ProfilePage() {
           <h1 className="font-[family-name:var(--font-display)] text-xl tracking-tight">Usage</h1>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
             {current?.quota || "Plan allowance for conversions."}
+            {currentApiPlan ? ` Convert API: ${currentApiPlan.quota}.` : ""}
           </p>
           <dl className="mt-5 space-y-4">
             {me.quota.limit_day != null ? (
@@ -306,7 +308,28 @@ export function ProfilePage() {
                 </div>
               </div>
             ) : null}
-            {me.quota.limit_day == null && me.quota.limit_month == null ? (
+            {me.api_quota ? (
+              <div>
+                <div className="flex justify-between text-sm">
+                  <dt>API credits this month</dt>
+                  <dd className="text-[var(--ink-muted)]">
+                    {usageLine(
+                      me.api_quota.used_credits,
+                      me.api_quota.limit_credits,
+                      me.api_quota.remaining_credits,
+                      "this month",
+                    )}
+                  </dd>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--accent)]"
+                    style={{ width: `${usagePercent(me.api_quota.used_credits, me.api_quota.limit_credits)}%` }}
+                  />
+                </div>
+              </div>
+            ) : null}
+            {me.quota.limit_day == null && me.quota.limit_month == null && !me.api_quota ? (
               <p className="text-sm text-[var(--ink-muted)]">No conversion quota on this plan.</p>
             ) : null}
           </dl>
@@ -500,10 +523,25 @@ export function ProfilePage() {
             with AI or translation. Unused credits do not roll over.
           </p>
           {me.api_quota ? (
-            <p className="mt-3 text-sm text-[var(--ink-muted)]">
-              {me.api_quota.used_credits} / {me.api_quota.limit_credits ?? "∞"} credits this month
-              {me.api_quota.remaining_credits != null ? ` · ${me.api_quota.remaining_credits} left` : ""}
-            </p>
+            <div className="mt-4">
+              <div className="flex justify-between text-sm">
+                <p>Credits this month</p>
+                <p className="text-[var(--ink-muted)]">
+                  {usageLine(
+                    me.api_quota.used_credits,
+                    me.api_quota.limit_credits,
+                    me.api_quota.remaining_credits,
+                    "this month",
+                  )}
+                </p>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
+                <div
+                  className="h-full rounded-full bg-[var(--accent)]"
+                  style={{ width: `${usagePercent(me.api_quota.used_credits, me.api_quota.limit_credits)}%` }}
+                />
+              </div>
+            </div>
           ) : null}
           {me.billing?.api_cancel_at_period_end ? (
             <p className="mt-2 text-sm text-[var(--ink-muted)]">

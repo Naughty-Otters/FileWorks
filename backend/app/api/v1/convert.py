@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import logging
 import uuid
 from pathlib import Path
@@ -131,7 +132,7 @@ async def convert_file(
     file: UploadFile = File(..., description="Source file bytes. Do not send an S3 key."),
     target: str = Form(
         default="markdown",
-        description="Output format: markdown (alias md), txt (alias text), html, or json. Default markdown.",
+        description="Output format: markdown, txt, html, json, docx, png, or jpeg. Default markdown.",
     ),
     download: bool | str = Form(
         default=False,
@@ -191,7 +192,7 @@ async def convert_file(
             status_code=401,
             detail={
                 "code": "api_key_required",
-                "message": "POST /api/v1/convert needs an API key. Create one on Profile.",
+                "message": "POST /api/v1/convert needs an API key (Authorization: Bearer fw_live_… or X-Api-Key). Create one on Profile.",
             },
         )
     api_plan = principal.api_plan or get_api_plan(getattr(principal.user, "api_plan", None))
@@ -290,6 +291,8 @@ async def convert_file(
                 markdown,
                 fmt=str(target_info["id"]),
                 title=title,
+                source_bytes=data,
+                source_suffix=suffix,
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -308,10 +311,12 @@ async def convert_file(
                 headers={"Content-Disposition": _content_disposition(out_name)},
             )
 
-        try:
-            content = exported.decode("utf-8")
-        except UnicodeDecodeError:
+        encoding = "utf-8"
+        if media_type.startswith("text/") or "json" in media_type:
             content = exported.decode("utf-8", errors="replace")
+        else:
+            content = base64.b64encode(exported).decode("ascii")
+            encoding = "base64"
 
         return ConvertResponse(
             id=document_id,
@@ -326,6 +331,7 @@ async def convert_file(
             media_type=media_type,
             markdown=markdown,
             content=content,
+            content_encoding=encoding,
             options=ConvertAppliedOptions(**options.to_dict()),
             engine=str(result.get("engine") or "unknown"),
             page_count=page_count,

@@ -20,8 +20,8 @@ Always call GET first. `available` / `allowed` on each option reflect this serve
 
 | | |
 |---|---|
-| Header | `Authorization: Bearer <api_key>` |
-| Key | Create on Profile. Prefix `fw_live_`. Does not expire until you revoke it. |
+| Header | `Authorization: Bearer fw_live_…` (recommended). Also accepted: raw `Authorization: fw_live_…` or `X-Api-Key: fw_live_…`. |
+| Key | Create on Profile. Prefix `fw_live_`. Does not expire until you revoke it. Workspace Google tokens are rejected. |
 | GET `/api/v1/convert` | Works without a key (guest catalog) |
 | POST `/api/v1/convert` | API key required. Workspace Google access tokens are rejected. |
 
@@ -84,6 +84,49 @@ curl -s -H "Authorization: Bearer fw_live_YOUR_API_KEY" \
   http://127.0.0.1:8000/api/v1/convert
 ```
 
+Print Markdown from that JSON (needs [jq](https://jqlang.github.io/jq/)):
+
+```bash
+curl -s -H "Authorization: Bearer fw_live_YOUR_API_KEY" \
+  -F file=@report.pdf \
+  -F target=markdown \
+  http://127.0.0.1:8000/api/v1/convert \
+  | jq -r .markdown
+```
+
+Save as Word:
+
+```bash
+curl -s -H "Authorization: Bearer fw_live_YOUR_API_KEY" \
+  -F file=@report.pdf \
+  -F target=docx \
+  -F download=true \
+  -o report.docx \
+  http://127.0.0.1:8000/api/v1/convert
+```
+
+Save as PNG (PDF/image sources are rasterized):
+
+```bash
+curl -s -H "Authorization: Bearer fw_live_YOUR_API_KEY" \
+  -F file=@report.pdf \
+  -F target=png \
+  -F download=true \
+  -o report.png \
+  http://127.0.0.1:8000/api/v1/convert
+```
+
+Save Markdown with no JSON wrapper:
+
+```bash
+curl -s -H "Authorization: Bearer fw_live_YOUR_API_KEY" \
+  -F file=@report.pdf \
+  -F target=markdown \
+  -F download=true \
+  -o report.md \
+  http://127.0.0.1:8000/api/v1/convert
+```
+
 Booleans accept `true` / `false` / `1` / `0` / `yes` / `no` / `on`.
 
 ### Form fields
@@ -91,7 +134,7 @@ Booleans accept `true` / `false` / `1` / `0` / `yes` / `no` / `on`.
 | Field | Type | Default | Required | Description |
 |---|---|---|---|---|
 | `file` | file | — | **yes** | Source document. Filename extension must be in the input list. |
-| `target` | enum | `markdown` | no | Output in `content`. Aliases: `md` → markdown, `text` → txt. |
+| `target` | enum | `markdown` | no | Output in `content`. Aliases: `md` → markdown, `text` → txt, `word` → docx, `jpg` → jpeg. Binary targets are base64 in JSON unless `download=true`. |
 | `download` | bool | `false` | no | If `true`, response is the file (`Content-Disposition: attachment`) instead of JSON. |
 | `use_ai` | bool | `false` | no | AI reading for images and scanned PDFs. Needs `capabilities.ai` and AI quota. |
 | `prefer_structure` | bool | `false` | no | PDF/scans try layout reading first; AnyDoc remains the fallback. Office still uses AnyDoc. |
@@ -134,9 +177,12 @@ Max size: `max_upload_mb` from GET (default 50 MB). Empty files are rejected.
 | `txt` | `text` | `.txt` | `text/plain; charset=utf-8` | yes |
 | `html` | | `.html` | `text/html; charset=utf-8` | yes |
 | `json` | | `.json` | `application/json; charset=utf-8` | yes |
+| `docx` | `word` | `.docx` | Word OOXML | yes |
+| `png` | | `.png` | `image/png` | yes — PDF/image sources are rasterized; other files render a Markdown preview |
+| `jpeg` | `jpg` | `.jpg` | `image/jpeg` | yes — same as PNG |
 | `pdf` | | `.pdf` | `application/pdf` | **no** — browser print in the app; use `html` |
 
-`docx` / `xlsx` / `pptx` are not output formats.
+`xlsx` / `pptx` are not output formats. For binary targets (`docx`, `png`, `jpeg`) prefer `download=true`; JSON puts the bytes in `content` as base64 (`content_encoding=base64`).
 
 ---
 
@@ -256,7 +302,8 @@ Markdown, defaults:
 ```bash
 curl -s -H "Authorization: Bearer fw_live_YOUR_API_KEY" \
   -F file=@notes.txt \
-  http://127.0.0.1:8000/api/v1/convert
+  http://127.0.0.1:8000/api/v1/convert \
+  | jq -r .markdown
 ```
 
 HTML + translation:
@@ -285,6 +332,7 @@ Python:
 
 ```python
 import requests
+from pathlib import Path
 
 base = "http://127.0.0.1:8000"
 headers = {"Authorization": f"Bearer {api_key}"}
@@ -297,15 +345,10 @@ with open("report.pdf", "rb") as fh:
         f"{base}/api/v1/convert",
         headers=headers,
         files={"file": ("report.pdf", fh, "application/pdf")},
-        data={
-            "target": "markdown",
-            "use_ai": "false",
-            "use_table_recognition": "true",
-            "use_region_detection": "true",
-            "format_block_content": "true",
-            "target_lang": "original",
-        },
+        data={"target": "markdown", "use_ai": "false", "target_lang": "original"},
     )
 res.raise_for_status()
-print(res.json()["markdown"])
+markdown = res.json()["markdown"]
+Path("report.md").write_text(markdown, encoding="utf-8")
+print(markdown)
 ```

@@ -80,8 +80,10 @@ class MarkdownExporter(FormatExporter):
         markdown: str,
         title: str = "document",
         read_result: ReadResult | None = None,
+        source_bytes: bytes | None = None,
+        source_suffix: str | None = None,
     ) -> ExportArtifact:
-        del title, read_result
+        del title, read_result, source_bytes, source_suffix
         return ExportArtifact(
             data=(markdown or "").encode("utf-8"),
             media_type="text/markdown; charset=utf-8",
@@ -104,8 +106,10 @@ class TextExporter(FormatExporter):
         markdown: str,
         title: str = "document",
         read_result: ReadResult | None = None,
+        source_bytes: bytes | None = None,
+        source_suffix: str | None = None,
     ) -> ExportArtifact:
-        del title, read_result
+        del title, read_result, source_bytes, source_suffix
         return ExportArtifact(
             data=strip_markdown(markdown or "").encode("utf-8"),
             media_type="text/plain; charset=utf-8",
@@ -128,8 +132,10 @@ class HtmlExporter(FormatExporter):
         markdown: str,
         title: str = "document",
         read_result: ReadResult | None = None,
+        source_bytes: bytes | None = None,
+        source_suffix: str | None = None,
     ) -> ExportArtifact:
-        del read_result
+        del read_result, source_bytes, source_suffix
         html_doc = markdown_to_html(markdown or "", title=title)
         return ExportArtifact(
             data=html_doc.encode("utf-8"),
@@ -153,7 +159,10 @@ class JsonExporter(FormatExporter):
         markdown: str,
         title: str = "document",
         read_result: ReadResult | None = None,
+        source_bytes: bytes | None = None,
+        source_suffix: str | None = None,
     ) -> ExportArtifact:
+        del source_bytes, source_suffix
         payload = {
             "title": title,
             "markdown": markdown or "",

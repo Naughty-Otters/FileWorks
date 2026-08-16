@@ -14,9 +14,12 @@ from pathlib import Path
 from fw import console
 from fw.context import (
     BACKEND_ENV,
+    DEFAULT_LAMBDA_ACCOUNT_CONCURRENCY,
     DOCKERFILE,
     FRONTEND_DIR,
     IAM_POLICY_PATH,
+    LAMBDA_CONCURRENT_QUOTA_CODE,
+    LAMBDA_CONCURRENT_SERVICE,
     POLICY_NAME,
     REQUIRED_IAM_ACTIONS,
     ROOT_DIR,
@@ -151,6 +154,8 @@ def check(ctx: Context) -> None:
     else:
         console.success("Required deploy actions are allowed.")
 
+    _show_lambda_quota(ctx)
+
     console.rule("Cloudflare Pages")
     if shutil.which("npm") is None:
         console.warn("npm not found — frontend deploy needs Node.js 20+.")
@@ -201,7 +206,27 @@ def attach_policy(ctx: Context) -> None:
         console.success(f"Created {policy_arn}")
     else:
         console.success(f"Policy already exists: {policy_arn}")
-        console.warn("If you edited the JSON policy, create a new IAM policy version.")
+        versioned = run(
+            [
+                "aws",
+                "iam",
+                "create-policy-version",
+                "--policy-arn",
+                policy_arn,
+                "--policy-document",
+                f"file://{IAM_POLICY_PATH}",
+                "--set-as-default",
+            ],
+            check=False,
+            ctx=ctx,
+        )
+        if versioned.returncode == 0:
+            console.success("Published a new FileWorksDeploy policy version.")
+        else:
+            console.warn(
+                "Could not create a new policy version (IAM keeps 5). "
+                "Delete an old version in the console, then re-run attach-policy."
+            )
     run(
         [
             "aws",
@@ -216,6 +241,186 @@ def attach_policy(ctx: Context) -> None:
     )
     console.success(f"Attached {POLICY_NAME} to IAM user {user}")
     console.info("IAM can take a few seconds to propagate. Re-run Check permissions next.")
+
+
+def _lambda_account_concurrency(ctx: Context) -> int:
+    path = ctx.env.tfvars_file
+    if path.exists():
+        match = re.search(
+            r"^\s*lambda_account_concurrency\s*=\s*(\d+)",
+            path.read_text(encoding="utf-8"),
+            re.MULTILINE,
+        )
+        if match:
+            return int(match.group(1))
+    return DEFAULT_LAMBDA_ACCOUNT_CONCURRENCY
+
+
+def _aws_json_unchecked(ctx: Context, args: list[str]) -> tuple[object | None, str]:
+    require_cmd("aws")
+    result = run(
+        ["aws", *args, "--output", "json", "--region", ctx.region],
+        capture=True,
+        check=False,
+        ctx=ctx,
+    )
+    err = (result.stderr or result.stdout or "").strip()
+    if result.returncode != 0:
+        return None, err
+    text = (result.stdout or "").strip()
+    if not text:
+        return {}, ""
+    try:
+        return json.loads(text), ""
+    except json.JSONDecodeError:
+        return None, err or text
+
+
+def _quota_value(payload: object) -> int | None:
+    if not isinstance(payload, dict):
+        return None
+    quota = payload.get("Quota")
+    if not isinstance(quota, dict):
+        return None
+    raw = quota.get("Value")
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        return None
+    return int(raw)
+
+
+def _aws_error_code(message: str) -> str:
+    match = re.search(r"\(([A-Za-z0-9]+)\)", message)
+    return match.group(1) if match else ""
+
+
+def _show_lambda_quota(ctx: Context) -> None:
+    desired = _lambda_account_concurrency(ctx)
+    payload, err = _aws_json_unchecked(
+        ctx,
+        [
+            "service-quotas",
+            "get-service-quota",
+            "--service-code",
+            LAMBDA_CONCURRENT_SERVICE,
+            "--quota-code",
+            LAMBDA_CONCURRENT_QUOTA_CODE,
+        ],
+    )
+    console.rule("Lambda concurrency quota")
+    current = _quota_value(payload)
+    if current is None:
+        console.warn(err or "Could not read Concurrent executions (L-B99A9384).")
+        if "AccessDenied" in (err or ""):
+            console.info("Run `fw attach-policy`, then `fw lambda-quota`.")
+        return
+    console.kv_table(
+        "Account quota (not per-environment)",
+        [
+            ("current", str(current)),
+            ("desired", str(desired)),
+            ("quota", LAMBDA_CONCURRENT_QUOTA_CODE),
+        ],
+    )
+    if current >= desired:
+        console.success(
+            f"Concurrent executions is {current} (AWS default is 1000). No quota increase needed."
+        )
+    else:
+        console.warn(
+            f"Concurrent executions is {current}; Lambda will not scale past that. "
+            f"Run `fw lambda-quota` to request {desired}."
+        )
+
+
+def request_lambda_quota(ctx: Context) -> None:
+    """Request a higher account-wide Lambda Concurrent executions quota."""
+    require_cmd("aws")
+    desired = _lambda_account_concurrency(ctx)
+    console.rule("Lambda concurrency quota")
+    console.info(
+        f"This raises Concurrent executions ({LAMBDA_CONCURRENT_QUOTA_CODE}) "
+        f"for the whole AWS account, not just {ctx.env.name}."
+    )
+    payload, err = _aws_json_unchecked(
+        ctx,
+        [
+            "service-quotas",
+            "get-service-quota",
+            "--service-code",
+            LAMBDA_CONCURRENT_SERVICE,
+            "--quota-code",
+            LAMBDA_CONCURRENT_QUOTA_CODE,
+        ],
+    )
+    current = _quota_value(payload)
+    if current is None:
+        hint = "Run `fw attach-policy` first." if "AccessDenied" in (err or "") else err
+        raise CommandError(hint or "Could not read the Lambda concurrent-executions quota.")
+    console.kv_table(
+        "Account quota",
+        [("current", str(current)), ("desired", str(desired)), ("region", ctx.region)],
+    )
+    if current >= desired:
+        console.success(
+            f"Already at {current} (AWS default is 1000). No increase needed — "
+            "AWS rejects a desired value at or below the current quota."
+        )
+        if current >= 1000:
+            console.info(
+                "A console value of 10 is reserved concurrency on the function, "
+                "not this account quota. `fw apply` sets reserved to unreserved (-1)."
+            )
+        return
+    if not ctx.auto_yes and not console.confirm(
+        f"Request increase from {current} to {desired}?",
+        default=True,
+    ):
+        console.warn("Cancelled.")
+        return
+    requested, req_err = _aws_json_unchecked(
+        ctx,
+        [
+            "service-quotas",
+            "request-service-quota-increase",
+            "--service-code",
+            LAMBDA_CONCURRENT_SERVICE,
+            "--quota-code",
+            LAMBDA_CONCURRENT_QUOTA_CODE,
+            "--desired-value",
+            str(desired),
+        ],
+    )
+    if requested is None:
+        code = _aws_error_code(req_err)
+        if code in {"ResourceAlreadyExistsException", "DuplicateRequestException"}:
+            console.warn("A quota increase request is already pending. AWS emails when it is approved.")
+            return
+        if code == "IllegalArgumentException" or "greater than the default quota" in req_err:
+            console.success(
+                "Account quota is already at the AWS default (1000). "
+                "Requesting a lower value is a decrease; AWS only accepts a number above 1000."
+            )
+            return
+        if "AccessDenied" in req_err:
+            raise CommandError(
+                "Denied. Run `fw attach-policy`, wait a few seconds, then retry `fw lambda-quota`."
+            )
+        raise CommandError(req_err or "Quota increase request failed.")
+    detail = requested.get("RequestedQuota") if isinstance(requested, dict) else None
+    status = ""
+    request_id = ""
+    if isinstance(detail, dict):
+        status = str(detail.get("Status") or "")
+        request_id = str(detail.get("Id") or "")
+    console.success(
+        f"Requested Concurrent executions {current} → {desired}"
+        + (f" ({status})" if status else "")
+        + (f" id={request_id}" if request_id else "")
+    )
+    console.info(
+        "AWS only accepts a value above the current quota (default 1000). "
+        "If AWS asks for a support case, wait for that email."
+    )
 
 
 def bootstrap(ctx: Context) -> None:
@@ -307,6 +512,9 @@ def _roll_out_image(ctx: Context, image: str) -> None:
     change between pushes, so `apply` reports no diff and the function keeps
     running whatever digest it resolved on the day it was created. Re-pointing it
     at the same tag makes Lambda resolve the new digest.
+
+    The API Function URL targets the ``live`` alias (not $LATEST), so each push
+    publishes a version and moves the alias after the image update succeeds.
     """
     for suffix in ("api", "llm"):
         name = f"{ctx.env.prefix}-{suffix}"
@@ -335,6 +543,54 @@ def _roll_out_image(ctx: Context, image: str) -> None:
             check=False,
         )
         console.success(f"{name} now runs the image just pushed")
+        if suffix != "api":
+            continue
+        published = run(
+            [
+                "aws",
+                "lambda",
+                "publish-version",
+                "--function-name",
+                name,
+                "--output",
+                "json",
+                "--no-cli-pager",
+            ],
+            capture=True,
+            check=False,
+            ctx=ctx,
+        )
+        version = ""
+        if published.returncode == 0:
+            try:
+                payload = json.loads(published.stdout or "{}")
+                version = str(payload.get("Version") or "")
+            except json.JSONDecodeError:
+                version = ""
+        if not version or version == "$LATEST":
+            console.info(f"{name}:live not updated (publish-version failed) — `fw apply` will retarget the alias.")
+            continue
+        alias = run(
+            [
+                "aws",
+                "lambda",
+                "update-alias",
+                "--function-name",
+                name,
+                "--name",
+                "live",
+                "--function-version",
+                version,
+                "--no-cli-pager",
+            ],
+            capture=True,
+            check=False,
+            ctx=ctx,
+        )
+        if alias.returncode == 0:
+            console.success(f"{name}:live now runs published version {version}")
+        else:
+            console.info(f"{name}:live alias does not exist yet — `fw apply` creates it.")
 
 
 def plan(ctx: Context) -> None:
@@ -805,6 +1061,10 @@ def full(ctx: Context) -> None:
         console.warn("Cancelled.")
         return
     bootstrap(ctx)
+    try:
+        request_lambda_quota(ctx)
+    except CommandError as exc:
+        console.warn(str(exc))
     push_image(ctx)
     previous = ctx.auto_yes
     ctx.auto_yes = True

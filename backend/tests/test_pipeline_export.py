@@ -46,6 +46,26 @@ class ExportTests(unittest.TestCase):
         js = JsonExporter().export(markdown="# H", title="T", read_result=ReadResult(engine_id="e", engine_label="E"))
         self.assertIn(b"markdown", js.data)
 
+    def test_docx_and_image_exporters(self) -> None:
+        from app.processing.export.rich import DocxExporter, JpegExporter, PngExporter
+        from PIL import Image
+
+        docx = DocxExporter().export(markdown="# Title\n\nHello **world**\n\n- item")
+        self.assertTrue(docx.data.startswith(b"PK"))
+        self.assertEqual(docx.extension, "docx")
+        png = PngExporter().export(markdown="# Receipt\n\nTotal 12")
+        self.assertTrue(png.data.startswith(b"\x89PNG"))
+        jpeg = JpegExporter().export(markdown="Hi")
+        self.assertTrue(jpeg.data.startswith(b"\xff\xd8"))
+        buffer = __import__("io").BytesIO()
+        Image.new("RGB", (12, 8), (9, 9, 9)).save(buffer, format="PNG")
+        converted = PngExporter().export(
+            markdown="x",
+            source_bytes=buffer.getvalue(),
+            source_suffix=".png",
+        )
+        self.assertTrue(converted.data.startswith(b"\x89PNG"))
+
     def test_registry(self) -> None:
         registry = ExportRegistry()
         self.assertEqual(registry.resolve("md").id, "markdown")

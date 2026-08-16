@@ -31,27 +31,40 @@ class Principal:
         return permissions_for(self.plan)
 
 
-def get_principal(request: Request, db: Session | None = Depends(get_db)) -> Principal:
-    header = request.headers.get("authorization") or ""
+def _credential_from_request(request: Request) -> str:
+    """Bearer token, raw fw_live_ key, or X-Api-Key."""
+    header = (request.headers.get("authorization") or "").strip()
     if header.lower().startswith("bearer "):
-        raw = header.split(" ", 1)[1].strip()
-        if looks_like_api_key(raw):
-            if db is None:
-                raise HTTPException(status_code=503, detail="Database is not configured")
-            key = lookup_api_key(db, raw)
-            if key is None:
-                raise HTTPException(status_code=401, detail="API key expired or invalid")
-            user = db.get(User, key.user_id)
-            if user is None:
-                raise HTTPException(status_code=401, detail="User not found")
-            touch_api_key(key)
-            return Principal(
-                plan=get_plan(user.plan),
-                user=user,
-                api_plan=get_api_plan(getattr(user, "api_plan", None)),
-                api_key=key,
-                via_api_key=True,
-            )
+        return header.split(" ", 1)[1].strip()
+    if looks_like_api_key(header):
+        return header
+    return (request.headers.get("x-api-key") or "").strip()
+
+
+def _principal_from_api_key(db: Session | None, raw: str) -> Principal:
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database is not configured")
+    key = lookup_api_key(db, raw)
+    if key is None:
+        raise HTTPException(status_code=401, detail="API key expired or invalid")
+    user = db.get(User, key.user_id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    touch_api_key(key)
+    return Principal(
+        plan=get_plan(user.plan),
+        user=user,
+        api_plan=get_api_plan(getattr(user, "api_plan", None)),
+        api_key=key,
+        via_api_key=True,
+    )
+
+
+def get_principal(request: Request, db: Session | None = Depends(get_db)) -> Principal:
+    raw = _credential_from_request(request)
+    if looks_like_api_key(raw):
+        return _principal_from_api_key(db, raw)
+    if raw:
         try:
             payload = decode_access_token(raw)
         except Exception as exc:  # noqa: BLE001
