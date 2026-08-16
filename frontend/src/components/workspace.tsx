@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { Clock3, FileImage, PanelLeftClose, WifiOff } from "lucide-react";
+import { Clock3, FileImage, WifiOff } from "lucide-react";
 import {
   cancelExtract,
   deleteHistoryItem,
@@ -347,6 +347,23 @@ export function Workspace() {
     }
   }
 
+  const convertControls = (
+    <ConvertControls
+      compact
+      fileName={previewOpen ? undefined : file?.name}
+      options={extractOptions}
+      onChange={setExtractOptions}
+      me={me}
+      health={health}
+      loading={loading}
+      canExtract={canExtract}
+      fileReady={Boolean(file)}
+      quotaBlocked={Boolean(quotaBlocked)}
+      onConvert={handleExtract}
+      onStop={handleStopConvert}
+    />
+  );
+
   return (
     <div className="app-shell app-shell-fixed relative">
       <div className="atmosphere" aria-hidden />
@@ -354,27 +371,6 @@ export function Workspace() {
       <header className="relative z-10 shrink-0 border-b border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
           <BrandLockup />
-          <button
-            type="button"
-            aria-expanded={historyOpen}
-            aria-controls="history-panel"
-            aria-label={historyOpen ? "Collapse history" : "Show full history"}
-            onClick={() => setHistoryOpen((open) => !open)}
-            className={cn(
-              "relative inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs transition",
-              historyOpen
-                ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]"
-                : "text-[var(--ink-muted)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]",
-            )}
-          >
-            {historyOpen ? <PanelLeftClose size={15} /> : <Clock3 size={15} />}
-            <span className="hidden sm:inline">History</span>
-            {history.length > 0 ? (
-              <span className="rounded-full bg-[var(--accent)] px-1.5 text-[10px] leading-4 text-white dark:text-[#06281d]">
-                {history.length}
-              </span>
-            ) : null}
-          </button>
           <div className="ml-auto flex items-center gap-1.5">
             <a
               href="/pricing"
@@ -405,58 +401,16 @@ export function Workspace() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-3 overflow-hidden px-4 py-3 md:px-6 md:py-4">
-        {!previewOpen ? (
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--line)] bg-[var(--bg-panel)] px-3 py-2">
-            <button
-              type="button"
-              aria-controls="source-preview-panel"
-              onClick={() => setPreviewOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
-            >
-              <FileImage size={14} />
-              Show preview
-            </button>
-            <ConvertControls
-              compact
-              fileName={file?.name}
-              options={extractOptions}
-              onChange={setExtractOptions}
-              me={me}
-              health={health}
-              loading={loading}
-              canExtract={canExtract}
-              fileReady={Boolean(file)}
-              quotaBlocked={Boolean(quotaBlocked)}
-              onConvert={handleExtract}
-              onStop={handleStopConvert}
-            />
-          </div>
-        ) : null}
-
+      <main className="relative z-10 mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col overflow-hidden px-4 py-3 md:px-6 md:py-4">
         <div
           className={cn(
-            "grid min-h-0 flex-1 gap-3 overflow-hidden lg:gap-4",
-            historyOpen && previewOpen && "grid-rows-[minmax(140px,0.9fr)_minmax(0,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)]",
-            historyOpen && !previewOpen && "grid-rows-[minmax(140px,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:grid-cols-[220px_minmax(0,1fr)]",
-            !historyOpen && previewOpen && "grid-rows-[auto_minmax(0,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1fr)]",
-            !historyOpen && !previewOpen && "grid-rows-[auto_minmax(0,1fr)] lg:grid-rows-1 lg:grid-cols-[4.5rem_minmax(0,1fr)]",
+            "grid min-h-0 min-w-0 flex-1 gap-3 overflow-hidden lg:gap-4",
+            previewOpen && historyOpen && "grid-rows-[minmax(140px,0.9fr)_minmax(0,1.2fr)_minmax(140px,0.8fr)] lg:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_220px]",
+            previewOpen && !historyOpen && "grid-rows-[minmax(140px,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]",
+            !previewOpen && historyOpen && "grid-rows-[minmax(0,1.2fr)_minmax(140px,0.8fr)] lg:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_220px]",
+            !previewOpen && !historyOpen && "grid-rows-1 lg:grid-cols-1",
           )}
         >
-          <div id="history-panel" className="min-h-0 overflow-hidden">
-            <HistoryPanel
-              items={history}
-              selectedId={selectedId}
-              loading={historyLoading}
-              storageBackend={storageBackend}
-              requiresLogin={!me?.permissions?.["history.read"]}
-              compact={!historyOpen}
-              onSelect={handleSelectHistory}
-              onDelete={handleDeleteHistory}
-              onCollapse={() => setHistoryOpen(false)}
-              onExpand={() => setHistoryOpen(true)}
-            />
-          </div>
           {previewOpen ? (
             <div id="source-preview-panel" className="min-h-0 overflow-hidden">
               <UploadPanel
@@ -469,21 +423,7 @@ export function Workspace() {
                 onActiveRegionChange={setActiveRegionId}
                 onFileSelect={handleFileSelect}
                 onCollapse={() => setPreviewOpen(false)}
-                actions={
-                  <ConvertControls
-                    compact
-                    options={extractOptions}
-                    onChange={setExtractOptions}
-                    me={me}
-                    health={health}
-                    loading={loading}
-                    canExtract={canExtract}
-                    fileReady={Boolean(file)}
-                    quotaBlocked={Boolean(quotaBlocked)}
-                    onConvert={handleExtract}
-                    onStop={handleStopConvert}
-                  />
-                }
+                actions={convertControls}
               />
             </div>
           ) : null}
@@ -502,11 +442,82 @@ export function Workspace() {
               onMarkdownModeChange={setMarkdownMode}
               toolbarVisible={markdownToolbar}
               onToolbarVisibleChange={setMarkdownToolbar}
+              actions={previewOpen ? undefined : convertControls}
+              leadingToggle={
+                previewOpen ? undefined : (
+                  <PaneIcon
+                    label="Show source"
+                    controls="source-preview-panel"
+                    onClick={() => setPreviewOpen(true)}
+                  >
+                    <FileImage size={15} />
+                  </PaneIcon>
+                )
+              }
+              trailingToggle={
+                historyOpen ? undefined : (
+                  <PaneIcon
+                    label="Show history"
+                    controls="history-panel"
+                    badge={history.length}
+                    onClick={() => setHistoryOpen(true)}
+                  >
+                    <Clock3 size={15} />
+                  </PaneIcon>
+                )
+              }
             />
           </div>
+          {historyOpen ? (
+            <div id="history-panel" className="min-h-0 overflow-hidden">
+              <HistoryPanel
+                items={history}
+                selectedId={selectedId}
+                loading={historyLoading}
+                storageBackend={storageBackend}
+                requiresLogin={!me?.permissions?.["history.read"]}
+                onSelect={handleSelectHistory}
+                onDelete={handleDeleteHistory}
+                onCollapse={() => setHistoryOpen(false)}
+              />
+            </div>
+          ) : null}
         </div>
       </main>
       <SiteFooter compact />
     </div>
+  );
+}
+
+function PaneIcon({
+  label,
+  controls,
+  badge,
+  onClick,
+  children,
+}: {
+  label: string;
+  controls: string;
+  badge?: number;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={false}
+      aria-controls={controls}
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+    >
+      {children}
+      {badge ? (
+        <span className="absolute -right-0.5 -top-0.5 min-w-3.5 rounded-full bg-[var(--accent)] px-1 text-[9px] leading-[14px] text-white dark:text-[#06281d]">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
+    </button>
   );
 }

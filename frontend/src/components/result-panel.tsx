@@ -13,7 +13,7 @@ import {
   Boxes,
   Pencil,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   downloadTextFile,
   exportMarkdownFile,
@@ -43,6 +43,9 @@ type ResultPanelProps = {
   onMarkdownModeChange?: (mode: "preview" | "edit") => void;
   toolbarVisible?: boolean;
   onToolbarVisibleChange?: (visible: boolean) => void;
+  actions?: ReactNode;
+  leadingToggle?: ReactNode;
+  trailingToggle?: ReactNode;
 };
 
 const DOWNLOAD_OPTIONS: Array<{ id: DownloadFormat | "pdf"; label: string }> = [
@@ -70,6 +73,9 @@ export function ResultPanel({
   onMarkdownModeChange,
   toolbarVisible = true,
   onToolbarVisibleChange,
+  actions,
+  leadingToggle,
+  trailingToggle,
 }: ResultPanelProps) {
   const [copied, setCopied] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
@@ -203,7 +209,8 @@ export function ResultPanel({
   return (
     <section className="flex h-full min-h-0 flex-col">
       <div className="panel relative flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
-        <div className="flex shrink-0 items-center gap-2 rounded-t-2xl border-b border-[var(--line)] px-3 py-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-t-2xl border-b border-[var(--line)] px-3 py-2">
+          {leadingToggle}
           <FileOutput size={15} className="shrink-0 text-[var(--accent)]" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{result?.filename || "Converted file"}</p>
@@ -213,6 +220,7 @@ export function ResultPanel({
                 : "Markdown lands here after convert"}
             </p>
           </div>
+          {actions ? <div className="flex shrink-0 items-center">{actions}</div> : null}
           {showToolbar && !toolbarVisible ? (
             <ShowMarkdownToolbarButton onClick={() => onToolbarVisibleChange?.(true)} />
           ) : null}
@@ -275,6 +283,7 @@ export function ResultPanel({
           >
             {copied ? <Check size={14} /> : <ClipboardCopy size={14} />}
           </button>
+          {trailingToggle}
         </div>
 
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-2xl">
@@ -289,7 +298,7 @@ export function ResultPanel({
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-[var(--ink-muted)]">
               <Loader2 size={28} className="animate-spin text-[var(--accent)]" />
               <p className="animate-pulse-soft text-sm">Converting your file…</p>
-              <p className="text-xs text-[var(--ink-muted)]">Stop is on the source panel</p>
+              <p className="text-xs text-[var(--ink-muted)]">Use Stop to cancel</p>
             </div>
           ) : error ? (
             <div className="flex min-h-0 flex-1 items-center justify-center px-8 text-center">

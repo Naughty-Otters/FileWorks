@@ -181,7 +181,7 @@ export function UploadPanel({
           {onCollapse ? (
             <button
               type="button"
-              aria-label="Hide source preview"
+              aria-label="Hide source"
               onClick={onCollapse}
               className="rounded-full p-1.5 text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
             >

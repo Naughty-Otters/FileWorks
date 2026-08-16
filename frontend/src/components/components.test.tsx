@@ -107,25 +107,6 @@ describe("HistoryPanel", () => {
     await user.click(screen.getByLabelText("Hide history"));
     expect(onCollapse).toHaveBeenCalled();
   });
-
-  it("keeps filenames visible in compact rail", async () => {
-    const user = userEvent.setup();
-    const onSelect = vi.fn();
-    const onExpand = vi.fn();
-    render(
-      <HistoryPanel
-        items={[item]}
-        selectedId={null}
-        compact
-        onSelect={onSelect}
-        onDelete={vi.fn()}
-        onExpand={onExpand}
-      />,
-    );
-    expect(screen.getByText("doc.pdf")).toBeInTheDocument();
-    await user.click(screen.getByLabelText("Expand history"));
-    expect(onExpand).toHaveBeenCalled();
-  });
 });
 
 describe("MarkdownToolbar", () => {

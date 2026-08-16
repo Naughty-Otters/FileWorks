@@ -143,13 +143,18 @@ describe("Workspace", () => {
     expect(api.fetchHistoryDetail).not.toHaveBeenCalled();
     expect(api.fetchHistoryFile).not.toHaveBeenCalled();
 
-    await user.click(screen.getByLabelText("Hide history"));
-    expect(screen.getByText("old.pdf")).toBeInTheDocument();
-    expect(screen.getByLabelText("Show full history")).toBeInTheDocument();
-
     await user.click(screen.getByText("old.pdf"));
     await waitFor(() => expect(api.fetchHistoryDetail).toHaveBeenCalled());
     expect(api.fetchHistoryFile).toHaveBeenCalled();
+
+    await user.click(screen.getByLabelText("Hide history"));
+    expect(screen.queryByLabelText("Hide history")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Show history")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Show full history")).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText("Show history"));
+    expect(screen.getByLabelText("Hide history")).toBeInTheDocument();
+    expect(screen.getAllByText("old.pdf").length).toBeGreaterThan(0);
+
     await user.click(screen.getByLabelText("Delete old.pdf"));
     await waitFor(() => expect(api.deleteHistoryItem).toHaveBeenCalled());
   });
@@ -167,8 +172,10 @@ describe("Workspace", () => {
     await waitFor(() => expect(screen.getAllByText("a.png").length).toBeGreaterThan(0));
     expect(screen.getByText("old.pdf")).toBeInTheDocument();
 
-    await user.click(screen.getByLabelText("Hide source preview"));
-    await waitFor(() => expect(screen.getByText("Show preview")).toBeInTheDocument());
-    await user.click(screen.getByText("Show preview"));
+    await user.click(screen.getByLabelText("Hide source"));
+    await waitFor(() => expect(screen.getByLabelText("Show source")).toBeInTheDocument());
+    expect(screen.queryByText("Show preview")).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText("Show source"));
+    expect(screen.getByLabelText("Hide source")).toBeInTheDocument();
   });
 });
