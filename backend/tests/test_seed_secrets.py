@@ -20,7 +20,9 @@ from fw.context import (
 class SeedSecretTests(unittest.TestCase):
     def test_stripe_and_public_url_are_seeded(self) -> None:
         self.assertIn("STRIPE_", SECRET_ENV_PREFIXES)
+        self.assertIn("GEMINI_", SECRET_ENV_PREFIXES)
         self.assertIn("GOOGLE_CLIENT_ID", SECRET_EXACT_KEYS)
+        self.assertIn("GOOGLE_API_KEY", SECRET_EXACT_KEYS)
         self.assertIn("PUBLIC_APP_URL", SECRET_EXACT_KEYS)
         parsed = {
             "STRIPE_SECRET_KEY": "sk_test_x",
@@ -28,6 +30,8 @@ class SeedSecretTests(unittest.TestCase):
             "STRIPE_PRICE_PRO": "12",
             "PUBLIC_APP_URL": "https://fileworks-staging.pages.dev",
             "GOOGLE_CLIENT_ID": "cid.apps.googleusercontent.com",
+            "GOOGLE_API_KEY": "AIza-test",
+            "GEMINI_API_KEY": "AIza-gemini",
             "DATABASE_URL": "postgresql://local",
             "EMPTY": "",
         }
@@ -44,6 +48,8 @@ class SeedSecretTests(unittest.TestCase):
                 "STRIPE_PRICE_PRO",
                 "PUBLIC_APP_URL",
                 "GOOGLE_CLIENT_ID",
+                "GOOGLE_API_KEY",
+                "GEMINI_API_KEY",
             },
         )
 

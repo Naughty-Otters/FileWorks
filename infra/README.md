@@ -169,7 +169,7 @@ State key: `s3://fileworks-tfstate-<account>/fileworks/<env>/terraform.tfstate`.
 
 ## Secrets
 
-Terraform creates `fileworks-<env>/app` in Secrets Manager. **Seed** copies LLM/translate keys and `GOOGLE_CLIENT_ID` from `backend/.env` (never committed) and merges them into the existing secret so RDS/JWT values are not wiped. Lambda reads `FILEWORKS_SECRET_ARN` on cold start.
+Terraform creates `fileworks-<env>/app` in Secrets Manager. **Seed** copies LLM/translate keys, `GOOGLE_CLIENT_ID`, and `GOOGLE_API_KEY` from `backend/.env` (never committed) and merges them into the existing secret so RDS/JWT values are not wiped. Lambda reads `FILEWORKS_SECRET_ARN` on cold start.
 
 `NEXT_PUBLIC_API_URL` / `config.js` use Terraform `api_url`. Set `public_api_url`
 in `envs/<env>.tfvars` (or `PUBLIC_API_URL` in `backend/.env.<env>`) to a custom

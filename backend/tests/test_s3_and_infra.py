@@ -259,6 +259,22 @@ class LLMEngineTests(unittest.TestCase):
             )
             parts = anthropic_document_parts(pdf_req)
             self.assertEqual(parts[1]["type"], "document")
+            gemini_parts = get_api_provider("gemini").build_parts(
+                ConvertRequest(
+                    spec=get_provider_spec("gemini"),
+                    file_path=Path(handle.name),
+                    suffix=".pdf",
+                    api_key="k",
+                    model="gemini-2.5-flash",
+                    max_tokens=10,
+                    timeout_s=1,
+                    target=request.target,
+                    max_pages=1,
+                    max_image_side=32,
+                )
+            )
+            self.assertEqual(gemini_parts[1]["type"], "file")
+            self.assertEqual(gemini_parts[1]["mime_type"], "application/pdf")
 
         class Model:
             def invoke(self, _msgs):
@@ -300,9 +316,10 @@ class LLMEngineTests(unittest.TestCase):
             "langchain_xai": MagicMock(ChatXAI=fake),
             "langchain_openrouter": MagicMock(ChatOpenRouter=fake),
             "langchain_moonshot": MagicMock(ChatMoonshot=fake),
+            "langchain_google_genai": MagicMock(ChatGoogleGenerativeAI=fake),
         }
         with patch.dict("sys.modules", modules):
-            for provider_id in ("openai", "claude", "deepseek", "fireworks", "grok", "openrouter", "kimi", "glm"):
+            for provider_id in ("openai", "claude", "deepseek", "fireworks", "grok", "openrouter", "kimi", "glm", "gemini"):
                 get_api_provider(provider_id).build_chat_model(request)
         self.assertTrue(fake.called)
 

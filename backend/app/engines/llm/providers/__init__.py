@@ -10,6 +10,7 @@ from app.engines.llm.providers.base import (
 )
 from app.engines.llm.providers.deepseek import DeepSeekProvider
 from app.engines.llm.providers.fireworks import FireworksProvider
+from app.engines.llm.providers.gemini import GeminiProvider
 from app.engines.llm.providers.glm import GLMProvider
 from app.engines.llm.providers.moonshot import MoonshotProvider
 from app.engines.llm.providers.openai import OpenAIProvider
@@ -27,6 +28,7 @@ API_PROVIDERS: dict[str, LLMApiProvider] = {
         OpenRouterProvider(),
         MoonshotProvider(),
         GLMProvider(),
+        GeminiProvider(),
     )
 }
 

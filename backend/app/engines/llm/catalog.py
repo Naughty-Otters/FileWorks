@@ -89,6 +89,15 @@ PROVIDERS: dict[str, LLMProviderSpec] = {
         key_fields=("anthropic_api_key", "claude_api_key"),
         native_pdf=True,
     ),
+    "gemini": LLMProviderSpec(
+        id="gemini",
+        label="Gemini",
+        package="langchain-google-genai",
+        base_url="https://generativelanguage.googleapis.com/v1beta",
+        default_model="gemini-2.5-flash",
+        key_fields=("gemini_api_key", "google_api_key"),
+        native_pdf=True,
+    ),
 }
 
 ALIASES: dict[str, str] = {
@@ -103,6 +112,9 @@ ALIASES: dict[str, str] = {
     "glok": "grok",
     "chatgpt": "openai",
     "or": "openrouter",
+    "google": "gemini",
+    "google-genai": "gemini",
+    "gemini-flash": "gemini",
 }
 
 

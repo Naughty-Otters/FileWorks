@@ -123,7 +123,7 @@ MAX_UPLOAD_MB=50
 
 `OCR_ENGINE` (`structure` | `ocr`) controls which Paddle provider is warmed by `/api/warmup`. Uploads try readers in order: Text (`.txt` / `.md`) → AnyDoc → LLM (if `LLM_PROVIDER` + API key) → OCR.
 
-LLM providers (OpenRouter, Fireworks, DeepSeek, Kimi, GLM, OpenAI, Grok, Claude) use **LangChain** (`ChatOpenAI` / `ChatAnthropic`) with per-provider secrets — see [backend/secrets/README.md](backend/secrets/README.md).
+LLM providers (OpenRouter, Fireworks, DeepSeek, Kimi, GLM, OpenAI, Grok, Claude, Gemini) use **LangChain** (`ChatOpenAI` / `ChatAnthropic` / `ChatGoogleGenerativeAI`) with per-provider secrets — see [backend/secrets/README.md](backend/secrets/README.md).
 
 Document processing (readers + decision + export) is modular OO — see [backend/app/processing/ARCHITECTURE.md](backend/app/processing/ARCHITECTURE.md).
 

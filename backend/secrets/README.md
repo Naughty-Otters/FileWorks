@@ -19,9 +19,9 @@ LLM_MAX_PAGES=8
 LLM_TIMEOUT_S=120
 ```
 
-`LLM_PROVIDER` values: `openrouter` | `fireworks` | `deepseek` | `kimi` | `glm` | `openai` | `grok` | `claude`
+`LLM_PROVIDER` values: `openrouter` | `fireworks` | `deepseek` | `kimi` | `glm` | `openai` | `grok` | `claude` | `gemini`
 
-Aliases: `kimi3` → kimi, `moonshot` → kimi, `glok` / `xai` → grok, `anthropic` → claude, `zhipu` → glm.
+Aliases: `kimi3` → kimi, `moonshot` → kimi, `glok` / `xai` → grok, `anthropic` → claude, `zhipu` → glm, `google` → gemini.
 
 Optional: `LLM_API_KEY` overrides the provider-specific key.
 
@@ -57,6 +57,7 @@ Priority: `LLM_ENDPOINT` → `LLM_BASE_URL` → `{provider}_base_url` → catalo
 | Provider | Default vision model |
 | --- | --- |
 | OpenAI | `gpt-4o` |
+| Gemini | `gemini-2.5-flash` (native PDF) |
 | Claude | `claude-sonnet-4-5` (native PDF) |
 | GLM | `glm-4.5v` |
 | OpenRouter | `openai/gpt-4o-mini` |
@@ -83,9 +84,18 @@ Set **only the provider you use**. Unused variables can stay unset.
 | DeepSeek | `langchain-deepseek` | hosted no (custom OCR host yes) | `DEEPSEEK_API_KEY` | `deepseek-chat` |
 | Kimi | `langchain-moonshot` | yes | `KIMI_API_KEY` or `MOONSHOT_API_KEY` | `kimi-k2.5` |
 | GLM | `langchain-openai` (OpenAI-compatible; no partner pkg) | yes | `GLM_API_KEY` or `ZHIPU_API_KEY` | `glm-4.5v` |
+| Gemini | `langchain-google-genai` | yes (native PDF) | `GEMINI_API_KEY` or `GOOGLE_API_KEY` | `gemini-2.5-flash` |
 | OpenAI | `langchain-openai` | yes | `OPENAI_API_KEY` | `gpt-4o` |
 | Grok | `langchain-xai` | yes | `GROK_API_KEY` or `XAI_API_KEY` | `grok-2-vision-1212` |
 | Claude | `langchain-anthropic` | yes (native PDF) | `ANTHROPIC_API_KEY` or `CLAUDE_API_KEY` | `claude-sonnet-4-5` |
+
+Example (Gemini):
+
+```
+LLM_PROVIDER=gemini
+GOOGLE_API_KEY=...
+LLM_MODEL=gemini-2.5-flash
+```
 
 Example (OpenAI):
 

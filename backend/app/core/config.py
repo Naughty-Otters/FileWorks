@@ -90,7 +90,7 @@ class Settings(BaseSettings):
     use_formula_recognition: bool = False
 
     # LLM reader (optional). Inactive until LLM_PROVIDER and a matching API key are set.
-    # Providers: openrouter | fireworks | deepseek | kimi | glm | openai | grok | claude
+    # Providers: openrouter | fireworks | deepseek | kimi | glm | openai | grok | claude | gemini
     llm_provider: str | None = None
     llm_model: str | None = None
     llm_api_key: str | None = None  # generic override for the selected provider
@@ -122,6 +122,9 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     claude_api_key: str | None = None
     claude_base_url: str | None = None
+    gemini_api_key: str | None = None
+    gemini_base_url: str | None = None
+    google_api_key: str | None = None  # Gemini / AI Studio; not GOOGLE_CLIENT_ID
 
     # Translation post-process (optional, separate from the vision LLM reader).
     # Inactive until TRANSLATE_PROVIDER and a matching API key are set.

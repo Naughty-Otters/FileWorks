@@ -66,7 +66,7 @@ class LLMEngine(OCREngine):
             return (
                 "Hosted DeepSeek chat is text-only and rejects image_url. "
                 "Set DEEPSEEK_BASE_URL to a vision/OCR host, or use LLM_PROVIDER="
-                "openai, claude, glm, openrouter, fireworks, or grok."
+                "openai, claude, gemini, glm, openrouter, fireworks, or grok."
             )
         return "Configured LLM does not accept images or files"
 

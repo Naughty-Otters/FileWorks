@@ -93,8 +93,12 @@ class ProviderAdapterTests(unittest.TestCase):
 class CatalogTests(unittest.TestCase):
     def test_known_providers(self) -> None:
         self.assertIn("openai", PROVIDERS)
+        self.assertIn("gemini", PROVIDERS)
         self.assertEqual(get_provider_spec("openai").id, "openai")
+        self.assertEqual(get_provider_spec("google").id, "gemini")
+        self.assertEqual(get_provider_spec("gemini").default_model, "gemini-2.5-flash")
         self.assertEqual(resolve_provider_id("chatgpt"), "openai")
+        self.assertEqual(resolve_provider_id("gemini-flash"), "gemini")
         with self.assertRaises(ValueError):
             get_provider_spec("no-such-vendor")
 

@@ -36,6 +36,8 @@ def _test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     settings.moonshot_api_key = None
     settings.glm_api_key = None
     settings.zhipu_api_key = None
+    settings.gemini_api_key = None
+    settings.google_api_key = None
     settings.translate_provider = None
     settings.translate_api_key = None
     settings.llm_lambda_function = None
