@@ -10,9 +10,12 @@ if str(ROOT) not in sys.path:
 
 from fw.context import (
     ENVIRONMENTS,
+    REQUIRED_IAM_ACTIONS,
     SECRET_ENV_PREFIXES,
     SECRET_EXACT_KEYS,
     Context,
+    lambda_logs_tail_args,
+    resolve_lambda_log_groups,
     resolve_public_api_url,
 )
 
@@ -87,3 +90,34 @@ class SeedSecretTests(unittest.TestCase):
         cloud = Context(env=ENVIRONMENTS["staging"], scope="cloud")
         self.assertFalse(local.is_cloud)
         self.assertTrue(cloud.is_cloud)
+
+
+class LambdaLogTests(unittest.TestCase):
+    def test_resolves_default_log_groups(self) -> None:
+        api, llm = resolve_lambda_log_groups("staging", "both")
+        self.assertEqual(api, ("API", "/aws/lambda/fileworks-staging-api"))
+        self.assertEqual(llm, ("LLM", "/aws/lambda/fileworks-staging-llm"))
+        self.assertEqual(
+            resolve_lambda_log_groups("prod", "api")[0][1],
+            "/aws/lambda/fileworks-prod-api",
+        )
+        self.assertEqual(
+            resolve_lambda_log_groups(
+                "staging",
+                "llm",
+                llm_log_group="/aws/lambda/custom-llm",
+            )[0][1],
+            "/aws/lambda/custom-llm",
+        )
+        with self.assertRaises(ValueError):
+            resolve_lambda_log_groups("staging", "web")
+        cmd = lambda_logs_tail_args(
+            "/aws/lambda/fileworks-staging-api",
+            since="30m",
+            follow=True,
+            region="us-east-1",
+        )
+        self.assertEqual(cmd[0:4], ["aws", "logs", "tail", "/aws/lambda/fileworks-staging-api"])
+        self.assertIn("--follow", cmd)
+        self.assertIn("30m", cmd)
+        self.assertIn("logs:FilterLogEvents", REQUIRED_IAM_ACTIONS)

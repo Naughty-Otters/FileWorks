@@ -40,6 +40,16 @@ output "api_url" {
   description = "Public API origin used by the UI. Set public_api_url to a custom host; otherwise the live-alias Function URL."
 }
 
+output "api_log_group" {
+  value       = aws_cloudwatch_log_group.api.name
+  description = "CloudWatch log group for the API Lambda."
+}
+
+output "llm_log_group" {
+  value       = aws_cloudwatch_log_group.llm.name
+  description = "CloudWatch log group for the LLM worker Lambda."
+}
+
 output "history_bucket" {
   value = aws_s3_bucket.history.bucket
 }

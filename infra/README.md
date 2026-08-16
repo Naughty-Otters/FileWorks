@@ -145,8 +145,13 @@ Non-interactive:
 ./scripts/fw --env dev full
 ./scripts/fw --env staging plan
 ./scripts/fw --env staging push-image   # RDS migrates on the next API Lambda boot
-./scripts/fw --env prod frontend
+./scripts/fw --env staging logs -f
+./scripts/fw --env staging logs --function api -f
+./scripts/fw --env staging logs --function llm -f --since 2h
+./scripts/fw --env staging logs --no-follow --function both --since 2h
 ```
+
+`fw logs` (`-f` / `--follow`, the default) live-tails CloudWatch for the API Lambda (`/aws/lambda/fileworks-<env>-api`) and/or the LLM worker. Ctrl-C stops the stream. `--no-follow` prints a snapshot and exits. The Infra menu **Lambda logs -f** action prompts for which function. Reading logs needs `logs:FilterLogEvents` on FileWorksDeploy — re-run **Attach deploy IAM policy** if `aws logs tail` is denied.
 
 Pages projects: `fileworks-dev`, `fileworks-staging`, `fileworks-prod` → `https://fileworks-<env>.pages.dev`. After a UI deploy, the TUI writes that origin into Lambda/S3 CORS.
 

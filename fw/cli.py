@@ -128,6 +128,15 @@ def _actions() -> tuple[MenuAction, ...]:
         MenuAction("apply", "Terraform apply", "", cloud.apply, True, "infra", frozenset({CLOUD_SCOPE})),
         MenuAction("full", "Full deploy", "image + apply + secrets + UI", cloud.full, True, "infra", frozenset({CLOUD_SCOPE})),
         MenuAction("status", "Show URLs / health", "", cloud.status, True, "infra", frozenset({CLOUD_SCOPE})),
+        MenuAction(
+            "logs",
+            "Lambda logs -f",
+            "CloudWatch live tail for API and/or LLM",
+            cloud.logs,
+            True,
+            "infra",
+            frozenset({CLOUD_SCOPE}),
+        ),
         MenuAction("destroy", "Destroy this environment", "", cloud.destroy, True, "infra", frozenset({CLOUD_SCOPE})),
         MenuAction("frontend", "Publish frontend", "Cloudflare Pages", cloud.frontend, True, "frontend", frozenset({CLOUD_SCOPE})),
         MenuAction("seed-secrets", "Seed secrets from backend/.env + .env.<env>", "", cloud.seed_secrets, True, "secrets", frozenset({CLOUD_SCOPE})),
@@ -355,6 +364,31 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--env", help="Environment: local, dev, staging, or prod.")
     parser.add_argument("--region", help=f"AWS region (default: {DEFAULT_REGION}).")
     parser.add_argument("--yes", action="store_true", help="Skip apply confirmation.")
+    parser.add_argument(
+        "--function",
+        choices=["api", "llm", "both"],
+        help="Lambda to read with the logs action (default: prompt).",
+    )
+    parser.add_argument(
+        "--since",
+        default=None,
+        help="How far back to read logs, e.g. 30m or 2h (logs action, default: 1h).",
+    )
+    follow = parser.add_mutually_exclusive_group()
+    follow.add_argument(
+        "-f",
+        "--follow",
+        dest="follow",
+        action="store_true",
+        help="Follow Lambda logs live (logs action, default).",
+    )
+    follow.add_argument(
+        "--no-follow",
+        dest="follow",
+        action="store_false",
+        help="Print a snapshot of Lambda logs and exit.",
+    )
+    parser.set_defaults(follow=None)
     parser.add_argument("--version", action="version", version=f"fw {__version__}")
     return parser.parse_args(argv)
 
@@ -386,6 +420,14 @@ def main(argv: list[str] | None = None) -> int:
         auto_yes=args.yes,
         scope=scope or LOCAL_SCOPE,
     )
+    if args.function:
+        ctx.extras["function"] = args.function
+    if args.since:
+        ctx.extras["since"] = args.since
+    if args.follow is True:
+        ctx.extras["follow"] = "1"
+    elif args.follow is False:
+        ctx.extras["follow"] = "0"
 
     console.header("FileWorks", "account  →  environment  →  layer  →  action")
 

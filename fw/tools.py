@@ -31,6 +31,7 @@ def child_env(extra: dict[str, str] | None = None, *, profile: str | None = None
     for key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
         merged.pop(key, None)
     merged["NO_PROXY"] = "*"
+    merged.setdefault("AWS_PAGER", "")
     if profile:
         merged["AWS_PROFILE"] = profile
     if region:

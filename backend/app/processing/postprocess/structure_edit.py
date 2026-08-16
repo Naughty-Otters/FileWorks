@@ -48,7 +48,7 @@ class MarkdownStructureEditor:
             header = STRUCTURE_EDIT_PROMPT
             if len(chunks) > 1:
                 header += f" This is part {index + 1} of {len(chunks)}. Edit this part only."
-            edited.append(self._engine.complete_text(f"{header}\n\n{chunk}"))
+            edited.append(self._engine.complete_text(f"{header}\n\n{chunk}", purpose="structure-edit"))
         return restore_embedded_images("\n\n".join(edited).strip(), held)
 
     def apply(self, result: ReadResult) -> ReadResult:

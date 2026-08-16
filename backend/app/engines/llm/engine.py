@@ -176,7 +176,7 @@ class LLMEngine(OCREngine):
     def _convert(self, file_path: Path, suffix: str) -> str:
         return PAGE_SEPARATOR.join(self._convert_pages(file_path, suffix))
 
-    def complete_text(self, prompt: str) -> str:
+    def complete_text(self, prompt: str, *, purpose: str = "text") -> str:
         """Text-only completion for post-process edits (structure, not vision OCR)."""
         self.ensure_ready()
         spec = self._spec
@@ -196,6 +196,7 @@ class LLMEngine(OCREngine):
                 max_image_side=1,
             ),
             prompt,
+            purpose=purpose,
         )
         markdown = clean_markdown(raw)
         if not markdown:

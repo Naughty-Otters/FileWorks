@@ -289,6 +289,164 @@ class LLMEngineTests(unittest.TestCase):
         with self.assertRaises(LLMClientError):
             invoke_markdown(Empty(), [])
 
+        class ThoughtsThenText:
+            def invoke(self, _msgs):
+                return SimpleNamespace(
+                    content=[
+                        {"type": "thinking", "thinking": "plan"},
+                        {"type": "text", "text": "# doc"},
+                    ]
+                )
+
+        self.assertEqual(invoke_markdown(ThoughtsThenText(), []), "# doc")
+
+        class MaxTokensEmpty:
+            def invoke(self, _msgs):
+                return SimpleNamespace(content="", response_metadata={"finish_reason": "MAX_TOKENS"})
+
+        with self.assertRaises(LLMClientError) as raised:
+            invoke_markdown(MaxTokensEmpty(), [])
+        self.assertIn("MAX_TOKENS", str(raised.exception))
+        self.assertIn("thinking", str(raised.exception))
+
+    def test_logs_token_usage(self) -> None:
+        from app.engines.llm.providers.base import (
+            LLM_TOKENS_TAG,
+            extract_token_usage,
+            format_llm_tokens_line,
+        )
+
+        usage = extract_token_usage(
+            SimpleNamespace(
+                usage_metadata={
+                    "input_tokens": 100,
+                    "output_tokens": 40,
+                    "total_tokens": 148,
+                    "input_token_details": {"cache_read": 8},
+                    "output_token_details": {"reasoning": 8},
+                }
+            )
+        )
+        self.assertEqual(
+            usage,
+            {"input": 100, "output": 40, "thinking": 8, "cached": 8, "total": 148},
+        )
+        gemini_usage = extract_token_usage(
+            SimpleNamespace(
+                usage_metadata=None,
+                response_metadata={
+                    "finish_reason": "STOP",
+                    "usage_metadata": {
+                        "prompt_token_count": 50,
+                        "candidates_token_count": 20,
+                        "thoughts_token_count": 12,
+                        "total_token_count": 82,
+                    },
+                },
+            )
+        )
+        self.assertEqual(gemini_usage["input"], 50)
+        self.assertEqual(gemini_usage["output"], 20)
+        self.assertEqual(gemini_usage["thinking"], 12)
+        self.assertEqual(gemini_usage["total"], 82)
+        line = format_llm_tokens_line(
+            provider="gemini",
+            model="gemini-2.5-flash",
+            purpose="convert",
+            usage=usage,
+            out_chars=32,
+            part="1/1",
+            finish_reason="STOP",
+        )
+        self.assertTrue(line.startswith(f"{LLM_TOKENS_TAG}  "))
+        self.assertIn("provider=gemini", line)
+        self.assertIn("model=gemini-2.5-flash", line)
+        self.assertIn("purpose=convert", line)
+        self.assertIn("part=1/1", line)
+        self.assertIn("input=100", line)
+        self.assertIn("output=40", line)
+        self.assertIn("thinking=8", line)
+        self.assertIn("cached=8", line)
+        self.assertIn("total=148", line)
+        self.assertIn("out_chars=32", line)
+        self.assertIn("finish=STOP", line)
+
+        class Metered:
+            def invoke(self, _msgs):
+                return SimpleNamespace(
+                    content="# hi",
+                    usage_metadata={"input_tokens": 11, "output_tokens": 4, "total_tokens": 15},
+                    response_metadata={"finish_reason": "STOP"},
+                )
+
+        with self.assertLogs("app.engines.llm.providers.base", level="INFO") as logs:
+            invoke_markdown(Metered(), [{"type": "text", "text": "x"}])
+        joined = "\n".join(logs.output)
+        self.assertIn(LLM_TOKENS_TAG, joined)
+        self.assertIn("input=11", joined)
+        self.assertIn("output=4", joined)
+        self.assertIn("total=15", joined)
+
+    def test_gemini_disables_thinking(self) -> None:
+        from app.engines.llm.catalog import get_provider_spec
+        from app.engines.llm.providers.gemini import gemini_thinking_kwargs
+        from app.engines.llm.urls import resolve_http_target
+
+        self.assertEqual(gemini_thinking_kwargs("gemini-2.5-flash"), {"thinking_budget": 0})
+        self.assertEqual(gemini_thinking_kwargs("gemini-3-flash"), {"thinking_level": "minimal"})
+        fake = MagicMock()
+        settings = get_settings()
+        spec = get_provider_spec("gemini")
+        request = ConvertRequest(
+            spec=spec,
+            file_path=Path("a.pdf"),
+            suffix=".pdf",
+            api_key="k",
+            model="gemini-2.5-flash",
+            max_tokens=8,
+            timeout_s=1,
+            target=resolve_http_target(settings, spec),
+            max_pages=1,
+            max_image_side=32,
+        )
+        with patch.dict("sys.modules", {"langchain_google_genai": MagicMock(ChatGoogleGenerativeAI=fake)}):
+            get_api_provider("gemini").build_chat_model(request)
+        kwargs = fake.call_args.kwargs
+        self.assertEqual(kwargs.get("thinking_budget"), 0)
+        self.assertNotIn("thinking_level", kwargs)
+
+    def test_deepseek_v4_disables_thinking(self) -> None:
+        from app.engines.llm.catalog import get_provider_spec
+        from app.engines.llm.providers.deepseek import deepseek_thinking_extra
+        from app.engines.llm.urls import resolve_http_target
+
+        self.assertIsNone(deepseek_thinking_extra("deepseek-chat"))
+        self.assertEqual(
+            deepseek_thinking_extra("deepseek-v4-flash")["extra_body"]["thinking"]["type"],
+            "disabled",
+        )
+        fake = MagicMock()
+        settings = get_settings()
+        spec = get_provider_spec("deepseek")
+        request = ConvertRequest(
+            spec=spec,
+            file_path=Path("a.md"),
+            suffix=".md",
+            api_key="k",
+            model="deepseek-v4-flash",
+            max_tokens=8,
+            timeout_s=1,
+            target=resolve_http_target(settings, spec),
+            max_pages=1,
+            max_image_side=32,
+        )
+        with patch.dict("sys.modules", {"langchain_deepseek": MagicMock(ChatDeepSeek=fake)}):
+            get_api_provider("deepseek").build_chat_model(request)
+        self.assertEqual(
+            fake.call_args.kwargs.get("extra_body"),
+            {"thinking": {"type": "disabled"}},
+        )
+
     def test_provider_build_chat_model(self) -> None:
         from app.engines.llm.catalog import get_provider_spec
         from app.engines.llm.urls import resolve_http_target

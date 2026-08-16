@@ -28,6 +28,8 @@ from fw.context import (
     TF_DIR,
     Context,
     is_lambda_function_url,
+    lambda_logs_tail_args,
+    resolve_lambda_log_groups,
     resolve_public_api_url,
     state_bucket_name,
 )
@@ -642,6 +644,8 @@ def status(ctx: Context) -> None:
         "secret_arn",
         "api_function_name",
         "llm_function_name",
+        "api_log_group",
+        "llm_log_group",
         "db_address",
     ):
         value = outputs.get(key)
@@ -668,6 +672,49 @@ def status(ctx: Context) -> None:
                 if origin.startswith("http://"):
                     continue
                 _check_s3_cors(ctx, bucket, origin, method)
+
+
+def logs(ctx: Context) -> None:
+    """Pull CloudWatch logs from the remote API and/or LLM Lambda."""
+    require_cmd("aws")
+    console.rule(f"Lambda logs ({ctx.env.name})")
+    which = (ctx.extras.get("function") or "").strip().lower()
+    if which not in {"api", "llm", "both"}:
+        which = console.select(
+            "Which Lambda?",
+            [
+                console.Choice("api", "API", "fileworks-<env>-api — FastAPI / convert"),
+                console.Choice("llm", "LLM worker", "fileworks-<env>-llm — vision + translation"),
+                console.Choice("both", "Both", "snapshot of LLM, then live-tail API"),
+            ],
+            default="api",
+        )
+    since = (ctx.extras.get("since") or "1h").strip() or "1h"
+    follow_flag = ctx.extras.get("follow")
+    if follow_flag is not None:
+        follow = follow_flag in {"1", "true", "yes"}
+    else:
+        follow = True
+    outputs = terraform_output(ctx)
+    groups = resolve_lambda_log_groups(
+        ctx.env.name,
+        which,
+        api_function_name=str(outputs.get("api_function_name") or ""),
+        llm_function_name=str(outputs.get("llm_function_name") or ""),
+        api_log_group=str(outputs.get("api_log_group") or ""),
+        llm_log_group=str(outputs.get("llm_log_group") or ""),
+    )
+    if follow and len(groups) > 1:
+        console.info("Live tail is one log group at a time — snapshot of LLM, then following API.")
+    snapshots = groups if not follow else groups[1:]
+    live = groups[:1] if follow else []
+    for label, group in snapshots:
+        console.info(f"{label}: {group}  (since {since})")
+        run(lambda_logs_tail_args(group, since=since, follow=False, region=ctx.region), ctx=ctx)
+    if live:
+        label, group = live[0]
+        console.info(f"Following {label}: {group}  (since {since}, Ctrl-C to stop)")
+        run(lambda_logs_tail_args(group, since=since, follow=True, region=ctx.region), ctx=ctx)
 
 
 # A cold start pulls the OCR image and boots FastAPI, so the first probe can

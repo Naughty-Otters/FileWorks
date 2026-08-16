@@ -157,7 +157,12 @@ class MarkdownTranslator:
             header = TRANSLATE_PROMPT.format(language=f"{label} ({lang})")
             if len(chunks) > 1:
                 header += f" This is part {index + 1} of {len(chunks)}. Translate this part only."
-            raw = provider.complete_text(request, f"{header}\n\n{chunk}")
+            raw = provider.complete_text(
+                request,
+                f"{header}\n\n{chunk}",
+                purpose="translate",
+                part=f"{index + 1}/{len(chunks)}",
+            )
             text = clean_markdown(raw)
             if not text:
                 raise LLMClientError(f"Translation returned empty Markdown for part {index + 1}")

@@ -61,7 +61,14 @@ class LLMApiProvider(ABC):
         """Convert one Markdown string per source page when the backend can split."""
         return [self.convert(request)]
 
-    def complete_text(self, request: ConvertRequest, prompt: str) -> str:
+    def complete_text(
+        self,
+        request: ConvertRequest,
+        prompt: str,
+        *,
+        purpose: str = "text",
+        part: str | None = None,
+    ) -> str:
         """Text-only completion (translation and other post-process steps)."""
         raise NotImplementedError
 
@@ -87,19 +94,50 @@ class LangChainChatProvider(LLMApiProvider):
             request.target.openai_base_url(),
         )
         if self.native_pdf and request.suffix == ".pdf":
-            return [invoke_markdown(model, self.build_parts(request))]
+            return [
+                invoke_markdown(
+                    model,
+                    self.build_parts(request),
+                    request=request,
+                    purpose="convert",
+                    part="1/1",
+                )
+            ]
         blobs = image_blobs(request)
         if len(blobs) <= 1:
-            return [invoke_markdown(model, self.build_parts(request))]
+            return [
+                invoke_markdown(
+                    model,
+                    self.build_parts(request),
+                    request=request,
+                    purpose="convert",
+                    part="1/1",
+                )
+            ]
         pages: list[str] = []
         total = len(blobs)
         for index, (data, media_type) in enumerate(blobs, start=1):
             check_cancelled(where=f"LLM page {index}/{total}")
             prompt = f"{CONVERT_PROMPT} This is source page {index} of {total}."
-            pages.append(invoke_markdown(model, _single_image_parts(prompt, data, media_type)))
+            pages.append(
+                invoke_markdown(
+                    model,
+                    _single_image_parts(prompt, data, media_type),
+                    request=request,
+                    purpose="convert",
+                    part=f"{index}/{total}",
+                )
+            )
         return pages
 
-    def complete_text(self, request: ConvertRequest, prompt: str) -> str:
+    def complete_text(
+        self,
+        request: ConvertRequest,
+        prompt: str,
+        *,
+        purpose: str = "text",
+        part: str | None = None,
+    ) -> str:
         model = self.build_chat_model(request)
         logger.info(
             "LLM text invoke provider=%s package=%s model=%s base_url=%s",
@@ -108,7 +146,13 @@ class LangChainChatProvider(LLMApiProvider):
             request.model,
             request.target.openai_base_url(),
         )
-        return invoke_markdown(model, [{"type": "text", "text": prompt}])
+        return invoke_markdown(
+            model,
+            [{"type": "text", "text": prompt}],
+            request=request,
+            purpose=purpose,
+            part=part,
+        )
 
     @abstractmethod
     def build_chat_model(self, request: ConvertRequest) -> BaseChatModel:
@@ -205,15 +249,207 @@ def anthropic_document_parts(request: ConvertRequest) -> list[dict[str, Any]]:
     return parts
 
 
-def invoke_markdown(model: BaseChatModel, parts: list[dict[str, Any]]) -> str:
+LLM_TOKENS_TAG = "[LLM_TOKENS]"
+
+
+def extract_token_usage(response: object) -> dict[str, int | None]:
+    """Normalize LangChain / vendor token counts into a stable dict."""
+    usage_meta = _as_mapping(getattr(response, "usage_metadata", None))
+    response_meta = _as_mapping(getattr(response, "response_metadata", None))
+    extras = _as_mapping(getattr(response, "additional_kwargs", None))
+    openai_usage = _as_mapping(
+        response_meta.get("token_usage")
+        or response_meta.get("usage")
+        or extras.get("usage")
+    )
+    gemini_usage = _as_mapping(
+        response_meta.get("usage_metadata") or extras.get("usage_metadata")
+    )
+    input_details = _as_mapping(
+        usage_meta.get("input_token_details")
+        or openai_usage.get("prompt_tokens_details")
+        or gemini_usage.get("prompt_tokens_details")
+    )
+    output_details = _as_mapping(
+        usage_meta.get("output_token_details")
+        or openai_usage.get("completion_tokens_details")
+        or gemini_usage.get("completion_tokens_details")
+    )
+    input_tokens = _first_int(
+        usage_meta.get("input_tokens"),
+        openai_usage.get("prompt_tokens"),
+        gemini_usage.get("prompt_token_count"),
+        gemini_usage.get("prompt_tokens"),
+    )
+    output_tokens = _first_int(
+        usage_meta.get("output_tokens"),
+        openai_usage.get("completion_tokens"),
+        gemini_usage.get("candidates_token_count"),
+        gemini_usage.get("candidates_tokens"),
+    )
+    thinking = _first_int(
+        output_details.get("reasoning"),
+        output_details.get("reasoning_tokens"),
+        gemini_usage.get("thoughts_token_count"),
+        openai_usage.get("reasoning_tokens"),
+        usage_meta.get("reasoning_tokens"),
+    )
+    cached = _first_int(
+        input_details.get("cache_read"),
+        input_details.get("cached_tokens"),
+        openai_usage.get("cached_tokens"),
+        gemini_usage.get("cached_content_token_count"),
+    )
+    total = _first_int(
+        usage_meta.get("total_tokens"),
+        openai_usage.get("total_tokens"),
+        gemini_usage.get("total_token_count"),
+    )
+    if total is None:
+        parts = [value for value in (input_tokens, output_tokens, thinking) if value is not None]
+        if parts:
+            total = sum(parts)
+    return {
+        "input": input_tokens,
+        "output": output_tokens,
+        "thinking": thinking,
+        "cached": cached,
+        "total": total,
+    }
+
+
+def format_llm_tokens_line(
+    *,
+    provider: str | None,
+    model: str | None,
+    purpose: str,
+    usage: dict[str, int | None],
+    out_chars: int,
+    part: str | None = None,
+    finish_reason: str | None = None,
+) -> str:
+    fields = [
+        f"provider={provider or '-'}",
+        f"model={model or '-'}",
+        f"purpose={purpose}",
+    ]
+    if part:
+        fields.append(f"part={part}")
+    fields.extend(
+        [
+            f"input={_fmt_count(usage.get('input'))}",
+            f"output={_fmt_count(usage.get('output'))}",
+            f"thinking={_fmt_count(usage.get('thinking'))}",
+            f"cached={_fmt_count(usage.get('cached'))}",
+            f"total={_fmt_count(usage.get('total'))}",
+            f"out_chars={out_chars}",
+        ]
+    )
+    if finish_reason:
+        fields.append(f"finish={finish_reason}")
+    return f"{LLM_TOKENS_TAG}  " + "  ".join(fields)
+
+
+def log_llm_tokens(
+    response: object,
+    *,
+    request: ConvertRequest | None,
+    chat_model: object,
+    purpose: str,
+    part: str | None,
+    out_chars: int,
+) -> None:
+    provider = request.spec.id if request else None
+    model_name = (request.model if request else None) or _chat_model_name(chat_model)
+    meta = _as_mapping(getattr(response, "response_metadata", None))
+    finish = meta.get("finish_reason") or meta.get("stop_reason") or meta.get("finishReason")
+    line = format_llm_tokens_line(
+        provider=provider,
+        model=model_name,
+        purpose=purpose,
+        usage=extract_token_usage(response),
+        out_chars=out_chars,
+        part=part,
+        finish_reason=str(finish) if finish else None,
+    )
+    logger.info("%s", line)
+
+
+def _chat_model_name(chat_model: object) -> str | None:
+    for attr in ("model", "model_name", "model_id"):
+        value = getattr(chat_model, attr, None)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def _as_mapping(value: object) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+    dump = getattr(value, "model_dump", None)
+    if callable(dump):
+        try:
+            dumped = dump()
+            if isinstance(dumped, dict):
+                return dumped
+        except Exception:  # noqa: BLE001
+            pass
+    items = getattr(value, "items", None)
+    if callable(items):
+        try:
+            return dict(items())
+        except Exception:  # noqa: BLE001
+            pass
+    return {}
+
+
+def _first_int(*values: object) -> int | None:
+    for value in values:
+        parsed = _as_int(value)
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _as_int(value: object) -> int | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _fmt_count(value: int | None) -> str:
+    return "-" if value is None else str(value)
+
+
+def invoke_markdown(
+    model: BaseChatModel,
+    parts: list[dict[str, Any]],
+    *,
+    request: ConvertRequest | None = None,
+    purpose: str = "convert",
+    part: str | None = None,
+) -> str:
     message = HumanMessage(content=parts)
     try:
         response = model.invoke([message])
     except Exception as exc:  # noqa: BLE001
         raise LLMClientError(str(exc)) from exc
     text = _message_text(response)
+    log_llm_tokens(
+        response,
+        request=request,
+        chat_model=model,
+        purpose=purpose,
+        part=part,
+        out_chars=len(text.strip()),
+    )
     if not text.strip():
-        raise LLMClientError("LangChain chat model returned empty content")
+        raise _empty_content_error(response)
     return text
 
 
@@ -225,8 +461,48 @@ def clean_markdown(text: str) -> str:
     return cleaned.strip()
 
 
+_SKIP_PART_TYPES = {
+    "thinking",
+    "thought",
+    "reasoning",
+    "executable_code",
+    "code_execution_result",
+}
+
+
+def _empty_content_error(response: object) -> LLMClientError:
+    meta = getattr(response, "response_metadata", None) or {}
+    if not isinstance(meta, dict):
+        meta = {}
+    reason = meta.get("finish_reason") or meta.get("stop_reason") or meta.get("finishReason")
+    detail = "LangChain chat model returned empty content"
+    if reason:
+        detail = f"{detail} (finish_reason={reason})"
+    if str(reason).upper() in {"MAX_TOKENS", "LENGTH"}:
+        detail += "; the model spent its token budget on thinking"
+    if str(reason).upper() in {"SAFETY", "BLOCKLIST", "PROHIBITED_CONTENT"}:
+        detail += "; the provider blocked the response"
+    logger.warning("%s metadata=%s", detail, meta or None)
+    return LLMClientError(detail)
+
+
 def _message_text(message: BaseMessage) -> str:
     content = message.content if isinstance(message, AIMessage) else getattr(message, "content", "")
+    text = _content_to_text(content)
+    if text.strip():
+        return text
+    extras = getattr(message, "additional_kwargs", None) or {}
+    if isinstance(extras, dict):
+        for key in ("text", "output_text"):
+            value = extras.get(key)
+            if isinstance(value, str) and value.strip():
+                return value
+    return text
+
+
+def _content_to_text(content: object) -> str:
+    if content is None:
+        return ""
     if isinstance(content, str):
         return content
     if isinstance(content, list):
@@ -234,7 +510,10 @@ def _message_text(message: BaseMessage) -> str:
         for item in content:
             if isinstance(item, str):
                 chunks.append(item)
-            elif isinstance(item, dict) and item.get("type") in {"text", "output_text"}:
+            elif isinstance(item, dict):
+                part_type = str(item.get("type") or "").lower()
+                if part_type in _SKIP_PART_TYPES:
+                    continue
                 chunks.append(str(item.get("text") or ""))
         return "".join(chunks)
     return str(content or "")

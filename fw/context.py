@@ -38,6 +38,8 @@ REQUIRED_IAM_ACTIONS = (
     "s3:CreateBucket",
     "secretsmanager:CreateSecret",
     "logs:CreateLogGroup",
+    "logs:FilterLogEvents",
+    "logs:GetLogEvents",
     "servicequotas:GetServiceQuota",
     "servicequotas:RequestServiceQuotaIncrease",
     "application-autoscaling:RegisterScalableTarget",
@@ -156,6 +158,48 @@ def resolve_environment(token: str) -> Environment | None:
         if token == env.name or token in env.aliases:
             return env
     return None
+
+
+def resolve_lambda_log_groups(
+    env_name: str,
+    which: str,
+    *,
+    api_function_name: str | None = None,
+    llm_function_name: str | None = None,
+    api_log_group: str | None = None,
+    llm_log_group: str | None = None,
+) -> list[tuple[str, str]]:
+    """Return ``(label, log_group)`` pairs for the API and/or LLM Lambdas."""
+    if which not in {"api", "llm", "both"}:
+        raise ValueError(f"Unknown Lambda log target '{which}'")
+    api_name = (api_function_name or "").strip() or f"fileworks-{env_name}-api"
+    llm_name = (llm_function_name or "").strip() or f"fileworks-{env_name}-llm"
+    api_group = (api_log_group or "").strip() or f"/aws/lambda/{api_name}"
+    llm_group = (llm_log_group or "").strip() or f"/aws/lambda/{llm_name}"
+    groups = {
+        "api": [("API", api_group)],
+        "llm": [("LLM", llm_group)],
+        "both": [("API", api_group), ("LLM", llm_group)],
+    }
+    return groups[which]
+
+
+def lambda_logs_tail_args(group: str, *, since: str, follow: bool, region: str) -> list[str]:
+    args = [
+        "aws",
+        "logs",
+        "tail",
+        group,
+        "--since",
+        since,
+        "--format",
+        "short",
+        "--region",
+        region,
+    ]
+    if follow:
+        args.append("--follow")
+    return args
 
 
 def state_bucket_name(account: str) -> str:
