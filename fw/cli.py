@@ -122,9 +122,26 @@ def _actions() -> tuple[MenuAction, ...]:
             "infra",
             frozenset({CLOUD_SCOPE}),
         ),
-        MenuAction("bootstrap", "Bootstrap Terraform state bucket", "", cloud.bootstrap, True, "infra", frozenset({CLOUD_SCOPE})),
+        MenuAction(
+            "bootstrap",
+            "Bootstrap app bucket",
+            "fileworks-<env> for data + Terraform state",
+            cloud.bootstrap,
+            True,
+            "infra",
+            frozenset({CLOUD_SCOPE}),
+        ),
         MenuAction("push-image", "Build & push Lambda image", "", cloud.push_image, True, "infra", frozenset({CLOUD_SCOPE})),
         MenuAction("plan", "Terraform plan", "", cloud.plan, True, "infra", frozenset({CLOUD_SCOPE})),
+        MenuAction(
+            "cost",
+            "Cost Explorer",
+            "daily / weekly / monthly AWS spend",
+            cloud.cost,
+            True,
+            "infra",
+            frozenset({CLOUD_SCOPE}),
+        ),
         MenuAction("apply", "Terraform apply", "", cloud.apply, True, "infra", frozenset({CLOUD_SCOPE})),
         MenuAction("full", "Full deploy", "image + apply + secrets + UI", cloud.full, True, "infra", frozenset({CLOUD_SCOPE})),
         MenuAction("status", "Show URLs / health", "", cloud.status, True, "infra", frozenset({CLOUD_SCOPE})),
@@ -365,6 +382,26 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--region", help=f"AWS region (default: {DEFAULT_REGION}).")
     parser.add_argument("--yes", action="store_true", help="Skip apply confirmation.")
     parser.add_argument(
+        "--period",
+        choices=["daily", "weekly", "monthly"],
+        help="With cost: Cost Explorer granularity (default: prompt, or monthly non-interactively via menu default).",
+    )
+    parser.add_argument(
+        "--estimate",
+        action="store_true",
+        help="With cost: also show the Terraform tfvars monthly floor estimate.",
+    )
+    parser.add_argument(
+        "--actual",
+        action="store_true",
+        help="With cost: synonym for Cost Explorer (default). Kept for compatibility.",
+    )
+    parser.add_argument(
+        "--infracost",
+        action="store_true",
+        help="With cost: run Infracost against a fresh Terraform plan.",
+    )
+    parser.add_argument(
         "--function",
         choices=["api", "llm", "both"],
         help="Lambda to read with the logs action (default: prompt).",
@@ -424,6 +461,14 @@ def main(argv: list[str] | None = None) -> int:
         ctx.extras["function"] = args.function
     if args.since:
         ctx.extras["since"] = args.since
+    if getattr(args, "period", None):
+        ctx.extras["period"] = args.period
+    if getattr(args, "estimate", False):
+        ctx.extras["estimate"] = "1"
+    if getattr(args, "actual", False):
+        ctx.extras["actual"] = "1"
+    if getattr(args, "infracost", False):
+        ctx.extras["infracost"] = "1"
     if args.follow is True:
         ctx.extras["follow"] = "1"
     elif args.follow is False:
@@ -434,7 +479,21 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.action:
             action = _action_by_key()[args.action]
-            if action.needs_aws:
+            needs_aws = action.needs_aws
+            if action.key == "cost":
+                estimate_only = (
+                    getattr(args, "estimate", False)
+                    and not getattr(args, "period", None)
+                    and not getattr(args, "actual", False)
+                    and not getattr(args, "infracost", False)
+                )
+                if estimate_only:
+                    ctx.extras["estimate_only"] = "1"
+                    ctx.extras["estimate"] = "1"
+                    needs_aws = False
+                else:
+                    needs_aws = True
+            if needs_aws:
                 _establish_session(ctx, args.profile)
                 if cloud_env is None:
                     ctx.env = _choose_cloud_environment(ctx.env)

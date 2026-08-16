@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { AboutPage } from "@/components/about-page";
-import { BUSINESS_NAME, SITE_URL } from "@/lib/legal";
+import { buildPageMetadata } from "@/lib/seo";
+import { BUSINESS_NAME } from "@/lib/legal";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: `About ${BUSINESS_NAME}`,
-  description: `${BUSINESS_NAME} converts PDFs, office files, images, and scans to Markdown. Monthly Pro and Premium software subscriptions at ${SITE_URL}.`,
-};
+  description: `${BUSINESS_NAME} converts PDF, Word, Excel, PowerPoint, images, and scans into editable Markdown with optional AI OCR and translation. Monthly workspace and Convert API subscriptions at fileworks.ai.`,
+  path: "/about",
+});
 
 export default function AboutRoute() {
   return <AboutPage />;

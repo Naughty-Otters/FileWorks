@@ -5,7 +5,7 @@ cannot be stopped from the outside — AWS has no cancel API — so Stop writes 
 tombstone and the worker checks it between pages and exits early.
 
 Storage (must be visible to every process that might be doing the work):
-- S3 history bucket ``cancel/{run_id}`` when ``storage_backend=s3`` — shared by
+- S3 ``history/cancel/{run_id}`` when ``storage_backend=s3`` — shared by
   the API Lambda and the LLM Lambda.
 - A file under ``upload_dir/cancel/{run_id}`` otherwise — parent and child
   processes on the same machine both see it (an in-memory dict would not).
@@ -28,6 +28,7 @@ from app.services.worker import ConversionCancelled
 logger = logging.getLogger(__name__)
 
 CANCEL_PREFIX = "cancel"
+S3_CANCEL_PREFIX = "history/cancel"
 _current_run_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "cancel_run_id", default=None
 )
@@ -52,7 +53,8 @@ def cancel_scope(run_id: str | None) -> Iterator[None]:
 
 
 def cancel_key(run_id: str) -> str:
-    return f"{CANCEL_PREFIX}/{run_id}"
+    """S3 object key for a cancel tombstone (under history/)."""
+    return f"{S3_CANCEL_PREFIX}/{run_id}"
 
 
 def mark_cancelled(

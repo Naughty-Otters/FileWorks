@@ -203,8 +203,20 @@ def lambda_logs_tail_args(group: str, *, since: str, follow: bool, region: str) 
 
 
 def state_bucket_name(account: str) -> str:
+    """Legacy per-account state bucket (fileworks-tfstate-<account>). Prefer app_bucket_name."""
     return f"fileworks-tfstate-{account}"
 
+
+def app_bucket_name(env: Environment | str) -> str:
+    """App + Terraform-state bucket for an environment: fileworks-<prod|stage|dev>."""
+    name = env.name if isinstance(env, Environment) else str(env)
+    alias = "stage" if name == "staging" else name
+    return f"fileworks-{alias}"
+
+
+def terraform_state_key(account_id: str) -> str:
+    """Object key for remote state inside the app bucket."""
+    return f"tfstate/{account_id}/fileworks/terraform.tfstate"
 
 @dataclass
 class Session:

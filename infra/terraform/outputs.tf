@@ -51,12 +51,13 @@ output "llm_log_group" {
 }
 
 output "history_bucket" {
-  value = aws_s3_bucket.history.bucket
+  value       = aws_s3_bucket.uploads.bucket
+  description = "Same as uploads_bucket. History lives under the history/ prefix."
 }
 
 output "uploads_bucket" {
   value       = aws_s3_bucket.uploads.bucket
-  description = "s3://fileworks-<prod|stage|dev>/upload/files/<user_id>/<file>"
+  description = "s3://fileworks-<prod|stage|dev>/{upload/files|history|tfstate}/…"
 }
 
 output "uploads_prefix" {

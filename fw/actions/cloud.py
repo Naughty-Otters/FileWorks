@@ -30,13 +30,15 @@ from fw.context import (
     is_lambda_function_url,
     lambda_logs_tail_args,
     resolve_lambda_log_groups,
+    app_bucket_name,
     resolve_public_api_url,
-    state_bucket_name,
+    terraform_state_key,
 )
 from fw.tools import (
     CommandError,
     aws_json,
     bootstrap_state,
+    detach_app_bucket_from_state,
     require_cmd,
     run,
     terraform_cmd,
@@ -426,10 +428,12 @@ def request_lambda_quota(ctx: Context) -> None:
 
 
 def bootstrap(ctx: Context) -> None:
-    console.rule("Bootstrap Terraform state bucket")
-    console.info(f"Bucket {state_bucket_name(ctx.account_id)} in {ctx.region}")
+    bucket = app_bucket_name(ctx.env)
+    key = terraform_state_key(ctx.account_id)
+    console.rule("Bootstrap app bucket (data + Terraform state)")
+    console.info(f"Bucket s3://{bucket}/  state key {key}")
     bootstrap_state(ctx)
-    console.success("Remote state bucket is ready.")
+    console.success(f"App bucket ready — remote state at s3://{bucket}/{key}")
 
 
 def _require_buildx(ctx: Context) -> None:
@@ -601,6 +605,249 @@ def plan(ctx: Context) -> None:
     terraform_cmd(ctx, ["plan"])
 
 
+def cost(ctx: Context) -> None:
+    """Cost Explorer spend (daily/weekly/monthly) plus optional Terraform estimate."""
+    estimate_only = ctx.extras.get("estimate_only") == "1"
+    show_estimate = ctx.extras.get("estimate") == "1" or estimate_only
+
+    if not estimate_only:
+        period = (ctx.extras.get("period") or "").strip().lower()
+        if period not in {"daily", "weekly", "monthly"}:
+            period = console.select(
+                "Cost Explorer period",
+                [
+                    console.Choice("daily", "Daily", "last 14 days"),
+                    console.Choice("weekly", "Weekly", "last 8 weeks"),
+                    console.Choice("monthly", "Monthly", "last ~6 months"),
+                ],
+                default="monthly",
+            )
+        _cost_explorer(ctx, period)
+
+    if show_estimate:
+        _cost_estimate(ctx)
+
+    if ctx.extras.get("infracost") == "1":
+        _cost_infracost(ctx)
+
+    if not show_estimate and ctx.extras.get("infracost") != "1":
+        console.blank()
+        console.info(
+            "Also available: "
+            f"`fw --env {ctx.env.name} cost --period daily|weekly|monthly` · "
+            f"`fw --env {ctx.env.name} cost --estimate`"
+        )
+
+
+def _cost_estimate(ctx: Context) -> None:
+    from fw.costing import estimate_monthly, format_usd, load_env_settings
+
+    console.rule(f"Estimated monthly floor ({ctx.env.name})")
+    settings = load_env_settings(ctx.env.tfvars_file, ctx.env.local_tfvars_file)
+    breakdown = estimate_monthly(ctx.env.name, settings)
+
+    console.kv_table(
+        "Config drivers",
+        [
+            ("environment", breakdown.environment),
+            ("region", breakdown.region),
+            ("NAT gateway", "on" if settings.get("enable_nat_gateway", True) else "off"),
+            ("RDS class", str(settings.get("db_instance_class"))),
+            ("API memory", f"{settings.get('lambda_memory_mb')} MB"),
+            (
+                "provisioned",
+                f"min={settings.get('lambda_provisioned_min')} max={settings.get('lambda_provisioned_max')}",
+            ),
+        ],
+    )
+
+    fixed_rows = [
+        (line.name, format_usd(line.monthly_usd), line.detail)
+        for line in breakdown.lines
+        if line.category == "fixed"
+    ]
+    console.data_table(
+        "Fixed monthly (always-on floor)",
+        ["Resource", "USD/mo", "Detail"],
+        [*fixed_rows, ("TOTAL FIXED", format_usd(breakdown.fixed_total), "")],
+    )
+
+    scale_rows = [
+        (line.name, format_usd(line.monthly_usd), line.detail)
+        for line in breakdown.lines
+        if line.category == "scale"
+    ]
+    if scale_rows:
+        console.data_table(
+            "Scale-out ceiling (if provisioned sits at max all month)",
+            ["Resource", "USD/mo", "Detail"],
+            [
+                *scale_rows,
+                (
+                    "FLOOR + CEILING",
+                    format_usd(breakdown.fixed_total + breakdown.scale_ceiling),
+                    "",
+                ),
+            ],
+        )
+
+    for note in breakdown.notes:
+        console.info(note)
+
+
+def _cost_explorer(ctx: Context, period: str) -> None:
+    """Show Cost Explorer spend for the chosen period."""
+    from fw.costing import (
+        format_usd,
+        resolve_cost_period,
+        series_from_ce_results,
+        services_from_ce_results,
+    )
+
+    require_cmd("aws")
+    window = resolve_cost_period(period)
+    console.rule(f"Cost Explorer — {window.label}")
+    console.info(
+        f"Account {ctx.account_id} · {window.start.isoformat()} → {window.end.isoformat()} "
+        f"(end exclusive) · trying Environment={ctx.env.name} tag filter"
+    )
+
+    results = _ce_get_cost_and_usage(
+        ctx,
+        start=window.start.isoformat(),
+        end=window.end.isoformat(),
+        granularity=window.granularity,
+        group_by=None,
+        env_tag=ctx.env.name,
+    )
+    used_tag = True
+    if results is None:
+        used_tag = False
+        console.warn(
+            "No spend matched the Environment cost-allocation tag "
+            f"(activate it in Billing → Cost allocation tags, or costs are untagged). "
+            f"Falling back to account-wide spend."
+        )
+        results = _ce_get_cost_and_usage(
+            ctx,
+            start=window.start.isoformat(),
+            end=window.end.isoformat(),
+            granularity=window.granularity,
+            group_by=None,
+            env_tag=None,
+        ) or []
+
+    series = series_from_ce_results(period, results)
+    total = sum(point.amount for point in series)
+    unit = {"daily": "Day", "weekly": "Week", "monthly": "Month"}[period]
+    console.data_table(
+        f"Spend by {unit.lower()}" + ("" if used_tag else " (account-wide)"),
+        [unit, "USD"],
+        [*((point.label, format_usd(point.amount)) for point in series), ("TOTAL", format_usd(total))],
+    )
+
+    service_results = _ce_get_cost_and_usage(
+        ctx,
+        start=window.start.isoformat(),
+        end=window.end.isoformat(),
+        granularity=window.granularity,
+        group_by="SERVICE",
+        env_tag=ctx.env.name if used_tag else None,
+    ) or []
+    services = services_from_ce_results(service_results)
+    service_total = sum(amount for _, amount in services)
+    console.data_table(
+        "By service (same window)",
+        ["Service", "USD"],
+        [
+            *((name, format_usd(amount)) for name, amount in services[:25]),
+            ("TOTAL", format_usd(service_total)),
+        ],
+    )
+
+
+def _ce_get_cost_and_usage(
+    ctx: Context,
+    *,
+    start: str,
+    end: str,
+    granularity: str,
+    group_by: str | None,
+    env_tag: str | None,
+) -> list[dict] | None:
+    """Call Cost Explorer. Returns None when a tag filter yields no rows."""
+    import json
+
+    args = [
+        "ce",
+        "get-cost-and-usage",
+        "--time-period",
+        f"Start={start},End={end}",
+        "--granularity",
+        granularity,
+        "--metrics",
+        "UnblendedCost",
+    ]
+    if group_by:
+        args.extend(["--group-by", f"Type=DIMENSION,Key={group_by}"])
+    if env_tag:
+        filt = {
+            "Tags": {
+                "Key": "Environment",
+                "Values": [env_tag],
+            }
+        }
+        args.extend(["--filter", json.dumps(filt)])
+
+    try:
+        payload = aws_json(ctx, args)
+    except CommandError as exc:
+        console.warn(f"Cost Explorer request failed: {exc}")
+        return [] if env_tag is None else None
+
+    if not isinstance(payload, dict):
+        return [] if env_tag is None else None
+    results = [item for item in (payload.get("ResultsByTime") or []) if isinstance(item, dict)]
+    if env_tag is not None:
+        # Tag filter with no matching allocation data → empty or all-zero totals.
+        total = 0.0
+        from fw.costing import parse_ce_amount, services_from_ce_results
+
+        if group_by:
+            total = sum(amount for _, amount in services_from_ce_results(results))
+        else:
+            total = sum(parse_ce_amount(item.get("Total") or {}) for item in results)
+        if total < 0.005:
+            return None
+    return results
+
+
+def _cost_infracost(ctx: Context) -> None:
+    require_cmd("infracost", "terraform")
+    console.rule("Infracost (Terraform plan)")
+    terraform_init(ctx)
+    plan_path = TF_DIR / f".fw-cost-{ctx.env.name}.tfplan"
+    json_path = TF_DIR / f".fw-cost-{ctx.env.name}.json"
+    try:
+        terraform_cmd(ctx, ["plan", f"-out={plan_path.name}"])
+        shown = run(
+            ["terraform", "show", "-json", plan_path.name],
+            cwd=TF_DIR,
+            capture=True,
+            ctx=ctx,
+        )
+        json_path.write_text(shown.stdout or "{}", encoding="utf-8")
+        run(
+            ["infracost", "breakdown", "--path", str(json_path)],
+            cwd=TF_DIR,
+            ctx=ctx,
+        )
+    finally:
+        for path in (plan_path, json_path):
+            if path.exists():
+                path.unlink()
+
+
 def apply(ctx: Context) -> None:
     console.rule(f"Terraform apply ({ctx.env.name})")
     if ctx.env.is_production and not ctx.auto_yes:
@@ -624,8 +871,12 @@ def destroy(ctx: Context) -> None:
         console.warn("Cancelled.")
         return
     terraform_init(ctx)
+    detach_app_bucket_from_state(ctx)
     terraform_cmd(ctx, ["destroy", "-auto-approve"])
-    console.success(f"{ctx.env.name} stack destroyed.")
+    console.success(
+        f"{ctx.env.name} stack destroyed. "
+        f"App bucket {app_bucket_name(ctx.env)} (and Terraform state) was left in place."
+    )
 
 
 def status(ctx: Context) -> None:
@@ -665,13 +916,13 @@ def status(ctx: Context) -> None:
         _check_ui_endpoint(ctx, ctx.env.public_origin, api_url)
         if ctx.env.public_origin != ctx.env.pages_origin:
             _check_ui_endpoint(ctx, ctx.env.pages_origin, api_url)
-    for key, method in (("history_bucket", "GET"), ("uploads_bucket", "PUT")):
-        bucket = str(outputs.get(key) or "")
-        if bucket:
-            for origin in site_origins:
-                if origin.startswith("http://"):
-                    continue
-                _check_s3_cors(ctx, bucket, origin, method)
+    bucket = str(outputs.get("uploads_bucket") or outputs.get("history_bucket") or "")
+    if bucket:
+        for origin in site_origins:
+            if origin.startswith("http://"):
+                continue
+            _check_s3_cors(ctx, bucket, origin, "GET")
+            _check_s3_cors(ctx, bucket, origin, "PUT")
 
 
 def logs(ctx: Context) -> None:
@@ -943,11 +1194,11 @@ def _check_cors(ctx: Context, api_url: str, origin: str) -> bool:
 
 
 def _check_s3_cors(ctx: Context, bucket: str, origin: str, method: str) -> bool:
-    """The browser talks to S3 directly, so each bucket needs its own CORS rule.
+    """The browser talks to S3 directly, so the app bucket needs CORS for GET and PUT.
 
-    Uploads PUT to the uploads bucket and previews GET a presigned history URL.
-    Neither goes through the API, so an out-of-date bucket rule is invisible to
-    the API preflight check above and only shows up as a failed click.
+    Uploads PUT under upload/files/ and history previews GET a presigned URL under
+    history/. Neither goes through the API, so an out-of-date bucket rule is invisible
+    to the API preflight check above and only shows up as a failed click.
     """
     probe = run(
         [

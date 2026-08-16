@@ -2,12 +2,39 @@ import { BrandLockup } from "@/components/brand-lockup";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteFooter } from "@/components/site-footer";
 import { MarketingNav } from "@/components/marketing-nav";
+import { SeoFaq } from "@/components/seo-faq";
+import { JsonLd } from "@/components/json-ld";
 import { API_PLAN_CATALOG, PLAN_CATALOG, PRICE_ROLES } from "@/lib/plans";
 import { BUSINESS_NAME, SITE_HOST, SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
+import {
+  CONVERT_GUIDES,
+  HOME_FAQS,
+  INPUT_FORMATS,
+  OUTPUT_FORMATS,
+  faqJsonLd,
+  organizationJsonLd,
+} from "@/lib/seo";
 
 export function AboutPage() {
   return (
     <div className="app-shell relative">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@graph": [
+            organizationJsonLd(),
+            {
+              "@type": "AboutPage",
+              "@id": `${SITE_URL}/about`,
+              url: `${SITE_URL}/about`,
+              name: `About ${BUSINESS_NAME}`,
+              isPartOf: { "@id": `${SITE_URL}/#website` },
+              about: { "@id": `${SITE_URL}/#organization` },
+            },
+            { ...faqJsonLd(HOME_FAQS), "@id": `${SITE_URL}/about#faq` },
+          ],
+        }}
+      />
       <div className="atmosphere" aria-hidden />
       <header className="relative z-10 border-b border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
@@ -22,12 +49,13 @@ export function AboutPage() {
           <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{SITE_HOST}</p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl tracking-tight">{BUSINESS_NAME}</h1>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            {BUSINESS_NAME} is an online software service at{" "}
+            {BUSINESS_NAME} is an online document conversion service at{" "}
             <a href={SITE_URL} className="text-[var(--accent-strong)] hover:underline">
               {SITE_URL}
             </a>
-            . We convert documents into editable Markdown and sell monthly subscriptions for that
-            software. We do not sell physical goods.
+            . We turn PDF, Microsoft Office, images, and scans into editable Markdown for writing,
+            coding agents, Obsidian vaults, and RAG pipelines — then sell monthly software
+            subscriptions for that workspace and Convert API. We do not sell physical goods.
           </p>
         </div>
 
@@ -40,13 +68,54 @@ export function AboutPage() {
             Office (Word, Excel, PowerPoint), OpenDocument, CSV, images, scans, Markdown, and TXT
             into editable Markdown. Optional add-ons in the same pass: AI reading of scans and
             images, and translation into 19 languages. Results download as Markdown, TXT, HTML,
-            JSON, or print-ready PDF.
+            JSON, Word (.docx), PNG, JPEG, or print-ready PDF.
           </p>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             What we charge for: workspace access (file quotas and AI / translation allowances) and
             Convert API access (page credits and API keys), each billed as a monthly software
             subscription through Stripe. The two products can be held together.
           </p>
+        </section>
+
+        <section className="panel rounded-3xl px-5 py-5">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
+            Supported formats
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+            Inputs (up to 50 MB): {INPUT_FORMATS.join("; ")}.
+          </p>
+          <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+            Outputs: {OUTPUT_FORMATS.join(", ")}.
+          </p>
+          <ul className="mt-4 space-y-1 text-sm">
+            {CONVERT_GUIDES.map((guide) => (
+              <li key={guide.slug}>
+                <a href={guide.path} className="text-[var(--accent-strong)] hover:underline">
+                  {guide.headline}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="panel rounded-3xl px-5 py-5">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
+            Who it is for
+          </h2>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--ink-muted)]">
+            <li>
+              Developers and AI agents that need PDF or Office content as clean Markdown before
+              summarization, coding, or RAG chunking.
+            </li>
+            <li>
+              Writers and researchers moving reports, papers, and slide decks into Obsidian,
+              Notion-export Markdown, or Git-backed docs.
+            </li>
+            <li>
+              Teams that need OCR on scans plus optional translation without juggling separate
+              tools.
+            </li>
+          </ul>
         </section>
 
         <section className="panel rounded-3xl px-5 py-5">
@@ -109,6 +178,8 @@ export function AboutPage() {
           </p>
         </section>
 
+        <SeoFaq title="Common questions" items={HOME_FAQS} />
+
         <section className="panel rounded-3xl px-5 py-5">
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
             Customer service
@@ -121,6 +192,10 @@ export function AboutPage() {
             . This page,{" "}
             <a href="/pricing" className="text-[var(--accent-strong)] hover:underline">
               Pricing
+            </a>
+            ,{" "}
+            <a href="/docs" className="text-[var(--accent-strong)] hover:underline">
+              API
             </a>
             , and{" "}
             <a href="/legal" className="text-[var(--accent-strong)] hover:underline">

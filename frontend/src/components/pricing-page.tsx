@@ -15,7 +15,11 @@ import {
   type BillingCatalog,
 } from "@/lib/api";
 import { reloadSession, setSessionMe, useSession } from "@/lib/session";
+import { SeoFaq } from "@/components/seo-faq";
+import { JsonLd } from "@/components/json-ld";
 import { API_PLAN_CATALOG, apiPlanSwitchLabel, canMoveToApiPlan, formatPlanPrice, PLAN_CATALOG, planIsPurchasable, planSwitchLabel, PRICE_ROLES, usageFitsPlan, usageOverLimitReasons } from "@/lib/plans";
+import { faqJsonLd, organizationJsonLd, PRICING_FAQS, softwareApplicationJsonLd } from "@/lib/seo";
+import { SITE_URL } from "@/lib/legal";
 import { cn } from "@/lib/utils";
 
 function loginNext(path: string) {
@@ -115,6 +119,23 @@ export function PricingPage() {
 
   return (
     <div className="app-shell relative">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@graph": [
+            organizationJsonLd(),
+            softwareApplicationJsonLd(),
+            {
+              "@type": "WebPage",
+              "@id": `${SITE_URL}/pricing`,
+              url: `${SITE_URL}/pricing`,
+              name: "Pricing — FileWorks",
+              isPartOf: { "@id": `${SITE_URL}/#website` },
+            },
+            { ...faqJsonLd(PRICING_FAQS), "@id": `${SITE_URL}/pricing#faq` },
+          ],
+        }}
+      />
       <div className="atmosphere" aria-hidden />
       <header className="relative z-10 border-b border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
@@ -132,11 +153,14 @@ export function PricingPage() {
       </header>
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-10 md:px-6">
         <div>
-          <p className="font-[family-name:var(--font-display)] text-4xl tracking-tight">Prices and roles</p>
+          <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-tight">
+            Prices and roles
+          </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
-            Two products, one account. Workspace roles (Basic, Pro, Premium) cover the FileWorks
-            app. Convert API plans are billed separately with page credits and a long-lived API
-            key. You can hold both at once.{" "}
+            Two products, one account. Workspace roles (Basic, Pro, Premium) cover PDF, Word,
+            Excel, PowerPoint, image, and scan conversion in the FileWorks app. Convert API plans
+            are billed separately with page credits and a long-lived API key. You can hold both at
+            once.{" "}
             <a href="/legal#refunds" className="text-[var(--accent-strong)] hover:underline">
               Refunds, cancellation, and contact
             </a>
@@ -375,6 +399,8 @@ export function PricingPage() {
             </tbody>
           </table>
         </section>
+
+        <SeoFaq items={PRICING_FAQS} />
       </main>
       <SiteFooter />
     </div>

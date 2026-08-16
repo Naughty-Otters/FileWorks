@@ -1,5 +1,5 @@
-# One-time Terraform remote state (S3 native lockfile, no DynamoDB).
-# Applied with local state by infra/deploy.py → Bootstrap.
+# Creates the per-env app bucket used for uploads, history, and Terraform state.
+# Applied with local state by fw bootstrap. The main stack imports this bucket.
 
 terraform {
   required_version = ">= 1.10.0"
@@ -18,7 +18,7 @@ variable "aws_region" {
 
 variable "state_bucket" {
   type        = string
-  description = "Globally unique S3 bucket for Terraform state."
+  description = "App bucket (fileworks-<prod|stage|dev>) that also stores Terraform state under tfstate/."
 }
 
 provider "aws" {

@@ -25,21 +25,7 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc" {
 
 data "aws_iam_policy_document" "lambda_app" {
   statement {
-    sid = "HistoryBucket"
-    actions = [
-      "s3:GetObject",
-      "s3:PutObject",
-      "s3:DeleteObject",
-      "s3:ListBucket",
-    ]
-    resources = [
-      aws_s3_bucket.history.arn,
-      "${aws_s3_bucket.history.arn}/*",
-    ]
-  }
-
-  statement {
-    sid = "UploadsBucket"
+    sid = "AppBucket"
     actions = [
       "s3:GetObject",
       "s3:PutObject",

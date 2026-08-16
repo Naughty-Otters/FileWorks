@@ -9,7 +9,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { fetchHealth, listApiKeys, type HealthResponse } from "@/lib/api";
 import { resolveApiBase } from "@/lib/runtime-config";
 import { reloadSession, useSession } from "@/lib/session";
-import { SUPPORT_EMAIL } from "@/lib/legal";
+import { SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
+import { INPUT_FORMATS, OUTPUT_FORMATS, organizationJsonLd, softwareApplicationJsonLd } from "@/lib/seo";
+import { JsonLd } from "@/components/json-ld";
 
 type CodeLang = "bash" | "python" | "javascript";
 
@@ -208,6 +210,24 @@ console.log(data.markdown);`,
 
   return (
     <div className="app-shell relative">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@graph": [
+            organizationJsonLd(),
+            softwareApplicationJsonLd(),
+            {
+              "@type": "WebPage",
+              "@id": `${SITE_URL}/docs`,
+              url: `${SITE_URL}/docs`,
+              name: "Convert API — FileWorks",
+              description:
+                "Upload PDF, Word, Excel, PowerPoint, or images to POST /api/v1/convert and receive Markdown or other exports.",
+              isPartOf: { "@id": `${SITE_URL}/#website` },
+            },
+          ],
+        }}
+      />
       <div className="atmosphere" aria-hidden />
       <header className="relative z-10 border-b border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
@@ -221,15 +241,20 @@ console.log(data.markdown);`,
         <div>
           <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Convert API</p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl tracking-tight">
-            One request, converted file out
+            PDF and Office to Markdown API
           </h1>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Upload a PDF, office file, image, or text file to{" "}
+            Upload a PDF, Word, Excel, PowerPoint, image, or text file to{" "}
             <code className="api-inline">POST /api/v1/convert</code>. JSON includes{" "}
             <code className="api-inline">markdown</code> and exported{" "}
             <code className="api-inline">content</code>. Pass{" "}
             <code className="api-inline">download=true</code> to write the converted file
             instead. Create an API key on Profile. Workspace access tokens are not accepted here.
+          </p>
+          <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+            Inputs: {INPUT_FORMATS.join("; ")}. Targets: {OUTPUT_FORMATS.join(", ")}. Optional{" "}
+            <code className="api-inline">use_ai=true</code> for OCR on scans and{" "}
+            <code className="api-inline">target_lang</code> for translation.
           </p>
         </div>
 

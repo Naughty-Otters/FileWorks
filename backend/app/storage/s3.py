@@ -1,6 +1,6 @@
 """S3-backed document store (STORAGE_BACKEND=s3).
 
-Layout::
+Layout (single app bucket)::
 
     {prefix}/docs/{id}/meta.json
     {prefix}/docs/{id}/source{suffix}
@@ -10,6 +10,10 @@ Layout::
 Browser uploads (never through Lambda / NAT)::
 
     s3://{upload_bucket}/upload/files/{user_id}/{document_id}/{filename}
+
+In cloud deploys, history and uploads share one bucket
+(`fileworks-<prod|stage|dev>`) with different prefixes. Ephemeral LLM output and
+cancel tokens live under `history/llm-out/` and `history/cancel/`.
 """
 
 from __future__ import annotations

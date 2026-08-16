@@ -12,8 +12,7 @@ Environments: `dev`, `staging`, `prod`. AWS account this stack was written again
 |---|---|---|
 | FastAPI + Paddle/AnyDoc | API Lambda in private VPC | RDS + S3 via gateway/interface endpoints; no NAT |
 | Vision LLM + translation | Sibling Lambda (no VPC) | Public HTTPS to vendors; invoked by the API Lambda |
-| Uploads | S3 presigned PUT from the browser | File bytes never enter Lambda; no NAT Gateway |
-| History | S3 (API Lambda via S3 gateway) | Private VPC, no internet |
+| Uploads + history + tfstate | One S3 bucket `fileworks-<prod|stage|dev>` | Prefixes: `upload/files/`, `history/{docs,llm-out,cancel}/`, `tfstate/` |
 | Users / plans / quotas | RDS Postgres (not publicly accessible) | Same VPC as the API Lambda |
 | Secrets | Secrets Manager | LLM/translate keys + Google client ID |
 | Next.js workspace | Cloudflare Pages | Static `out/` via Wrangler Direct Upload |
@@ -23,6 +22,11 @@ The API Lambda **is in a VPC** so it can reach RDS. There is **no NAT Gateway an
 Browsers PUT to:
 
 `s3://fileworks-<prod|stage|dev>/upload/files/<user_id>/<document_id>/<filename>`
+
+Saved conversions and LLM temp objects share that same bucket under
+`history/docs/`, `history/llm-out/`, and `history/cancel/`. Terraform remote
+state lives at `tfstate/<account>/fileworks/terraform.tfstate` in the same
+bucket. There is no separate `*-history` or `fileworks-tfstate-*` bucket.
 
 (`staging` maps to bucket alias `stage`.)
 
@@ -58,8 +62,8 @@ stable origin instead of failing on CORS and `origin_mismatch`.
 
 The Function URL is stable across `push-image` and `apply`; it only changes if the
 function or URL resource is destroyed and recreated. `fw status` verifies all of
-this: it preflights CORS from the stable origin against both the API and the two
-S3 buckets the browser talks to directly, and compares the deployed
+this: it preflights CORS from the stable origin against both the API and the app
+S3 bucket the browser talks to directly, and compares the deployed
 `config.js` against `api_url`, warning when the UI is pinned to a stale endpoint.
 
 Prod keeps exact origins only (no preview regex, no wildcards) and `fw frontend`
@@ -170,13 +174,28 @@ frontend/
   public/_redirects         SPA fallback
 ```
 
-State key: `s3://fileworks-tfstate-<account>/fileworks/<env>/terraform.tfstate`.
-Bootstrap state is local and account-scoped at
-`infra/terraform/bootstrap/terraform.<account>.tfstate`. Choosing another AWS
-profile automatically selects that account's bootstrap state, so switching
-accounts never makes Terraform refresh or rename the other account's bucket.
-The first run migrates the old unscoped `terraform.tfstate` only when its bucket
-belongs to the selected account.
+State key: `s3://fileworks-<prod|stage|dev>/tfstate/<account>/fileworks/terraform.tfstate`.
+Each environment keeps data and Terraform state in its own app bucket. `fw bootstrap`
+creates that bucket; `fw apply` imports it into the main stack and migrates state
+from the legacy `fileworks-tfstate-<account>` bucket when present. Destroy detaches
+the app bucket from state so remote state survives. Bootstrap local state is
+account+env scoped at `infra/terraform/bootstrap/terraform.<account>.<env>.tfstate`.
+Choosing another AWS profile / env selects the matching local bootstrap state.
+
+## Cost Explorer
+
+```bash
+./scripts/fw --env prod cost                         # prompt: daily / weekly / monthly
+./scripts/fw --env prod cost --period daily          # last 14 days
+./scripts/fw --env prod cost --period weekly         # last 8 weeks
+./scripts/fw --env prod cost --period monthly        # last ~6 months
+./scripts/fw --env prod cost --estimate              # Terraform tfvars floor only
+./scripts/fw --env prod cost --period monthly --estimate
+```
+
+Cost Explorer shows a time series plus a service breakdown. It prefers the
+`Environment=<env>` cost-allocation tag (set by Terraform `default_tags`); if
+that tag is not activated in Billing, it falls back to account-wide spend.
 
 ## Secrets
 

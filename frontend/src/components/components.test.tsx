@@ -941,7 +941,7 @@ describe("ApiPage", () => {
     });
     vi.spyOn(api, "fetchMe").mockResolvedValue(guestMe);
     render(<ApiPage />);
-    expect(screen.getByRole("heading", { name: "One request, converted file out" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "PDF and Office to Markdown API" })).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "API" })[0]).toHaveAttribute("href", "/docs");
     expect(await screen.findByText("Reachable")).toBeInTheDocument();
     const samples = document.querySelectorAll(".api-code");

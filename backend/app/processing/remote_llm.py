@@ -51,7 +51,7 @@ def invoke_remote_convert(
     except ImportError as exc:  # pragma: no cover
         raise RuntimeError("boto3 is required to invoke the LLM Lambda") from exc
 
-    result_key = f"llm-out/{uuid.uuid4().hex}.json"
+    result_key = f"history/llm-out/{uuid.uuid4().hex}.json"
     result_bucket = settings.s3_bucket or bucket
     payload = {
         "action": "convert",

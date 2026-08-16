@@ -32,7 +32,7 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       STORAGE_BACKEND      = "s3"
-      S3_BUCKET            = aws_s3_bucket.history.bucket
+      S3_BUCKET            = aws_s3_bucket.uploads.bucket
       S3_PREFIX            = "history"
       S3_REGION            = local.region
       S3_UPLOAD_BUCKET     = aws_s3_bucket.uploads.bucket
@@ -118,7 +118,7 @@ resource "aws_lambda_function" "llm" {
   environment {
     variables = {
       STORAGE_BACKEND      = "s3"
-      S3_BUCKET            = aws_s3_bucket.history.bucket
+      S3_BUCKET            = aws_s3_bucket.uploads.bucket
       S3_PREFIX            = "history"
       S3_REGION            = local.region
       S3_UPLOAD_BUCKET     = aws_s3_bucket.uploads.bucket

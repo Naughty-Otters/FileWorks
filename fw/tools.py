@@ -15,7 +15,9 @@ from fw.context import (
     TF_DIR,
     Context,
     Environment,
+    app_bucket_name,
     state_bucket_name,
+    terraform_state_key,
 )
 from fw.process import run_streaming
 
@@ -100,19 +102,97 @@ def terraform_var_files(env: Environment) -> list[str]:
 
 def terraform_init(ctx: Context) -> None:
     require_cmd("terraform")
+    bucket = app_bucket_name(ctx.env)
+    key = terraform_state_key(ctx.account_id)
+    _maybe_migrate_remote_state(ctx, bucket=bucket, key=key)
     run(
         [
             "terraform",
             "init",
             "-input=false",
             "-reconfigure",
-            f"-backend-config=bucket={state_bucket_name(ctx.account_id)}",
-            f"-backend-config=key=fileworks/{ctx.env.name}/terraform.tfstate",
+            f"-backend-config=bucket={bucket}",
+            f"-backend-config=key={key}",
             f"-backend-config=region={ctx.region}",
             "-backend-config=encrypt=true",
             "-backend-config=use_lockfile=true",
         ],
         cwd=TF_DIR,
+        ctx=ctx,
+    )
+    _ensure_app_bucket_imported(ctx, bucket)
+
+
+def _s3_object_exists(ctx: Context, bucket: str, key: str) -> bool:
+    result = run(
+        [
+            "aws",
+            "s3api",
+            "head-object",
+            "--bucket",
+            bucket,
+            "--key",
+            key,
+            "--region",
+            ctx.region,
+        ],
+        check=False,
+        capture=True,
+        ctx=ctx,
+    )
+    return result.returncode == 0
+
+
+def _maybe_migrate_remote_state(ctx: Context, *, bucket: str, key: str) -> None:
+    """Copy state from the legacy tfstate bucket into the app bucket once."""
+    if _s3_object_exists(ctx, bucket, key):
+        return
+    legacy_bucket = state_bucket_name(ctx.account_id)
+    legacy_key = f"fileworks/{ctx.env.name}/terraform.tfstate"
+    if not _s3_object_exists(ctx, legacy_bucket, legacy_key):
+        return
+    console.info(
+        f"Migrating Terraform state "
+        f"s3://{legacy_bucket}/{legacy_key} → s3://{bucket}/{key}"
+    )
+    run(
+        [
+            "aws",
+            "s3",
+            "cp",
+            f"s3://{legacy_bucket}/{legacy_key}",
+            f"s3://{bucket}/{key}",
+            "--region",
+            ctx.region,
+        ],
+        ctx=ctx,
+    )
+
+
+def _ensure_app_bucket_imported(ctx: Context, bucket: str) -> None:
+    """Bootstrap creates the app bucket; import it so the main stack can own it."""
+    listed = run(
+        ["terraform", "state", "list"],
+        cwd=TF_DIR,
+        check=False,
+        capture=True,
+        ctx=ctx,
+    )
+    resources = set((listed.stdout or "").split())
+    if "aws_s3_bucket.uploads" in resources:
+        return
+    console.info(f"Importing existing app bucket {bucket} into Terraform state")
+    run(
+        [
+            "terraform",
+            "import",
+            "-input=false",
+            *terraform_var_files(ctx.env),
+            "aws_s3_bucket.uploads",
+            bucket,
+        ],
+        cwd=TF_DIR,
+        check=False,
         ctx=ctx,
     )
 
@@ -137,8 +217,14 @@ def terraform_output(ctx: Context) -> dict[str, object]:
     return {key: item.get("value") for key, item in raw.items()}
 
 
-def bootstrap_state_path(account_id: str, directory: Path = BOOTSTRAP_DIR) -> Path:
-    """Local bootstrap state is account-scoped because each account owns its bucket."""
+def bootstrap_state_path(
+    account_id: str,
+    env_name: str = "",
+    directory: Path = BOOTSTRAP_DIR,
+) -> Path:
+    """Local bootstrap state is scoped per account + env (each env has its own app bucket)."""
+    if env_name:
+        return directory / f"terraform.{account_id}.{env_name}.tfstate"
     return directory / f"terraform.{account_id}.tfstate"
 
 
@@ -157,23 +243,38 @@ def _state_bucket(path: Path) -> str | None:
     return None
 
 
-def prepare_bootstrap_state(account_id: str, directory: Path = BOOTSTRAP_DIR) -> Path:
-    """Select account state and migrate the old unscoped file when it belongs here."""
-    target = bootstrap_state_path(account_id, directory)
+def prepare_bootstrap_state(
+    account_id: str,
+    env_name: str,
+    directory: Path = BOOTSTRAP_DIR,
+) -> Path:
+    """Select account+env bootstrap state; optionally migrate older layouts."""
+    target = bootstrap_state_path(account_id, env_name, directory)
     if target.exists():
+        return target
+
+    # Prefer account-only state that already manages this env's app bucket.
+    account_only = bootstrap_state_path(account_id, "", directory)
+    expected_bucket = app_bucket_name(env_name)
+    if account_only.exists() and _state_bucket(account_only) == expected_bucket:
+        account_only.replace(target)
+        account_backup = directory / f"{account_only.name}.backup"
+        target_backup = directory / f"{target.name}.backup"
+        if account_backup.exists() and not target_backup.exists():
+            account_backup.replace(target_backup)
+        console.info(f"Migrated account bootstrap state to {target.name}.")
         return target
 
     legacy = directory / "terraform.tfstate"
     if not legacy.exists():
         return target
 
-    expected_bucket = state_bucket_name(account_id)
     legacy_bucket = _state_bucket(legacy)
     if legacy_bucket != expected_bucket:
         if legacy_bucket:
             console.info(
                 f"Leaving legacy bootstrap state for {legacy_bucket}; "
-                f"using account state {target.name}."
+                f"using {target.name}."
             )
         else:
             console.warn(
@@ -193,9 +294,10 @@ def prepare_bootstrap_state(account_id: str, directory: Path = BOOTSTRAP_DIR) ->
 
 def bootstrap_state(ctx: Context) -> None:
     require_cmd("terraform")
-    bucket = state_bucket_name(ctx.account_id)
-    state = prepare_bootstrap_state(ctx.account_id)
+    bucket = app_bucket_name(ctx.env)
+    state = prepare_bootstrap_state(ctx.account_id, ctx.env.name)
     run(["terraform", "init", "-input=false", "-reconfigure"], cwd=BOOTSTRAP_DIR, ctx=ctx)
+    _ensure_bootstrap_bucket_imported(ctx, bucket=bucket, state=state)
     run(
         [
             "terraform",
@@ -210,6 +312,85 @@ def bootstrap_state(ctx: Context) -> None:
         cwd=BOOTSTRAP_DIR,
         ctx=ctx,
     )
+
+
+def _ensure_bootstrap_bucket_imported(ctx: Context, *, bucket: str, state: Path) -> None:
+    """If the env app bucket already exists, adopt it into bootstrap state."""
+    listed = run(
+        [
+            "terraform",
+            "state",
+            "list",
+            f"-state={state.name}",
+        ],
+        cwd=BOOTSTRAP_DIR,
+        check=False,
+        capture=True,
+        ctx=ctx,
+    )
+    if "aws_s3_bucket.state" in (listed.stdout or "").split():
+        return
+    probe = run(
+        [
+            "aws",
+            "s3api",
+            "head-bucket",
+            "--bucket",
+            bucket,
+            "--region",
+            ctx.region,
+        ],
+        check=False,
+        capture=True,
+        ctx=ctx,
+    )
+    if probe.returncode != 0:
+        return
+    console.info(f"Importing existing app bucket {bucket} into bootstrap state")
+    run(
+        [
+            "terraform",
+            "import",
+            f"-state={state.name}",
+            f"-var=aws_region={ctx.region}",
+            f"-var=state_bucket={bucket}",
+            "aws_s3_bucket.state",
+            bucket,
+        ],
+        cwd=BOOTSTRAP_DIR,
+        check=False,
+        ctx=ctx,
+    )
+
+
+APP_BUCKET_STATE_RESOURCES = (
+    "aws_s3_bucket.uploads",
+    "aws_s3_bucket_versioning.uploads",
+    "aws_s3_bucket_server_side_encryption_configuration.uploads",
+    "aws_s3_bucket_public_access_block.uploads",
+    "aws_s3_bucket_cors_configuration.uploads",
+    "aws_s3_bucket_lifecycle_configuration.uploads",
+)
+
+
+def detach_app_bucket_from_state(ctx: Context) -> None:
+    """Drop app-bucket resources from state so destroy leaves tfstate intact."""
+    listed = run(
+        ["terraform", "state", "list"],
+        cwd=TF_DIR,
+        check=False,
+        capture=True,
+        ctx=ctx,
+    )
+    present = set((listed.stdout or "").split())
+    to_rm = [name for name in APP_BUCKET_STATE_RESOURCES if name in present]
+    if not to_rm:
+        return
+    console.info(
+        "Detaching app bucket from Terraform state so destroy keeps "
+        f"{app_bucket_name(ctx.env)} (and remote state) intact."
+    )
+    run(["terraform", "state", "rm", *to_rm], cwd=TF_DIR, ctx=ctx)
 
 
 def ensure_frontend_deps() -> None:

@@ -1,1 +1,1 @@
-FileWorks — convert PDFs, office files, images, and scans to Markdown
+FileWorks — PDF, Office, and scans to editable Markdown

@@ -12,9 +12,18 @@ export const MARKETING_LINKS = [
   { href: "/legal", label: "Legal" },
 ] as const;
 
+export const GUIDE_LINKS = [
+  { href: "/pdf-to-markdown", label: "PDF → Markdown" },
+  { href: "/word-to-markdown", label: "Word → Markdown" },
+  { href: "/excel-to-markdown", label: "Excel → Markdown" },
+  { href: "/powerpoint-to-markdown", label: "PowerPoint → Markdown" },
+  { href: "/image-to-markdown", label: "Image OCR → Markdown" },
+] as const;
+
 export const LEGAL_LINKS = [
   { href: "/docs", label: "API" },
   { href: "/about", label: "About" },
+  { href: "/pdf-to-markdown", label: "PDF to Markdown" },
   { href: "/legal#contact", label: "Contact" },
   { href: "/legal#refunds", label: "Refunds" },
   { href: "/legal#cancellation", label: "Cancellation" },

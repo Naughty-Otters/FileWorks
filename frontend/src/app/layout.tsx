@@ -3,6 +3,7 @@ import { Fraunces, IBM_Plex_Mono, Manrope } from "next/font/google";
 import { CanonicalRedirect } from "@/components/canonical-redirect";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BUSINESS_NAME, SITE_URL } from "@/lib/legal";
+import { DEFAULT_OG_IMAGE, PRIMARY_KEYWORDS, SITE_DESCRIPTION, SITE_TAGLINE } from "@/lib/seo";
 import "./globals.css";
 
 const display = Fraunces({
@@ -31,10 +32,52 @@ const mono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: `${BUSINESS_NAME} — Convert any format`,
-  description:
-    "FileWorks converts PDFs, office files, images, and scans into editable Markdown. Monthly Pro and Premium software subscriptions at fileworks.ai.",
+  title: {
+    default: `${BUSINESS_NAME} — ${SITE_TAGLINE}`,
+    template: `%s — ${BUSINESS_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
   applicationName: BUSINESS_NAME,
+  authors: [{ name: BUSINESS_NAME, url: SITE_URL }],
+  creator: BUSINESS_NAME,
+  publisher: BUSINESS_NAME,
+  category: "technology",
+  keywords: [...PRIMARY_KEYWORDS],
+  referrer: "origin-when-cross-origin",
+  alternates: { canonical: SITE_URL },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: SITE_URL,
+    siteName: BUSINESS_NAME,
+    title: `${BUSINESS_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: `${BUSINESS_NAME} — ${SITE_TAGLINE}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${BUSINESS_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
   appleWebApp: {
     capable: true,
     title: BUSINESS_NAME,
