@@ -137,9 +137,64 @@ def terraform_output(ctx: Context) -> dict[str, object]:
     return {key: item.get("value") for key, item in raw.items()}
 
 
+def bootstrap_state_path(account_id: str, directory: Path = BOOTSTRAP_DIR) -> Path:
+    """Local bootstrap state is account-scoped because each account owns its bucket."""
+    return directory / f"terraform.{account_id}.tfstate"
+
+
+def _state_bucket(path: Path) -> str | None:
+    try:
+        state = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    for resource in state.get("resources", []):
+        if resource.get("type") != "aws_s3_bucket" or resource.get("name") != "state":
+            continue
+        for instance in resource.get("instances", []):
+            bucket = instance.get("attributes", {}).get("bucket")
+            if isinstance(bucket, str) and bucket:
+                return bucket
+    return None
+
+
+def prepare_bootstrap_state(account_id: str, directory: Path = BOOTSTRAP_DIR) -> Path:
+    """Select account state and migrate the old unscoped file when it belongs here."""
+    target = bootstrap_state_path(account_id, directory)
+    if target.exists():
+        return target
+
+    legacy = directory / "terraform.tfstate"
+    if not legacy.exists():
+        return target
+
+    expected_bucket = state_bucket_name(account_id)
+    legacy_bucket = _state_bucket(legacy)
+    if legacy_bucket != expected_bucket:
+        if legacy_bucket:
+            console.info(
+                f"Leaving legacy bootstrap state for {legacy_bucket}; "
+                f"using account state {target.name}."
+            )
+        else:
+            console.warn(
+                f"Could not identify the bucket in legacy bootstrap state {legacy}; "
+                f"using {target.name} without modifying it."
+            )
+        return target
+
+    legacy.replace(target)
+    legacy_backup = directory / "terraform.tfstate.backup"
+    target_backup = directory / f"{target.name}.backup"
+    if legacy_backup.exists() and not target_backup.exists():
+        legacy_backup.replace(target_backup)
+    console.info(f"Migrated legacy bootstrap state to {target.name}.")
+    return target
+
+
 def bootstrap_state(ctx: Context) -> None:
     require_cmd("terraform")
     bucket = state_bucket_name(ctx.account_id)
+    state = prepare_bootstrap_state(ctx.account_id)
     run(["terraform", "init", "-input=false", "-reconfigure"], cwd=BOOTSTRAP_DIR, ctx=ctx)
     run(
         [
@@ -147,6 +202,8 @@ def bootstrap_state(ctx: Context) -> None:
             "apply",
             "-input=false",
             "-auto-approve",
+            f"-state={state.name}",
+            f"-backup={state.name}.backup",
             f"-var=aws_region={ctx.region}",
             f"-var=state_bucket={bucket}",
         ],

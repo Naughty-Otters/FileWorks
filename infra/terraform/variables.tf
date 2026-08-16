@@ -172,8 +172,7 @@ variable "public_api_url" {
 
 variable "google_client_id" {
   type        = string
-  default     = "1063086817026-33rehu3tmsg08gll6dc9jue97000ib8f.apps.googleusercontent.com"
-  description = "Google OAuth client ID (GIS). Public; also set on the API Lambda and Pages build."
+  description = "Google OAuth client ID (GIS). Set per env in envs/<env>.tfvars. Public; also set on the API Lambda and Pages build."
 }
 
 variable "enable_nat_gateway" {

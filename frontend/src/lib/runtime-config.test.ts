@@ -54,10 +54,22 @@ describe("canonical origin redirect", () => {
     expect(canonicalRedirectTarget(loc(`${canonical}/login`))).toBe("");
   });
 
-  it("never redirects localhost or custom domains", () => {
+  it("never redirects localhost or unrelated custom domains", () => {
     window.__FILEWORKS_CONFIG__ = { canonicalOrigin: canonical };
     expect(canonicalRedirectTarget(loc("http://localhost:3000/"))).toBe("");
     expect(canonicalRedirectTarget(loc("https://app.fileworks.ai/"))).toBe("");
+  });
+
+  it("sends the www alias of the canonical host to the apex", () => {
+    window.__FILEWORKS_CONFIG__ = { canonicalOrigin: "https://fileworks.ai" };
+    expect(canonicalRedirectTarget(loc("https://www.fileworks.ai/login?next=/"))).toBe(
+      "https://fileworks.ai/login?next=/",
+    );
+  });
+
+  it("does not treat www of a different host as the alias", () => {
+    window.__FILEWORKS_CONFIG__ = { canonicalOrigin: "https://fileworks.ai" };
+    expect(canonicalRedirectTarget(loc("https://www.example.com/"))).toBe("");
   });
 
   it("is inert when no canonical origin is configured", () => {

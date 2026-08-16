@@ -62,6 +62,7 @@ resource "aws_lambda_function" "api" {
     aws_iam_role_policy_attachment.lambda_logs,
     aws_iam_role_policy_attachment.lambda_vpc,
     aws_cloudwatch_log_group.api,
+    aws_ecr_repository_policy.api,
     aws_vpc_endpoint.s3,
     aws_vpc_endpoint.interface,
   ]
@@ -139,5 +140,6 @@ resource "aws_lambda_function" "llm" {
     aws_iam_role_policy.lambda_app,
     aws_iam_role_policy_attachment.lambda_logs,
     aws_cloudwatch_log_group.llm,
+    aws_ecr_repository_policy.api,
   ]
 }

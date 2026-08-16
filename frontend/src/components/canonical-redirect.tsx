@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { canonicalRedirectTarget } from "@/lib/runtime-config";
 
 /**
- * Sends per-deployment Pages preview hosts to the stable origin. Sign-in and CORS
- * are only ever configured for that origin, so a preview host is a dead end.
+ * Sends off-canonical hosts (Pages preview + www alias) to the stable origin.
+ * Sign-in and CORS are only ever configured for that origin.
  */
 export function CanonicalRedirect() {
   useEffect(() => {

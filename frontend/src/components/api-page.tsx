@@ -94,7 +94,7 @@ function dedicatedApiHost(hostname: string): string {
   if (hostname === "staging.fileworks.ai" || hostname.endsWith(".fileworks-staging.pages.dev")) {
     return "https://api.staging.fileworks.ai";
   }
-  if (hostname === "fileworks.ai" || hostname === "www.fileworks.ai") {
+  if (hostname === "fileworks.ai") {
     return "https://api.fileworks.ai";
   }
   return resolveApiBase();
@@ -259,17 +259,6 @@ console.log(data.markdown);`,
               </dd>
             </div>
           </dl>
-          <p className="mt-3 text-xs leading-5 text-[var(--ink-muted)]">
-            Staging scripts should call{" "}
-            <a href="https://api.staging.fileworks.ai" className="api-link">
-              https://api.staging.fileworks.ai
-            </a>
-            . Production is{" "}
-            <a href="https://api.fileworks.ai" className="api-link">
-              https://api.fileworks.ai
-            </a>
-            .
-          </p>
         </section>
 
         <section className="panel rounded-3xl px-5 py-5">

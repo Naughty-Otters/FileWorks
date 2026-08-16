@@ -48,13 +48,25 @@ export function resolveCanonicalOrigin(): string {
 }
 
 /**
- * Target to send a preview host to, or "" to stay put. Scoped to *.pages.dev so
- * localhost and custom domains are never redirected.
+ * Target to send off-canonical hosts to, or "" to stay put.
+ * Redirects Cloudflare Pages preview hosts (*.pages.dev) and the www alias of
+ * the configured origin. Localhost and other custom domains are never moved.
  */
 export function canonicalRedirectTarget(loc: Location = window.location): string {
   const canonical = resolveCanonicalOrigin();
   if (!canonical) return "";
-  if (!loc.hostname.endsWith(".pages.dev")) return "";
   if (loc.origin === canonical) return "";
+
+  let canonicalHost = "";
+  try {
+    canonicalHost = new URL(canonical).hostname;
+  } catch {
+    return "";
+  }
+
+  const isPreview = loc.hostname.endsWith(".pages.dev");
+  const isWwwAlias = Boolean(canonicalHost) && loc.hostname === `www.${canonicalHost}`;
+  if (!isPreview && !isWwwAlias) return "";
+
   return `${canonical}${loc.pathname}${loc.search}${loc.hash}`;
 }

@@ -2,6 +2,7 @@ environment                 = "prod"
 aws_region                  = "us-east-1"
 image_tag                   = "prod"
 public_api_url              = "https://api.fileworks.ai"
+google_client_id            = "554423117772-5pncn089uhkbt9d6v1j4afsdg16pjh9i.apps.googleusercontent.com"
 lambda_memory_mb            = 3008
 lambda_timeout_s            = 900
 ephemeral_storage_mb        = 10240
@@ -16,5 +17,5 @@ cors_origins = [
   "https://fileworks-prod.pages.dev",
   "https://fileworks.ai"
 ]
-cors_origin_regex     = ""
-cors_wildcard_origins = []
+cors_origin_regex     = "^https://([a-z0-9-]+\\.)?fileworks-prod\\.pages\\.dev$"
+cors_wildcard_origins = ["https://*.fileworks-prod.pages.dev"]

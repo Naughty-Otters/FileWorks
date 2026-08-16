@@ -2,6 +2,7 @@ environment          = "staging"
 aws_region           = "us-east-1"
 image_tag            = "staging"
 public_api_url       = "https://api.staging.fileworks.ai"
+google_client_id     = "1063086817026-33rehu3tmsg08gll6dc9jue97000ib8f.apps.googleusercontent.com"
 lambda_memory_mb     = 3008
 lambda_timeout_s     = 900
 ephemeral_storage_mb = 10240

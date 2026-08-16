@@ -171,6 +171,12 @@ frontend/
 ```
 
 State key: `s3://fileworks-tfstate-<account>/fileworks/<env>/terraform.tfstate`.
+Bootstrap state is local and account-scoped at
+`infra/terraform/bootstrap/terraform.<account>.tfstate`. Choosing another AWS
+profile automatically selects that account's bootstrap state, so switching
+accounts never makes Terraform refresh or rename the other account's bucket.
+The first run migrates the old unscoped `terraform.tfstate` only when its bucket
+belongs to the selected account.
 
 ## Secrets
 
