@@ -10,6 +10,7 @@ from __future__ import annotations
 import io
 import logging
 from collections.abc import Iterator, Sequence
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -124,6 +125,24 @@ def pdf_majority_has_text(
         return False
     with_text = sum(1 for text in texts if len(text) >= min_chars)
     return (with_text / len(texts)) > ratio
+
+
+@lru_cache(maxsize=64)
+def _majority_has_text_cached(identity: tuple[str, int, int]) -> bool:
+    return pdf_majority_has_text(Path(identity[0]))
+
+
+def pdf_has_text_layer_majority(path: Path) -> bool:
+    """``pdf_majority_has_text`` cached on file identity.
+
+    Reader selection and the OCR reader both need this answer for the same file,
+    and extracting every page's text twice is pure waste on large documents.
+    """
+    try:
+        stat = path.stat()
+    except OSError:
+        return pdf_majority_has_text(path)
+    return _majority_has_text_cached((str(path), stat.st_size, stat.st_mtime_ns))
 
 
 def pdf_text_layer_stats(

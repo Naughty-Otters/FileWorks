@@ -10,6 +10,7 @@ from pathlib import Path
 
 from app.processing.export.base import FormatExporter
 from app.processing.models import ExportArtifact, OutputKind, ReadResult
+from app.processing.structure.schema import StructureDocument
 
 
 def _ensure_vendor_path() -> None:
@@ -82,8 +83,9 @@ class MarkdownExporter(FormatExporter):
         read_result: ReadResult | None = None,
         source_bytes: bytes | None = None,
         source_suffix: str | None = None,
+        structure: StructureDocument | None = None,
     ) -> ExportArtifact:
-        del title, read_result, source_bytes, source_suffix
+        del title, read_result, source_bytes, source_suffix, structure
         return ExportArtifact(
             data=(markdown or "").encode("utf-8"),
             media_type="text/markdown; charset=utf-8",
@@ -108,8 +110,9 @@ class TextExporter(FormatExporter):
         read_result: ReadResult | None = None,
         source_bytes: bytes | None = None,
         source_suffix: str | None = None,
+        structure: StructureDocument | None = None,
     ) -> ExportArtifact:
-        del title, read_result, source_bytes, source_suffix
+        del title, read_result, source_bytes, source_suffix, structure
         return ExportArtifact(
             data=strip_markdown(markdown or "").encode("utf-8"),
             media_type="text/plain; charset=utf-8",
@@ -134,9 +137,17 @@ class HtmlExporter(FormatExporter):
         read_result: ReadResult | None = None,
         source_bytes: bytes | None = None,
         source_suffix: str | None = None,
+        structure: StructureDocument | None = None,
     ) -> ExportArtifact:
         del read_result, source_bytes, source_suffix
-        html_doc = markdown_to_html(markdown or "", title=title)
+        from app.processing.structure.richness import structure_is_richer
+
+        if structure_is_richer(structure, markdown):
+            from app.processing.structure.render import structure_to_html
+
+            html_doc = structure_to_html(structure, title=title)
+        else:
+            html_doc = markdown_to_html(markdown or "", title=title)
         return ExportArtifact(
             data=html_doc.encode("utf-8"),
             media_type="text/html; charset=utf-8",
@@ -161,8 +172,18 @@ class JsonExporter(FormatExporter):
         read_result: ReadResult | None = None,
         source_bytes: bytes | None = None,
         source_suffix: str | None = None,
+        structure: StructureDocument | None = None,
     ) -> ExportArtifact:
         del source_bytes, source_suffix
+        if structure is not None:
+            from app.processing.structure.render import structure_to_json_bytes
+
+            return ExportArtifact(
+                data=structure_to_json_bytes(structure, title=title, markdown=markdown or ""),
+                media_type="application/json; charset=utf-8",
+                extension="json",
+                format_id=self.id,
+            )
         payload = {
             "title": title,
             "markdown": markdown or "",

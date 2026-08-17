@@ -6,6 +6,7 @@ import base64
 import io
 import logging
 import re
+from html.parser import HTMLParser
 from pathlib import Path
 
 from app.processing.export.base import FormatExporter
@@ -352,6 +353,269 @@ def render_document_image(
     return buffer.getvalue()
 
 
+class _DocxRichTextParser(HTMLParser):
+    """Small safe inline-HTML → DOCX run mapper for OCR formatting."""
+
+    def __init__(self, paragraph) -> None:
+        super().__init__(convert_charrefs=True)
+        self.paragraph = paragraph
+        self.stack: list[dict[str, object]] = [{}]
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        name = tag.lower()
+        if name == "br":
+            self.paragraph.add_run().add_break()
+            return
+        state = dict(self.stack[-1])
+        attr = {key.lower(): (value or "") for key, value in attrs}
+        style = attr.get("style", "").lower()
+        css = {
+            key.lower(): value.strip()
+            for key, value in re.findall(r"([a-zA-Z-]+)\s*:\s*([^;]+)", style)
+        }
+        if name in {"b", "strong"} or "font-weight:bold" in style or "font-weight: bold" in style:
+            state["bold"] = True
+        if name in {"i", "em"} or "font-style:italic" in style or "font-style: italic" in style:
+            state["italic"] = True
+        if name == "u" or "text-decoration:underline" in style or "text-decoration: underline" in style:
+            state["underline"] = True
+        if name == "mark" or "background" in style:
+            state["highlight"] = True
+        if name in {"s", "strike", "del"} or "line-through" in css.get("text-decoration", ""):
+            state["strike"] = True
+        if name == "sup" or css.get("vertical-align") in {"super", "sup"}:
+            state["superscript"] = True
+            state["subscript"] = False
+        if name == "sub" or css.get("vertical-align") == "sub":
+            state["subscript"] = True
+            state["superscript"] = False
+        size = re.search(r"font-size\s*:\s*(\d+(?:\.\d+)?)\s*(px|pt)?", style)
+        if size:
+            value = float(size.group(1))
+            state["size_pt"] = value * 0.75 if size.group(2) != "pt" else value
+        if css.get("color"):
+            state["color"] = css["color"]
+        if css.get("font-family"):
+            state["font_family"] = css["font-family"].strip("'\"").split(",")[0].strip()
+        self.stack.append(state)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() != "br" and len(self.stack) > 1:
+            self.stack.pop()
+
+    def handle_data(self, data: str) -> None:
+        if not data:
+            return
+        from docx.enum.text import WD_COLOR_INDEX
+        from docx.shared import Pt, RGBColor
+
+        run = self.paragraph.add_run(data)
+        state = self.stack[-1]
+        run.bold = bool(state.get("bold"))
+        run.italic = bool(state.get("italic"))
+        run.underline = bool(state.get("underline"))
+        run.font.strike = bool(state.get("strike"))
+        run.font.superscript = bool(state.get("superscript"))
+        run.font.subscript = bool(state.get("subscript"))
+        if state.get("highlight"):
+            run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+        if isinstance(state.get("size_pt"), (int, float)):
+            run.font.size = Pt(float(state["size_pt"]))
+        color = _parse_rgb(str(state.get("color") or ""))
+        if color is not None:
+            run.font.color.rgb = RGBColor(*color)
+        if state.get("font_family"):
+            run.font.name = str(state["font_family"])
+
+
+def _parse_rgb(value: str) -> tuple[int, int, int] | None:
+    text = value.strip().lower()
+    named = {
+        "black": (0, 0, 0),
+        "white": (255, 255, 255),
+        "red": (255, 0, 0),
+        "green": (0, 128, 0),
+        "blue": (0, 0, 255),
+        "yellow": (255, 255, 0),
+        "gray": (128, 128, 128),
+        "grey": (128, 128, 128),
+    }
+    if text in named:
+        return named[text]
+    match = re.fullmatch(r"#([0-9a-f]{3}|[0-9a-f]{6})", text)
+    if match:
+        raw = match.group(1)
+        if len(raw) == 3:
+            raw = "".join(char * 2 for char in raw)
+        return int(raw[0:2], 16), int(raw[2:4], 16), int(raw[4:6], 16)
+    match = re.fullmatch(r"rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)", text)
+    if match:
+        return tuple(max(0, min(255, int(part))) for part in match.groups())  # type: ignore[return-value]
+    return None
+
+
+def _add_rich_html(paragraph, rich: str | None, fallback: str = "") -> None:
+    if rich:
+        parser = _DocxRichTextParser(paragraph)
+        try:
+            parser.feed(rich)
+            return
+        except Exception:  # noqa: BLE001
+            pass
+    paragraph.add_run(fallback)
+
+
+def structure_to_docx(structure, *, title: str = "document", markdown_fallback: str = "") -> bytes:
+    """Build DOCX from StructureDocument when blocks carry tables/headings."""
+    from docx import Document
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
+    from docx.shared import Inches, Pt
+
+    from app.processing.structure.schema import StructureDocument
+
+    if not isinstance(structure, StructureDocument):
+        return markdown_to_docx(markdown_fallback or "", title=title)
+
+    doc = Document()
+    section = doc.sections[0]
+    section.top_margin = Inches(0.85)
+    section.bottom_margin = Inches(0.85)
+    section.left_margin = Inches(1.0)
+    section.right_margin = Inches(1.0)
+    style = doc.styles["Normal"]
+    style.font.name = "Calibri"
+    style.font.size = Pt(11)
+    try:
+        style.element.rPr.rFonts.set(qn("w:eastAsia"), "Calibri")
+    except Exception:  # noqa: BLE001
+        pass
+
+    title_map = {
+        "doc_title": 1,
+        "paragraph_title": 2,
+        "figure_title": 3,
+        "table_title": 3,
+        "chart_title": 3,
+        "content_title": 2,
+    }
+    ignore = {
+        "number",
+        "header",
+        "header_image",
+        "footer",
+        "footer_image",
+        "formula_number",
+    }
+    blocks = sorted(
+        structure.blocks,
+        key=lambda b: (
+            b.page,
+            b.order is None,
+            b.order if isinstance(b.order, (int, float)) else 10**9,
+        ),
+    )
+    wrote = False
+
+    def apply_alignment(paragraph, alignment: str | None) -> None:
+        value = (alignment or "").lower()
+        mapping = {
+            "left": WD_ALIGN_PARAGRAPH.LEFT,
+            "center": WD_ALIGN_PARAGRAPH.CENTER,
+            "right": WD_ALIGN_PARAGRAPH.RIGHT,
+            "justify": WD_ALIGN_PARAGRAPH.JUSTIFY,
+        }
+        if value in mapping:
+            paragraph.alignment = mapping[value]
+
+    for block in blocks:
+        label = (block.label or "text").lower()
+        if label in ignore:
+            continue
+        text = (block.text or "").strip()
+        if label in title_map and text:
+            para = doc.add_heading("", level=min(block.title_level or title_map[label], 4))
+            _add_rich_html(para, block.rich_text, text.lstrip("#").strip())
+            apply_alignment(para, block.alignment)
+            wrote = True
+            continue
+        if label == "table" and block.table and block.table.cells:
+            table = block.table
+            rows = max(table.rows, max((c.r + c.rs for c in table.cells), default=0))
+            cols = max(table.cols, max((c.c + c.cs for c in table.cells), default=0))
+            if rows > 0 and cols > 0:
+                grid = doc.add_table(rows=rows, cols=cols)
+                grid.style = "Table Grid"
+                for cell in table.cells:
+                    try:
+                        target = grid.rows[cell.r].cells[cell.c]
+                        target.text = ""
+                        _add_rich_html(target.paragraphs[0], cell.html, cell.text or "")
+                        apply_alignment(target.paragraphs[0], cell.align)
+                        if cell.is_header:
+                            for run in target.paragraphs[0].runs:
+                                run.bold = True
+                        if cell.rs > 1 or cell.cs > 1:
+                            target.merge(
+                                grid.rows[min(rows - 1, cell.r + cell.rs - 1)].cells[
+                                    min(cols - 1, cell.c + cell.cs - 1)
+                                ]
+                            )
+                    except Exception:  # noqa: BLE001
+                        continue
+                doc.add_paragraph()
+                wrote = True
+            continue
+        if label == "formula" and (block.formula or text):
+            para = doc.add_paragraph(block.formula or text)
+            para.paragraph_format.space_after = Pt(10)
+            wrote = True
+            continue
+        if label in {"image", "chart", "seal"}:
+            ref = block.image_ref or text
+            img = _DATA_IMAGE.search(ref)
+            if img:
+                payload = _decode_data_image(img.group(4))
+                if payload:
+                    stream = io.BytesIO(payload)
+                    try:
+                        doc.add_picture(stream, width=Inches(_docx_image_width(img.group(5))))
+                        wrote = True
+                        continue
+                    except Exception:  # noqa: BLE001
+                        pass
+            if text:
+                doc.add_paragraph(text)
+                wrote = True
+            continue
+        if text:
+            # Fall back to markdown line handling for mixed content.
+            if text.startswith("#") or "|" in text or text.startswith("!["):
+                # Append via markdown helper by merging — simpler: plain paragraph.
+                for line in text.splitlines():
+                    if line.strip():
+                        doc.add_paragraph(line.strip())
+                wrote = True
+            else:
+                para = doc.add_paragraph()
+                _add_rich_html(para, block.rich_text, text)
+                apply_alignment(para, block.alignment)
+                wrote = True
+
+    if not wrote:
+        return markdown_to_docx(markdown_fallback or project_md(structure), title=title)
+
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    return buffer.getvalue()
+
+
+def project_md(structure) -> str:
+    from app.processing.structure.project import project_markdown
+
+    return project_markdown(structure)
+
+
 class DocxExporter(FormatExporter):
     id = "docx"
     label = "Word"
@@ -368,10 +632,18 @@ class DocxExporter(FormatExporter):
         read_result: ReadResult | None = None,
         source_bytes: bytes | None = None,
         source_suffix: str | None = None,
+        structure=None,
     ) -> ExportArtifact:
         del read_result, source_bytes, source_suffix
+        from app.processing.structure.richness import structure_is_richer
+
+        data = (
+            structure_to_docx(structure, title=title, markdown_fallback=markdown or "")
+            if structure_is_richer(structure, markdown)
+            else markdown_to_docx(markdown or "", title=title)
+        )
         return ExportArtifact(
-            data=markdown_to_docx(markdown or "", title=title),
+            data=data,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             extension="docx",
             format_id=self.id,
@@ -394,8 +666,9 @@ class PngExporter(FormatExporter):
         read_result: ReadResult | None = None,
         source_bytes: bytes | None = None,
         source_suffix: str | None = None,
+        structure=None,
     ) -> ExportArtifact:
-        del title, read_result
+        del title, read_result, structure
         return ExportArtifact(
             data=render_document_image(
                 markdown or "",
@@ -425,8 +698,9 @@ class JpegExporter(FormatExporter):
         read_result: ReadResult | None = None,
         source_bytes: bytes | None = None,
         source_suffix: str | None = None,
+        structure=None,
     ) -> ExportArtifact:
-        del title, read_result
+        del title, read_result, structure
         return ExportArtifact(
             data=render_document_image(
                 markdown or "",

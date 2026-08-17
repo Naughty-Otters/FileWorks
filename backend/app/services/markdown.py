@@ -255,6 +255,9 @@ def markdown_structure_score(markdown: str) -> tuple[int, int, int, int]:
     return headings, lists, tables, len(text.strip())
 
 
+_LIST_STRUCTURE_RATIO = 0.05
+
+
 def markdown_looks_flat(markdown: str, *, min_chars: int = 400) -> bool:
     """True when there is substantial prose but almost no headings, lists, or tables.
 
@@ -265,7 +268,13 @@ def markdown_looks_flat(markdown: str, *, min_chars: int = 400) -> bool:
     if len(text) < min_chars:
         return False
     headings, lists, tables, _chars = markdown_structure_score(text)
-    return headings == 0 and lists == 0 and tables == 0
+    if headings or tables:
+        return False
+    # A raw text dump routinely has stray lines that merely open like list items
+    # ("1)", "-", "25-5973 1-19"), so lists only count as structure when they are
+    # a real share of the content rather than a handful of coincidences.
+    lines = [line for line in text.splitlines() if line.strip()]
+    return lists < max(3, len(lines) * _LIST_STRUCTURE_RATIO)
 
 
 def pick_best_markdown(*, pipeline_markdown: Any, json_payload: Any) -> str:

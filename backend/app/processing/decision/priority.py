@@ -43,12 +43,28 @@ def _effective_priority(
     source: SourceFile,
     options: ExtractOptions | None,
 ) -> int:
-    """Keep AnyDoc available; only postpone it for PDFs when prefer_structure is on."""
+    """Keep AnyDoc available; only postpone it for PDFs when prefer_structure is on.
+
+    PDFs carrying their own text layer are exempt: the OCR reader returns that
+    layer verbatim, with no headings or tables, so demoting AnyDoc there would
+    trade the structured parse for the flattest output in the stack.
+    """
     if (
         options is not None
         and options.prefer_structure is True
         and reader.id == "anydoc"
         and source.suffix == ".pdf"
+        and not _has_pdf_text_layer(source)
     ):
         return 55
     return reader.priority
+
+
+def _has_pdf_text_layer(source: SourceFile) -> bool:
+    from app.services.pages import pdf_has_text_layer_majority
+
+    try:
+        return pdf_has_text_layer_majority(source.path)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Text-layer probe failed for %s (%s); assuming scanned", source.filename, exc)
+        return False

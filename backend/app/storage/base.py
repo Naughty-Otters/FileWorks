@@ -28,6 +28,7 @@ class DocumentRecord:
     markdown: str | None = None
     json_data: Any | None = None
     pages: list[dict[str, Any]] = Field(default_factory=list)
+    structure: dict[str, Any] | None = None
     storage_backend: str = "local"
     owner_id: str | None = None
 
@@ -42,7 +43,7 @@ class DocumentRecord:
             "page_count": self.page_count,
             "storage_backend": self.storage_backend,
             "has_markdown": bool(self.markdown and self.markdown.strip()),
-            "has_json": self.json_data is not None,
+            "has_json": self.json_data is not None or self.structure is not None,
             "owner_id": self.owner_id,
         }
 
@@ -65,6 +66,7 @@ class DocumentRecord:
         filtered.setdefault("output_format", "both")
         filtered.setdefault("storage_backend", "local")
         filtered.setdefault("owner_id", None)
+        filtered.setdefault("structure", None)
         return cls(**filtered)
 
 
@@ -92,6 +94,7 @@ class DocumentStore(Protocol):
         json_data: Any | None,
         pages: list[dict[str, Any]],
         owner_id: str | None = None,
+        structure: dict[str, Any] | None = None,
     ) -> DocumentRecord: ...
 
     def list_documents(self, limit: int = 100) -> list[DocumentRecord]: ...

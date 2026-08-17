@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import unittest
-from pathlib import Path
-from tempfile import TemporaryDirectory
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -17,7 +15,7 @@ from app.auth.quota import (
     usage_fits_plan,
     usage_over_limit,
 )
-from app.auth.redact import redact_extract_payload
+from app.auth.redact import redact_extract_payload, redact_structure_payload
 from app.auth.tokens import decode_access_token, hash_token, issue_access_token, new_refresh_token
 from app.core.config import Settings, get_settings
 
@@ -237,6 +235,35 @@ class RedactTests(unittest.TestCase):
     def test_short_text_still_notes_signin(self) -> None:
         md, _, _ = redact_extract_payload("hi", {}, [])
         self.assertIn("Sign in", md or "")
+
+    def test_structure_redaction_removes_duplicate_rich_content(self) -> None:
+        result = redact_structure_payload(
+            {
+                "blocks": [
+                    {
+                        "text": "secret content",
+                        "rich_text": "<b>secret content</b>",
+                        "runs": [{"text": "secret content", "style": {"color": "red"}}],
+                        "table": {
+                            "html": "<table><tr><td>secret content</td></tr></table>",
+                            "cells": [
+                                {
+                                    "text": "secret content",
+                                    "html": "<b>secret content</b>",
+                                    "runs": [{"text": "secret content", "style": {}}],
+                                }
+                            ],
+                        },
+                    }
+                ]
+            }
+        )
+        assert result is not None
+        block = result["blocks"][0]
+        self.assertIsNone(block["rich_text"])
+        self.assertEqual(block["runs"], [])
+        self.assertIsNone(block["table"]["html"])
+        self.assertIsNone(block["table"]["cells"][0]["html"])
 
 
 class SettingsTests(unittest.TestCase):

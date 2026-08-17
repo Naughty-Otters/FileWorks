@@ -69,6 +69,7 @@ export type ExtractResponse = {
   options?: ExtractOptions | null;
   regions?: RegionBox[];
   image_size?: ImageSize | null;
+  structure?: Record<string, unknown> | null;
 };
 
 export type LLMFileProvider = {
@@ -653,11 +654,18 @@ export async function exportMarkdownFile(
   markdown: string,
   format: DownloadFormat,
   filename?: string,
+  opts?: { documentId?: string | null; structure?: Record<string, unknown> | null },
 ): Promise<void> {
   const res = await apiFetch("/api/export", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ markdown, format, filename }),
+    body: JSON.stringify({
+      markdown,
+      format,
+      filename,
+      document_id: opts?.documentId || undefined,
+      structure: opts?.structure || undefined,
+    }),
   });
   if (!res.ok) {
     throw new Error(await readError(res, `Export failed (${res.status})`));

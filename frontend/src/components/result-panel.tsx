@@ -114,7 +114,7 @@ export function ResultPanel({
   const regions: RegionBox[] = result?.regions || [];
   const jsonText = useMemo(() => {
     if (!result) return "";
-    const payload = result.json ?? { pages: result.pages };
+    const payload = result.structure ?? result.json ?? { pages: result.pages };
     return JSON.stringify(payload, null, 2);
   }, [result]);
   const pagedText = view === "json" ? jsonText : markdown;
@@ -156,7 +156,13 @@ export function ResultPanel({
         const htmlRes = await fetch(`${getApiBase()}/api/export`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ markdown, format: "html", filename: base }),
+          body: JSON.stringify({
+            markdown,
+            format: "html",
+            filename: base,
+            document_id: result?.id || undefined,
+            structure: result?.structure || undefined,
+          }),
         });
         const html = htmlRes.ok ? await htmlRes.text() : `<pre>${markdown}</pre>`;
         const win = window.open("", "_blank");
@@ -169,7 +175,13 @@ export function ResultPanel({
         return;
       }
       try {
-        await exportMarkdownFile(markdown, format, base);
+        await exportMarkdownFile(markdown, format, base, {
+          documentId: result?.id,
+          structure:
+            format === "html" || format === "json" || format === "docx"
+              ? ((result?.structure as Record<string, unknown> | null | undefined) ?? null)
+              : null,
+        });
       } catch {
         // Client-side fallback
         if (format === "markdown") {

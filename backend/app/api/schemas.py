@@ -182,6 +182,7 @@ class ExtractResponse(BaseModel):
     options: ExtractOptionsResponse | None = None
     regions: list[RegionBox] = Field(default_factory=list)
     image_size: ImageSize | None = None
+    structure: dict[str, Any] | None = None
 
     @field_serializer("engine")
     def _public_engine(self, _value: str) -> str:
@@ -230,6 +231,7 @@ class HistoryDetailResponse(BaseModel):
     regions: list[RegionBox] = Field(default_factory=list)
     image_size: ImageSize | None = None
     options: ExtractOptionsResponse | None = None
+    structure: dict[str, Any] | None = None
 
     @field_serializer("engine")
     def _public_engine(self, _value: str | None) -> str | None:
@@ -244,3 +246,5 @@ class ExportRequest(BaseModel):
     markdown: str
     format: Literal["markdown", "md", "txt", "text", "html", "json", "docx", "word"] = "markdown"
     filename: str | None = None
+    document_id: str | None = None
+    structure: dict[str, Any] | None = None

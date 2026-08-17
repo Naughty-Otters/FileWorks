@@ -30,7 +30,7 @@ from app.api.schemas import (
 )
 from app.auth.deps import Principal, get_principal
 from app.auth.quota import assert_can_extract, assert_can_use_ai, record_extract
-from app.auth.redact import redact_extract_payload
+from app.auth.redact import redact_extract_payload, redact_structure_payload
 from app.core.config import get_settings
 from app.core.logsetup import emit
 from app.engines.llm.catalog import list_vision_providers
@@ -581,8 +581,11 @@ async def extract(
         markdown = result.get("markdown")
         json_data = result.get("json")
         pages = result.get("pages") or []
+        structure = result.get("structure")
         if not principal.plan.full_result:
             markdown, json_data, pages = redact_extract_payload(markdown, json_data, pages)
+            if isinstance(structure, dict) and isinstance(structure.get("blocks"), list):
+                structure = redact_structure_payload(structure)
 
         record = None
         if principal.plan.history:
@@ -606,6 +609,7 @@ async def extract(
                     json_data=folded.json_data,
                     pages=folded.pages,
                     owner_id=str(principal.user_id) if principal.user_id else None,
+                    structure=structure if isinstance(structure, dict) else None,
                 )
                 store.save_media_files(
                     document_id,
@@ -647,6 +651,7 @@ async def extract(
             options=ExtractOptionsResponse(**options.to_dict()),
             regions=regions,
             image_size=image_size,
+            structure=structure if isinstance(structure, dict) else None,
         )
     finally:
         if temp_path.exists():
@@ -661,14 +666,24 @@ async def export_document(
     body: ExportRequest,
     principal: Principal = Depends(get_principal),
 ) -> Response:
-    """Download edited Markdown as markdown / txt / html / json."""
+    """Download Markdown / structure as markdown / txt / html / json / docx."""
     if not principal.plan.export:
         raise HTTPException(status_code=403, detail={"code": "plan_forbidden", "feature": "export"})
+    structure = body.structure
+    markdown = body.markdown
+    if body.document_id and structure is None:
+        store = get_document_store()
+        record = store.get_document(body.document_id)
+        if record is not None and isinstance(record.structure, dict):
+            structure = record.structure
+            if not (markdown or "").strip() and record.markdown:
+                markdown = record.markdown
     try:
         data, media_type, ext = export_markdown(
-            body.markdown,
+            markdown,
             fmt=body.format,
             title=(body.filename or "document").rsplit(".", 1)[0],
+            structure=structure,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -759,6 +774,7 @@ async def get_history_item(
         file_url=f"/api/history/{record.id}/file",
         regions=regions,
         image_size=image_size,
+        structure=record.structure if isinstance(record.structure, dict) else None,
     )
 
 

@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 from app.processing.models import ExportArtifact, OutputKind, ReadResult
+
+if TYPE_CHECKING:
+    from app.processing.structure.schema import StructureDocument
 
 
 class FormatExporter(ABC):
@@ -27,8 +31,9 @@ class FormatExporter(ABC):
         read_result: ReadResult | None = None,
         source_bytes: bytes | None = None,
         source_suffix: str | None = None,
+        structure: StructureDocument | None = None,
     ) -> ExportArtifact:
-        """Build download bytes from Markdown (default pipeline output)."""
+        """Build download bytes from structure IR when present, else Markdown."""
 
     def matches(self, format_id: str) -> bool:
         key = format_id.strip().lower()

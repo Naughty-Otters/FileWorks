@@ -82,6 +82,7 @@ class LocalDocumentStore:
         json_data: Any | None,
         pages: list[dict[str, Any]],
         owner_id: str | None = None,
+        structure: dict[str, Any] | None = None,
     ) -> DocumentRecord:
         suffix = source_suffix if source_suffix.startswith(".") else f".{source_suffix}"
         source_name = f"source{suffix}"
@@ -108,6 +109,7 @@ class LocalDocumentStore:
             markdown=markdown,
             json_data=json_data,
             pages=pages,
+            structure=structure,
             storage_backend=self.backend_name,
             owner_id=owner_id,
         )
@@ -121,6 +123,7 @@ class LocalDocumentStore:
                     "markdown": markdown,
                     "json": json_data,
                     "pages": pages,
+                    "structure": structure,
                     "engine": engine,
                     "page_count": page_count,
                     "format": output_format,

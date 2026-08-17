@@ -1,4 +1,4 @@
-"""Document processing pipeline facade."""
+"""Document processing pipeline facade — stage orchestrator."""
 
 from __future__ import annotations
 
@@ -13,6 +13,8 @@ from app.processing.decision.base import EngineDecisionMaker
 from app.processing.export.registry import ExportRegistry
 from app.processing.models import ExportArtifact, OutputKind, ReadResult, SourceFile
 from app.processing.reading.registry import ReaderRegistry
+from app.processing.stages import FillStage, NormalizeStage, PipelineContext, ProjectStage
+from app.processing.structure.schema import StructureDocument
 from app.services.markdown import markdown_looks_flat
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
 
@@ -27,12 +29,9 @@ def _log_used_engine(result: ReadResult, *, filename: str) -> None:
 
 class DocumentPipeline:
     """
-    Orchestrates:
-    1. SourceFile normalization
-    2. EngineDecisionMaker → ordered Reader candidates
-    3. read() with fallback on soft failures
-    4. Embed / compress document images, then optional translation
-    5. FormatExporter for user-requested download formats
+    Orchestrates modular stages:
+    Read → (postprocess) → Normalize → Fill → Project → API dict
+    Export is a separate one-shot entry that consumes structure when provided.
     """
 
     def __init__(
@@ -45,6 +44,7 @@ class DocumentPipeline:
         self.readers = readers or ReaderRegistry()
         self.decision = decision or PriorityFallbackDecisionMaker()
         self.exporters = exporters or ExportRegistry()
+        self._structure_stages = [NormalizeStage(), FillStage(), ProjectStage()]
 
     def list_readers(self) -> list[dict[str, object]]:
         return self.readers.describe()
@@ -61,16 +61,35 @@ class DocumentPipeline:
         options: ExtractOptions | None = None,
         preferred_output: OutputKind = OutputKind.MARKDOWN,
         api_output_format: ApiOutputFormat = "both",
+        include_engine_json: bool = False,
     ) -> dict[str, Any]:
-        """Run decision + read; return API-compatible dict."""
+        """Run Read + structure stages; return API-compatible dict."""
         source = SourceFile.from_path(file_path, filename=filename, mime_type=mime_type)
         opts = options or DEFAULT_EXTRACT_OPTIONS
         result = self.read(source, options=opts, preferred_output=preferred_output)
         result = self._postprocess(result, opts, source)
         _log_used_engine(result, filename=source.filename)
+
+        ctx = PipelineContext(
+            source=source,
+            options=opts,
+            raw=result,
+            include_engine_json=include_engine_json,
+        )
+        for stage in self._structure_stages:
+            stage.run(ctx)
+
+        # Keep ReadResult markdown in sync when Project replaced it.
+        if ctx.markdown and ctx.markdown != result.markdown():
+            result = result.with_markdown(ctx.markdown)
+            ctx.raw = result
+        if ctx.regions:
+            result.regions = ctx.regions
+            ctx.raw = result
+
         include_md = api_output_format in {"markdown", "both"}
         include_json = api_output_format in {"json", "both"}
-        return result.to_api_dict(include_markdown=include_md, include_json=include_json)
+        return ctx.to_api_dict(include_markdown=include_md, include_json=include_json)
 
     def read(
         self,
@@ -186,6 +205,7 @@ class DocumentPipeline:
         read_result: ReadResult | None = None,
         source_bytes: bytes | None = None,
         source_suffix: str | None = None,
+        structure: StructureDocument | None = None,
     ) -> ExportArtifact:
         exporter = self.exporters.resolve(format_id)
         if not exporter.can_export(OutputKind.MARKDOWN):
@@ -196,6 +216,7 @@ class DocumentPipeline:
             read_result=read_result,
             source_bytes=source_bytes,
             source_suffix=source_suffix,
+            structure=structure,
         )
 
 
