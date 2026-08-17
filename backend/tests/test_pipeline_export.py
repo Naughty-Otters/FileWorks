@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import io
 import logging
 import unittest
 from pathlib import Path
@@ -46,29 +48,33 @@ class ExportTests(unittest.TestCase):
         js = JsonExporter().export(markdown="# H", title="T", read_result=ReadResult(engine_id="e", engine_label="E"))
         self.assertIn(b"markdown", js.data)
 
-    def test_docx_and_image_exporters(self) -> None:
-        from app.processing.export.rich import DocxExporter, JpegExporter, PngExporter
+    def test_docx_embeds_data_images_instead_of_base64_text(self) -> None:
+        from docx import Document
+        from app.processing.export.rich import DocxExporter
         from PIL import Image
 
-        docx = DocxExporter().export(markdown="# Title\n\nHello **world**\n\n- item")
+        image = io.BytesIO()
+        Image.new("RGB", (24, 12), (9, 90, 40)).save(image, format="PNG")
+        encoded = base64.b64encode(image.getvalue()).decode("ascii")
+        markdown = (
+            "# Title\n\nHello **world**\n\n"
+            f'Before ![chart](data:image/png;base64,{encoded} "192 right") After\n\n- item'
+        )
+        docx = DocxExporter().export(markdown=markdown)
         self.assertTrue(docx.data.startswith(b"PK"))
         self.assertEqual(docx.extension, "docx")
-        png = PngExporter().export(markdown="# Receipt\n\nTotal 12")
-        self.assertTrue(png.data.startswith(b"\x89PNG"))
-        jpeg = JpegExporter().export(markdown="Hi")
-        self.assertTrue(jpeg.data.startswith(b"\xff\xd8"))
-        buffer = __import__("io").BytesIO()
-        Image.new("RGB", (12, 8), (9, 9, 9)).save(buffer, format="PNG")
-        converted = PngExporter().export(
-            markdown="x",
-            source_bytes=buffer.getvalue(),
-            source_suffix=".png",
-        )
-        self.assertTrue(converted.data.startswith(b"\x89PNG"))
+        parsed = Document(io.BytesIO(docx.data))
+        self.assertEqual(len(parsed.inline_shapes), 1)
+        text = "\n".join(paragraph.text for paragraph in parsed.paragraphs)
+        self.assertIn("Before", text)
+        self.assertIn("After", text)
+        self.assertNotIn("data:image", text)
 
     def test_registry(self) -> None:
         registry = ExportRegistry()
         self.assertEqual(registry.resolve("md").id, "markdown")
+        with self.assertRaises(ValueError):
+            registry.resolve("png")
         with self.assertRaises(ValueError):
             registry.resolve("exe")
         self.assertTrue(registry.describe())

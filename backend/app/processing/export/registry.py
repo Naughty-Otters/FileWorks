@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from app.processing.export.base import FormatExporter
 from app.processing.export.formats import HtmlExporter, JsonExporter, MarkdownExporter, TextExporter
-from app.processing.export.rich import DocxExporter, JpegExporter, PngExporter
+from app.processing.export.rich import DocxExporter
 
 
 class ExportRegistry:
@@ -19,8 +19,6 @@ class ExportRegistry:
             HtmlExporter(),
             JsonExporter(),
             DocxExporter(),
-            PngExporter(),
-            JpegExporter(),
         ]
 
     def all(self) -> list[FormatExporter]:

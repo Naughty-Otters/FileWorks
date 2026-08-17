@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 _IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"}
 _DATA_IMAGE = re.compile(
-    r"!\[([^\]]*)\]\((data:image/(png|jpeg|jpg|gif|webp);base64,([A-Za-z0-9+/=\s]+))\)",
+    r'!\[([^\]]*)\]\((data:image/(png|jpeg|jpg|gif|webp);base64,([A-Za-z0-9+/=\s]+?))'
+    r'(?:\s+"([^"]*)")?\)',
     re.IGNORECASE,
 )
 _HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
@@ -31,6 +32,14 @@ def _decode_data_image(b64: str) -> bytes | None:
         return base64.b64decode(re.sub(r"\s+", "", b64), validate=False)
     except Exception:  # noqa: BLE001
         return None
+
+
+def _docx_image_width(title: str | None) -> float:
+    """Convert the editor's pixel-width image title (e.g. ``136 right``) to inches."""
+    match = re.match(r"\s*(\d+)", title or "")
+    if not match:
+        return 5.5
+    return max(0.5, min(5.5, int(match.group(1)) / 96))
 
 
 def markdown_to_docx(markdown: str, *, title: str = "document") -> bytes:
@@ -132,13 +141,19 @@ def markdown_to_docx(markdown: str, *, title: str = "document") -> bytes:
 
         img = _DATA_IMAGE.search(line)
         if img:
+            before = line[: img.start()].strip()
+            after = line[img.end() :].strip()
+            if before:
+                add_styled(doc.add_paragraph(), before)
             payload = _decode_data_image(img.group(4))
             if payload:
                 stream = io.BytesIO(payload)
                 try:
-                    doc.add_picture(stream, width=Inches(5.5))
+                    doc.add_picture(stream, width=Inches(_docx_image_width(img.group(5))))
                 except Exception:  # noqa: BLE001
                     doc.add_paragraph(img.group(1) or "[image]")
+            if after:
+                add_styled(doc.add_paragraph(), after)
             i += 1
             continue
 

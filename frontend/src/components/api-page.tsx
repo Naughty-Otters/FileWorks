@@ -376,8 +376,7 @@ console.log(data.markdown);`,
             Useful form fields: <code className="api-inline">target</code> (
             <code className="api-inline">markdown</code>, <code className="api-inline">txt</code>,{" "}
             <code className="api-inline">html</code>, <code className="api-inline">json</code>,{" "}
-            <code className="api-inline">docx</code>, <code className="api-inline">png</code>,{" "}
-            <code className="api-inline">jpeg</code>),{" "}
+            <code className="api-inline">docx</code>),{" "}
             <code className="api-inline">download=true</code> to get the file,{" "}
             <code className="api-inline">use_ai=true</code> for scans,{" "}
             <code className="api-inline">target_lang=en</code> to translate. Max upload is 50 MB.

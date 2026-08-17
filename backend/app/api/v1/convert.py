@@ -132,7 +132,7 @@ async def convert_file(
     file: UploadFile = File(..., description="Source file bytes. Do not send an S3 key."),
     target: str = Form(
         default="markdown",
-        description="Output format: markdown, txt, html, json, docx, png, or jpeg. Default markdown.",
+        description="Output format: markdown, txt, html, json, or docx. Default markdown.",
     ),
     download: bool | str = Form(
         default=False,

@@ -1333,6 +1333,9 @@ describe("ResultPanel", () => {
     });
     vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>ok</html>", { status: 200 })));
     await user.click(screen.getByLabelText("Download"));
+    expect(screen.queryByText("PNG (.png)")).not.toBeInTheDocument();
+    expect(screen.queryByText("JPEG (.jpg)")).not.toBeInTheDocument();
+    expect(screen.getByText("Word (.docx)")).toBeInTheDocument();
     await user.click(screen.getByText("PDF (print)"));
     await user.click(screen.getByText(/recognized region/));
     expect(screen.getAllByText("Hello").length).toBeGreaterThan(0);

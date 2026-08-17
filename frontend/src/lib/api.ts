@@ -647,7 +647,7 @@ export async function deleteHistoryItem(id: string): Promise<void> {
   }
 }
 
-export type DownloadFormat = "markdown" | "txt" | "html" | "json" | "docx" | "png" | "jpeg";
+export type DownloadFormat = "markdown" | "txt" | "html" | "json" | "docx";
 
 export async function exportMarkdownFile(
   markdown: string,

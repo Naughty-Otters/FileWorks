@@ -56,8 +56,6 @@ const DOWNLOAD_OPTIONS: Array<{ id: DownloadFormat | "pdf"; label: string }> = [
   { id: "html", label: "HTML (.html)" },
   { id: "json", label: "JSON (.json)" },
   { id: "docx", label: "Word (.docx)" },
-  { id: "png", label: "PNG (.png)" },
-  { id: "jpeg", label: "JPEG (.jpg)" },
   { id: "pdf", label: "PDF (print)" },
 ];
 

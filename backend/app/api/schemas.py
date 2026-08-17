@@ -242,5 +242,5 @@ class ErrorResponse(BaseModel):
 
 class ExportRequest(BaseModel):
     markdown: str
-    format: Literal["markdown", "md", "txt", "text", "html", "json", "docx", "word", "png", "jpeg", "jpg"] = "markdown"
+    format: Literal["markdown", "md", "txt", "text", "html", "json", "docx", "word"] = "markdown"
     filename: str | None = None

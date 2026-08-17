@@ -43,7 +43,7 @@ class V1ConvertTests(unittest.TestCase):
         self.assertIn(".pdf", body["input_extensions"])
         self.assertIn(".txt", body["input_extensions"])
         target_ids = [item["id"] for item in body["targets"]]
-        self.assertEqual(target_ids, ["markdown", "txt", "html", "json", "docx", "png", "jpeg", "pdf"])
+        self.assertEqual(target_ids, ["markdown", "txt", "html", "json", "docx", "pdf"])
         pdf = next(item for item in body["targets"] if item["id"] == "pdf")
         self.assertFalse(pdf["available"])
         self.assertTrue(next(item for item in body["targets"] if item["id"] == "docx")["available"])
@@ -161,7 +161,7 @@ class V1ConvertTests(unittest.TestCase):
         self.assertIn("attachment", res.headers["content-disposition"])
         self.assertIn(b"Hello", res.content)
 
-    def test_download_docx_and_png(self) -> None:
+    def test_download_docx_and_reject_image_output(self) -> None:
         principal = _api_principal()
         client = TestClient(_app(principal))
         with patch(
@@ -181,5 +181,4 @@ class V1ConvertTests(unittest.TestCase):
         self.assertEqual(docx.status_code, 200)
         self.assertTrue(docx.content.startswith(b"PK"))
         self.assertIn("attachment", docx.headers["content-disposition"])
-        self.assertEqual(png.status_code, 200)
-        self.assertTrue(png.content.startswith(b"\x89PNG"))
+        self.assertEqual(png.status_code, 400)

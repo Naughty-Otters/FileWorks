@@ -69,7 +69,7 @@ export function AboutPage() {
             Office (Word, Excel, PowerPoint), OpenDocument, CSV, images, scans, Markdown, and TXT
             into editable Markdown. Optional add-ons in the same pass: AI reading of scans and
             images, and translation into 19 languages. Results download as Markdown, TXT, HTML,
-            JSON, Word (.docx), PNG, JPEG, or print-ready PDF.
+            JSON, Word (.docx), or print-ready PDF.
           </p>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             What we charge for: workspace access (file quotas and AI / translation allowances) and

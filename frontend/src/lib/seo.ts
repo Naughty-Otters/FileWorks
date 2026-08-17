@@ -39,7 +39,7 @@ export const INPUT_FORMATS = [
   "TXT",
 ] as const;
 
-export const OUTPUT_FORMATS = ["Markdown", "TXT", "HTML", "JSON", "Word (.docx)", "PNG", "JPEG", "print PDF"] as const;
+export const OUTPUT_FORMATS = ["Markdown", "TXT", "HTML", "JSON", "Word (.docx)", "print PDF"] as const;
 
 export const SITE_DESCRIPTION =
   "Convert PDF, Word, Excel, PowerPoint, images, and scanned documents into editable Markdown online. Optional AI reading for OCR on scans, plus translation into 19 languages in the same pass. Workspace plans from free Basic; Convert API from free with page credits.";
@@ -52,7 +52,7 @@ export const HOME_FAQS: FaqItem[] = [
   {
     question: "What file types can FileWorks convert to Markdown?",
     answer:
-      "FileWorks accepts PDF, Microsoft Word, Excel, PowerPoint, OpenDocument, CSV, RTF, EPUB, PNG, JPEG, WebP, BMP, TIFF, Markdown, and TXT (up to 50 MB). Output can be Markdown, TXT, HTML, JSON, DOCX, PNG, JPEG, or a print-ready PDF.",
+      "FileWorks accepts PDF, Microsoft Word, Excel, PowerPoint, OpenDocument, CSV, RTF, EPUB, PNG, JPEG, WebP, BMP, TIFF, Markdown, and TXT (up to 50 MB). Output can be Markdown, TXT, HTML, JSON, DOCX, or a print-ready PDF.",
   },
   {
     question: "Can FileWorks convert scanned PDFs and photos with OCR?",
@@ -375,7 +375,7 @@ export function softwareApplicationJsonLd() {
       "Document translation into 19 languages",
       "AI + translation in the same conversion pass",
       "Convert API with long-lived keys",
-      "Export Markdown, HTML, TXT, JSON, DOCX, images, PDF",
+      "Export Markdown, HTML, TXT, JSON, DOCX, and print PDF",
     ],
     offers: [
       {
