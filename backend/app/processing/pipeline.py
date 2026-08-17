@@ -13,7 +13,7 @@ from app.processing.decision.base import EngineDecisionMaker
 from app.processing.export.registry import ExportRegistry
 from app.processing.models import ExportArtifact, OutputKind, ReadResult, SourceFile
 from app.processing.reading.registry import ReaderRegistry
-from app.processing.stages import FillStage, NormalizeStage, PipelineContext, ProjectStage
+from app.processing.stages import FillStage, NormalizeStage, PipelineContext, PrepareOcrInputStage, ProjectStage
 from app.processing.structure.schema import StructureDocument
 from app.services.markdown import markdown_looks_flat
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
@@ -45,6 +45,7 @@ class DocumentPipeline:
         self.decision = decision or PriorityFallbackDecisionMaker()
         self.exporters = exporters or ExportRegistry()
         self._structure_stages = [NormalizeStage(), FillStage(), ProjectStage()]
+        self._prepare_ocr_input = PrepareOcrInputStage()
 
     def list_readers(self) -> list[dict[str, object]]:
         return self.readers.describe()
@@ -66,6 +67,7 @@ class DocumentPipeline:
         """Run Read + structure stages; return API-compatible dict."""
         source = SourceFile.from_path(file_path, filename=filename, mime_type=mime_type)
         opts = options or DEFAULT_EXTRACT_OPTIONS
+        source = self._prepare_ocr_input.prepare(source, opts)
         result = self.read(source, options=opts, preferred_output=preferred_output)
         result = self._postprocess(result, opts, source)
         _log_used_engine(result, filename=source.filename)

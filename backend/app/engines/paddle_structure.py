@@ -9,6 +9,7 @@ from typing import Any
 
 from app.engines.base import ExtractResult, OutputFormat
 from app.engines.lazy import LazyModelEngine
+from app.engines.paddle_init import create_pp_structure
 from app.engines.utils import collect_texts, json_safe
 from app.services.markdown import pick_best_markdown
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
@@ -26,41 +27,9 @@ class PaddleStructureEngine(LazyModelEngine):
         return True  # all UI options map natively to Structure predict kwargs
 
     def _load(self) -> None:
-        from paddleocr import PPStructureV3
-
         logger.info("Loading %s on device=%s", self.label, self.settings.paddle_device)
         try:
-            try:
-                self._pipeline = PPStructureV3(
-                    device=self.settings.paddle_device,
-                    use_doc_orientation_classify=True,
-                    use_doc_unwarping=True,
-                    use_textline_orientation=self.settings.use_textline_orientation,
-                    use_table_recognition=True,
-                    use_formula_recognition=True,
-                    use_seal_recognition=True,
-                    use_chart_recognition=True,
-                    use_region_detection=True,
-                    format_block_content=True,
-                )
-            except TypeError:
-                try:
-                    self._pipeline = PPStructureV3(
-                        device=self.settings.paddle_device,
-                        use_doc_orientation_classify=True,
-                        use_doc_unwarping=True,
-                        use_textline_orientation=self.settings.use_textline_orientation,
-                        use_table_recognition=True,
-                        use_formula_recognition=True,
-                        format_block_content=True,
-                    )
-                except TypeError:
-                    self._pipeline = PPStructureV3(
-                        device=self.settings.paddle_device,
-                        use_doc_orientation_classify=self.settings.use_doc_orientation_classify,
-                        use_doc_unwarping=self.settings.use_doc_unwarping,
-                        use_textline_orientation=self.settings.use_textline_orientation,
-                    )
+            self._pipeline = create_pp_structure(self.settings)
             self._init_error = None
             logger.info("%s ready", self.label)
         except Exception as exc:  # noqa: BLE001

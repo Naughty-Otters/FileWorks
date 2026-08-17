@@ -360,8 +360,8 @@ class PreferStructureRoutingTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "digital.pdf"
             path.write_bytes(_fixture_pdf())
-            self.assertEqual(self._order(path), ["anydoc", "ocr"])
-            self.assertEqual(self._order(path, prefer_structure=True), ["anydoc", "ocr"])
+            self.assertEqual(self._order(path), ["anydoc", "liteparse", "ocr"])
+            self.assertEqual(self._order(path, prefer_structure=True), ["anydoc", "liteparse", "ocr"])
 
             plain = _extract(path)
             structured = _extract(path, prefer_structure=True)
@@ -390,8 +390,8 @@ class PreferStructureRoutingTests(unittest.TestCase):
                 pages.append(canvas)
             pages[0].save(path, save_all=True, append_images=pages[1:])
 
-            self.assertEqual(self._order(path), ["anydoc", "ocr"])
-            self.assertEqual(self._order(path, prefer_structure=True), ["ocr", "anydoc"])
+            self.assertEqual(self._order(path), ["anydoc", "liteparse", "ocr"])
+            self.assertEqual(self._order(path, prefer_structure=True), ["liteparse", "ocr", "anydoc"])
 
 
 class FlatMarkdownDetectionTests(unittest.TestCase):

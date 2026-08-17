@@ -146,6 +146,10 @@ async def convert_file(
         default=False,
         description="Recover headings, lists, and layout on PDFs and scans. Slower. Default false.",
     ),
+    ocr_high_quality: bool | str = Form(
+        default=False,
+        description="OCR up to ~300 dpi (2480 px long edge). Default false (~150 dpi / 1754 px).",
+    ),
     use_doc_preprocessor: bool | str = Form(
         default=False,
         description="Orientation and unwarping cleanup. Default false.",
@@ -202,6 +206,7 @@ async def convert_file(
     options = ExtractOptions.from_form(
         use_ai=_form_bool(use_ai),
         prefer_structure=_form_bool(prefer_structure),
+        ocr_high_quality=_form_bool(ocr_high_quality),
         use_doc_preprocessor=_form_bool(use_doc_preprocessor),
         use_seal_recognition=_form_bool(use_seal_recognition),
         use_table_recognition=_form_bool(use_table_recognition),

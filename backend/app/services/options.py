@@ -9,6 +9,7 @@ from pydantic.dataclasses import dataclass
 OptionKey = Literal[
     "use_ai",
     "prefer_structure",
+    "ocr_high_quality",
     "use_doc_preprocessor",
     "use_seal_recognition",
     "use_table_recognition",
@@ -21,6 +22,7 @@ OptionKey = Literal[
 OPTION_KEYS: tuple[OptionKey, ...] = (
     "use_ai",
     "prefer_structure",
+    "ocr_high_quality",
     "use_doc_preprocessor",
     "use_seal_recognition",
     "use_table_recognition",
@@ -39,6 +41,7 @@ class ExtractOptions:
 
     use_ai: bool = False
     prefer_structure: bool = False
+    ocr_high_quality: bool = False
     use_doc_preprocessor: bool = False
     use_seal_recognition: bool = False
     use_table_recognition: bool = True
@@ -95,6 +98,7 @@ class ExtractOptions:
         *,
         use_ai: bool = False,
         prefer_structure: bool = False,
+        ocr_high_quality: bool = False,
         use_doc_preprocessor: bool = False,
         use_seal_recognition: bool = False,
         use_table_recognition: bool = True,
@@ -107,6 +111,7 @@ class ExtractOptions:
         return cls(
             use_ai=use_ai,
             prefer_structure=prefer_structure,
+            ocr_high_quality=ocr_high_quality,
             use_doc_preprocessor=use_doc_preprocessor,
             use_seal_recognition=use_seal_recognition,
             use_table_recognition=use_table_recognition,
@@ -123,6 +128,7 @@ ENGINE_OPTION_SUPPORT: dict[str, dict[OptionKey, SupportLevel]] = {
     "structure": {key: "native" for key in OPTION_KEYS},
     "ocr": {
         "prefer_structure": "approx",
+        "ocr_high_quality": "native",
         "use_doc_preprocessor": "native",
         "use_seal_recognition": "approx",
         "use_table_recognition": "approx",

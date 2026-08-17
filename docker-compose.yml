@@ -19,6 +19,8 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile
+      args:
+        UV_EXTRA: "--extra liteparse"
     image: fileworks-backend:local
     pull_policy: never
     command: ["python", "-m", "app"]
@@ -33,6 +35,10 @@ services:
       PUBLIC_APP_URL: http://localhost:3000
       PADDLE_DEVICE: cpu
       OCR_ENGINE: ocr
+      # Linux containers on Apple Silicon need this — Paddle segfaults above ~1296 px.
+      OCR_PLATFORM_MAX_INPUT_SIDE: "1200"
+      LITEPARSE_ENABLED: "true"
+      LITEPARSE_USE_PADDLE_OCR: "true"
       HOME: /tmp
       PYTHONUNBUFFERED: "1"
     env_file:

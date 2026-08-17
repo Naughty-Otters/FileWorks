@@ -498,6 +498,18 @@ class LLMEngineTests(unittest.TestCase):
 
 
 class StructureEngineTests(unittest.TestCase):
+    def test_init_kwargs_disable_heavy_modules(self) -> None:
+        settings = get_settings()
+        with patch("paddleocr.PPStructureV3") as factory:
+            engine = PaddleStructureEngine(settings)
+            engine._load()
+        factory.assert_called_once()
+        kwargs = factory.call_args.kwargs
+        self.assertFalse(kwargs["use_chart_recognition"])
+        self.assertFalse(kwargs["use_formula_recognition"])
+        self.assertFalse(kwargs["use_seal_recognition"])
+        self.assertFalse(kwargs["enable_mkldnn"])
+
     def test_extract_mocked(self) -> None:
         engine = PaddleStructureEngine(get_settings())
         engine._pipeline = SimpleNamespace(

@@ -25,15 +25,11 @@ class PaddleOCREngine(LazyModelEngine):
     def _load(self) -> None:
         from paddleocr import PaddleOCR
 
+        from app.engines.paddle_init import paddle_ocr_init_kwargs
+
         logger.info("Loading %s on device=%s", self.label, self.settings.paddle_device)
         try:
-            # Enable preprocessor modules at init so predict() can toggle them per request.
-            self._pipeline = PaddleOCR(
-                device=self.settings.paddle_device,
-                use_doc_orientation_classify=True,
-                use_doc_unwarping=True,
-                use_textline_orientation=self.settings.use_textline_orientation,
-            )
+            self._pipeline = PaddleOCR(**paddle_ocr_init_kwargs(self.settings))
             self._init_error = None
             logger.info("%s ready", self.label)
         except Exception as exc:  # noqa: BLE001

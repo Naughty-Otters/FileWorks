@@ -22,6 +22,7 @@ from app.api.schemas import (
     HistoryItem,
     HistoryListResponse,
     ImageSize,
+    LiteParseOcrResponse,
     LLMFileProvider,
     PresignUploadRequest,
     PresignUploadResponse,
@@ -38,7 +39,13 @@ from app.processing.postprocess.media import expand_embedded_media, fold_embedde
 from app.processing.pipeline import get_document_pipeline
 from app.processing.postprocess import get_markdown_translator, language_catalog
 from app.processing.reading.anydoc import anydoc_is_available
+from app.processing.reading.liteparse import liteparse_is_available
 from app.processing.remote_llm import invoke_remote_convert, needs_remote_llm
+from app.processing.strategy.ocr.chains import (
+    run_deep_ocr_chain,
+    run_fast_ocr_chain,
+    run_unified_ocr_for_liteparse,
+)
 from app.services.export import export_markdown
 from app.services.ocr import get_ocr_service
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
@@ -217,6 +224,10 @@ def _health_payload(
                     errors.append(f"{provider_id}: {exc}")
             if not ready and errors:
                 error = "; ".join(errors)
+        elif engine_id == "liteparse":
+            configured = liteparse_is_available() and settings.liteparse_enabled
+            ready = configured
+            error = None if configured else "uv sync --extra liteparse"
         elif engine_id == "llm":
             configured = bool(item.get("configured"))
             vision = bool(item.get("supports_vision"))
@@ -315,6 +326,115 @@ async def warmup() -> HealthResponse:
             ocr_error=str(exc),
         )
     return _health_payload(status="ok", settings=settings, service=service, ocr_ready=True, ocr_error=None)
+
+
+@router.post(
+    "/ocr",
+    response_model=LiteParseOcrResponse,
+    tags=["ocr-callback"],
+    summary="LiteParse unified OCR (fast then deep)",
+)
+async def liteparse_unified_ocr_bridge(
+    file: UploadFile = File(..., description="Single page image (PNG/JPEG)"),
+    language: str = Form(default="en", description="OCR language hint (en, eng, zh-cn, …)"),
+) -> LiteParseOcrResponse:
+    """
+    **Internal** LiteParse callback — auto-escalate per page.
+
+    Runs the fast chain (EasyOCR); if output is still weak, runs the deep chain
+    (Paddle → Surya). Use ``/api/ocr/fast`` and ``/api/ocr/deep`` when LiteParse
+    should call chains separately (default strategy).
+
+    Clients should use ``POST /api/extract``; see ``docs/ocr-callback-api.md``.
+    """
+    settings = get_settings()
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty image upload")
+    suffix = Path(file.filename or "page.png").suffix.lower() or ".png"
+    try:
+        results, _backend = await run_in_threadpool(
+            lambda: run_unified_ocr_for_liteparse(
+                data, language=language, suffix=suffix, settings=settings
+            )
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Unified OCR bridge failed")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return LiteParseOcrResponse(results=results)
+
+
+@router.post(
+    "/ocr/fast",
+    response_model=LiteParseOcrResponse,
+    tags=["ocr-callback"],
+    summary="LiteParse fast OCR chain (internal)",
+)
+async def liteparse_fast_ocr_bridge(
+    file: UploadFile = File(..., description="Single page image (PNG/JPEG)"),
+    language: str = Form(default="en", description="OCR language hint (en, eng, zh-cn, …)"),
+) -> LiteParseOcrResponse:
+    """
+    **Internal** LiteParse callback — **fast** chain only.
+
+    Runs EasyOCR on one page image. LiteParse sets ``ocr_server_url`` to this path
+    for the ``fast`` parse attempt (after bundled Tesseract).
+
+    Clients should use ``POST /api/extract``; see ``docs/ocr-callback-api.md``.
+    """
+    settings = get_settings()
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty image upload")
+    try:
+        results, _backend = await run_in_threadpool(
+            lambda: run_fast_ocr_chain(data, language=language, settings=settings)
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Fast OCR bridge failed")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return LiteParseOcrResponse(results=results)
+
+
+@router.post(
+    "/ocr/deep",
+    response_model=LiteParseOcrResponse,
+    tags=["ocr-callback"],
+    summary="LiteParse deep OCR chain (internal)",
+)
+async def liteparse_deep_ocr_bridge(
+    file: UploadFile = File(..., description="Single page image (PNG/JPEG)"),
+    language: str = Form(default="en", description="OCR language hint (en, eng, zh-cn, …)"),
+) -> LiteParseOcrResponse:
+    """
+    **Internal** LiteParse callback — **deep** chain only.
+
+    Runs Paddle PP-OCR, then Surya if enabled and output is weak. LiteParse sets
+    ``ocr_server_url`` to this path for the ``deep`` parse attempt.
+
+    Clients should use ``POST /api/extract``; see ``docs/ocr-callback-api.md``.
+    """
+    settings = get_settings()
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty image upload")
+    suffix = Path(file.filename or "page.png").suffix.lower() or ".png"
+    try:
+        results, _backend = await run_in_threadpool(
+            lambda: run_deep_ocr_chain(
+                data, language=language, suffix=suffix, settings=settings
+            )
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Deep OCR bridge failed")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return LiteParseOcrResponse(results=results)
 
 
 @router.get("/options", response_model=ExtractOptionsResponse)
@@ -444,6 +564,7 @@ async def extract(
     ),
     use_ai: bool = Form(default=False),
     prefer_structure: bool = Form(default=False),
+    ocr_high_quality: bool = Form(default=False),
     use_doc_preprocessor: bool = Form(default=False),
     use_seal_recognition: bool = Form(default=False),
     use_table_recognition: bool = Form(default=True),
@@ -485,6 +606,7 @@ async def extract(
     options = ExtractOptions.from_form(
         use_ai=_form_bool(use_ai),
         prefer_structure=_form_bool(prefer_structure),
+        ocr_high_quality=_form_bool(ocr_high_quality),
         use_doc_preprocessor=_form_bool(use_doc_preprocessor),
         use_seal_recognition=_form_bool(use_seal_recognition),
         use_table_recognition=_form_bool(use_table_recognition),

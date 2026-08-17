@@ -86,8 +86,39 @@ class Settings(BaseSettings):
     use_doc_unwarping: bool = False
     use_textline_orientation: bool = False
     use_table_recognition: bool = True
-    # Formula models are heavy; keep off by default for stability.
+    # Formula / seal / chart models are heavy and unstable on CPU / Mac ARM — off by default.
     use_formula_recognition: bool = False
+    use_seal_recognition: bool = False
+    use_chart_recognition: bool = False
+    use_region_detection: bool = True
+    paddle_enable_mkldnn: bool = False
+    # OCR input prep: cap raster long edge before Paddle (~150 dpi / ~300 dpi A4).
+    ocr_max_input_side_default: int = 1754
+    ocr_max_input_side_high: int = 2480
+    # Optional hard cap (e.g. 1200 for Docker on Apple Silicon — Paddle segfaults above ~1296 px).
+    ocr_platform_max_input_side: int | None = None
+
+    # LiteParse local parser (optional extra: uv sync --extra liteparse).
+    liteparse_enabled: bool = True
+    liteparse_priority: int = 35  # after LLM (30), before Paddle OCR (50)
+    liteparse_dpi: int = 150
+    liteparse_ocr_language: str = "eng"
+    liteparse_ocr_server_url: str | None = None  # legacy single URL; prefer ocr_unified_server_url
+    liteparse_use_paddle_ocr: bool = True
+    liteparse_route_by_complexity: bool = True
+
+    # LiteParse OCR callback URLs (where LiteParse POSTs page images). Default: local /api/ocr/*.
+    ocr_fast_server_url: str | None = None
+    ocr_deep_server_url: str | None = None
+    ocr_unified_server_url: str | None = None
+
+    # EasyOCR tier for LiteParse (between Tesseract and Paddle PP-OCR).
+    easyocr_enabled: bool = True
+    easyocr_use_gpu: bool = False
+    easyocr_ocr_server_url: str | None = None  # legacy alias for ocr_fast_server_url
+
+    # Deep OCR chain (Paddle → Surya) — optional, off until surya extra is wired.
+    surya_enabled: bool = False
 
     # LLM reader (optional). Inactive until LLM_PROVIDER and a matching API key are set.
     # Providers: openrouter | fireworks | deepseek | kimi | glm | openai | grok | claude | gemini
@@ -96,7 +127,8 @@ class Settings(BaseSettings):
     llm_api_key: str | None = None  # generic override for the selected provider
     llm_base_url: str | None = None  # OpenAI-style root, e.g. https://openrouter.ai/api/v1
     llm_endpoint: str | None = None  # optional full POST URL (chat/completions or custom OCR path)
-    llm_priority: int = 30  # after AnyDoc (10), before OCR (50)
+    llm_priority: int = 30  # when use_ai: before LiteParse (35) and OCR (50)
+    llm_priority_fallback: int = 95  # when use_ai off: last reader in the stack
     llm_max_tokens: int = 8192
     llm_timeout_s: float = 120
     llm_max_pages: int = 8

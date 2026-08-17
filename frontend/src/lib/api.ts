@@ -15,6 +15,7 @@ export type OutputFormat = "markdown" | "json" | "both";
 export type ExtractOptions = {
   use_ai: boolean;
   prefer_structure: boolean;
+  ocr_high_quality: boolean;
   use_doc_preprocessor: boolean;
   use_seal_recognition: boolean;
   use_table_recognition: boolean;
@@ -28,6 +29,7 @@ export type ExtractOptions = {
 export const DEFAULT_EXTRACT_OPTIONS: ExtractOptions = {
   use_ai: false,
   prefer_structure: false,
+  ocr_high_quality: false,
   use_doc_preprocessor: false,
   use_seal_recognition: false,
   use_table_recognition: true,

@@ -50,6 +50,7 @@ class V1ConvertTests(unittest.TestCase):
         option_names = [item["name"] for item in body["options"]]
         self.assertIn("use_ai", option_names)
         self.assertIn("prefer_structure", option_names)
+        self.assertIn("ocr_high_quality", option_names)
         self.assertIn("target_lang", option_names)
         self.assertIn("use_table_recognition", option_names)
         self.assertIn("credits", body)

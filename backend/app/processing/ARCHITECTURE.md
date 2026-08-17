@@ -6,8 +6,11 @@ Modular OO design for **reading** uploaded files and **exporting** user-edited c
 SourceFile
     │
     ▼
-ReadStage (Readers)             # Text → Docling (prefer_structure) → AnyDoc → LLM → OCR
-    │                           # recognition only — never re-invoked later
+PrepareOcrInputStage            # resize / cap raster DPI before OCR readers
+    │
+    ▼
+ReadStage (Readers)             # ReaderOrderingStrategy picks order (see processing.strategy)
+    │                           # use_ai on: LLM (30) before LiteParse (35); off: LLM last (95)
     ▼
 Postprocess                     # embed media → optional LLM structure edit → translate
     │
@@ -37,10 +40,11 @@ or re-run OCR/Docling/LLM recognition. They only reshape what Read already produ
 | Text | `text` | 5 | `.txt` / `.md` passthrough |
 | Docling | `docling` | 8 | PDF / images when `prefer_structure` and the optional `docling` extra is installed |
 | AnyDoc | `anydoc` | 10 | Office / CSV / PDF → Markdown. For **scanned** PDFs with `prefer_structure`, tried after OCR (never disabled) |
-| LLM | `llm` | 30 (configurable) | Vision LLM; skipped unless `LLM_PROVIDER` + API key and `use_ai` |
-| OCR | `ocr` | 50 | Default: PP-OCR then PP-StructureV3. `prefer_structure`: Structure first. PDFs with a majority text layer return that layer instead of running Paddle |
+| LiteParse | `liteparse` | 35 (configurable) | Layout + `DefaultOcrRoutingStrategy` (fast/deep chains) |
+| LLM | `llm` | 30 when `use_ai`; 95 fallback | Vision LLM; `use_ai` required for `can_process` |
+| OCR | `ocr` | 50 | Paddle PP-OCR / Structure fallback reader |
 
-Empty Markdown from an earlier reader triggers the next candidate. With `prefer_structure`, **flat** Markdown also falls through, and scanned PDFs try OCR/Docling before AnyDoc. Text files are never treated as flat. `LLMReader` is inactive until configured; then it runs after AnyDoc and before OCR (override with `LLM_PRIORITY`).
+Empty Markdown from an earlier reader triggers the next candidate. With `prefer_structure`, **flat** Markdown also falls through. `LLMReader` runs before LiteParse when `use_ai` and vision LLM are configured (`LLM_PRIORITY`, default 30). When `use_ai` is off, LLM is demoted to `LLM_PRIORITY_FALLBACK` (default 95) and is inactive unless `can_process` allows it.
 
 `prefer_structure` does **not** demote AnyDoc for PDFs that carry their own text
 layer. Those never reach PP-StructureV3 — `OCRReader` returns the text layer
@@ -52,6 +56,35 @@ when they are a real share of the lines, since raw text dumps routinely contain
 stray lines that merely open like list items.
 
 Install Docling with `uv sync --extra docling` (not in the default extra — it pulls layout models).
+Install LiteParse with `uv sync --extra liteparse` (Rust native wheel; Python 3.11–3.12).
+
+## Strategy layer (`processing.strategy`)
+
+See `processing/strategy/README.md` for the full diagram.
+
+**Reader ordering** (`ReaderOrderingStrategy`): which reader runs first in the pipeline.
+
+**OCR routing** (`OcrRoutingStrategy`): local OCR chains for LiteParse only (not LLM).
+
+```
+assess pages (text layer / LiteParse is_complex)
+    │
+    ├─ TEXT — embedded PDF text, no OCR
+    ├─ FAST — LiteParse Tesseract → /api/ocr/fast (EasyOCR)
+    └─ DEEP — escalate → /api/ocr/deep (Paddle PP-OCR → Surya)
+```
+
+LLM vision is **not** an OCR route — it is ordered by `ReaderOrderingStrategy` when `use_ai` is on.
+
+**OCR callback API** (`/api/ocr/fast`, `/api/ocr/deep`, `/api/ocr`): internal LiteParse
+per-page HTTP. Design: [docs/ocr-callback-api.md](../../../docs/ocr-callback-api.md).
+
+| Package | Responsibility |
+| --- | --- |
+| `processing.strategy.reader` | `ReaderOrderingStrategy`, `PriorityFallbackReaderOrdering` |
+| `processing.strategy.ocr` | `OcrRoutingStrategy`, assessments, fast/deep chains |
+| `processing.decision` | Legacy re-export of reader strategies |
+| `processing.ocr` | Legacy re-export of OCR strategies |
 
 ## Pages
 
@@ -66,7 +99,7 @@ the API omits fat ``pages[].json`` by default (opt-in ``include_engine_json``).
 | --- | --- |
 | `processing.models` | `SourceFile`, `Capability`, `ReadResult`, `DocumentOutput`, `ExportArtifact` |
 | `processing.reading` | `Reader` ABC + Text / Docling / AnyDoc / LLM / OCR + `ReaderRegistry` |
-| `processing.decision` | `EngineDecisionMaker` + `PriorityFallbackDecisionMaker` |
+| `processing.strategy` | Reader ordering + OCR routing interfaces and defaults |
 | `processing.structure` | `StructureDocument` IR, adapters, fill, project, render |
 | `processing.stages` | `PipelineContext`, Normalize / Fill / Project stages |
 | `processing.export` | `FormatExporter` ABC + built-in exporters + registry |

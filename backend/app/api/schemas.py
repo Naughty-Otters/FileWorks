@@ -134,6 +134,7 @@ class HistoryFileUrlResponse(BaseModel):
 class ExtractOptionsResponse(BaseModel):
     use_ai: bool = False
     prefer_structure: bool = False
+    ocr_high_quality: bool = False
     use_doc_preprocessor: bool = False
     use_seal_recognition: bool = False
     use_table_recognition: bool = True
@@ -157,6 +158,17 @@ class RegionBox(BaseModel):
 class ImageSize(BaseModel):
     width: float
     height: float
+
+
+class LiteParseOcrResult(BaseModel):
+    text: str
+    bbox: list[float]
+    confidence: float
+    polygon: list[list[float]] | None = None
+
+
+class LiteParseOcrResponse(BaseModel):
+    results: list[LiteParseOcrResult]
 
 
 class ExtractResponse(BaseModel):

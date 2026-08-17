@@ -42,6 +42,11 @@ dependencies = [
 fileworks-db = "app.db.upgrade:main"
 
 [[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
+
+[[tool.uv.index]]
 name = "paddle"
 url = "https://www.paddlepaddle.org.cn/packages/stable/cpu/"
 explicit = true
@@ -56,6 +61,10 @@ dev = [
 ]
 docling = [
     "docling>=2.0.0",
+]
+liteparse = [
+    "liteparse>=2.12.0,<2.13",
+    "easyocr>=1.7.2",
 ]
 
 [build-system]

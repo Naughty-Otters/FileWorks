@@ -4,6 +4,8 @@ FastAPI service for FileWorks — convert and transform files into Markdown and 
 
 ```bash
 uv sync
+# optional: LiteParse local PDF/image parser (Python 3.11–3.12)
+uv sync --extra liteparse
 uv run python -m app
 ```
 
@@ -24,6 +26,8 @@ Auth tables live in Postgres. Set `DATABASE_URL` and apply migrations (also runs
 - One-shot convert: `GET /api/v1/convert` (options check), `POST /api/v1/convert` (`file` + `target`; no `s3_key`)
 
 Option reference (inputs, targets, form fields, languages, errors): [docs/convert-api.md](../docs/convert-api.md)
+
+LiteParse OCR callbacks (internal, not client-facing): [docs/ocr-callback-api.md](../docs/ocr-callback-api.md) — `POST /api/ocr/fast`, `/api/ocr/deep`, `/api/ocr`.
 
 ## Logs
 

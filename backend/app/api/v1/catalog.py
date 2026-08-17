@@ -101,6 +101,10 @@ OPTION_META: dict[str, dict[str, str]] = {
         "label": "Prefer structure",
         "description": "Recover headings, lists, and layout on PDFs and scans. Slower.",
     },
+    "ocr_high_quality": {
+        "label": "High-quality OCR",
+        "description": "Allow up to ~300 dpi (2480 px) for scans. Uses more memory.",
+    },
     "use_doc_preprocessor": {
         "label": "Doc preprocessor",
         "description": "Orientation and unwarping cleanup.",

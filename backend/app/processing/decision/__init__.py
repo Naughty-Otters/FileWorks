@@ -1,9 +1,15 @@
-"""Decision-maker package."""
+"""Legacy re-export — use ``app.processing.strategy.reader``."""
 
-from app.processing.decision.base import EngineDecisionMaker
-from app.processing.decision.priority import PriorityFallbackDecisionMaker
+from app.processing.strategy.reader import (
+    EngineDecisionMaker,
+    PriorityFallbackDecisionMaker,
+    PriorityFallbackReaderOrdering,
+    ReaderOrderingStrategy,
+)
 
 __all__ = [
     "EngineDecisionMaker",
     "PriorityFallbackDecisionMaker",
+    "PriorityFallbackReaderOrdering",
+    "ReaderOrderingStrategy",
 ]

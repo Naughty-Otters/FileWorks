@@ -33,6 +33,11 @@ const OPTION_META: Array<{
     hint: "Recover headings, lists, and layout on PDFs and scans. Slower",
   },
   {
+    key: "ocr_high_quality",
+    label: "High-quality OCR",
+    hint: "Up to ~300 dpi (2480 px) for scans. More memory and slower",
+  },
+  {
     key: "use_doc_preprocessor",
     label: "Doc preprocessor",
     hint: "Orientation / unwarping cleanup",

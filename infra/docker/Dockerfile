@@ -35,9 +35,10 @@ COPY --from=ghcr.io/astral-sh/uv:0.8.4 /uv /usr/local/bin/uv
 WORKDIR /var/task
 
 COPY backend/pyproject.toml backend/uv.lock backend/README.md backend/alembic.ini ./
-RUN uv sync --frozen --no-dev --no-install-project
+ARG UV_EXTRA=""
+RUN uv sync --frozen --no-dev --no-install-project ${UV_EXTRA}
 
 COPY backend/app ./app
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev ${UV_EXTRA}
 
 CMD ["python", "-m", "app"]
