@@ -5,13 +5,15 @@ import { buildPageMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildPageMetadata({
   title: "Convert API — PDF and Office to Markdown",
   description:
-    "FileWorks Convert API: upload PDF, Word, Excel, PowerPoint, or images and receive Markdown, HTML, TXT, JSON, or DOCX. curl, Python, and JavaScript examples. Free 100 page credits/month.",
+    "FileWorks Convert API: upload PDF, Word, Excel, PowerPoint, or images and receive Markdown, HTML, TXT, JSON, or DOCX. Optional AI reading (OCR) and translation into 19 languages. curl, Python, and JavaScript examples. Free 100 page credits/month.",
   path: "/docs",
   keywords: [
     "PDF to Markdown API",
     "document conversion API",
     "DOCX to Markdown API",
     "OCR API Markdown",
+    "document translation API",
+    "AI document conversion API",
     "convert PDF API",
   ],
 });

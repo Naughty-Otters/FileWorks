@@ -158,9 +158,9 @@ export function PricingPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
             Two products, one account. Workspace roles (Basic, Pro, Premium) cover PDF, Word,
-            Excel, PowerPoint, image, and scan conversion in the FileWorks app. Convert API plans
-            are billed separately with page credits and a long-lived API key. You can hold both at
-            once.{" "}
+            Excel, PowerPoint, image, and scan conversion in the FileWorks app — including optional
+            AI reading (OCR) and translation into 19 languages. Convert API plans are billed
+            separately with page credits and a long-lived API key. You can hold both at once.{" "}
             <a href="/legal#refunds" className="text-[var(--accent-strong)] hover:underline">
               Refunds, cancellation, and contact
             </a>

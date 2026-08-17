@@ -11,6 +11,8 @@ export const metadata: Metadata = buildPageMetadata({
   keywords: [
     "image to Markdown",
     "OCR to Markdown",
+    "AI OCR Markdown",
+    "translate scan to Markdown",
     "scan to Markdown",
     "photo OCR Markdown",
     "TIFF to Markdown",

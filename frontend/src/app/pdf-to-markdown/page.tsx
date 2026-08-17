@@ -12,6 +12,8 @@ export const metadata: Metadata = buildPageMetadata({
     "PDF to Markdown",
     "convert PDF to Markdown online",
     "PDF OCR Markdown",
+    "AI PDF to Markdown",
+    "translate PDF to Markdown",
     "scanned PDF to Markdown",
     "PDF to MD converter",
   ],

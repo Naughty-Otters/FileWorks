@@ -115,8 +115,18 @@ describe("auth and user id", () => {
     setSession("acc", "ref");
     expect(getAccessToken()).toBe("acc");
     expect(getRefreshToken()).toBe("ref");
+    expect(window.localStorage.getItem("fileworks.access_token")).toBe("acc");
+    expect(window.sessionStorage.getItem("fileworks.access_token")).toBeNull();
     clearSession();
     expect(getAccessToken()).toBeNull();
+  });
+
+  it("migrates a legacy sessionStorage access token into localStorage", () => {
+    window.sessionStorage.setItem("fileworks.access_token", "legacy-acc");
+    window.localStorage.setItem("fileworks.refresh_token", "ref");
+    expect(getAccessToken()).toBe("legacy-acc");
+    expect(window.localStorage.getItem("fileworks.access_token")).toBe("legacy-acc");
+    expect(window.sessionStorage.getItem("fileworks.access_token")).toBeNull();
   });
 
   it("falls back when storage throws", () => {
@@ -209,6 +219,21 @@ describe("session store", () => {
     expect(a).toBe(b);
     expect(getSessionState().status).toBe("signed-in");
     expect(readSessionHint()?.email).toBe("a@b.co");
+  });
+
+  it("refreshes when only a refresh token is present before accepting guest", async () => {
+    window.localStorage.setItem("fileworks.refresh_token", "ref");
+    const guestMe = { ...signedInMe, user: null, plan: "anonymous" };
+    const fetchMe = vi
+      .spyOn(api, "fetchMe")
+      .mockResolvedValueOnce(guestMe)
+      .mockResolvedValueOnce(signedInMe);
+    const refresh = vi.spyOn(api, "refreshSession").mockResolvedValue(true);
+    const me = await reloadSession();
+    expect(refresh).toHaveBeenCalled();
+    expect(fetchMe.mock.calls.length).toBeGreaterThanOrEqual(1);
+    expect(me.user?.email).toBe("a@b.co");
+    expect(getSessionState().status).toBe("signed-in");
   });
 
   it("signs out on a rejected credential", async () => {

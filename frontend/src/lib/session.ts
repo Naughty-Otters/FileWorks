@@ -4,6 +4,8 @@ import { useEffect, useSyncExternalStore } from "react";
 import { ApiError, fetchMe, refreshSession } from "@/lib/api";
 import {
   clearSessionHint,
+  getAccessToken,
+  getRefreshToken,
   hasStoredSession,
   readSessionHint,
   scheduleTokenRefresh,
@@ -85,16 +87,28 @@ function applyError(err: unknown) {
 /**
  * Fetch and publish the session. Shared and deduped, so five components mounting
  * at once still make one request. Stable module function, safe in effect bodies.
+ *
+ * `/api/me` returns an anonymous principal (200) when no access token is sent, so
+ * a tab that only has a refresh token must refresh first — otherwise we would
+ * incorrectly treat a signed-in browser as a guest.
  */
 export function reloadSession(): Promise<MeResponse> {
   hydrate();
   if (!inFlight) {
     const seq = ++issued;
-    inFlight = fetchMe()
-      .then((me) => {
-        applyMe(me, seq);
-        return me;
-      })
+    inFlight = (async () => {
+      if (getRefreshToken() && !getAccessToken()) {
+        await refreshSession().catch(() => false);
+      }
+      let me = await fetchMe();
+      if (!me.user && getRefreshToken()) {
+        if (await refreshSession()) {
+          me = await fetchMe();
+        }
+      }
+      applyMe(me, seq);
+      return me;
+    })()
       .catch((err) => {
         applyError(err);
         throw err;

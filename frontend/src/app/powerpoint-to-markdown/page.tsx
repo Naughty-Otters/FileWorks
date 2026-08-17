@@ -12,6 +12,8 @@ export const metadata: Metadata = buildPageMetadata({
     "PowerPoint to Markdown",
     "PPTX to Markdown",
     "PPT to Markdown",
+    "AI PowerPoint to Markdown",
+    "translate PowerPoint to Markdown",
     "convert PowerPoint to Markdown",
     "slides to Markdown",
   ],

@@ -12,6 +12,7 @@ export const metadata: Metadata = buildPageMetadata({
     "Excel to Markdown",
     "XLSX to Markdown",
     "CSV to Markdown",
+    "translate spreadsheet to Markdown",
     "spreadsheet to Markdown",
     "Excel Markdown table converter",
   ],

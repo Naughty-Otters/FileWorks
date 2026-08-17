@@ -2,6 +2,30 @@ const ACCESS_KEY = "fileworks.access_token";
 const REFRESH_KEY = "fileworks.refresh_token";
 const HINT_KEY = "fileworks.session_hint";
 
+function readStorage(store: Storage, key: string): string | null {
+  try {
+    return store.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(store: Storage, key: string, value: string): void {
+  try {
+    store.setItem(key, value);
+  } catch {
+    // Private mode / quota — session just will not persist.
+  }
+}
+
+function removeStorage(store: Storage, key: string): void {
+  try {
+    store.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
+
 export type PlanId = "anonymous" | "basic" | "pro" | "premium";
 
 export type MeResponse = {
@@ -54,24 +78,39 @@ export type MeResponse = {
   };
 };
 
+/**
+ * Access + refresh live in localStorage so a new tab on the same origin keeps the
+ * signed-in session. (sessionStorage is tab-scoped and used to drop logins.)
+ * Older builds kept access in sessionStorage — migrate once if found.
+ */
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return sessionStorage.getItem(ACCESS_KEY);
+  const fromLocal = readStorage(window.localStorage, ACCESS_KEY);
+  if (fromLocal) return fromLocal;
+  const fromSession = readStorage(window.sessionStorage, ACCESS_KEY);
+  if (fromSession) {
+    writeStorage(window.localStorage, ACCESS_KEY, fromSession);
+    removeStorage(window.sessionStorage, ACCESS_KEY);
+    return fromSession;
+  }
+  return null;
 }
 
 export function getRefreshToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(REFRESH_KEY);
+  return readStorage(window.localStorage, REFRESH_KEY);
 }
 
 export function setSession(access: string, refresh: string) {
-  sessionStorage.setItem(ACCESS_KEY, access);
-  localStorage.setItem(REFRESH_KEY, refresh);
+  writeStorage(window.localStorage, ACCESS_KEY, access);
+  writeStorage(window.localStorage, REFRESH_KEY, refresh);
+  removeStorage(window.sessionStorage, ACCESS_KEY);
 }
 
 export function clearSession() {
-  sessionStorage.removeItem(ACCESS_KEY);
-  localStorage.removeItem(REFRESH_KEY);
+  removeStorage(window.localStorage, ACCESS_KEY);
+  removeStorage(window.localStorage, REFRESH_KEY);
+  removeStorage(window.sessionStorage, ACCESS_KEY);
   clearSessionHint();
 }
 

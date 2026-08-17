@@ -9,7 +9,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: BUSINESS_NAME,
     short_name: BUSINESS_NAME,
     description:
-      "Convert PDFs, Word, Excel, PowerPoint, images, and scans into editable Markdown. Optional AI OCR and translation.",
+      "Convert PDFs, Word, Excel, PowerPoint, images, and scans into editable Markdown. Optional AI reading (OCR) and translation into 19 languages.",
     start_url: "/",
     scope: "/",
     display: "standalone",

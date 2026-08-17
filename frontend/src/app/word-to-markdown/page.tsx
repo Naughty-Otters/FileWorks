@@ -12,6 +12,8 @@ export const metadata: Metadata = buildPageMetadata({
     "Word to Markdown",
     "DOCX to Markdown",
     "DOC to Markdown",
+    "translate Word to Markdown",
+    "AI Word to Markdown",
     "convert Word to Markdown online",
     "Microsoft Word Markdown converter",
   ],

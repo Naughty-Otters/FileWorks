@@ -13,11 +13,11 @@ export const MARKETING_LINKS = [
 ] as const;
 
 export const GUIDE_LINKS = [
-  { href: "/pdf-to-markdown", label: "PDF → Markdown" },
-  { href: "/word-to-markdown", label: "Word → Markdown" },
-  { href: "/excel-to-markdown", label: "Excel → Markdown" },
-  { href: "/powerpoint-to-markdown", label: "PowerPoint → Markdown" },
-  { href: "/image-to-markdown", label: "Image OCR → Markdown" },
+  { href: "/pdf-to-markdown", label: "PDF → Markdown (+ AI / translate)" },
+  { href: "/word-to-markdown", label: "Word → Markdown (+ AI / translate)" },
+  { href: "/excel-to-markdown", label: "Excel → Markdown (+ translate)" },
+  { href: "/powerpoint-to-markdown", label: "PowerPoint → Markdown (+ AI / translate)" },
+  { href: "/image-to-markdown", label: "Image OCR → Markdown (+ translate)" },
 ] as const;
 
 export const LEGAL_LINKS = [

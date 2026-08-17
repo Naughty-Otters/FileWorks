@@ -357,7 +357,7 @@ export function Workspace() {
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
           <BrandLockup asHeading />
           <p className="hidden min-w-0 truncate text-xs text-[var(--ink-muted)] sm:block lg:max-w-[28rem]">
-            PDF, Word, Excel, PowerPoint & scans → editable Markdown
+            PDF & Office → Markdown · AI reading & translation
           </p>
           <div className="ml-auto flex items-center gap-1.5">
             <a

@@ -18,6 +18,10 @@ export const PRIMARY_KEYWORDS = [
   "convert PDF to Markdown online",
   "Markdown converter API",
   "AI document conversion",
+  "AI OCR Markdown",
+  "document translation to Markdown",
+  "translate PDF to Markdown",
+  "multilingual document converter",
 ] as const;
 
 export const INPUT_FORMATS = [
@@ -38,9 +42,9 @@ export const INPUT_FORMATS = [
 export const OUTPUT_FORMATS = ["Markdown", "TXT", "HTML", "JSON", "Word (.docx)", "PNG", "JPEG", "print PDF"] as const;
 
 export const SITE_DESCRIPTION =
-  "Convert PDF, Word, Excel, PowerPoint, images, and scanned documents into editable Markdown online. Optional AI reading and translation into 19 languages. Workspace plans from free Basic; Convert API from free with page credits.";
+  "Convert PDF, Word, Excel, PowerPoint, images, and scanned documents into editable Markdown online. Optional AI reading for OCR on scans, plus translation into 19 languages in the same pass. Workspace plans from free Basic; Convert API from free with page credits.";
 
-export const SITE_TAGLINE = "PDF, Office, and scans → editable Markdown";
+export const SITE_TAGLINE = "PDF & Office → Markdown, with AI reading & translation";
 
 export type FaqItem = { question: string; answer: string };
 
@@ -112,33 +116,33 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   {
     slug: "pdf-to-markdown",
     path: "/pdf-to-markdown",
-    title: "PDF to Markdown converter",
-    headline: "Convert PDF to Markdown online",
+    title: "PDF to Markdown with AI & translation",
+    headline: "Convert PDF to Markdown — AI reading & translation",
     description:
-      "Turn PDFs into clean, editable Markdown with headings, lists, and tables preserved. Works on text PDFs and scanned pages with optional AI OCR. Free Basic plan at fileworks.ai.",
+      "Turn PDFs into editable Markdown online. Optional AI reading for scanned/OCR pages and translation into 19 languages in the same pass. Free Basic plan at fileworks.ai.",
     intro:
-      "PDFs keep layout for printing, not for editing or feeding LLMs. FileWorks converts PDF layout into Markdown you can paste into Obsidian, Cursor, ChatGPT, Claude, docs repos, and RAG pipelines — including scanned PDFs when AI reading is enabled.",
+      "PDFs keep layout for printing, not for editing or feeding LLMs. FileWorks converts PDF layout into Markdown for Obsidian, Cursor, ChatGPT, Claude, docs repos, and RAG pipelines. Enable AI reading for scans, and optionally translate the result into 19 languages without a second tool.",
     bullets: [
       "Preserve headings, lists, and tables as Markdown structure",
-      "Optional AI OCR for scanned and image-only PDFs",
-      "Download Markdown, HTML, TXT, JSON, DOCX, or print PDF",
-      "Same conversion available via the Convert API",
+      "AI reading (OCR) for scanned and image-only PDFs",
+      "Translate into 19 languages in the same conversion pass",
+      "Download Markdown, HTML, TXT, JSON, DOCX, or print PDF — or use the Convert API",
     ],
     steps: [
       "Open the FileWorks workspace and drop a PDF (up to 50 MB).",
-      "Turn on AI reading if the PDF is a scan or photo of a page.",
+      "Turn on AI reading for scans; pick a target language if you want translation.",
       "Convert, then edit Markdown in the preview or download the result.",
     ],
     faqs: [
       {
         question: "Is PDF to Markdown free on FileWorks?",
         answer:
-          "Yes on Basic: five conversions per day after you sign in. Guest browsing does not convert files. Paid Pro and Premium raise monthly volume and AI allowances.",
+          "Yes on Basic: five conversions per day after you sign in, plus a small AI / translation allowance. Guest browsing does not convert files. Paid Pro and Premium raise monthly volume and AI allowances.",
       },
       {
-        question: "Does FileWorks handle scanned PDFs?",
+        question: "Can I OCR and translate a PDF in one step?",
         answer:
-          "Enable AI reading for image-only or poorly selectable PDFs. That uses your workspace AI allowance or Convert API enhanced credits (3 per page).",
+          "Yes. Enable AI reading for image-only or poorly selectable PDFs, and set a translation language. Both share the workspace AI / translation allowance, or Convert API enhanced credits (3 per page).",
       },
     ],
     related: ["word-to-markdown", "image-to-markdown", "excel-to-markdown"],
@@ -146,28 +150,28 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   {
     slug: "word-to-markdown",
     path: "/word-to-markdown",
-    title: "Word to Markdown converter",
-    headline: "Convert Word (DOCX) to Markdown",
+    title: "Word to Markdown with AI & translation",
+    headline: "Convert Word (DOCX) to Markdown — translate too",
     description:
-      "Convert Microsoft Word .doc and .docx files to editable Markdown online. Keep structure for docs, blogs, and AI workflows. Free Basic plan available.",
+      "Convert Microsoft Word .doc and .docx to editable Markdown online. Optional AI cleanup for hard pages and translation into 19 languages. Free Basic plan available.",
     intro:
-      "Move Word drafts into Markdown without hand-fixing headings and lists. FileWorks accepts .doc and .docx, extracts structure, and returns Markdown you can edit in the workspace or export again as DOCX, HTML, or PDF.",
+      "Move Word drafts into Markdown without hand-fixing headings and lists. FileWorks accepts .doc and .docx, extracts structure, and can translate into 19 languages in the same pass — then you edit in the workspace or export again as DOCX, HTML, or PDF.",
     bullets: [
       "Support for .doc and .docx uploads",
       "Editable Markdown preview with formatting toolbar",
-      "Optional translation into 19 languages in one pass",
-      "API access for batch Word → Markdown pipelines",
+      "Optional AI reading when pages need stronger extraction",
+      "Translate into 19 languages in one pass; API for batch pipelines",
     ],
     steps: [
       "Upload a Word file in the workspace.",
-      "Convert to Markdown and review headings and lists.",
-      "Download Markdown or re-export to HTML, DOCX, or PDF.",
+      "Optionally enable AI reading and choose a translation language.",
+      "Convert, review Markdown, then download or re-export to HTML, DOCX, or PDF.",
     ],
     faqs: [
       {
-        question: "Can I convert DOCX to Markdown with an API?",
+        question: "Can I convert and translate DOCX with an API?",
         answer:
-          "Yes. Use POST /api/v1/convert with target=markdown and a fw_live_ API key. See the API docs for curl, Python, and JavaScript examples.",
+          "Yes. Use POST /api/v1/convert with target=markdown, optional use_ai=true, and target_lang. Auth with a fw_live_ API key. See the API docs for curl, Python, and JavaScript examples.",
       },
     ],
     related: ["pdf-to-markdown", "powerpoint-to-markdown", "excel-to-markdown"],
@@ -175,28 +179,28 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   {
     slug: "excel-to-markdown",
     path: "/excel-to-markdown",
-    title: "Excel to Markdown converter",
-    headline: "Convert Excel spreadsheets to Markdown tables",
+    title: "Excel to Markdown with translation",
+    headline: "Convert Excel to Markdown tables — with translation",
     description:
-      "Convert Excel .xls and .xlsx files into Markdown tables and text online. Useful for reports, docs, and LLM context. Free Basic plan at fileworks.ai.",
+      "Convert Excel .xls and .xlsx into Markdown tables online. Optionally translate sheet text into 19 languages. Useful for reports, docs, and LLM context. Free Basic plan.",
     intro:
-      "Spreadsheets do not paste cleanly into notes or prompts. FileWorks turns Excel workbooks into Markdown you can edit, share, or send to an API consumer — with CSV and OpenDocument spreadsheets supported too.",
+      "Spreadsheets do not paste cleanly into notes or prompts. FileWorks turns Excel workbooks into Markdown you can edit, share, or send to an API — and optionally translate cell text into 19 languages in the same pass. CSV and OpenDocument spreadsheets are supported too.",
     bullets: [
       "Accepts .xls, .xlsx, .ods, and CSV",
       "Markdown table-oriented output for structured sheets",
-      "Export back to HTML, JSON, or DOCX when needed",
-      "Automate with the Convert API and page credits",
+      "Optional translation into 19 languages",
+      "Automate with the Convert API (AI / translation use enhanced page credits)",
     ],
     steps: [
       "Drop an Excel or CSV file into the workspace.",
-      "Convert and inspect table structure in Markdown preview.",
-      "Download or call the same path from your scripts.",
+      "Optionally choose a translation language, then convert.",
+      "Inspect tables in Markdown preview, download, or call the same path from scripts.",
     ],
     faqs: [
       {
         question: "Does Excel to Markdown keep multiple sheets?",
         answer:
-          "FileWorks extracts spreadsheet content into Markdown suitable for reading and editing. For large multi-sheet books, convert focused ranges or use the API in a loop over exports.",
+          "FileWorks extracts spreadsheet content into Markdown suitable for reading and editing. For large multi-sheet books, convert focused ranges or use the API in a loop over exports. Translation applies to extracted text in the same pass.",
       },
     ],
     related: ["word-to-markdown", "pdf-to-markdown", "powerpoint-to-markdown"],
@@ -204,28 +208,28 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   {
     slug: "powerpoint-to-markdown",
     path: "/powerpoint-to-markdown",
-    title: "PowerPoint to Markdown converter",
-    headline: "Convert PowerPoint to Markdown",
+    title: "PowerPoint to Markdown with AI & translation",
+    headline: "Convert PowerPoint to Markdown — AI & translation",
     description:
-      "Convert PowerPoint .ppt and .pptx decks into editable Markdown online. Capture slide text for notes, RAG, and AI agents. Free Basic plan available.",
+      "Convert PowerPoint .ppt and .pptx into editable Markdown online. AI reading for image-heavy slides and translation into 19 languages. Free Basic plan available.",
     intro:
-      "Slide decks are awkward to quote in docs and agents. FileWorks converts PowerPoint into Markdown so you can summarize, search, and reuse the content — including OpenDocument presentations.",
+      "Slide decks are awkward to quote in docs and agents. FileWorks converts PowerPoint into Markdown so you can summarize, search, and reuse the content. Use AI reading when slides are image-heavy, and optionally translate into 19 languages in one pass.",
     bullets: [
       "Accepts .ppt, .pptx, and .odp",
       "Text-first Markdown for notes and LLM context",
-      "Optional AI reading when slides are image-heavy",
-      "Same pipeline available over the Convert API",
+      "AI reading when slides are image-heavy or scanned",
+      "Translate into 19 languages; same pipeline over the Convert API",
     ],
     steps: [
       "Upload a PowerPoint file (up to 50 MB).",
-      "Convert and edit the Markdown outline.",
-      "Download or integrate via API keys on Profile.",
+      "Optionally enable AI reading and pick a translation language.",
+      "Convert, edit the Markdown outline, then download or integrate via API keys.",
     ],
     faqs: [
       {
-        question: "Can I convert PPTX for RAG ingestion?",
+        question: "Can I convert and translate PPTX for RAG ingestion?",
         answer:
-          "Yes. Markdown with clear structure chunks more reliably than binary PPTX. Use the web app for one-off decks or the Convert API for batch ingestion.",
+          "Yes. Markdown with clear structure chunks more reliably than binary PPTX. Use AI reading for image-heavy decks and target_lang for translation, in the web app or via the Convert API.",
       },
     ],
     related: ["pdf-to-markdown", "word-to-markdown", "image-to-markdown"],
@@ -233,28 +237,28 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   {
     slug: "image-to-markdown",
     path: "/image-to-markdown",
-    title: "Image and scan to Markdown (OCR)",
-    headline: "OCR images and scans to Markdown",
+    title: "Image OCR to Markdown with AI & translation",
+    headline: "AI OCR images & scans to Markdown — translate too",
     description:
-      "Convert PNG, JPEG, WebP, TIFF photos and scanned pages into editable Markdown with AI reading. Online OCR for documents at fileworks.ai.",
+      "Convert PNG, JPEG, WebP, TIFF photos and scanned pages into editable Markdown with AI reading, then optionally translate into 19 languages. Online document OCR at fileworks.ai.",
     intro:
-      "Phone photos of whiteboards, receipts, and paper scans are not selectable text. FileWorks AI reading performs OCR-style extraction and returns Markdown you can edit, translate, and download.",
+      "Phone photos of whiteboards, receipts, and paper scans are not selectable text. FileWorks AI reading performs OCR-style extraction and returns Markdown you can edit, translate into 19 languages, and download — without a separate OCR or translation app.",
     bullets: [
       "PNG, JPEG, WebP, BMP, and TIFF uploads",
       "AI reading for scans and photo documents",
-      "Optional translation into 19 languages",
-      "Bill against workspace AI allowance or API credits",
+      "Translate OCR text into 19 languages in the same pass",
+      "Bill against workspace AI / translation allowance or API credits",
     ],
     steps: [
       "Upload an image or scanned page.",
-      "Enable AI reading, then convert.",
-      "Edit Markdown and download or re-export.",
+      "Enable AI reading and optionally choose a translation language.",
+      "Convert, edit Markdown, then download or re-export.",
     ],
     faqs: [
       {
-        question: "Is image OCR included on the free plan?",
+        question: "Is AI OCR and translation included on the free plan?",
         answer:
-          "Basic includes a small monthly AI / translation allowance (3 uses). Pro and Premium raise that allowance. Convert API charges 3 credits per page when AI reading is on.",
+          "Basic includes a small monthly AI / translation allowance (3 uses). Pro and Premium raise that allowance. Convert API charges 3 credits per page when AI reading or translation is on.",
       },
     ],
     related: ["pdf-to-markdown", "word-to-markdown", "powerpoint-to-markdown"],
@@ -367,8 +371,9 @@ export function softwareApplicationJsonLd() {
     featureList: [
       "PDF to Markdown",
       "Word / Excel / PowerPoint to Markdown",
-      "OCR for scanned PDFs and images",
-      "Translation into 19 languages",
+      "AI reading (OCR) for scanned PDFs and images",
+      "Document translation into 19 languages",
+      "AI + translation in the same conversion pass",
       "Convert API with long-lived keys",
       "Export Markdown, HTML, TXT, JSON, DOCX, images, PDF",
     ],

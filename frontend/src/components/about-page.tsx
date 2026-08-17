@@ -54,7 +54,8 @@ export function AboutPage() {
               {SITE_URL}
             </a>
             . We turn PDF, Microsoft Office, images, and scans into editable Markdown for writing,
-            coding agents, Obsidian vaults, and RAG pipelines — then sell monthly software
+            coding agents, Obsidian vaults, and RAG pipelines — with optional AI reading (OCR) and
+            translation into 19 languages in the same pass — then sell monthly software
             subscriptions for that workspace and Convert API. We do not sell physical goods.
           </p>
         </div>
