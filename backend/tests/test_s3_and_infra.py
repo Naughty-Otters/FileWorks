@@ -143,7 +143,22 @@ class S3StoreTests(unittest.TestCase):
         store.save_media_files("doc1", [("0.jpg", b"jpeg", "image/jpeg"), ("bad.exe", b"x", "x")])
         media = store.load_media_files("doc1")
         self.assertIn("0.jpg", media)
+        rec2 = store.save_document(
+            document_id="doc2",
+            filename="other.png",
+            content_type="image/png",
+            source_bytes=b"x",
+            source_suffix=".png",
+            engine="ocr",
+            page_count=1,
+            output_format="both",
+            markdown="x",
+            json_data=None,
+            pages=[],
+        )
+        self.assertEqual(set(store.list_document_ids()), {"doc1", rec2.id})
         self.assertTrue(store.delete_document("doc1"))
+        self.assertEqual(store.list_document_ids(), ["doc2"])
         self.assertTrue(store.presign_get(store.object_key(rec.source_key), filename="photo.png", content_type="image/png"))
 
     def test_factory_local(self) -> None:

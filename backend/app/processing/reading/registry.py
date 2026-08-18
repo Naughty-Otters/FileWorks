@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from app.processing.reading.anydoc import AnyDocReader
 from app.processing.reading.base import Reader
-from app.processing.reading.docling import DoclingReader
-from app.processing.reading.liteparse import LiteParseReader
+from app.processing.reading.docling_reader import DoclingReader
+from app.processing.reading.liteparse_reader import LiteParseReader
 from app.processing.reading.llm import LLMReader
 from app.processing.reading.ocr import OCRReader
 from app.processing.reading.text import TextReader

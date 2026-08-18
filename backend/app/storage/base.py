@@ -99,6 +99,10 @@ class DocumentStore(Protocol):
 
     def list_documents(self, limit: int = 100) -> list[DocumentRecord]: ...
 
+    def list_document_ids(self) -> list[str]:
+        """Ids that still have blobs. Used to drop leftover Postgres index rows."""
+        ...
+
     def get_document(self, document_id: str) -> DocumentRecord | None: ...
 
     def get_source_bytes(self, document_id: str) -> tuple[bytes, str, str | None] | None:

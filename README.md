@@ -93,9 +93,8 @@ API keys: signed-in users generate long-lived `fw_live_` keys on Profile. `POST 
 
 ```bash
 cd backend
-uv sync
-# Document conversion (AnyDoc) + HTML export extras are in main deps:
-#   firecrawl-anydoc, markdown
+uv sync --all-extras
+# Same extras as the Lambda/Compose image ([project.optional-dependencies]).
 # paddlepaddle is pulled from the official paddle CPU index (see pyproject.toml).
 
 uv run python -m app

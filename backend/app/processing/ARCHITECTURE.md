@@ -55,8 +55,10 @@ Flatness means no headings and no tables; list markers only count as structure
 when they are a real share of the lines, since raw text dumps routinely contain
 stray lines that merely open like list items.
 
-Install Docling with `uv sync --extra docling` (not in the default extra — it pulls layout models).
-Install LiteParse with `uv sync --extra liteparse` (Rust native wheel; Python 3.11–3.12).
+Install readers with `uv sync --all-extras` (Docling + LiteParse; Python 3.11–3.12).
+The Lambda/Compose image uses the same extras from `[project.optional-dependencies]`
+and prefetches Docling, EasyOCR, and Paddle weights into `/var/task/.cache` — the API VPC has
+no NAT, so runtime must never download models.
 
 ## Strategy layer (`processing.strategy`)
 

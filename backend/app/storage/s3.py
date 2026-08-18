@@ -260,7 +260,7 @@ class S3DocumentStore:
         )
         return record
 
-    def list_documents(self, limit: int = 100) -> list[DocumentRecord]:
+    def list_document_ids(self) -> list[str]:
         client = self._require_client()
         paginator = client.get_paginator("list_objects_v2")
         ids: list[str] = []
@@ -271,6 +271,10 @@ class S3DocumentStore:
                 doc_id = raw.rsplit("/", 1)[-1]
                 if doc_id:
                     ids.append(doc_id)
+        return ids
+
+    def list_documents(self, limit: int = 100) -> list[DocumentRecord]:
+        ids = self.list_document_ids()
         records: list[DocumentRecord] = []
         for document_id in ids:
             record = self.get_document(document_id)

@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from app.api.routes import router
 from app.auth.deps import Principal, get_principal
 from app.auth.plans import get_plan
-from app.db.history import list_history_summaries, upsert_history_summary
+from app.db.history import list_history_summaries, prune_missing_summaries, upsert_history_summary
 from app.db.models import HistoryDocument
 from app.db.session import get_db
 from app.storage.base import DocumentRecord, utc_now_iso
@@ -70,6 +70,49 @@ class HistoryIndexTests(unittest.TestCase):
         self.assertEqual(row.filename, "renamed.png")
         self.assertEqual(row.size_bytes, 12)
 
+    def test_prune_drops_index_rows_without_blobs(self) -> None:
+        user_id = uuid4()
+        live = HistoryDocument(
+            id="live",
+            user_id=user_id,
+            filename="ok.pdf",
+            content_type="application/pdf",
+            size_bytes=1,
+            created_at=datetime(2026, 8, 15, tzinfo=timezone.utc),
+        )
+        ghost = HistoryDocument(
+            id="ghost",
+            user_id=user_id,
+            filename="gone.pdf",
+            content_type="application/pdf",
+            size_bytes=1,
+            created_at=datetime(2026, 8, 14, tzinfo=timezone.utc),
+        )
+        rows = [live, ghost]
+        deleted: list[str] = []
+
+        class FakeDb:
+            def get(self, model, pk):
+                if model is HistoryDocument:
+                    return next((row for row in rows if row.id == pk), None)
+                return None
+
+            def add(self, _obj):
+                pass
+
+            def delete(self, obj):
+                deleted.append(obj.id)
+                rows.remove(obj)
+
+        kept = prune_missing_summaries(
+            FakeDb(),
+            user_id=user_id,
+            items=[{"id": "live"}, {"id": "ghost"}],
+            live_ids={"live"},
+        )
+        self.assertEqual([item["id"] for item in kept], ["live"])
+        self.assertEqual(deleted, ["ghost"])
+
     def test_history_route_uses_db_summaries(self) -> None:
         user_id = uuid4()
         user = SimpleNamespace(id=user_id, email="p@x.co", plan="pro", history_indexed=True)
@@ -113,6 +156,54 @@ class HistoryIndexTests(unittest.TestCase):
         self.assertEqual(res.json()["items"][0]["id"], "doc-db")
         self.assertEqual(res.json()["items"][0]["filename"], "from-db.pdf")
         store.list_documents.assert_not_called()
+
+    def test_history_list_drops_rows_whose_blobs_are_gone(self) -> None:
+        user_id = uuid4()
+        user = SimpleNamespace(id=user_id, email="p@x.co", plan="pro", history_indexed=True)
+        ghost = HistoryDocument(
+            id="ghost",
+            user_id=user_id,
+            filename="gone.pdf",
+            content_type="application/pdf",
+            size_bytes=1,
+            engine="ocr",
+            page_count=1,
+            storage_backend="s3",
+            has_markdown=True,
+            has_json=False,
+            created_at=datetime(2026, 8, 1, tzinfo=timezone.utc),
+        )
+        rows = [ghost]
+
+        class FakeDb:
+            def get(self, model, pk):
+                if model is HistoryDocument:
+                    return next((row for row in rows if row.id == pk), None)
+                return None
+
+            def add(self, _obj):
+                pass
+
+            def delete(self, obj):
+                rows.remove(obj)
+
+            def scalars(self, _stmt):
+                return SimpleNamespace(all=lambda: list(rows))
+
+        store = MagicMock()
+        store.list_document_ids.return_value = []
+        app = FastAPI()
+        app.include_router(router, prefix="/api")
+        app.dependency_overrides[get_principal] = lambda: Principal(
+            plan=get_plan("pro"),
+            user=user,  # type: ignore[arg-type]
+        )
+        app.dependency_overrides[get_db] = lambda: FakeDb()
+        with patch("app.api.routes.get_document_store", return_value=store):
+            res = TestClient(app).get("/api/history")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["items"], [])
+        self.assertEqual(rows, [])
 
     def test_unindexed_user_backfills_once(self) -> None:
         user_id = uuid4()

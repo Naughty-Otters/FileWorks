@@ -3,9 +3,7 @@
 FastAPI service for FileWorks — convert and transform files into Markdown and other formats.
 
 ```bash
-uv sync
-# optional: LiteParse local PDF/image parser (Python 3.11–3.12)
-uv sync --extra liteparse
+uv sync --all-extras
 uv run python -m app
 ```
 

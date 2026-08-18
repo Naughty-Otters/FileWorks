@@ -39,7 +39,8 @@ from app.processing.postprocess.media import expand_embedded_media, fold_embedde
 from app.processing.pipeline import get_document_pipeline
 from app.processing.postprocess import get_markdown_translator, language_catalog
 from app.processing.reading.anydoc import anydoc_is_available
-from app.processing.reading.liteparse import liteparse_is_available
+from app.processing.reading.docling_reader import docling_is_available
+from app.processing.reading.liteparse_reader import liteparse_is_available
 from app.processing.remote_llm import invoke_remote_convert, needs_remote_llm
 from app.processing.strategy.ocr.chains import (
     run_deep_ocr_chain,
@@ -64,6 +65,8 @@ from app.db.history import (
     backfill_history_index,
     delete_history_summary,
     list_history_summaries,
+    live_document_ids,
+    prune_missing_summaries,
     upsert_history_summary,
 )
 from app.db.session import get_db
@@ -227,7 +230,11 @@ def _health_payload(
         elif engine_id == "liteparse":
             configured = liteparse_is_available() and settings.liteparse_enabled
             ready = configured
-            error = None if configured else "uv sync --extra liteparse"
+            error = None if configured else "uv sync --all-extras"
+        elif engine_id == "docling":
+            configured = docling_is_available()
+            ready = configured
+            error = None if configured else "uv sync --all-extras"
         elif engine_id == "llm":
             configured = bool(item.get("configured"))
             vision = bool(item.get("supports_vision"))
@@ -312,7 +319,7 @@ async def list_engines() -> list[EngineInfo]:
 
 @router.post("/warmup", response_model=HealthResponse)
 async def warmup() -> HealthResponse:
-    """Eagerly load the server-configured OCR engine (downloads models on first call)."""
+    """Eagerly load the server-configured OCR engine (uses baked weights, no download)."""
     settings = get_settings()
     service = get_ocr_service()
     try:
@@ -828,14 +835,22 @@ async def list_history(
     items = list_history_summaries(db, user_id=principal.user_id, limit=limit)
     if items is not None:
         user = principal.user
+        store = get_document_store()
         if user is not None and not getattr(user, "history_indexed", True):
-            store = get_document_store()
             backfill_history_index(
                 db,
                 user=user,
                 records=store.list_documents(limit=500),
             )
             items = list_history_summaries(db, user_id=principal.user_id, limit=limit) or []
+        live_ids = live_document_ids(store)
+        if live_ids is not None:
+            items = prune_missing_summaries(
+                db,
+                user_id=principal.user_id,
+                items=items,
+                live_ids=live_ids,
+            )
         return HistoryListResponse(
             items=[HistoryItem(**item) for item in items],
             storage_backend=settings.storage_backend,
@@ -853,12 +868,13 @@ async def list_history(
     )
 
 
-def _require_owned_record(document_id: str, principal: Principal):
+def _require_owned_record(document_id: str, principal: Principal, db: Session | None = None):
     if not principal.plan.history or not principal.user_id:
         raise HTTPException(status_code=403, detail={"code": "plan_forbidden", "feature": "history.read"})
     store = get_document_store()
     record = store.get_document(document_id)
     if record is None:
+        delete_history_summary(db, user_id=principal.user_id, document_id=document_id)
         raise HTTPException(status_code=404, detail="Document not found")
     if record.owner_id != str(principal.user_id):
         raise HTTPException(status_code=404, detail="Document not found")
@@ -871,7 +887,7 @@ async def get_history_item(
     principal: Principal = Depends(get_principal),
     db: Session | None = Depends(get_db),
 ) -> HistoryDetailResponse:
-    store, record = _require_owned_record(document_id, principal)
+    store, record = _require_owned_record(document_id, principal, db)
     upsert_history_summary(db, record)
     markdown, json_data, pages = expand_embedded_media(
         record.markdown,
@@ -916,6 +932,7 @@ def _is_cross_origin(request: Request) -> bool:
 async def get_history_file_url(
     document_id: str,
     principal: Principal = Depends(get_principal),
+    db: Session | None = Depends(get_db),
 ) -> HistoryFileUrlResponse:
     """Hand the browser a URL instead of redirecting it.
 
@@ -924,7 +941,7 @@ async def get_history_file_url(
     which no bucket rule can match without opening the bucket to every site. With
     the URL in hand the browser calls S3 directly, keeping its real Origin.
     """
-    store, record = _require_owned_record(document_id, principal)
+    store, record = _require_owned_record(document_id, principal, db)
     if isinstance(store, S3DocumentStore):
         return HistoryFileUrlResponse(
             url=store.presign_get(
@@ -949,8 +966,9 @@ async def get_history_file(
     document_id: str,
     request: Request,
     principal: Principal = Depends(get_principal),
+    db: Session | None = Depends(get_db),
 ) -> Response:
-    store, record = _require_owned_record(document_id, principal)
+    store, record = _require_owned_record(document_id, principal, db)
     if isinstance(store, S3DocumentStore):
         if _is_cross_origin(request):
             # Redirecting would strand the caller: the browser retries the presigned
@@ -987,9 +1005,13 @@ async def delete_history_item(
     principal: Principal = Depends(get_principal),
     db: Session | None = Depends(get_db),
 ) -> dict[str, str]:
-    store, _record = _require_owned_record(document_id, principal)
-    deleted = store.delete_document(document_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Document not found")
+    if not principal.plan.history or not principal.user_id:
+        raise HTTPException(status_code=403, detail={"code": "plan_forbidden", "feature": "history.read"})
+    store = get_document_store()
+    record = store.get_document(document_id)
+    if record is not None:
+        if record.owner_id != str(principal.user_id):
+            raise HTTPException(status_code=404, detail="Document not found")
+        store.delete_document(document_id)
     delete_history_summary(db, user_id=principal.user_id, document_id=document_id)
     return {"status": "deleted", "id": document_id}

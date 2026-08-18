@@ -16,10 +16,12 @@ holds Paddle/OpenMP threads is a known source of deadlocks.
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 import multiprocessing
 import os
 import queue
+import sys
 import threading
 import time
 from pathlib import Path
@@ -62,10 +64,22 @@ def _convert_from_message(message: dict[str, Any]) -> dict[str, Any]:
 def _worker_main(conn: Any, prewarm: bool) -> None:
     """Child entrypoint: serve conversions over ``conn`` until told to stop."""
     from app.core.logsetup import configure_app_logging
+    from app.core.venvpath import ensure_venv_on_sys_path
 
+    ensure_venv_on_sys_path()
+    if Path("/var/task").is_dir():
+        os.chdir("/var/task")
     configure_app_logging()
     log = logging.getLogger("app.services.worker")
-    log.info("Conversion worker pid=%s ready", os.getpid())
+    log.info(
+        "Conversion worker pid=%s ready python=%s",
+        os.getpid(),
+        sys.executable,
+    )
+    for name in ("liteparse", "docling"):
+        spec = importlib.util.find_spec(name)
+        origin = getattr(spec, "origin", None) if spec is not None else None
+        log.info("worker import %s origin=%s", name, origin)
 
     if prewarm:
         try:

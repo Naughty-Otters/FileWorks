@@ -5,6 +5,10 @@
 #   history/llm-out/…                                — ephemeral LLM results
 #   history/cancel/…                                 — cancel tokens
 #   tfstate/<account>/fileworks/terraform.tfstate    — Terraform remote state
+#
+# Never delete this bucket to "consolidate" prefixes. History used to live in a
+# sibling `fileworks-<env>-history` bucket; destroying that without copying
+# `history/docs/` left Postgres listing documents whose blobs were gone.
 
 resource "aws_s3_bucket" "uploads" {
   bucket        = local.uploads_bucket_name

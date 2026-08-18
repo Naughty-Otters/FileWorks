@@ -55,10 +55,10 @@ explicit = true
 paddlepaddle = { index = "paddle" }
 
 [project.optional-dependencies]
-dev = [
-    "httpx>=0.27.0",
-    "ruff>=0.8.0",
-]
+# Runtime readers for the API image. Local Compose, staging, and prod all
+# install these via `uv sync --all-extras` (see infra/docker/Dockerfile).
+# Dev tools belong in [dependency-groups], not here — `--no-dev` must not
+# strip readers, and `--all-extras` must not pull test-only packages.
 docling = [
     "docling>=2.0.0",
 ]
@@ -76,6 +76,7 @@ dev = [
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
+    "ruff>=0.8.0",
 ]
 
 [tool.hatch.build.targets.wheel]

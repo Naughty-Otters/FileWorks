@@ -11,7 +11,7 @@ from app.processing.pipeline import DocumentPipeline
 from app.processing.postprocess.structure_edit import MarkdownStructureEditor, STRUCTURE_EDIT_PROMPT
 from app.processing.reading.anydoc_markdown import document_to_markdown
 from app.processing.reading.base import Reader
-from app.processing.reading.docling import DoclingReader
+from app.processing.reading.docling_reader import DoclingReader
 from app.processing.reading.ocr import OCRReader
 from app.processing.reading.registry import ReaderRegistry
 from app.services.markdown import markdown_looks_flat, markdown_structure_score
@@ -320,7 +320,7 @@ class DoclingReaderTests(unittest.TestCase):
         reader = DoclingReader()
         source = SourceFile(path=Path("a.pdf"), filename="a.pdf", suffix=".pdf")
         self.assertFalse(reader.can_process(source, ExtractOptions()).supported)
-        with patch("app.processing.reading.docling.docling_is_available", return_value=True):
+        with patch("app.processing.reading.docling_reader.docling_is_available", return_value=True):
             self.assertTrue(reader.can_process(source, ExtractOptions(prefer_structure=True)).supported)
         self.assertFalse(
             reader.can_process(
@@ -339,7 +339,10 @@ class DoclingReaderTests(unittest.TestCase):
             path = Path(tmp) / "a.pdf"
             path.write_bytes(b"%PDF")
             source = SourceFile.from_path(path)
-            with patch("app.processing.reading.docling._import_converter", return_value=lambda: fake_conv):
+            with patch(
+                "app.processing.reading.docling_reader._import_converter",
+                return_value=lambda **_k: fake_conv,
+            ):
                 result = reader.read(source, options=ExtractOptions(prefer_structure=True))
         self.assertEqual(result.markdown(), "# From Docling")
         self.assertEqual(result.engine_id, "docling")
@@ -360,8 +363,11 @@ class DoclingReaderTests(unittest.TestCase):
             path = Path(tmp) / "a.pdf"
             path.write_bytes(b"%PDF")
             source = SourceFile.from_path(path)
-            with patch("app.processing.reading.docling._import_converter", return_value=lambda: fake_conv), patch(
-                "app.processing.reading.docling.pdf_page_count", return_value=2
+            with patch(
+                "app.processing.reading.docling_reader._import_converter",
+                return_value=lambda **_k: fake_conv,
+            ), patch(
+                "app.processing.reading.docling_reader.pdf_page_count", return_value=2
             ):
                 result = reader.read(source, options=ExtractOptions(prefer_structure=True))
         self.assertEqual(result.page_count, 2)

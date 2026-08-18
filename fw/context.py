@@ -15,6 +15,8 @@ BOOTSTRAP_DIR = TF_DIR / "bootstrap"
 IAM_POLICY_PATH = INFRA_DIR / "iam" / "fileworks-deploy-policy.json"
 DOCKERFILE = INFRA_DIR / "docker" / "Dockerfile"
 BACKEND_DIR = ROOT_DIR / "backend"
+# Same extras as the container image: [project.optional-dependencies] via --all-extras.
+UV_IMAGE_SYNC_FLAGS = ("--all-extras",)
 BACKEND_ENV = BACKEND_DIR / ".env"
 FRONTEND_DIR = ROOT_DIR / "frontend"
 

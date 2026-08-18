@@ -311,6 +311,7 @@ export function Workspace() {
       await applyHistoryDetail(id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to restore document");
+      await refreshHistory();
     } finally {
       setLoading(false);
     }

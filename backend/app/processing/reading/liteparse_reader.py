@@ -21,20 +21,29 @@ from app.services.pages import PAGE_SEPARATOR, assemble_page_dicts, pdf_page_cou
 
 logger = logging.getLogger(__name__)
 
+_LITEPARSE_IMPORT_ERROR: str | None = None
+
 
 def liteparse_is_available() -> bool:
+    global _LITEPARSE_IMPORT_ERROR
     try:
+        from app.core.venvpath import import_unshadowed
+
+        import_unshadowed("liteparse")
         from liteparse import LiteParse  # noqa: F401
 
+        _LITEPARSE_IMPORT_ERROR = None
         return True
-    except ImportError:
+    except Exception as exc:  # noqa: BLE001
+        _LITEPARSE_IMPORT_ERROR = f"{type(exc).__name__}: {exc}"
+        logger.warning("liteparse extra is not usable: %s", _LITEPARSE_IMPORT_ERROR)
         return False
 
 
 def _import_liteparse() -> Any:
-    from liteparse import LiteParse
+    from app.core.venvpath import import_unshadowed
 
-    return LiteParse
+    return import_unshadowed("liteparse").LiteParse
 
 
 class LiteParseReader(Reader):
@@ -62,7 +71,8 @@ class LiteParseReader(Reader):
         if not settings.liteparse_enabled:
             return Capability.no("LiteParse is disabled (LITEPARSE_ENABLED=false)")
         if not liteparse_is_available():
-            return Capability.no("liteparse extra is not installed")
+            detail = _LITEPARSE_IMPORT_ERROR or "import failed"
+            return Capability.no(f"liteparse extra is not installed ({detail})")
         if source.is_image:
             return Capability.yes("raster image — LiteParse", confidence=0.88)
         if source.suffix == ".pdf":
@@ -211,7 +221,7 @@ class LiteParseReader(Reader):
         payload = super().describe()
         available = liteparse_is_available()
         payload["configured"] = available and settings.liteparse_enabled
-        payload["error"] = None if available else "Install with: uv sync --extra liteparse"
+        payload["error"] = None if available else "Install with: uv sync --all-extras"
         return payload
 
 

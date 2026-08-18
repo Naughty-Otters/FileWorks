@@ -137,6 +137,9 @@ class LocalDocumentStore:
         self._prepend_index(document_id)
         return record
 
+    def list_document_ids(self) -> list[str]:
+        return self._read_index()
+
     def list_documents(self, limit: int = 100) -> list[DocumentRecord]:
         records: list[DocumentRecord] = []
         for document_id in self._read_index():

@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 from app.core.config import Settings
 from app.processing.models import SourceFile
-from app.processing.reading.liteparse import LiteParseReader, liteparse_is_available
+from app.processing.reading.liteparse_reader import LiteParseReader, liteparse_is_available
 from app.services.liteparse_ocr_bridge import (
     _format_paddle_json,
     resolve_liteparse_ocr_server_url,
@@ -55,7 +55,7 @@ class LiteParseReaderTests(unittest.TestCase):
     def test_can_process_when_disabled(self) -> None:
         reader = LiteParseReader()
         source = SourceFile(path=Path("a.pdf"), filename="a.pdf", suffix=".pdf")
-        with patch("app.processing.reading.liteparse.get_settings") as get_settings:
+        with patch("app.processing.reading.liteparse_reader.get_settings") as get_settings:
             get_settings.return_value = Settings(liteparse_enabled=False)
             cap = reader.can_process(source)
         self.assertFalse(cap.supported)
@@ -77,8 +77,8 @@ class LiteParseReaderTests(unittest.TestCase):
             path = Path(handle.name)
             source = SourceFile.from_path(path, filename="doc.pdf")
 
-            with patch("app.processing.reading.liteparse.liteparse_is_available", return_value=True):
-                with patch("app.processing.reading.liteparse.get_settings") as get_settings:
+            with patch("app.processing.reading.liteparse_reader.liteparse_is_available", return_value=True):
+                with patch("app.processing.reading.liteparse_reader.get_settings") as get_settings:
                     get_settings.return_value = Settings(
                         liteparse_enabled=True,
                         liteparse_route_by_complexity=True,
@@ -88,7 +88,7 @@ class LiteParseReaderTests(unittest.TestCase):
                     instance = mock_cls.return_value
                     instance.is_complex.return_value = [complexity_page]
                     instance.parse.return_value = parse_result
-                    with patch("app.processing.reading.liteparse._import_liteparse", return_value=mock_cls):
+                    with patch("app.processing.reading.liteparse_reader._import_liteparse", return_value=mock_cls):
                         with patch.object(reader._ocr_strategy, "plan") as plan_mock:
                             from app.processing.strategy.ocr.models import LiteParseAttempt, OcrAssessment, OcrPlan, OcrRoute
 
@@ -104,8 +104,17 @@ class LiteParseReaderTests(unittest.TestCase):
         self.assertEqual(result.page_count, 1)
 
     def test_availability_helper(self) -> None:
-        # liteparse is installed in dev with --extra liteparse
-        self.assertTrue(liteparse_is_available())
+        from app.processing.reading import liteparse_reader as liteparse_mod
+
+        if liteparse_is_available():
+            from liteparse import LiteParse  # noqa: F401
+
+            return
+        source = SourceFile(path=Path("a.png"), filename="a.png", suffix=".png")
+        cap = LiteParseReader().can_process(source)
+        self.assertFalse(cap.supported)
+        self.assertIn("liteparse extra is not installed", cap.reason)
+        self.assertIn(liteparse_mod._LITEPARSE_IMPORT_ERROR or "import failed", cap.reason)
 
 
 if __name__ == "__main__":

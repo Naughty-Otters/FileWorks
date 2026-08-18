@@ -31,24 +31,32 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      STORAGE_BACKEND      = "s3"
-      S3_BUCKET            = aws_s3_bucket.uploads.bucket
-      S3_PREFIX            = "history"
-      S3_REGION            = local.region
-      S3_UPLOAD_BUCKET     = aws_s3_bucket.uploads.bucket
-      S3_UPLOAD_PREFIX     = "upload/files"
-      FILEWORKS_SECRET_ARN = aws_secretsmanager_secret.app.arn
-      CORS_ORIGINS         = local.cors_csv
-      CORS_ORIGIN_REGEX    = var.cors_origin_regex
-      UPLOAD_DIR           = "/tmp/uploads"
-      HOME                 = "/tmp"
-      PADDLE_DEVICE        = "cpu"
-      OCR_ENGINE           = var.ocr_engine
-      MAX_UPLOAD_MB        = tostring(var.max_upload_mb)
-      DATABASE_URL         = local.database_url
-      JWT_SECRET           = random_password.jwt.result
-      GOOGLE_CLIENT_ID     = var.google_client_id
-      LLM_LAMBDA_FUNCTION  = aws_lambda_function.llm.function_name
+      STORAGE_BACKEND        = "s3"
+      S3_BUCKET              = aws_s3_bucket.uploads.bucket
+      S3_PREFIX              = "history"
+      S3_REGION              = local.region
+      S3_UPLOAD_BUCKET       = aws_s3_bucket.uploads.bucket
+      S3_UPLOAD_PREFIX       = "upload/files"
+      FILEWORKS_SECRET_ARN   = aws_secretsmanager_secret.app.arn
+      CORS_ORIGINS           = local.cors_csv
+      CORS_ORIGIN_REGEX      = var.cors_origin_regex
+      UPLOAD_DIR             = "/tmp/uploads"
+      HOME                   = "/tmp"
+      TMPDIR                 = "/tmp"
+      VIRTUAL_ENV            = "/var/task/.venv"
+      PYTHONPATH             = "/var/task:/var/task/.venv/lib/python3.12/site-packages"
+      PATH                   = "/var/task/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+      DOCLING_ARTIFACTS_PATH = "/var/task/.cache/docling/models"
+      HF_HOME                = "/var/task/.cache/huggingface"
+      EASYOCR_MODEL_DIR      = "/var/task/.cache/easyocr"
+      PADDLE_PDX_CACHE_HOME  = "/var/task/.cache/paddlex"
+      PADDLE_DEVICE          = "cpu"
+      OCR_ENGINE             = var.ocr_engine
+      MAX_UPLOAD_MB          = tostring(var.max_upload_mb)
+      DATABASE_URL           = local.database_url
+      JWT_SECRET             = random_password.jwt.result
+      GOOGLE_CLIENT_ID       = var.google_client_id
+      LLM_LAMBDA_FUNCTION    = aws_lambda_function.llm.function_name
     }
   }
 
@@ -108,7 +116,7 @@ resource "aws_lambda_function" "llm" {
   description                    = "FileWorks vision LLM + translation (${var.environment})"
 
   image_config {
-    command = ["python", "-m", "awslambdaric", "app.lambda_worker.handler"]
+    command = ["/var/task/.venv/bin/python", "-m", "awslambdaric", "app.lambda_worker.handler"]
   }
 
   ephemeral_storage {
@@ -117,17 +125,25 @@ resource "aws_lambda_function" "llm" {
 
   environment {
     variables = {
-      STORAGE_BACKEND      = "s3"
-      S3_BUCKET            = aws_s3_bucket.uploads.bucket
-      S3_PREFIX            = "history"
-      S3_REGION            = local.region
-      S3_UPLOAD_BUCKET     = aws_s3_bucket.uploads.bucket
-      S3_UPLOAD_PREFIX     = "upload/files"
-      FILEWORKS_SECRET_ARN = aws_secretsmanager_secret.app.arn
-      UPLOAD_DIR           = "/tmp/uploads"
-      HOME                 = "/tmp"
-      PADDLE_DEVICE        = "cpu"
-      OCR_ENGINE           = var.ocr_engine
+      STORAGE_BACKEND        = "s3"
+      S3_BUCKET              = aws_s3_bucket.uploads.bucket
+      S3_PREFIX              = "history"
+      S3_REGION              = local.region
+      S3_UPLOAD_BUCKET       = aws_s3_bucket.uploads.bucket
+      S3_UPLOAD_PREFIX       = "upload/files"
+      FILEWORKS_SECRET_ARN   = aws_secretsmanager_secret.app.arn
+      UPLOAD_DIR             = "/tmp/uploads"
+      HOME                   = "/tmp"
+      TMPDIR                 = "/tmp"
+      VIRTUAL_ENV            = "/var/task/.venv"
+      PYTHONPATH             = "/var/task:/var/task/.venv/lib/python3.12/site-packages"
+      PATH                   = "/var/task/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+      DOCLING_ARTIFACTS_PATH = "/var/task/.cache/docling/models"
+      HF_HOME                = "/var/task/.cache/huggingface"
+      EASYOCR_MODEL_DIR      = "/var/task/.cache/easyocr"
+      PADDLE_PDX_CACHE_HOME  = "/var/task/.cache/paddlex"
+      PADDLE_DEVICE          = "cpu"
+      OCR_ENGINE             = var.ocr_engine
     }
   }
 

@@ -6,14 +6,14 @@ import os
 import subprocess
 
 from fw import console
-from fw.context import BACKEND_DIR, FRONTEND_DIR, Context
+from fw.context import BACKEND_DIR, FRONTEND_DIR, UV_IMAGE_SYNC_FLAGS, Context
 from fw.tools import require_cmd, run
 
 
 def sync(ctx: Context) -> None:
     require_cmd("uv", "npm")
     console.rule("Sync dependencies")
-    run(["uv", "sync"], cwd=BACKEND_DIR, ctx=ctx)
+    run(["uv", "sync", *UV_IMAGE_SYNC_FLAGS], cwd=BACKEND_DIR, ctx=ctx)
     run(["npm", "install"], cwd=FRONTEND_DIR, ctx=ctx)
     console.success("Backend uv sync and frontend npm install finished.")
 

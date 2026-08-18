@@ -64,7 +64,7 @@ def run_easyocr_for_liteparse(
     """Run EasyOCR on one image; return LiteParse OCR API result objects."""
     settings = settings or get_settings()
     lang = normalize_easyocr_language(language)
-    reader = _get_reader(lang, gpu=settings.easyocr_use_gpu)
+    reader = _get_reader(lang, gpu=settings.easyocr_use_gpu, settings=settings)
 
     image = Image.open(io.BytesIO(image_bytes))
     if image.mode != "RGB":
@@ -96,13 +96,18 @@ def run_easyocr_for_liteparse(
     return formatted
 
 
-def _get_reader(language: str, *, gpu: bool) -> Any:
+def _get_reader(language: str, *, gpu: bool, settings: Settings | None = None) -> Any:
     global _reader, _reader_language
+    settings = settings or get_settings()
     with _reader_lock:
         if _reader is None or _reader_language != language:
             import easyocr
 
             logger.info("Loading EasyOCR reader (lang=%s, gpu=%s)", language, gpu)
-            _reader = easyocr.Reader([language], gpu=gpu)
+            kwargs: dict[str, object] = {"gpu": gpu}
+            if settings.easyocr_model_dir:
+                kwargs["model_storage_directory"] = settings.easyocr_model_dir
+                kwargs["download_enabled"] = False
+            _reader = easyocr.Reader([language], **kwargs)
             _reader_language = language
         return _reader

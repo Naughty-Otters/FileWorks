@@ -19,11 +19,9 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile
-      args:
-        UV_EXTRA: "--extra liteparse"
     image: fileworks-backend:local
     pull_policy: never
-    command: ["python", "-m", "app"]
+    command: ["/var/task/.venv/bin/python", "-m", "app"]
     environment:
       PORT: "8000"
       DATABASE_URL: postgresql+psycopg://fileworks:fileworks@db:5432/fileworks
@@ -40,6 +38,10 @@ services:
       LITEPARSE_ENABLED: "true"
       LITEPARSE_USE_PADDLE_OCR: "true"
       HOME: /tmp
+      DOCLING_ARTIFACTS_PATH: /var/task/.cache/docling/models
+      HF_HOME: /var/task/.cache/huggingface
+      EASYOCR_MODEL_DIR: /var/task/.cache/easyocr
+      PADDLE_PDX_CACHE_HOME: /var/task/.cache/paddlex
       PYTHONUNBUFFERED: "1"
     env_file:
       - path: backend/.env

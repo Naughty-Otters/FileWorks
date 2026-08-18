@@ -94,7 +94,7 @@ flowchart LR
     E --> OUT[results[]]
 ```
 
-- Enabled: `EASYOCR_ENABLED=true` and `easyocr` package installed (`uv sync --extra liteparse`)
+- Enabled: `EASYOCR_ENABLED=true` and `easyocr` package installed (`uv sync --all-extras`)
 - Stops on first backend that passes quality heuristics; may return best weak result if all fail
 
 ### Deep — `POST /api/ocr/deep`

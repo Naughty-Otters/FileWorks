@@ -283,6 +283,20 @@ class ExtractFlowTests(unittest.TestCase):
             missing = client.get("/api/history/missing")
             self.assertEqual(missing.status_code, 404)
 
+    def test_history_delete_succeeds_when_blob_is_already_gone(self) -> None:
+        """Postgres can still list a row after the history bucket was folded away."""
+        user = SimpleNamespace(id=uuid4(), email="p@x.co", plan="pro")
+        principal = Principal(plan=get_plan("pro"), user=user)  # type: ignore[arg-type]
+        client = TestClient(_app(principal))
+        store = MagicMock()
+        store.get_document.return_value = None
+        store.delete_document.return_value = False
+        with patch("app.api.routes.get_document_store", return_value=store):
+            deleted = client.delete("/api/history/ghost-id")
+        self.assertEqual(deleted.status_code, 200)
+        self.assertEqual(deleted.json()["id"], "ghost-id")
+        store.delete_document.assert_not_called()
+
     def test_history_file_url_returns_presigned_s3_url(self) -> None:
         """S3 mode must hand back the URL: a 307 makes the browser preflight with Origin: null."""
         user = SimpleNamespace(id=uuid4(), email="p@x.co", plan="pro")

@@ -330,6 +330,32 @@ class OcrCallbackRouteNegativeTests(unittest.TestCase):
         self.assertEqual(res.status_code, 500)
 
 
+class EasyOcrModelDirTests(unittest.TestCase):
+    def tearDown(self) -> None:
+        import app.services.easyocr_bridge as bridge
+
+        bridge._reader = None
+        bridge._reader_language = None
+
+    def test_uses_baked_model_dir_without_download(self) -> None:
+        import app.services.easyocr_bridge as bridge
+        from app.services.easyocr_bridge import run_easyocr_for_liteparse
+
+        bridge._reader = None
+        bridge._reader_language = None
+        settings = Settings(easyocr_model_dir="/var/task/.cache/easyocr", easyocr_use_gpu=False)
+        fake_reader = MagicMock()
+        fake_reader.readtext.return_value = []
+        fake_mod = MagicMock()
+        fake_mod.Reader.return_value = fake_reader
+        with patch.dict("sys.modules", {"easyocr": fake_mod}):
+            run_easyocr_for_liteparse(_png_bytes(), language="en", settings=settings)
+        fake_mod.Reader.assert_called_once()
+        kwargs = fake_mod.Reader.call_args.kwargs
+        self.assertEqual(kwargs["model_storage_directory"], "/var/task/.cache/easyocr")
+        self.assertFalse(kwargs["download_enabled"])
+
+
 class BridgeCornerTests(unittest.TestCase):
     def test_normalize_ocr_language_aliases(self) -> None:
         self.assertEqual(normalize_ocr_language("zh-CN"), "ch")

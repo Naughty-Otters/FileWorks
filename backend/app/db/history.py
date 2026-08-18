@@ -75,6 +75,45 @@ def delete_history_summary(db: Session | None, *, user_id: UUID | None, document
     db.delete(row)
 
 
+def live_document_ids(store: object) -> set[str] | None:
+    """Ids that still have blobs. ``None`` means the store could not be listed."""
+    lister = getattr(store, "list_document_ids", None)
+    if not callable(lister):
+        return None
+    try:
+        ids = lister()
+    except Exception:  # noqa: BLE001
+        logger.exception("Failed to list stored document ids")
+        return None
+    if not isinstance(ids, (set, list, tuple)):
+        return None
+    return {str(item) for item in ids}
+
+
+def prune_missing_summaries(
+    db: Session | None,
+    *,
+    user_id: UUID | None,
+    items: list[dict],
+    live_ids: set[str],
+) -> list[dict]:
+    """Drop Postgres index rows whose S3/local blobs are gone.
+
+    The history list is a Postgres index; blobs live in the document store.
+    After the history bucket was folded into the app bucket, leftover index
+    rows pointed at objects that were never copied and could not be opened
+    or deleted.
+    """
+    kept: list[dict] = []
+    for item in items:
+        doc_id = str(item.get("id") or "")
+        if doc_id and doc_id in live_ids:
+            kept.append(item)
+        elif doc_id:
+            delete_history_summary(db, user_id=user_id, document_id=doc_id)
+    return kept
+
+
 def list_history_summaries(
     db: Session | None,
     *,

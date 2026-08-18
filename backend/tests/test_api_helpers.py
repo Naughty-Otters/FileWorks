@@ -168,6 +168,27 @@ class HealthRouteTests(unittest.TestCase):
         self.assertTrue(payload.llm_ready)
         settings.llm_lambda_function = ""
 
+    def test_health_payload_reports_missing_reader_extras(self) -> None:
+        settings = get_settings()
+        svc = self._service()
+        pipeline = MagicMock()
+        pipeline.list_readers.return_value = [
+            {"id": "docling", "label": "Docling"},
+            {"id": "liteparse", "label": "LiteParse"},
+        ]
+        translator = SimpleNamespace(describe=lambda: {"ready": False, "configured": False, "error": "off"})
+        with patch("app.api.routes.get_document_pipeline", return_value=pipeline), patch(
+            "app.api.routes.get_markdown_translator", return_value=translator
+        ), patch("app.api.routes.docling_is_available", return_value=False), patch(
+            "app.api.routes.liteparse_is_available", return_value=False
+        ):
+            payload = _health_payload(status="ok", settings=settings, service=svc)
+        by_id = {item.id: item for item in payload.engines}
+        self.assertFalse(by_id["docling"].ready)
+        self.assertEqual(by_id["docling"].error, "uv sync --all-extras")
+        self.assertFalse(by_id["liteparse"].ready)
+        self.assertEqual(by_id["liteparse"].error, "uv sync --all-extras")
+
 
 class ExportRouteTests(unittest.TestCase):
     def test_export_markdown(self) -> None:

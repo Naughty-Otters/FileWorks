@@ -8,11 +8,14 @@ import os
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from app.core.venvpath import ensure_venv_on_sys_path
+
 logger = logging.getLogger(__name__)
 
 _IN_LAMBDA = bool(
     os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or os.environ.get("AWS_LWA_INVOKE_MODE")
 )
+ensure_venv_on_sys_path()
 
 
 def _hydrate_secrets_from_aws() -> None:
@@ -98,7 +101,10 @@ class Settings(BaseSettings):
     # Optional hard cap (e.g. 1200 for Docker on Apple Silicon — Paddle segfaults above ~1296 px).
     ocr_platform_max_input_side: int | None = None
 
-    # LiteParse local parser (optional extra: uv sync --extra liteparse).
+    # Baked Docling weights on Lambda (/var/task); HOME=/tmp is empty scratch.
+    docling_artifacts_path: str | None = None
+
+    # LiteParse local parser (optional extra; image installs via uv sync --all-extras).
     liteparse_enabled: bool = True
     liteparse_priority: int = 35  # after LLM (30), before Paddle OCR (50)
     liteparse_dpi: int = 150
@@ -116,6 +122,7 @@ class Settings(BaseSettings):
     easyocr_enabled: bool = True
     easyocr_use_gpu: bool = False
     easyocr_ocr_server_url: str | None = None  # legacy alias for ocr_fast_server_url
+    easyocr_model_dir: str | None = None  # baked path on Lambda; HOME=/tmp is empty scratch
 
     # Deep OCR chain (Paddle → Surya) — optional, off until surya extra is wired.
     surya_enabled: bool = False

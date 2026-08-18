@@ -465,6 +465,28 @@ def _ecr_login(ctx: Context, repo_url: str) -> None:
     console.success(f"Logged into {registry}")
 
 
+def lambda_image_build_cmd(image: str) -> list[str]:
+    """Docker V2 schema 2 linux/amd64 image. Extras come from pyproject.toml."""
+    return [
+        "docker",
+        "buildx",
+        "build",
+        "--platform",
+        "linux/amd64",
+        "--provenance=false",
+        "--sbom=false",
+        "--build-context",
+        f"model-cache=docker-image://{image}",
+        "-f",
+        str(DOCKERFILE),
+        "-t",
+        image,
+        "--output",
+        f"type=image,name={image},oci-mediatypes=false,push=true",
+        str(ROOT_DIR),
+    ]
+
+
 def push_image(ctx: Context) -> None:
     require_cmd("docker")
     _require_buildx(ctx)
@@ -488,25 +510,7 @@ def push_image(ctx: Context) -> None:
     _ecr_login(ctx, repo_url)
     # Lambda rejects OCI index / attestation manifests from recent BuildKit
     # defaults, so pin one linux/amd64 image with Docker V2 schema 2 media types.
-    run(
-        [
-            "docker",
-            "buildx",
-            "build",
-            "--platform",
-            "linux/amd64",
-            "--provenance=false",
-            "--sbom=false",
-            "-f",
-            str(DOCKERFILE),
-            "-t",
-            image,
-            "--output",
-            f"type=image,name={image},oci-mediatypes=false,push=true",
-            str(ROOT_DIR),
-        ],
-        ctx=ctx,
-    )
+    run(lambda_image_build_cmd(image), ctx=ctx)
     console.success(f"Pushed {image}")
     _roll_out_image(ctx, image)
 
