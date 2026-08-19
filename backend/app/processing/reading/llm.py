@@ -31,6 +31,11 @@ class LLMReader(Reader):
         source: SourceFile,
         options: ExtractOptions | None = None,
     ) -> Capability:
+        from app.processing.pipeline_config import get_pipeline_spec
+
+        blocked = get_pipeline_spec(get_settings()).reader_disabled_reason(self.id)
+        if blocked:
+            return Capability.no(blocked)
         if not self._engine.configured():
             return Capability.no(self._engine.init_error or "LLM is not configured")
         if get_settings().llm_lambda_function:

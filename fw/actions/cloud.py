@@ -515,17 +515,52 @@ def push_image(ctx: Context) -> None:
     _roll_out_image(ctx, image)
 
 
+def ecr_image_digest_uri(ctx: Context, image: str) -> str:
+    """Resolve ``repo:tag`` to ``repo@sha256:...``.
+
+    Lambda stores the tag string, not a moving pointer. ``update-function-code``
+    with the same ``:staging`` URI is a no-op even after ECR moved the tag, so
+    live kept running the first digest that tag ever resolved to.
+    """
+    repo_url, sep, tag = image.rpartition(":")
+    if not sep or not tag or "/" not in repo_url:
+        raise CommandError(f"expected repo:tag image URI, got {image}")
+    repo_name = repo_url.rsplit("/", 1)[-1]
+    digest = run(
+        [
+            "aws",
+            "ecr",
+            "describe-images",
+            "--repository-name",
+            repo_name,
+            "--image-ids",
+            f"imageTag={tag}",
+            "--query",
+            "imageDetails[0].imageDigest",
+            "--output",
+            "text",
+            "--no-cli-pager",
+        ],
+        capture=True,
+        ctx=ctx,
+    ).stdout.strip()
+    if not digest.startswith("sha256:"):
+        raise CommandError(f"ECR did not return a digest for {image} (got {digest!r})")
+    return f"{repo_url}@{digest}"
+
+
 def _roll_out_image(ctx: Context, image: str) -> None:
     """Point live functions at the image just pushed.
 
     Terraform holds image_uri as the ``:<env>`` tag, and that string does not
-    change between pushes, so `apply` reports no diff and the function keeps
-    running whatever digest it resolved on the day it was created. Re-pointing it
-    at the same tag makes Lambda resolve the new digest.
+    change between pushes, so `apply` reports no diff. Passing the digest (not
+    the tag) is what actually moves Lambda onto the layers just pushed.
 
     The API Function URL targets the ``live`` alias (not $LATEST), so each push
     publishes a version and moves the alias after the image update succeeds.
     """
+    pinned = ecr_image_digest_uri(ctx, image)
+    console.info(f"Lambda image pin {pinned}")
     for suffix in ("api", "llm"):
         name = f"{ctx.env.prefix}-{suffix}"
         try:
@@ -537,7 +572,7 @@ def _roll_out_image(ctx: Context, image: str) -> None:
                     "--function-name",
                     name,
                     "--image-uri",
-                    image,
+                    pinned,
                     "--no-cli-pager",
                 ],
                 capture=True,
@@ -546,13 +581,40 @@ def _roll_out_image(ctx: Context, image: str) -> None:
         except CommandError:
             console.info(f"{name} does not exist yet — `fw apply` will create it.")
             continue
-        run(
+        waited = run(
             ["aws", "lambda", "wait", "function-updated", "--function-name", name],
             capture=True,
             ctx=ctx,
             check=False,
         )
-        console.success(f"{name} now runs the image just pushed")
+        status = run(
+            [
+                "aws",
+                "lambda",
+                "get-function-configuration",
+                "--function-name",
+                name,
+                "--query",
+                "{Status:LastUpdateStatus,Reason:LastUpdateStatusReason,Sha:CodeSha256}",
+                "--output",
+                "json",
+                "--no-cli-pager",
+            ],
+            capture=True,
+            ctx=ctx,
+        )
+        payload = json.loads(status.stdout or "{}")
+        if str(payload.get("Status") or "") != "Successful":
+            raise CommandError(
+                f"{name} did not switch to {pinned}: "
+                f"{payload.get('Status')} {payload.get('Reason')} "
+                f"(still {payload.get('Sha')}). "
+                "Lambda uncompressed images must stay under 10 GiB; "
+                "do not publish-version from a failed update."
+            )
+        if waited.returncode != 0:
+            console.info(f"{name} waiter raced; configuration is Successful")
+        console.success(f"{name} now runs {pinned}")
         if suffix != "api":
             continue
         published = run(

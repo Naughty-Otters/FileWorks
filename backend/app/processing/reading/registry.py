@@ -12,21 +12,25 @@ from app.processing.reading.text import TextReader
 
 
 class ReaderRegistry:
-    def __init__(self, readers: list[Reader] | None = None) -> None:
-        self._readers = list(readers) if readers is not None else self.default_readers()
+    def __init__(self, readers: list[Reader] | None = None, *, settings=None) -> None:
+        self._readers = list(readers) if readers is not None else self.default_readers(settings)
         self._readers.sort(key=lambda r: r.priority)
 
     @staticmethod
-    def default_readers() -> list[Reader]:
+    def default_readers(settings=None) -> list[Reader]:
         # Priority: Text → Docling → AnyDoc → LLM (use_ai) → LiteParse → OCR → LLM (fallback)
-        return [
-            TextReader(),
-            DoclingReader(),
-            AnyDocReader(),
-            LLMReader(),
-            LiteParseReader(),
-            OCRReader(),
+        from app.processing.pipeline_config import get_pipeline_spec
+
+        spec = get_pipeline_spec(settings)
+        ctors: list[tuple[str, type[Reader]]] = [
+            ("text", TextReader),
+            ("docling", DoclingReader),
+            ("anydoc", AnyDocReader),
+            ("llm", LLMReader),
+            ("liteparse", LiteParseReader),
+            ("ocr", OCRReader),
         ]
+        return [ctor() for reader_id, ctor in ctors if spec.reader_enabled(reader_id)]
 
     def all(self) -> list[Reader]:
         return list(self._readers)

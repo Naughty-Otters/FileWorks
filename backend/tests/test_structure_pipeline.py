@@ -225,6 +225,64 @@ class NormalizeFillProjectTests(unittest.TestCase):
         self.assertIn("<w:tbl>", document_xml)
         self.assertIn("<w:b", document_xml)
 
+    def test_page_markdown_keeps_figures_in_reading_order(self) -> None:
+        result = ReadResult(
+            engine_id="anydoc",
+            engine_label="AnyDoc",
+            outputs=[
+                DocumentOutput(
+                    kind=OutputKind.MARKDOWN,
+                    content="Revenue\n\n![chart](data:image/png;base64,abc)\n\nNotes",
+                )
+            ],
+            pages=[
+                {
+                    "page": 1,
+                    "markdown": "Revenue\n\n![chart](data:image/png;base64,abc)\n\nNotes",
+                }
+            ],
+            page_count=1,
+        )
+        doc = normalize_read_result(result)
+        assert doc is not None
+        self.assertEqual([block.label for block in doc.blocks], ["text", "image", "text"])
+        self.assertEqual(doc.blocks[0].text, "Revenue")
+        self.assertIn("data:image/png;base64,abc", doc.blocks[1].image_ref or "")
+        self.assertEqual(doc.blocks[2].text, "Notes")
+        projected = project_markdown(doc)
+        self.assertIn("Revenue", projected)
+        self.assertIn("![chart](data:image/png;base64,abc)", projected)
+        self.assertIn("Notes", projected)
+
+    def test_project_keeps_engine_markdown_that_already_has_figures(self) -> None:
+        from pathlib import Path
+
+        from app.processing.models import SourceFile
+        from app.processing.stages.base import PipelineContext
+        from app.processing.stages.structure_stages import ProjectStage
+        from app.processing.structure.schema import StructureBlock
+        from app.services.options import ExtractOptions
+
+        engine_md = ("word " * 80) + "\n\n![chart](data:image/png;base64,abc)\n"
+        ctx = PipelineContext(
+            source=SourceFile(path=Path("a.pdf"), filename="a.pdf", suffix=".pdf"),
+            options=ExtractOptions(prefer_structure=True),
+            raw=ReadResult(
+                engine_id="anydoc",
+                engine_label="AnyDoc",
+                outputs=[DocumentOutput(kind=OutputKind.MARKDOWN, content=engine_md)],
+            ),
+            structure=StructureDocument(
+                engine="AnyDoc",
+                page_count=1,
+                blocks=[
+                    StructureBlock(id="1", page=1, label="text", text="flattened caption", order=1),
+                ],
+            ),
+        )
+        ProjectStage().run(ctx)
+        self.assertIn("data:image/png;base64,abc", ctx.markdown)
+
     def test_markdown_fallback_keeps_anydoc_inline_styles(self) -> None:
         doc = StructureDocument(
             engine="AnyDoc",

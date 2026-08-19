@@ -64,6 +64,7 @@ class ConvertCatalogResponse(BaseModel):
     options: list[ConvertOption]
     capabilities: ConvertCapabilities
     credits: ConvertCredits | None = None
+    pipeline: dict[str, Any] | None = None
 
 
 class ConvertSource(BaseModel):
@@ -76,6 +77,7 @@ class ConvertSource(BaseModel):
 class ConvertAppliedOptions(BaseModel):
     use_ai: bool = False
     prefer_structure: bool = False
+    preserve_images: bool = True
     ocr_high_quality: bool = False
     use_doc_preprocessor: bool = False
     use_seal_recognition: bool = False

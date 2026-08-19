@@ -554,7 +554,7 @@ class StructureEngineTests(unittest.TestCase):
 
 class OCRServiceTests(unittest.TestCase):
     def test_describe_and_extract_fallback(self) -> None:
-        service = OCRService(get_settings())
+        service = OCRService(get_settings().model_copy(update={"paddle_ocr_enabled": True}))
         self.assertTrue(service.list_engines())
         self.assertFalse(service.ready)
         failing = MagicMock()
@@ -570,7 +570,7 @@ class OCRServiceTests(unittest.TestCase):
         self.assertIn("a", dump_json({"a": 1}))
 
     def test_ensure_loaded_fallback(self) -> None:
-        service = OCRService(get_settings())
+        service = OCRService(get_settings().model_copy(update={"paddle_ocr_enabled": True}))
         failing = MagicMock()
         failing.id = "structure"
         failing.ensure_ready.side_effect = RuntimeError("no")

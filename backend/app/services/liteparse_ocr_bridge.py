@@ -51,7 +51,9 @@ def resolve_liteparse_ocr_server_url(settings: Settings | None = None) -> str | 
     settings = settings or get_settings()
     if (settings.liteparse_ocr_server_url or "").strip():
         return (settings.liteparse_ocr_server_url or "").strip()
-    if settings.liteparse_use_paddle_ocr:
+    from app.processing import paddle_gate
+
+    if paddle_gate.liteparse_may_use_paddle(settings):
         return resolve_paddle_ocr_server_url(settings)
     return None
 
@@ -66,6 +68,10 @@ def run_paddle_ocr_for_liteparse(
     """Run PP-OCR on one image and return LiteParse OCR API result objects."""
     del language  # PP-OCR lang is fixed at engine init; param kept for API compatibility.
     settings = settings or get_settings()
+    from app.processing import paddle_gate
+
+    if not paddle_gate.liteparse_may_use_paddle(settings):
+        raise RuntimeError("Paddle OCR is disabled (PADDLE_OCR_ENABLED=false)")
     work_dir = settings.upload_dir
     work_dir.mkdir(parents=True, exist_ok=True)
     path = work_dir / f"ocr-bridge-{uuid.uuid4().hex}{suffix}"

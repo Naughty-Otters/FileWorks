@@ -169,6 +169,63 @@ class MediaGapTests(unittest.TestCase):
         for index, text in enumerate(page_text):
             self.assertIn(text, updated.pages[index]["markdown"])
 
+    def test_preserve_images_still_extracts_when_another_page_has_a_raster(self) -> None:
+        """A scanned page with an embedded raster must not skip figures on later pages."""
+        with NamedTemporaryFile(suffix=".pdf", delete=False) as handle:
+            handle.write(b"%PDF-1.4\n")
+            path = Path(handle.name)
+        source = SourceFile.from_path(path, mime_type="application/pdf")
+        raster = to_data_url(normalize_image_bytes(_png())[0], "image/jpeg")
+        result = ReadResult(
+            engine_id="anydoc",
+            engine_label="AnyDoc",
+            outputs=[
+                DocumentOutput(
+                    kind=OutputKind.MARKDOWN,
+                    content=PAGE_SEPARATOR.join(
+                        [f"![Page 1]({raster})", "Quarterly revenue"]
+                    ),
+                )
+            ],
+            pages=[
+                {"page": 1, "markdown": f"![Page 1]({raster})"},
+                {"page": 2, "markdown": "Quarterly revenue"},
+            ],
+            page_count=2,
+        )
+        chart = EmbeddedImage(alt="chart", data=_png((120, 80)), mime="image/png", page=2, page_count=2)
+        with patch(
+            "app.processing.postprocess.media.extract_pdf_images",
+            return_value=[chart],
+        ):
+            updated = embed_read_result_media(result, source, preserve_images=True)
+
+        self.assertEqual(count_embedded_images(updated.pages[0]["markdown"]), 1)
+        self.assertEqual(count_embedded_images(updated.pages[1]["markdown"]), 1)
+        self.assertIn("Quarterly revenue", updated.pages[1]["markdown"])
+        self.assertIn("data:image", updated.pages[1]["markdown"])
+
+    def test_preserve_images_off_skips_extra_pdf_figures(self) -> None:
+        with NamedTemporaryFile(suffix=".pdf", delete=False) as handle:
+            handle.write(b"%PDF-1.4\n")
+            path = Path(handle.name)
+        source = SourceFile.from_path(path, mime_type="application/pdf")
+        result = ReadResult(
+            engine_id="anydoc",
+            engine_label="AnyDoc",
+            outputs=[DocumentOutput(kind=OutputKind.MARKDOWN, content="Just text")],
+            pages=[{"page": 1, "markdown": "Just text"}],
+            page_count=1,
+        )
+        with patch(
+            "app.processing.postprocess.media.extract_pdf_images",
+            return_value=[EmbeddedImage(alt="chart", data=_png(), mime="image/png", page=1)],
+        ) as extract:
+            updated = embed_read_result_media(result, source, preserve_images=False)
+
+        extract.assert_not_called()
+        self.assertNotIn("data:image", updated.markdown())
+
 
 class MarkdownGapTests(unittest.TestCase):
     def test_pil_and_resolve(self) -> None:

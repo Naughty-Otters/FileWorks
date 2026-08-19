@@ -32,7 +32,7 @@ class LiteParseBridgeTests(unittest.TestCase):
         self.assertEqual(results[0]["bbox"], [0.0, 0.0, 10.0, 10.0])
 
     def test_resolve_internal_ocr_url(self) -> None:
-        settings = Settings(liteparse_use_paddle_ocr=True, liteparse_ocr_server_url=None)
+        settings = Settings(paddle_ocr_enabled=True, liteparse_use_paddle_ocr=True, liteparse_ocr_server_url=None)
         url = resolve_liteparse_ocr_server_url(settings)
         self.assertTrue(url.endswith("/api/ocr"))
 
@@ -46,7 +46,7 @@ class LiteParseBridgeTests(unittest.TestCase):
         service = MagicMock(registry=registry)
         with patch("app.services.ocr.get_ocr_service", return_value=service):
             with tempfile.TemporaryDirectory() as tmp:
-                settings = Settings(upload_dir=Path(tmp))
+                settings = Settings(paddle_ocr_enabled=True, upload_dir=Path(tmp))
                 results = run_paddle_ocr_for_liteparse(b"fake", settings=settings)
         self.assertEqual(results[0]["text"], "Hi")
 

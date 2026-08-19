@@ -36,6 +36,7 @@ class OcrStrategyTests(unittest.TestCase):
     def test_fast_route_attempts_include_escalation(self) -> None:
         settings = Settings(
             easyocr_enabled=True,
+            paddle_ocr_enabled=True,
             liteparse_use_paddle_ocr=True,
             liteparse_ocr_server_url=None,
         )
@@ -169,7 +170,7 @@ class OcrChainTests(unittest.TestCase):
         with patch("app.processing.strategy.ocr.chains.run_paddle_ocr_for_liteparse", return_value=strong):
             results, backend = run_deep_ocr_chain(
                 b"img",
-                settings=Settings(liteparse_use_paddle_ocr=True, upload_dir=Path("/tmp")),
+                settings=Settings(paddle_ocr_enabled=True, liteparse_use_paddle_ocr=True, upload_dir=Path("/tmp")),
             )
         self.assertEqual(backend, "paddle")
         self.assertEqual(results, strong)
@@ -184,6 +185,7 @@ class OcrChainTests(unittest.TestCase):
                         b"img",
                         settings=Settings(
                             easyocr_enabled=True,
+                            paddle_ocr_enabled=True,
                             liteparse_use_paddle_ocr=True,
                             upload_dir=Path("/tmp"),
                         ),

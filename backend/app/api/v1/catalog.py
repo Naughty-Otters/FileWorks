@@ -15,6 +15,7 @@ from app.auth.api_plans import AI_CREDITS_PER_PAGE, STANDARD_CREDITS_PER_PAGE
 from app.auth.plans import Plan
 from app.core.config import get_settings
 from app.processing.pipeline import get_document_pipeline
+from app.processing.pipeline_config import get_pipeline_spec
 from app.processing.postprocess import get_markdown_translator, language_catalog
 from app.processing.postprocess.languages import LANGUAGES, normalize_target_lang
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, OPTION_KEYS
@@ -100,6 +101,10 @@ OPTION_META: dict[str, dict[str, str]] = {
     "prefer_structure": {
         "label": "Prefer structure",
         "description": "Recover headings, lists, and layout on PDFs and scans. Slower.",
+    },
+    "preserve_images": {
+        "label": "Preserve images",
+        "description": "Keep original charts and figures next to extracted text on each page.",
     },
     "ocr_high_quality": {
         "label": "High-quality OCR",
@@ -304,6 +309,7 @@ def convert_catalog(
             "limit": None if credits is None else credits.get("limit_credits"),
             "remaining": None if credits is None else credits.get("remaining_credits"),
         },
+        "pipeline": get_pipeline_spec(settings).to_public_dict(),
     }
 
 

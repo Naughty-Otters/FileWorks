@@ -48,6 +48,11 @@ RUN uv sync --frozen --no-dev --no-install-project --all-extras
 
 COPY backend/app ./app
 RUN uv sync --frozen --no-dev --all-extras
+# Lambda is CPU-only and caps uncompressed images at 10 GiB. EasyOCR/torch
+# otherwise pull CUDA wheels (~4 GiB nvidia + triton) that cannot run here.
+RUN rm -rf /var/task/.venv/lib/python3.12/site-packages/nvidia \
+           /var/task/.venv/lib/python3.12/site-packages/triton \
+           /var/task/.venv/lib/python3.12/site-packages/triton*
 # OpenCV gapi assumes GStreamer symbols that this wheel does not export.
 RUN python -c "from pathlib import Path; old='cv.gapi.wip.GStreamerPipeline = cv.gapi_wip_gst_GStreamerPipeline'; new='cv.gapi.wip.GStreamerPipeline = getattr(cv, \"gapi_wip_gst_GStreamerPipeline\", None)';\
 [p.write_text(p.read_text().replace(old,new), encoding='utf-8') for p in Path('/var/task/.venv/lib').glob('python*/site-packages/cv2/gapi/__init__.py') if old in p.read_text()]"

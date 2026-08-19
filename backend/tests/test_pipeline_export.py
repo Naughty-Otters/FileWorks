@@ -226,19 +226,213 @@ class PipelineTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 pipeline.process(path)
 
+    def test_mixed_pdf_keeps_anydoc_and_leaves_image_page(self) -> None:
+        """Scanned page must not abort AnyDoc or fall through to OCR/StructureV3.
+
+        A failed image page is left as a raster in Markdown. Whole-file OCR on a
+        text-majority PDF would skip Paddle and drop that page.
+        """
+        from app.processing.reading import anydoc as anydoc_mod
+        from app.processing.reading.anydoc import AnyDocReader
+
+        scanned = (
+            "unsupported input: PDF has no extractable text (Scanned, 1 pages): OCR is required"
+        )
+        whole_file_ocr = "NATIVE-TEXT-ONLY-NO-SCANNED-PAGE"
+
+        class FakeAny:
+            class EncryptedError(Exception):
+                pass
+
+            class ConvertError(Exception):
+                pass
+
+            @staticmethod
+            def format_from_bytes(_data):
+                return "pdf"
+
+            @staticmethod
+            def to_markdown_bytes(data, _fmt=None):
+                if data == b"scanned":
+                    raise FakeAny.ConvertError(scanned)
+                return f"# anydoc-{data.decode('utf-8')}"
+
+        def fake_page_image(_page_data, page_no):
+            return f"![Page {page_no}](data:image/jpeg;base64,AAA)"
+
+        def fake_ocr_read(self, source, *, options=None, preferred_output=OutputKind.MARKDOWN):
+            del self, options, preferred_output
+            if source.filename.startswith("page-"):
+                raise AssertionError("mixed AnyDoc pages must not be OCR'd")
+            return ReadResult(
+                engine_id="ocr",
+                engine_label="PDF text",
+                outputs=[DocumentOutput(kind=OutputKind.MARKDOWN, content=whole_file_ocr)],
+                metadata={"skipped_ocr": True},
+            )
+
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "mixed.pdf"
+            path.write_bytes(b"%PDF")
+            pipeline = DocumentPipeline(readers=ReaderRegistry([AnyDocReader(), OCRReader()]))
+            with (
+                patch.object(anydoc_mod, "import_anydoc", return_value=FakeAny),
+                patch.object(anydoc_mod, "anydoc_is_available", return_value=True),
+                patch.object(
+                    anydoc_mod,
+                    "iter_pdf_page_bytes",
+                    return_value=[(1, b"text"), (2, b"scanned"), (3, b"tables")],
+                ),
+                patch.object(anydoc_mod, "pdf_page_count", return_value=3),
+                patch.object(AnyDocReader, "_page_image_markdown", side_effect=fake_page_image),
+                patch.object(OCRReader, "read", fake_ocr_read),
+            ):
+                with self.assertLogs("app.processing.pipeline", level="INFO") as logs:
+                    payload = pipeline.process(path, filename="mixed.pdf")
+                result = pipeline.read(SourceFile.from_path(path, filename="mixed.pdf"))
+
+        joined_logs = "\n".join(logs.output)
+        self.assertNotIn("Reader failed — anydoc", joined_logs)
+        self.assertNotIn("Trying reader=ocr", joined_logs)
+        self.assertEqual(payload["provider"], "anydoc")
+        self.assertEqual(payload["page_count"], 3)
+        self.assertIn("# anydoc-text", payload["markdown"])
+        self.assertIn("data:image/jpeg", payload["markdown"])
+        self.assertIn("![Page 2]", payload["markdown"])
+        self.assertIn("# anydoc-tables", payload["markdown"])
+        self.assertNotIn(whole_file_ocr, payload["markdown"])
+        self.assertEqual(payload["metadata"].get("image_pages"), [2])
+        self.assertEqual(result.engine_id, "anydoc")
+        self.assertEqual(result.pages[0]["markdown"], "# anydoc-text")
+        self.assertIn("data:image/jpeg", result.pages[1]["markdown"])
+        self.assertEqual(result.pages[2]["markdown"], "# anydoc-tables")
+
+    def test_scanned_first_page_does_not_abort_later_anydoc_pages(self) -> None:
+        from app.processing.reading import anydoc as anydoc_mod
+        from app.processing.reading.anydoc import AnyDocReader
+
+        class FakeAny:
+            class EncryptedError(Exception):
+                pass
+
+            class ConvertError(Exception):
+                pass
+
+            @staticmethod
+            def format_from_bytes(_data):
+                return "pdf"
+
+            @staticmethod
+            def to_markdown_bytes(data, _fmt=None):
+                if data == b"scan":
+                    raise FakeAny.ConvertError("OCR is required")
+                return f"# anydoc-{data.decode('utf-8')}"
+
+        def fake_page_image(_page_data, page_no):
+            return f"![Page {page_no}](data:image/jpeg;base64,AAA)"
+
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "mixed.pdf"
+            path.write_bytes(b"%PDF")
+            pipeline = DocumentPipeline(readers=ReaderRegistry([AnyDocReader(), OCRReader()]))
+            with (
+                patch.object(anydoc_mod, "import_anydoc", return_value=FakeAny),
+                patch.object(anydoc_mod, "anydoc_is_available", return_value=True),
+                patch.object(
+                    anydoc_mod,
+                    "iter_pdf_page_bytes",
+                    return_value=[(1, b"scan"), (2, b"ok")],
+                ),
+                patch.object(anydoc_mod, "pdf_page_count", return_value=2),
+                patch.object(AnyDocReader, "_page_image_markdown", side_effect=fake_page_image),
+                patch.object(
+                    OCRReader,
+                    "read",
+                    side_effect=AssertionError("pipeline must not OCR mixed AnyDoc pages"),
+                ),
+            ):
+                payload = pipeline.process(path, filename="mixed.pdf")
+
+        self.assertEqual(payload["provider"], "anydoc")
+        self.assertIn("![Page 1]", payload["markdown"])
+        self.assertIn("data:image/jpeg", payload["markdown"])
+        self.assertIn("# anydoc-ok", payload["markdown"])
+        self.assertEqual(payload["metadata"].get("image_pages"), [1])
+
+    def test_all_scanned_pdf_falls_through_to_ocr_reader(self) -> None:
+        from app.processing.reading import anydoc as anydoc_mod
+        from app.processing.reading.anydoc import AnyDocReader
+
+        class FakeAny:
+            class EncryptedError(Exception):
+                pass
+
+            class ConvertError(Exception):
+                pass
+
+            @staticmethod
+            def format_from_bytes(_data):
+                return "pdf"
+
+            @staticmethod
+            def to_markdown_bytes(_data, _fmt=None):
+                raise FakeAny.ConvertError(
+                    "unsupported input: PDF has no extractable text (Scanned, 1 pages): OCR is required"
+                )
+
+        ocr_result = ReadResult(
+            engine_id="ocr",
+            engine_label="OCR",
+            outputs=[DocumentOutput(kind=OutputKind.MARKDOWN, content="# whole-file-ocr")],
+        )
+
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scanned.pdf"
+            path.write_bytes(b"%PDF")
+            pipeline = DocumentPipeline(readers=ReaderRegistry([AnyDocReader(), OCRReader()]))
+            with (
+                patch("app.processing.paddle_gate.paddle_ocr_is_enabled", return_value=True),
+                patch.object(anydoc_mod, "import_anydoc", return_value=FakeAny),
+                patch.object(anydoc_mod, "anydoc_is_available", return_value=True),
+                patch.object(
+                    anydoc_mod,
+                    "iter_pdf_page_bytes",
+                    return_value=[(1, b"one"), (2, b"two")],
+                ),
+                patch.object(anydoc_mod, "pdf_page_count", return_value=2),
+                patch.object(OCRReader, "read", return_value=ocr_result),
+            ):
+                with self.assertLogs("app.processing.pipeline", level="INFO") as logs:
+                    payload = pipeline.process(path, filename="scanned.pdf")
+
+        joined_logs = "\n".join(logs.output)
+        self.assertIn("Reader failed — anydoc", joined_logs)
+        self.assertIn("Trying reader=ocr", joined_logs)
+        self.assertEqual(payload["provider"], "ocr")
+        self.assertEqual(payload["markdown"], "# whole-file-ocr")
+
 
 class OCRReaderTests(unittest.TestCase):
     def test_can_process(self) -> None:
         reader = OCRReader()
         img = SourceFile(path=Path("a.png"), filename="a.png", suffix=".png")
-        self.assertTrue(reader.can_process(img).supported)
-        with patch("app.processing.reading.ocr.pdf_majority_has_text", return_value=False):
-            pdf = SourceFile(path=Path("a.pdf"), filename="a.pdf", suffix=".pdf")
-            capability = reader.can_process(pdf)
-        self.assertTrue(capability.supported)
-        self.assertIn("OCR", capability.reason)
-        txt = SourceFile(path=Path("a.txt"), filename="a.txt", suffix=".txt")
-        self.assertFalse(reader.can_process(txt).supported)
+        with patch("app.processing.paddle_gate.paddle_ocr_is_enabled", return_value=True):
+            self.assertTrue(reader.can_process(img).supported)
+            with patch("app.processing.reading.ocr.pdf_majority_has_text", return_value=False):
+                pdf = SourceFile(path=Path("a.pdf"), filename="a.pdf", suffix=".pdf")
+                capability = reader.can_process(pdf)
+            self.assertTrue(capability.supported)
+            self.assertIn("OCR", capability.reason)
+            txt = SourceFile(path=Path("a.txt"), filename="a.txt", suffix=".txt")
+            self.assertFalse(reader.can_process(txt).supported)
+
+    def test_can_process_disabled(self) -> None:
+        reader = OCRReader()
+        img = SourceFile(path=Path("a.png"), filename="a.png", suffix=".png")
+        with patch("app.processing.paddle_gate.paddle_ocr_is_enabled", return_value=False):
+            capability = reader.can_process(img)
+        self.assertFalse(capability.supported)
+        self.assertIn("PADDLE_OCR_ENABLED", capability.reason)
 
     def test_majority_text_pdf_skips_paddle(self) -> None:
         reader = OCRReader()
@@ -257,7 +451,9 @@ class OCRReaderTests(unittest.TestCase):
         self.assertIn("native text layer", result.markdown())
         self.assertIn("Second page", result.markdown())
         capability = None
-        with patch("app.processing.reading.ocr.pdf_majority_has_text", return_value=True):
+        with patch("app.processing.paddle_gate.paddle_ocr_is_enabled", return_value=True), patch(
+            "app.processing.reading.ocr.pdf_majority_has_text", return_value=True
+        ):
             capability = reader.can_process(source)
         assert capability is not None
         self.assertIn("skip OCR", capability.reason)
@@ -534,6 +730,111 @@ class AnyDocHelperTests(unittest.TestCase):
         self.assertIn("# two", result.markdown())
         self.assertEqual(result.pages[0]["page"], 1)
         self.assertEqual(result.pages[1]["page"], 2)
+
+    def test_scanned_page_is_left_as_image_instead_of_failing_reader(self) -> None:
+        from app.processing.reading import anydoc as anydoc_mod
+
+        scanned = (
+            "unsupported input: PDF has no extractable text (Scanned, 1 pages): OCR is required"
+        )
+
+        class FakeAny:
+            class EncryptedError(Exception):
+                pass
+
+            class ConvertError(Exception):
+                pass
+
+            @staticmethod
+            def format_from_bytes(_data):
+                return "pdf"
+
+            @staticmethod
+            def to_markdown_bytes(data, _fmt=None):
+                if data == b"two":
+                    raise FakeAny.ConvertError(scanned)
+                return f"# {data.decode('utf-8')}"
+
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "a.pdf"
+            path.write_bytes(b"%PDF")
+            source = SourceFile.from_path(path)
+            reader = anydoc_mod.AnyDocReader()
+            with (
+                patch.object(anydoc_mod, "import_anydoc", return_value=FakeAny),
+                patch.object(
+                    anydoc_mod, "iter_pdf_page_bytes", return_value=[(1, b"one"), (2, b"two")]
+                ),
+                patch.object(anydoc_mod, "pdf_page_count", return_value=2),
+                patch.object(
+                    anydoc_mod.AnyDocReader,
+                    "_page_image_markdown",
+                    return_value="![Page 2](data:image/jpeg;base64,AAA)",
+                ),
+                patch.object(OCRReader, "read") as ocr_read,
+            ):
+                result = reader.read(source)
+
+        self.assertEqual(result.engine_id, "anydoc")
+        self.assertEqual(result.page_count, 2)
+        self.assertIn("# one", result.markdown())
+        self.assertIn("![Page 2](data:image/jpeg;base64,AAA)", result.markdown())
+        self.assertEqual(result.metadata.get("image_pages"), [2])
+        ocr_read.assert_not_called()
+
+    def test_page_image_markdown_uses_raster_bytes(self) -> None:
+        from app.processing.reading.anydoc import AnyDocReader
+
+        jpeg = (
+            b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"
+            b"\xff\xdb\x00C\x00" + (b"\x08" * 64)
+        )
+        with patch("app.processing.reading.anydoc.rasterize_pdf_bytes", return_value=(jpeg, "image/jpeg")), patch(
+            "app.processing.reading.anydoc.normalize_image_bytes", return_value=(b"JPEGDATA", "image/jpeg")
+        ):
+            markdown = AnyDocReader._page_image_markdown(b"%PDF", 4)
+        self.assertEqual(
+            markdown,
+            f"![Page 4](data:image/jpeg;base64,{base64.b64encode(b'JPEGDATA').decode('ascii')})",
+        )
+
+    def test_all_pages_scanned_still_fails_anydoc(self) -> None:
+        from app.processing.reading import anydoc as anydoc_mod
+
+        class FakeAny:
+            class EncryptedError(Exception):
+                pass
+
+            class ConvertError(Exception):
+                pass
+
+            @staticmethod
+            def format_from_bytes(_data):
+                return "pdf"
+
+            @staticmethod
+            def to_markdown_bytes(_data, _fmt=None):
+                raise FakeAny.ConvertError(
+                    "unsupported input: PDF has no extractable text (Scanned, 1 pages): OCR is required"
+                )
+
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "a.pdf"
+            path.write_bytes(b"%PDF")
+            source = SourceFile.from_path(path)
+            reader = anydoc_mod.AnyDocReader()
+            with (
+                patch.object(anydoc_mod, "import_anydoc", return_value=FakeAny),
+                patch.object(
+                    anydoc_mod, "iter_pdf_page_bytes", return_value=[(1, b"one"), (2, b"two")]
+                ),
+                patch.object(OCRReader, "read") as ocr_read,
+            ):
+                with self.assertRaises(RuntimeError) as ctx:
+                    reader.read(source)
+
+        self.assertIn("OCR is required", str(ctx.exception))
+        ocr_read.assert_not_called()
 
 
 if __name__ == "__main__":

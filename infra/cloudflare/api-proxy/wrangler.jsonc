@@ -10,6 +10,7 @@
       "vars": {
         "ORIGIN": "https://example.invalid"
       },
+      "triggers": { "crons": ["*/3 * * * *"] },
       "routes": [
         { "pattern": "api.staging.fileworks.ai", "custom_domain": true },
         { "pattern": "staging.fileworks.ai/api/*", "zone_name": "fileworks.ai" }

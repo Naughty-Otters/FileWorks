@@ -64,9 +64,11 @@ def _convert_from_message(message: dict[str, Any]) -> dict[str, Any]:
 def _worker_main(conn: Any, prewarm: bool) -> None:
     """Child entrypoint: serve conversions over ``conn`` until told to stop."""
     from app.core.logsetup import configure_app_logging
+    from app.core.modelcache import hydrate_baked_model_cache
     from app.core.venvpath import ensure_venv_on_sys_path
 
     ensure_venv_on_sys_path()
+    hydrate_baked_model_cache()
     if Path("/var/task").is_dir():
         os.chdir("/var/task")
     configure_app_logging()
@@ -82,13 +84,18 @@ def _worker_main(conn: Any, prewarm: bool) -> None:
         log.info("worker import %s origin=%s", name, origin)
 
     if prewarm:
-        try:
-            from app.services.ocr import get_ocr_service
+        from app.processing import paddle_gate
 
-            get_ocr_service().ensure_loaded()
-            log.info("Conversion worker pid=%s prewarmed models", os.getpid())
-        except Exception as exc:  # noqa: BLE001
-            log.warning("Worker prewarm failed (%s); models load on first job", exc)
+        if not paddle_gate.paddle_ocr_is_enabled():
+            log.info("Conversion worker pid=%s skip Paddle prewarm (PADDLE_OCR_ENABLED=false)", os.getpid())
+        else:
+            try:
+                from app.services.ocr import get_ocr_service
+
+                get_ocr_service().ensure_loaded()
+                log.info("Conversion worker pid=%s prewarmed models", os.getpid())
+            except Exception as exc:  # noqa: BLE001
+                log.warning("Worker prewarm failed (%s); models load on first job", exc)
 
     while True:
         try:

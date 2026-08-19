@@ -178,8 +178,17 @@ def _blocks_from_regions(regions: list[dict[str, Any]]) -> list[StructureBlock]:
     return blocks
 
 
-def _blocks_from_docling_pages(pages: list[dict[str, Any]]) -> list[StructureBlock]:
-    """Thin fallback when Docling only left markdown text in page json."""
+_MD_IMAGE_SPLIT_RE = re.compile(
+    r"("
+    r"!\[[^\]]*\]\((?:data:image|media/)[^)\s]+(?:\s+\"[^\"]*\")?\)"
+    r"|<img\b[^>]*\bsrc\s*=\s*['\"](?:data:image|media/)[^'\"]+['\"][^>]*/?>"
+    r")",
+    flags=re.IGNORECASE | re.DOTALL,
+)
+
+
+def _blocks_from_page_markdown(pages: list[dict[str, Any]]) -> list[StructureBlock]:
+    """Keep per-page reading order: text blocks and original figures as image blocks."""
     blocks: list[StructureBlock] = []
     for page in pages:
         if not isinstance(page, dict):
@@ -188,16 +197,33 @@ def _blocks_from_docling_pages(pages: list[dict[str, Any]]) -> list[StructureBlo
         md = str(page.get("markdown") or "").strip()
         if not md:
             continue
-        blocks.append(
-            StructureBlock(
-                id=f"docling-p{page_no}",
-                page=page_no,
-                label="text",
-                text=md,
-                order=page_no,
+        parts = _MD_IMAGE_SPLIT_RE.split(md)
+        order = 0
+        for part in parts:
+            chunk = str(part or "").strip()
+            if not chunk:
+                continue
+            order += 1
+            is_image = chunk.startswith("![") or chunk.lower().startswith("<img")
+            blocks.append(
+                StructureBlock(
+                    id=f"p{page_no}-{order}",
+                    page=page_no,
+                    label="image" if is_image else "text",
+                    text="" if is_image else chunk,
+                    image_ref=chunk if is_image else None,
+                    order=order,
+                )
             )
-        )
     return blocks
+
+
+def _blocks_from_joined_markdown(markdown: str) -> list[StructureBlock]:
+    from app.services.pages import PAGE_SEPARATOR
+
+    chunks = markdown.split(PAGE_SEPARATOR) if PAGE_SEPARATOR in markdown else [markdown]
+    pages = [{"page": index, "markdown": chunk} for index, chunk in enumerate(chunks, start=1)]
+    return _blocks_from_page_markdown(pages)
 
 
 def normalize_read_result(result: ReadResult) -> StructureDocument | None:
@@ -226,19 +252,17 @@ def normalize_read_result(result: ReadResult) -> StructureDocument | None:
             else:
                 blocks.extend(_blocks_from_parsing_list(payload, page=1))
 
+    if not blocks:
+        blocks = _blocks_from_page_markdown(pages)
+
     if not blocks and result.regions:
         blocks = _blocks_from_regions(result.regions)
-
-    if not blocks and result.engine_id == "docling":
-        blocks = _blocks_from_docling_pages(pages)
 
     if not blocks:
         md = (result.markdown() or "").strip()
         if not md:
             return None
-        blocks = [
-            StructureBlock(id="md-0", page=1, label="text", text=md, order=1),
-        ]
+        blocks = _blocks_from_joined_markdown(md)
 
     page_sizes: dict[str, dict[str, float]] = {}
     for page in pages:

@@ -92,7 +92,7 @@ class OCRServiceStateTests(unittest.TestCase):
     def test_failed_warmup_does_not_repin_the_engine(self) -> None:
         from app.services.ocr import OCRService
 
-        service = OCRService(get_settings().model_copy(update={"ocr_engine": "structure"}))
+        service = OCRService(get_settings().model_copy(update={"ocr_engine": "structure", "paddle_ocr_enabled": True}))
         before = service.registry.selection.select()
         self.assertEqual(before, "structure")
 

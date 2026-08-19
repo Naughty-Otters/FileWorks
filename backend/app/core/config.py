@@ -8,6 +8,7 @@ import os
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from app.core.modelcache import hydrate_baked_model_cache
 from app.core.venvpath import ensure_venv_on_sys_path
 
 logger = logging.getLogger(__name__)
@@ -16,6 +17,7 @@ _IN_LAMBDA = bool(
     os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or os.environ.get("AWS_LWA_INVOKE_MODE")
 )
 ensure_venv_on_sys_path()
+hydrate_baked_model_cache()
 
 
 def _hydrate_secrets_from_aws() -> None:
@@ -82,6 +84,23 @@ class Settings(BaseSettings):
     # Load models right after a worker spawns instead of on its first job. Costs
     # a Paddle load even for documents that never reach OCR.
     convert_worker_prewarm: bool = False
+    # Pipeline spec (see processing/pipeline_config.py). Existing engine flags
+    # below are the source of truth; these gate stages and readers that had none.
+    text_reader_enabled: bool = True
+    docling_enabled: bool = True
+    anydoc_enabled: bool = True
+    llm_reader_enabled: bool = True
+    pipeline_prepare_ocr_enabled: bool = True
+    pipeline_media_enabled: bool = True
+    pipeline_structure_edit_enabled: bool = True
+    pipeline_translate_enabled: bool = True
+    pipeline_normalize_enabled: bool = True
+    pipeline_fill_enabled: bool = True
+    pipeline_project_enabled: bool = True
+    # In-process Paddle (PP-OCR / PP-StructureV3). Off: OCRReader is not a
+    # pipeline candidate, LiteParse will not load Paddle, warmup/prewarm skip
+    # model load. Set PADDLE_OCR_ENABLED=true to restore it.
+    paddle_ocr_enabled: bool = False
     # Preferred OCR provider for warmup / legacy OCRService: structure | ocr
     # Document uploads use readers: Text → Docling (prefer_structure) → AnyDoc → LLM (optional) → OCR.
     ocr_engine: str = "ocr"

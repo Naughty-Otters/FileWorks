@@ -92,6 +92,7 @@ def _s3_store() -> S3DocumentStore | None:
     summary="List convert inputs, targets, and options",
     description=(
         "Returns accepted file extensions, output targets, parse/translate options, "
+        "the live pipeline spec (stages and engines, each with enabled), "
         "and whether AI reading and translation are available on this server and plan. "
         "Call this before POST /api/v1/convert. No s3_key."
     ),
@@ -145,6 +146,10 @@ async def convert_file(
     prefer_structure: bool | str = Form(
         default=False,
         description="Recover headings, lists, and layout on PDFs and scans. Slower. Default false.",
+    ),
+    preserve_images: bool | str = Form(
+        default=True,
+        description="Keep original charts and figures next to extracted text on each page. Default true.",
     ),
     ocr_high_quality: bool | str = Form(
         default=False,
@@ -206,6 +211,7 @@ async def convert_file(
     options = ExtractOptions.from_form(
         use_ai=_form_bool(use_ai),
         prefer_structure=_form_bool(prefer_structure),
+        preserve_images=_form_bool(preserve_images),
         ocr_high_quality=_form_bool(ocr_high_quality),
         use_doc_preprocessor=_form_bool(use_doc_preprocessor),
         use_seal_recognition=_form_bool(use_seal_recognition),

@@ -62,6 +62,58 @@ def pdf_page_count(path: Path) -> int:
         document.close()
 
 
+def rasterize_pdf_bytes(
+    data: bytes,
+    *,
+    scale: float = 1.6,
+    max_side: int = 1200,
+    quality: int = 80,
+) -> tuple[bytes, str] | None:
+    """Render the first page of a PDF (often a split single page) to JPEG bytes."""
+    try:
+        import pypdfium2 as pdfium
+    except ImportError:  # pragma: no cover
+        logger.warning("pypdfium2 is not installed; cannot rasterize PDF page")
+        return None
+    try:
+        document = pdfium.PdfDocument(data)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Could not open PDF bytes for rasterize (%s)", exc)
+        return None
+    image = None
+    try:
+        if len(document) < 1:
+            return None
+        page = document[0]
+        try:
+            bitmap = page.render(scale=scale)
+            image = bitmap.to_pil()
+        finally:
+            page.close()
+    except Exception as exc:  # noqa: BLE001
+        logger.info("PDF page rasterize failed (%s)", exc)
+        return None
+    finally:
+        document.close()
+    if image is None:
+        return None
+
+    from PIL import Image
+
+    rgb = image.convert("RGB")
+    width, height = rgb.size
+    longest = max(width, height)
+    if longest > max_side > 0:
+        ratio = max_side / longest
+        rgb = rgb.resize(
+            (max(1, int(width * ratio)), max(1, int(height * ratio))),
+            Image.Resampling.LANCZOS,
+        )
+    buffer = io.BytesIO()
+    rgb.save(buffer, format="JPEG", quality=quality, optimize=True)
+    return buffer.getvalue(), "image/jpeg"
+
+
 def iter_pdf_page_bytes(path: Path) -> Iterator[tuple[int, bytes]]:
     """Yield ``(1-based page number, single-page PDF bytes)`` for each source page."""
     import pypdfium2 as pdfium

@@ -391,15 +391,36 @@ def _scatter_pages(
     return updated
 
 
-def _missing_source_images(markdown: str, source: SourceFile) -> list[EmbeddedImage]:
+def _embedded_data_url_digests(markdown: str) -> set[str]:
+    found: set[str] = set()
+    for match in _DATA_URL_RE.finditer(markdown or ""):
+        try:
+            raw = base64.b64decode(re.sub(r"\s+", "", match.group(2)), validate=False)
+        except Exception:  # noqa: BLE001
+            continue
+        if raw:
+            found.add(hashlib.sha1(raw).hexdigest())
+    return found
+
+
+def _missing_source_images(
+    markdown: str,
+    source: SourceFile,
+    *,
+    preserve_images: bool,
+) -> list[EmbeddedImage]:
     """Images the reader dropped: the raster itself, or the PDF's XObjects."""
-    if "data:image" in markdown.lower():
+    if not preserve_images:
         return []
     if source.is_image:
+        if "data:image" in markdown.lower():
+            return []
         raster = _source_raster_image(source)
         return [raster] if raster is not None else []
     if source.suffix == ".pdf":
-        return extract_pdf_images(source.path)
+        images = extract_pdf_images(source.path)
+        seen = _embedded_data_url_digests(markdown)
+        return [image for image in images if hashlib.sha1(image.data).hexdigest() not in seen]
     return []
 
 
@@ -426,8 +447,17 @@ def _place_on_pages(
     return updated, used, leftover
 
 
-def embed_read_result_media(result: ReadResult, source: SourceFile) -> ReadResult:
-    """Pipeline hook: source raster / PDF XObjects when missing, then compress/cap."""
+def embed_read_result_media(
+    result: ReadResult,
+    source: SourceFile,
+    *,
+    preserve_images: bool = True,
+) -> ReadResult:
+    """Pipeline hook: source raster / PDF XObjects when missing, then compress/cap.
+
+    ``preserve_images`` (default on) keeps original charts and figures from text
+    PDFs on the page they came from, next to the extracted text.
+    """
     original = result.markdown() or ""
     multi_page = (
         result.page_count > 1
@@ -460,7 +490,7 @@ def embed_read_result_media(result: ReadResult, source: SourceFile) -> ReadResul
         base_budget = max(0, MAX_IMAGES - used) if used else MAX_IMAGES
         base = normalize_embedded_images(original, budget=base_budget)
 
-    extra = _missing_source_images(base, source)
+    extra = _missing_source_images(base, source, preserve_images=preserve_images)
     budget = max(0, MAX_IMAGES - used) if used else MAX_IMAGES
 
     if filled:

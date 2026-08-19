@@ -7,6 +7,7 @@ import os
 from typing import Any, Callable
 
 from app.core.config import Settings, get_settings
+from app.processing.pipeline_config import PipelineSpec
 from app.processing.strategy.ocr.quality import ocr_results_are_weak
 from app.services.easyocr_bridge import easyocr_is_available, run_easyocr_for_liteparse
 from app.services.liteparse_ocr_bridge import run_paddle_ocr_for_liteparse
@@ -66,8 +67,9 @@ def _fast_runners(
     language: str,
     settings: Settings,
 ) -> list[tuple[str, OcrRunner]]:
+    spec = PipelineSpec.from_settings(settings)
     runners: list[tuple[str, OcrRunner]] = []
-    if settings.easyocr_enabled and easyocr_is_available():
+    if spec.ocr_backend_enabled("easyocr") and easyocr_is_available():
         runners.append(
             (
                 "easyocr",
@@ -86,8 +88,11 @@ def _deep_runners(
     suffix: str,
     settings: Settings,
 ) -> list[tuple[str, OcrRunner]]:
+    spec = PipelineSpec.from_settings(settings)
     runners: list[tuple[str, OcrRunner]] = []
-    if settings.liteparse_use_paddle_ocr:
+    from app.processing import paddle_gate
+
+    if paddle_gate.liteparse_may_use_paddle(settings):
         runners.append(
             (
                 "paddle",
@@ -96,7 +101,7 @@ def _deep_runners(
                 ),
             )
         )
-    if settings.surya_enabled and surya_is_available():
+    if spec.ocr_backend_enabled("surya") and surya_is_available():
         runners.append(
             (
                 "surya",

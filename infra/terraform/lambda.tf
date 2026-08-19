@@ -51,6 +51,7 @@ resource "aws_lambda_function" "api" {
       EASYOCR_MODEL_DIR      = "/var/task/.cache/easyocr"
       PADDLE_PDX_CACHE_HOME  = "/var/task/.cache/paddlex"
       PADDLE_DEVICE          = "cpu"
+      PADDLE_OCR_ENABLED     = "false"
       OCR_ENGINE             = var.ocr_engine
       MAX_UPLOAD_MB          = tostring(var.max_upload_mb)
       DATABASE_URL           = local.database_url
@@ -143,6 +144,7 @@ resource "aws_lambda_function" "llm" {
       EASYOCR_MODEL_DIR      = "/var/task/.cache/easyocr"
       PADDLE_PDX_CACHE_HOME  = "/var/task/.cache/paddlex"
       PADDLE_DEVICE          = "cpu"
+      PADDLE_OCR_ENABLED     = "false"
       OCR_ENGINE             = var.ocr_engine
     }
   }

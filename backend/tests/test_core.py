@@ -133,6 +133,8 @@ class OptionsTests(unittest.TestCase):
         opts = ExtractOptions.from_form(target_lang="Original", use_doc_preprocessor=True)
         self.assertEqual(opts.normalized_target_lang(), "")
         self.assertIn("use_table_recognition", opts.to_dict())
+        self.assertTrue(opts.preserve_images)
+        self.assertFalse(ExtractOptions.from_form(preserve_images=False).preserve_images)
         self.assertTrue(opts.structure_predict_kwargs()["use_doc_unwarping"])
         self.assertTrue(opts.paddle_ocr_predict_kwargs()["return_word_box"])
         self.assertEqual(opts.predict_kwargs(), opts.structure_predict_kwargs())

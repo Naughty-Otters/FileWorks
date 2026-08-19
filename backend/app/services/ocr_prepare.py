@@ -56,8 +56,15 @@ def resolve_ocr_max_input_side(
     return cap
 
 
-def should_prepare_ocr_input(source: SourceFile) -> bool:
+def should_prepare_ocr_input(
+    source: SourceFile,
+    settings: Settings | None = None,
+) -> bool:
     """True when the file is likely to hit Paddle as a raster or scanned PDF."""
+    from app.processing import paddle_gate
+
+    if not paddle_gate.paddle_ocr_is_enabled(settings):
+        return False
     if source.is_image or source.suffix in IMAGE_SUFFIXES:
         return True
     if source.suffix == ".pdf":
@@ -73,10 +80,10 @@ def prepare_ocr_input(
     work_dir: Path | None = None,
 ) -> SourceFile:
     """Return ``source``, or a temp copy with capped raster dimensions for OCR."""
-    if not should_prepare_ocr_input(source):
+    settings = settings or get_settings()
+    if not should_prepare_ocr_input(source, settings):
         return source
 
-    settings = settings or get_settings()
     max_side = resolve_ocr_max_input_side(options, settings)
     work_dir = work_dir or source.path.parent
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 import tomllib
@@ -45,6 +46,7 @@ class LambdaReaderImageTests(unittest.TestCase):
         self.assertIn("python /var/task/prefetch-models.py", body)
         self.assertIn("COPY --from=model-cache /var/task/.cache /var/task/.cache", body)
         self.assertIn("gapi_wip_gst_GStreamerPipeline", body)
+        self.assertIn("site-packages/nvidia", body)
         self.assertIn('CMD ["/var/task/.venv/bin/python", "-m", "app"]', body)
 
     def test_prefetch_script_fails_closed_without_extras(self) -> None:
@@ -62,6 +64,7 @@ class LambdaReaderImageTests(unittest.TestCase):
         self.assertIn('HF_HOME                = "/var/task/.cache/huggingface"', body)
         self.assertIn('EASYOCR_MODEL_DIR      = "/var/task/.cache/easyocr"', body)
         self.assertIn('PADDLE_PDX_CACHE_HOME  = "/var/task/.cache/paddlex"', body)
+        self.assertIn('PADDLE_OCR_ENABLED     = "false"', body)
         self.assertIn('PYTHONPATH             = "/var/task:/var/task/.venv/lib/python3.12/site-packages"', body)
         self.assertIn('PATH                   = "/var/task/.venv/bin:/usr/local/bin:/usr/bin:/bin"', body)
 
@@ -81,6 +84,39 @@ class LambdaReaderImageTests(unittest.TestCase):
         self.assertNotIn("UV_EXTRA", " ".join(cmd))
         self.assertIn("model-cache=docker-image://example:tag", " ".join(cmd))
         self.assertEqual(UV_IMAGE_SYNC_FLAGS, ("--all-extras",))
+
+    def test_roll_out_pins_ecr_digest_not_moving_tag(self) -> None:
+        body = (ROOT / "fw" / "actions" / "cloud.py").read_text(encoding="utf-8")
+        self.assertIn("def ecr_image_digest_uri", body)
+        self.assertIn('return f"{repo_url}@{digest}"', body)
+        self.assertIn("pinned = ecr_image_digest_uri(ctx, image)", body)
+        self.assertIn("did not switch to", body)
+
+    def test_hydrate_remaps_read_only_baked_cache(self) -> None:
+        from app.core import modelcache
+
+        with tempfile.TemporaryDirectory() as raw:
+            baked = Path(raw) / "baked"
+            runtime = Path(raw) / "runtime"
+            models = baked / "paddlex" / "official_models"
+            models.mkdir(parents=True)
+            (models / "weights.bin").write_bytes(b"x" * 8)
+            baked.chmod(0o555)
+            original_baked = modelcache.BAKED_CACHE
+            original_runtime = modelcache.RUNTIME_CACHE
+            try:
+                modelcache.BAKED_CACHE = baked
+                modelcache.RUNTIME_CACHE = runtime
+                modelcache.hydrate_baked_model_cache()
+                link = runtime / "paddlex" / "official_models"
+                self.assertTrue(link.is_symlink())
+                self.assertEqual(os.environ.get("PADDLE_PDX_CACHE_HOME"), str(runtime / "paddlex"))
+            finally:
+                baked.chmod(0o755)
+                modelcache.BAKED_CACHE = original_baked
+                modelcache.RUNTIME_CACHE = original_runtime
+                os.environ.pop("PADDLE_PDX_CACHE_HOME", None)
+                os.environ.pop("HF_HOME", None)
 
     def test_venv_site_packages_prepended(self) -> None:
         from app.core.venvpath import ensure_venv_on_sys_path, venv_site_packages

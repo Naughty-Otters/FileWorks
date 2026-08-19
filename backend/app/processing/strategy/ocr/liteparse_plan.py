@@ -25,13 +25,18 @@ def build_liteparse_attempts(
     if explicit:
         return (LiteParseAttempt("custom", explicit),)
 
+    from app.processing.pipeline_config import PipelineSpec
+
+    spec = PipelineSpec.from_settings(settings)
     attempts: list[LiteParseAttempt] = [LiteParseAttempt("tesseract", None)]
 
     if route in {OcrRoute.FAST, OcrRoute.DEEP}:
-        if settings.easyocr_enabled:
+        if spec.ocr_backend_enabled("easyocr"):
             attempts.append(LiteParseAttempt("fast", resolve_fast_ocr_server_url(settings)))
 
-    allow_deep = settings.liteparse_use_paddle_ocr or settings.surya_enabled
+    from app.processing import paddle_gate
+
+    allow_deep = paddle_gate.liteparse_may_use_paddle(settings) or spec.ocr_backend_enabled("surya")
     if allow_deep and route in {OcrRoute.FAST, OcrRoute.DEEP}:
         attempts.append(LiteParseAttempt("deep", resolve_deep_ocr_server_url(settings)))
 

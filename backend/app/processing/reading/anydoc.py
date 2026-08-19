@@ -7,12 +7,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from app.core.config import get_settings
 from app.processing.models import Capability, DocumentOutput, OutputKind, ReadResult, SourceFile
-from app.processing.postprocess.media import EmbeddedImage, place_images
+from app.processing.postprocess.media import EmbeddedImage, normalize_image_bytes, place_images, to_data_url
 from app.processing.reading.anydoc_markdown import document_to_markdown
 from app.processing.reading.base import Reader
 from app.services.options import DEFAULT_EXTRACT_OPTIONS, ExtractOptions
-from app.services.pages import assemble_page_dicts, iter_pdf_page_bytes, pdf_page_count
+from app.services.pages import assemble_page_dicts, iter_pdf_page_bytes, pdf_page_count, rasterize_pdf_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,14 @@ def _markdown_looks_empty(markdown: str | None) -> bool:
         if line.strip() and set(line.strip()) - {"-", "|", ":", " "}
     ]
     return len(meaningful) == 0
+
+
+def _is_encrypted_error(exc: BaseException) -> bool:
+    message = str(exc).lower()
+    if "encrypted" in message or "password-protected" in message:
+        return True
+    cause = exc.__cause__
+    return cause is not None and type(cause).__name__ == "EncryptedError"
 
 
 def _asset_bytes(asset: Any) -> bytes | None:
@@ -199,6 +208,11 @@ class AnyDocReader(Reader):
         source: SourceFile,
         options: ExtractOptions | None = None,
     ) -> Capability:
+        from app.processing.pipeline_config import get_pipeline_spec
+
+        blocked = get_pipeline_spec(get_settings()).reader_disabled_reason(self.id)
+        if blocked:
+            return Capability.no(blocked)
         if not anydoc_is_available():
             return Capability.no("firecrawl-anydoc is not installed")
         if source.is_image:
@@ -220,7 +234,7 @@ class AnyDocReader(Reader):
         data = source.path.read_bytes()
         fmt = self._detect_format(anydoc, source, data)
 
-        markdowns = self._markdowns_by_page(anydoc, source, data, fmt)
+        markdowns, image_pages = self._markdowns_by_page(anydoc, source, data, fmt, options=opts)
         document = None
         # PDF has no document model in AnyDoc — Markdown only.
         if fmt != "pdf" and len(markdowns) <= 1:
@@ -242,7 +256,13 @@ class AnyDocReader(Reader):
         asset_count = len(getattr(document, "assets", None) or []) if document else 0
         block_count = len(getattr(document, "blocks", None) or []) if document else 0
         source_pages = pdf_page_count(source.path) if source.suffix == ".pdf" else len(markdowns)
-        extra = {"format": fmt, "block_count": block_count, "asset_count": asset_count}
+        extra: dict[str, Any] = {
+            "format": fmt,
+            "block_count": block_count,
+            "asset_count": asset_count,
+        }
+        if image_pages:
+            extra["image_pages"] = image_pages
         pages, page_count, markdown_str = assemble_page_dicts(markdowns, source=self.id, extra=extra)
         metadata = {**extra, "source_page_count": source_pages or page_count}
         page_json = {"source": self.id, **metadata, "pages": [page["json"] for page in pages]}
@@ -261,19 +281,105 @@ class AnyDocReader(Reader):
             options=opts.to_dict(),
         )
 
-    def _markdowns_by_page(self, anydoc: Any, source: SourceFile, data: bytes, fmt: str | None) -> list[str]:
+    def _markdowns_by_page(
+        self,
+        anydoc: Any,
+        source: SourceFile,
+        data: bytes,
+        fmt: str | None,
+        *,
+        options: ExtractOptions | None = None,
+    ) -> tuple[list[str], list[int]]:
+        """Convert each PDF page separately.
+
+        A scanned page is a 1-page PDF with no text layer. AnyDoc raises
+        ``ConvertError`` for that page; aborting here used to throw away pages
+        that already converted. Keep those, embed the failed page as an image,
+        and only fail the reader when AnyDoc produced nothing.
+        """
         if fmt == "pdf":
             split = self._pdf_page_payloads(source)
             if split is not None:
-                markdowns: list[str] = []
-                for page_no, page_data in split:
-                    from app.services.cancel_token import check_cancelled
+                return self._markdowns_from_pdf_pages(anydoc, split, fmt, options=options)
+        return [self._convert_bytes(anydoc, data, fmt)], []
 
-                    check_cancelled(where=f"AnyDoc page {page_no}/{len(split)}")
-                    markdowns.append(self._convert_bytes(anydoc, page_data, fmt))
-                    logger.info("AnyDoc converted PDF page %s/%s", page_no, len(split))
-                return markdowns
-        return [self._convert_bytes(anydoc, data, fmt)]
+    def _markdowns_from_pdf_pages(
+        self,
+        anydoc: Any,
+        split: list[tuple[int, bytes]],
+        fmt: str,
+        *,
+        options: ExtractOptions | None = None,
+    ) -> tuple[list[str], list[int]]:
+        del options
+        from app.services.cancel_token import check_cancelled
+
+        markdowns: list[str] = []
+        image_needed: list[tuple[int, bytes]] = []
+        converted = 0
+        last_error: Exception | None = None
+        total = len(split)
+
+        for page_no, page_data in split:
+            check_cancelled(where=f"AnyDoc page {page_no}/{total}")
+            try:
+                markdown = self._convert_bytes(anydoc, page_data, fmt)
+            except RuntimeError as exc:
+                if _is_encrypted_error(exc):
+                    raise
+                last_error = exc
+                logger.info(
+                    "AnyDoc page %s/%s is an image; leaving raster (%s)",
+                    page_no,
+                    total,
+                    exc,
+                )
+                markdowns.append("")
+                image_needed.append((page_no, page_data))
+                continue
+            if _markdown_looks_empty(markdown):
+                logger.info("AnyDoc page %s/%s produced empty Markdown; leaving raster", page_no, total)
+                markdowns.append("")
+                image_needed.append((page_no, page_data))
+                continue
+            markdowns.append(markdown)
+            converted += 1
+            logger.info("AnyDoc converted PDF page %s/%s", page_no, total)
+
+        if converted == 0:
+            if last_error is not None:
+                raise last_error
+            raise RuntimeError("AnyDoc produced empty Markdown (likely scanned/image-only PDF)")
+
+        image_pages = [page_no for page_no, _ in image_needed]
+        if image_needed:
+            self._fill_pages_as_images(markdowns, image_needed)
+        return markdowns, image_pages
+
+    def _fill_pages_as_images(
+        self,
+        markdowns: list[str],
+        image_needed: list[tuple[int, bytes]],
+    ) -> None:
+        for page_no, page_data in image_needed:
+            markdown = self._page_image_markdown(page_data, page_no)
+            if _markdown_looks_empty(markdown):
+                logger.info("AnyDoc page %s left empty (could not rasterize image page)", page_no)
+                continue
+            markdowns[page_no - 1] = markdown
+            logger.info("AnyDoc kept image page %s as raster", page_no)
+
+    @staticmethod
+    def _page_image_markdown(page_data: bytes, page_no: int) -> str:
+        raster = rasterize_pdf_bytes(page_data)
+        if raster is None:
+            return ""
+        data, mime = raster
+        normalized = normalize_image_bytes(data, mime)
+        if normalized is None:
+            return ""
+        data, mime = normalized
+        return f"![Page {page_no}]({to_data_url(data, mime)})"
 
     @staticmethod
     def _pdf_page_payloads(source: SourceFile) -> list[tuple[int, bytes]] | None:

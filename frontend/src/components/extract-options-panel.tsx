@@ -33,6 +33,11 @@ const OPTION_META: Array<{
     hint: "Recover headings, lists, and layout on PDFs and scans. Slower",
   },
   {
+    key: "preserve_images",
+    label: "Preserve images",
+    hint: "Keep original charts and figures next to the extracted text",
+  },
+  {
     key: "ocr_high_quality",
     label: "High-quality OCR",
     hint: "Up to ~300 dpi (2480 px) for scans. More memory and slower",

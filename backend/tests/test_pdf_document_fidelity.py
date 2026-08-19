@@ -344,6 +344,7 @@ class PreferStructureRoutingTests(unittest.TestCase):
     def _order(self, path: Path, **kwargs) -> list[str]:
         from app.processing.decision import PriorityFallbackDecisionMaker
         from app.processing.models import SourceFile
+        from unittest.mock import patch
 
         source = SourceFile(
             path=path,
@@ -351,9 +352,10 @@ class PreferStructureRoutingTests(unittest.TestCase):
             mime_type="application/pdf",
             suffix=".pdf",
         )
-        candidates = PriorityFallbackDecisionMaker().decide(
-            source, DocumentPipeline().readers.all(), ExtractOptions(**kwargs)
-        )
+        with patch("app.processing.paddle_gate.paddle_ocr_is_enabled", return_value=True):
+            candidates = PriorityFallbackDecisionMaker().decide(
+                source, DocumentPipeline().readers.all(), ExtractOptions(**kwargs)
+            )
         return [reader.id for reader, _ in candidates]
 
     def test_text_layer_pdf_keeps_the_structured_reader_first(self) -> None:

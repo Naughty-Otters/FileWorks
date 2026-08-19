@@ -151,7 +151,11 @@ class OcrRoutingStrategyTests(unittest.TestCase):
             "app.processing.strategy.ocr.routing.assess_source",
             return_value=OcrAssessment(needs_ocr=True, pages=[], source="image"),
         ):
-            plan = strategy.plan(source, ExtractOptions(prefer_structure=True))
+            plan = strategy.plan(
+                source,
+                ExtractOptions(prefer_structure=True),
+                settings=Settings(paddle_ocr_enabled=True, liteparse_use_paddle_ocr=True),
+            )
         self.assertEqual(plan.route, OcrRoute.DEEP)
         self.assertIn("deep", [a.name for a in plan.liteparse_attempts])
 
@@ -220,7 +224,7 @@ class UnifiedOcrServiceTests(unittest.TestCase):
             with patch("app.processing.strategy.ocr.chains.easyocr_is_available", return_value=False):
                 results, backend = run_unified_ocr_for_liteparse(
                     b"img",
-                    settings=Settings(liteparse_use_paddle_ocr=True, upload_dir=Path("/tmp")),
+                    settings=Settings(paddle_ocr_enabled=True, liteparse_use_paddle_ocr=True, upload_dir=Path("/tmp")),
                 )
         self.assertTrue(backend.startswith("deep:"))
 

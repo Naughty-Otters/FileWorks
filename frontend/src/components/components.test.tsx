@@ -248,6 +248,8 @@ describe("ExtractOptionsPanel", () => {
     render(<ExtractOptionsPanel options={DEFAULT_EXTRACT_OPTIONS} onChange={onChange} />);
     await user.click(screen.getByText(/Parse options/));
     expect(screen.getAllByText("Doc preprocessor").length).toBeGreaterThan(0);
+    expect(screen.getByText("Preserve images")).toBeInTheDocument();
+    expect(screen.getByText("Keep original charts and figures next to the extracted text")).toBeInTheDocument();
     expect(screen.getByText("Uses AI to read images and scanned PDFs")).toBeInTheDocument();
     expect(screen.queryByText(/Vision LLM/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/API key/i)).not.toBeInTheDocument();

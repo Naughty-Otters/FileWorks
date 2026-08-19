@@ -320,8 +320,18 @@ async def list_engines() -> list[EngineInfo]:
 @router.post("/warmup", response_model=HealthResponse)
 async def warmup() -> HealthResponse:
     """Eagerly load the server-configured OCR engine (uses baked weights, no download)."""
+    from app.processing import paddle_gate
+
     settings = get_settings()
     service = get_ocr_service()
+    if not paddle_gate.paddle_ocr_is_enabled(settings):
+        return _health_payload(
+            status="ok",
+            settings=settings,
+            service=service,
+            ocr_ready=False,
+            ocr_error="Paddle OCR is disabled (PADDLE_OCR_ENABLED=false)",
+        )
     try:
         service.ensure_loaded()
     except Exception as exc:  # noqa: BLE001
@@ -571,6 +581,7 @@ async def extract(
     ),
     use_ai: bool = Form(default=False),
     prefer_structure: bool = Form(default=False),
+    preserve_images: bool | str = Form(default=True),
     ocr_high_quality: bool = Form(default=False),
     use_doc_preprocessor: bool = Form(default=False),
     use_seal_recognition: bool = Form(default=False),
@@ -613,6 +624,7 @@ async def extract(
     options = ExtractOptions.from_form(
         use_ai=_form_bool(use_ai),
         prefer_structure=_form_bool(prefer_structure),
+        preserve_images=_form_bool(preserve_images),
         ocr_high_quality=_form_bool(ocr_high_quality),
         use_doc_preprocessor=_form_bool(use_doc_preprocessor),
         use_seal_recognition=_form_bool(use_seal_recognition),

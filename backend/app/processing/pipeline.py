@@ -65,9 +65,13 @@ class DocumentPipeline:
         include_engine_json: bool = False,
     ) -> dict[str, Any]:
         """Run Read + structure stages; return API-compatible dict."""
+        from app.processing.pipeline_config import get_pipeline_spec
+
+        spec = get_pipeline_spec()
         source = SourceFile.from_path(file_path, filename=filename, mime_type=mime_type)
         opts = options or DEFAULT_EXTRACT_OPTIONS
-        source = self._prepare_ocr_input.prepare(source, opts)
+        if spec.stage_enabled("prepare_ocr_input"):
+            source = self._prepare_ocr_input.prepare(source, opts)
         result = self.read(source, options=opts, preferred_output=preferred_output)
         result = self._postprocess(result, opts, source)
         _log_used_engine(result, filename=source.filename)
@@ -79,7 +83,8 @@ class DocumentPipeline:
             include_engine_json=include_engine_json,
         )
         for stage in self._structure_stages:
-            stage.run(ctx)
+            if spec.stage_enabled(stage.id):
+                stage.run(ctx)
 
         # Keep ReadResult markdown in sync when Project replaced it.
         if ctx.markdown and ctx.markdown != result.markdown():
@@ -170,12 +175,18 @@ class DocumentPipeline:
 
     def _postprocess(self, result: ReadResult, options: ExtractOptions, source: SourceFile) -> ReadResult:
         from app.core.config import get_settings
+        from app.processing.pipeline_config import get_pipeline_spec
         from app.processing.postprocess.media import embed_read_result_media
 
-        result = embed_read_result_media(result, source)
+        spec = get_pipeline_spec()
+        if spec.stage_enabled("media"):
+            result = embed_read_result_media(
+                result, source, preserve_images=options.preserve_images
+            )
         settings = get_settings()
         if (
-            options.use_ai
+            spec.stage_enabled("structure_edit")
+            and options.use_ai
             and result.engine_id != "llm"
             and not settings.llm_lambda_function
         ):
@@ -187,6 +198,9 @@ class DocumentPipeline:
                 result = editor.apply(result)
         lang = options.normalized_target_lang()
         if not lang:
+            return result
+        if not spec.stage_enabled("translate"):
+            logger.info("Translate stage is disabled; skipping target_lang=%s", lang)
             return result
         if settings.llm_lambda_function:
             raise RuntimeError("Translation must run on the LLM Lambda")

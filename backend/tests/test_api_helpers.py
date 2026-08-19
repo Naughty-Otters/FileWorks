@@ -146,7 +146,9 @@ class HealthRouteTests(unittest.TestCase):
         pipeline = MagicMock()
         pipeline.list_readers.return_value = []
         translator = SimpleNamespace(describe=lambda: {"ready": False, "configured": False, "error": "off"})
-        with patch("app.api.routes.get_ocr_service", return_value=svc), patch(
+        with patch("app.processing.paddle_gate.paddle_ocr_is_enabled", return_value=True), patch(
+            "app.api.routes.get_ocr_service", return_value=svc
+        ), patch(
             "app.api.routes.get_markdown_translator", return_value=translator
         ), patch("app.api.routes.get_document_pipeline", return_value=pipeline):
             res = client.post("/api/warmup")

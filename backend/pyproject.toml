@@ -51,8 +51,15 @@ name = "paddle"
 url = "https://www.paddlepaddle.org.cn/packages/stable/cpu/"
 explicit = true
 
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [tool.uv.sources]
 paddlepaddle = { index = "paddle" }
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
 
 [project.optional-dependencies]
 # Runtime readers for the API image. Local Compose, staging, and prod all
@@ -65,6 +72,8 @@ docling = [
 liteparse = [
     "liteparse>=2.12.0,<2.13",
     "easyocr>=1.7.2",
+    "torch",
+    "torchvision",
 ]
 
 [build-system]

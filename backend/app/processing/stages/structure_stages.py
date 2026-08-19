@@ -28,6 +28,8 @@ def _has_rich_markup(markdown: str) -> bool:
             "<b>",
             "style=",
             "**",
+            "data:image",
+            "![",
         )
     )
 

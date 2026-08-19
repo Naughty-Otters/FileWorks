@@ -67,9 +67,11 @@ class LiteParseReader(Reader):
         source: SourceFile,
         options: ExtractOptions | None = None,
     ) -> Capability:
-        settings = get_settings()
-        if not settings.liteparse_enabled:
-            return Capability.no("LiteParse is disabled (LITEPARSE_ENABLED=false)")
+        from app.processing.pipeline_config import get_pipeline_spec
+
+        blocked = get_pipeline_spec(get_settings()).reader_disabled_reason(self.id)
+        if blocked:
+            return Capability.no(blocked)
         if not liteparse_is_available():
             detail = _LITEPARSE_IMPORT_ERROR or "import failed"
             return Capability.no(f"liteparse extra is not installed ({detail})")

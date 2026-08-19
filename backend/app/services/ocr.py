@@ -59,6 +59,11 @@ class OCRService:
         return self.registry.describe()
 
     def ensure_loaded(self) -> None:
+        from app.processing import paddle_gate
+
+        if not paddle_gate.paddle_ocr_is_enabled(self.settings):
+            logger.info("Skipping Paddle load; PADDLE_OCR_ENABLED=false")
+            return
         engine = self.registry.select_engine()
         self._last_engine_id = engine.id
         try:
@@ -82,6 +87,10 @@ class OCRService:
         *,
         mime_type: str | None = None,
     ) -> dict[str, Any]:
+        from app.processing import paddle_gate
+
+        if not paddle_gate.paddle_ocr_is_enabled(self.settings):
+            raise RuntimeError("Paddle OCR is disabled (PADDLE_OCR_ENABLED=false)")
         opts = options or DEFAULT_EXTRACT_OPTIONS
         engine = self.registry.select_engine()
         self._last_engine_id = engine.id

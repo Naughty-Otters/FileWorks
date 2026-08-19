@@ -50,12 +50,22 @@ class V1ConvertTests(unittest.TestCase):
         option_names = [item["name"] for item in body["options"]]
         self.assertIn("use_ai", option_names)
         self.assertIn("prefer_structure", option_names)
+        self.assertIn("preserve_images", option_names)
+        preserve = next(item for item in body["options"] if item["name"] == "preserve_images")
+        self.assertTrue(preserve["default"])
         self.assertIn("ocr_high_quality", option_names)
         self.assertIn("target_lang", option_names)
         self.assertIn("use_table_recognition", option_names)
         self.assertIn("credits", body)
         self.assertEqual(body["credits"]["standard_per_page"], 1)
         self.assertEqual(body["credits"]["ai_per_page"], 3)
+        self.assertIn("pipeline", body)
+        self.assertEqual(
+            [item["id"] for item in body["pipeline"]["readers"]],
+            ["text", "docling", "anydoc", "llm", "liteparse", "ocr"],
+        )
+        paddle = next(item for item in body["pipeline"]["ocr_backends"] if item["id"] == "paddle")
+        self.assertFalse(paddle["enabled"])
 
     def test_guest_cannot_convert(self) -> None:
         principal = Principal(plan=get_plan("anonymous"), anonymous_id="anon")

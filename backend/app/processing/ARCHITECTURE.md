@@ -33,6 +33,17 @@ ExportStage                     # structure-backed html/json/docx; md/txt from m
 **Recognition invariant:** Normalize / Fill / Project / Export never call `Reader.read()`
 or re-run OCR/Docling/LLM recognition. They only reshape what Read already produced.
 
+## Pipeline config
+
+Deploy-time enable/disable for every stage, reader, and OCR backend lives in
+``processing/pipeline_config.py`` (`PipelineSpec.from_settings`). Per-request
+``ExtractOptions`` overlay it and cannot turn on a disabled engine.
+
+Inspect the live spec: ``GET /api/v1/convert`` → ``pipeline``.
+
+Existing env flags map onto that spec (`PADDLE_OCR_ENABLED`, `LITEPARSE_ENABLED`,
+`EASYOCR_ENABLED`, `SURYA_ENABLED`, `ANYDOC_ENABLED`, `DOCLING_ENABLED`, …).
+
 ## Reader priority
 
 | Reader | id | priority | Role |

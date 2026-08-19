@@ -97,7 +97,7 @@ class UrlResolutionCornerTests(unittest.TestCase):
 
 class LiteparsePlanCornerTests(unittest.TestCase):
     def test_easyocr_disabled_skips_fast_attempt(self) -> None:
-        settings = Settings(easyocr_enabled=False, liteparse_use_paddle_ocr=True)
+        settings = Settings(easyocr_enabled=False, paddle_ocr_enabled=True, liteparse_use_paddle_ocr=True)
         assessment = OcrAssessment(needs_ocr=True, pages=[])
         attempts = build_liteparse_attempts(OcrRoute.FAST, assessment, settings)
         self.assertEqual([a.name for a in attempts], ["tesseract", "deep"])
@@ -258,6 +258,7 @@ class ChainNegativeTests(unittest.TestCase):
                     results, backend = run_deep_ocr_chain(
                         b"img",
                         settings=Settings(
+                            paddle_ocr_enabled=True,
                             liteparse_use_paddle_ocr=True,
                             surya_enabled=True,
                             upload_dir=Path("/tmp"),
@@ -272,7 +273,7 @@ class ChainNegativeTests(unittest.TestCase):
             with patch("app.processing.strategy.ocr.chains.run_paddle_ocr_for_liteparse", return_value=strong):
                 results, backend = run_unified_ocr_for_liteparse(
                     b"img",
-                    settings=Settings(liteparse_use_paddle_ocr=True, upload_dir=Path("/tmp")),
+                    settings=Settings(paddle_ocr_enabled=True, liteparse_use_paddle_ocr=True, upload_dir=Path("/tmp")),
                 )
         self.assertTrue(backend.startswith("deep:"))
 
@@ -285,7 +286,7 @@ class ChainNegativeTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     run_unified_ocr_for_liteparse(
                         b"img",
-                        settings=Settings(liteparse_use_paddle_ocr=True, upload_dir=Path("/tmp")),
+                        settings=Settings(paddle_ocr_enabled=True, liteparse_use_paddle_ocr=True, upload_dir=Path("/tmp")),
                     )
 
 

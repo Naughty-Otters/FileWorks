@@ -41,7 +41,7 @@ class OcrPrepareTests(unittest.TestCase):
             image = Path(tmp) / "photo.jpg"
             _jpeg(image, (400, 300))
             source = SourceFile.from_path(image)
-            self.assertTrue(should_prepare_ocr_input(source))
+            self.assertTrue(should_prepare_ocr_input(source, Settings(paddle_ocr_enabled=True)))
 
             docx = Path(tmp) / "doc.docx"
             docx.write_bytes(b"not-a-real-docx")
@@ -54,7 +54,11 @@ class OcrPrepareTests(unittest.TestCase):
             image = root / "scan.jpg"
             _jpeg(image, (3000, 4000))
             source = SourceFile.from_path(image)
-            settings = Settings(ocr_max_input_side_default=1754, ocr_platform_max_input_side=None)
+            settings = Settings(
+                paddle_ocr_enabled=True,
+                ocr_max_input_side_default=1754,
+                ocr_platform_max_input_side=None,
+            )
             prepared = prepare_ocr_input(
                 source, ExtractOptions(), settings=settings, work_dir=root
             )
@@ -67,7 +71,12 @@ class OcrPrepareTests(unittest.TestCase):
             image = root / "small.jpg"
             _jpeg(image, (800, 600))
             source = SourceFile.from_path(image)
-            prepared = prepare_ocr_input(source, ExtractOptions(), work_dir=root)
+            prepared = prepare_ocr_input(
+                source,
+                ExtractOptions(),
+                settings=Settings(paddle_ocr_enabled=True),
+                work_dir=root,
+            )
             self.assertEqual(prepared.path, source.path)
 
     def test_high_quality_allows_larger_output(self) -> None:
@@ -80,6 +89,7 @@ class OcrPrepareTests(unittest.TestCase):
                 source,
                 ExtractOptions(ocr_high_quality=True),
                 settings=Settings(
+                    paddle_ocr_enabled=True,
                     ocr_max_input_side_default=1754,
                     ocr_max_input_side_high=2480,
                     ocr_platform_max_input_side=1200,
@@ -121,7 +131,7 @@ class OcrPrepareTests(unittest.TestCase):
                 prepared = prepare_ocr_input(
                     source,
                     ExtractOptions(),
-                    settings=Settings(ocr_platform_max_input_side=1200),
+                    settings=Settings(paddle_ocr_enabled=True, ocr_platform_max_input_side=1200),
                     work_dir=root,
                 )
             self.assertNotEqual(prepared.path, source.path)

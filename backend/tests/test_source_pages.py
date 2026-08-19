@@ -91,6 +91,25 @@ class PdfPageCountTests(unittest.TestCase):
             texts, with_text, count = pdf_text_layer_stats(path)
             self.assertEqual((texts, with_text, count), (["", ""], 0, 2))
 
+    def test_rasterize_pdf_bytes_returns_jpeg(self) -> None:
+        import pypdfium2 as pdfium
+
+        from app.services.pages import rasterize_pdf_bytes
+
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "one.pdf"
+            document = pdfium.PdfDocument.new()
+            try:
+                document.new_page(72, 72)
+                document.save(str(path))
+            finally:
+                document.close()
+            raster = rasterize_pdf_bytes(path.read_bytes())
+        self.assertIsNotNone(raster)
+        jpeg, mime = raster
+        self.assertEqual(mime, "image/jpeg")
+        self.assertTrue(jpeg.startswith(b"\xff\xd8"))
+
 
 class PdfTextLayerTests(unittest.TestCase):
     def test_normalize_collapses_blank_runs(self) -> None:

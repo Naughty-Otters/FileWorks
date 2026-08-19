@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from app.core.config import get_settings
 from app.processing.models import Capability, DocumentOutput, OutputKind, ReadResult, SourceFile
 from app.processing.reading.base import Reader
 from app.services.options import ExtractOptions
@@ -42,6 +43,11 @@ class TextReader(Reader):
         source: SourceFile,
         options: ExtractOptions | None = None,
     ) -> Capability:
+        from app.processing.pipeline_config import get_pipeline_spec
+
+        blocked = get_pipeline_spec(get_settings()).reader_disabled_reason(self.id)
+        if blocked:
+            return Capability.no(blocked)
         del options
         if source.suffix in TEXT_SUFFIXES:
             return Capability.yes(f"passthrough {source.suffix}", confidence=1.0)

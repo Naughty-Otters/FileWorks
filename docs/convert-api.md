@@ -60,6 +60,7 @@ Response fields:
 | `targets` | Output formats (`available` may be false) |
 | `languages` | `target_lang` ids |
 | `options` | Every form field: type, default, `available`, `allowed` |
+| `pipeline` | Deploy-time stages, readers, and OCR backends (`enabled` + per-engine `config`) |
 | `capabilities.ai` | Server can do AI reading |
 | `capabilities.translate` | Server can translate |
 
@@ -127,6 +128,7 @@ Booleans accept `true` / `false` / `1` / `0` / `yes` / `no` / `on`.
 | `download` | bool | `false` | no | If `true`, response is the file (`Content-Disposition: attachment`) instead of JSON. |
 | `use_ai` | bool | `false` | no | AI reading for images and scanned PDFs. Needs `capabilities.ai` and AI quota. |
 | `prefer_structure` | bool | `false` | no | PDF/scans try layout reading first; AnyDoc remains the fallback. Office still uses AnyDoc. |
+| `preserve_images` | bool | `true` | no | Keep original charts and figures next to extracted text on each page. |
 | `use_doc_preprocessor` | bool | `false` | no | Orientation / unwarping cleanup. |
 | `use_table_recognition` | bool | `true` | no | Recover grid / table layout. |
 | `use_formula_recognition` | bool | `false` | no | Math as LaTeX. |
