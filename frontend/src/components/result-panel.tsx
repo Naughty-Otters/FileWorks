@@ -18,6 +18,7 @@ import {
   downloadTextFile,
   exportMarkdownFile,
   getApiBase,
+  renderTemplate,
   type DownloadFormat,
   type ExtractResponse,
   type RegionBox,
@@ -48,6 +49,11 @@ type ResultPanelProps = {
   actions?: ReactNode;
   leadingToggle?: ReactNode;
   trailingToggle?: ReactNode;
+  renderedHtml?: string | null;
+  templateId?: string | null;
+  templateName?: string | null;
+  templateWarning?: string | null;
+  templateReturnFileType?: "docx" | "pdf";
 };
 
 const DOWNLOAD_OPTIONS: Array<{ id: DownloadFormat | "pdf"; label: string }> = [
@@ -99,6 +105,11 @@ export function ResultPanel({
   actions,
   leadingToggle,
   trailingToggle,
+  renderedHtml = null,
+  templateId = null,
+  templateName = null,
+  templateWarning = null,
+  templateReturnFileType = "docx",
 }: ResultPanelProps) {
   const [copied, setCopied] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
@@ -209,6 +220,33 @@ export function ResultPanel({
     }
   }
 
+  async function handleTemplateDownload() {
+    if (!templateId) return;
+    setExporting(true);
+    try {
+      if (templateReturnFileType === "pdf") {
+        const win = window.open("", "_blank");
+        if (win) {
+          win.document.write(renderedHtml || "<p>No preview available.</p>");
+          win.document.close();
+          win.focus();
+          window.setTimeout(() => win.print(), 300);
+        }
+        return;
+      }
+      const rendered = await renderTemplate(templateId, { markdown, variables: { markdown }, format: "docx" });
+      if (!rendered.docx) throw new Error("The render endpoint did not return a DOCX file");
+      const url = URL.createObjectURL(rendered.docx);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${templateName || "template-output"}.docx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const resultTab =
     view === "json" ? "json" : markdownMode === "edit" ? "source" : "markdown";
 
@@ -249,7 +287,7 @@ export function ResultPanel({
           {leadingToggle}
           <FileOutput size={15} className="shrink-0 text-[var(--accent)]" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{result?.filename || "Converted file"}</p>
+            <p className="truncate text-sm font-medium">{templateName || result?.filename || "Converted file"}</p>
             <p className="truncate text-[11px] text-[var(--ink-muted)]">
               {result
                 ? `${result.page_count} page${result.page_count === 1 ? "" : "s"}`
@@ -257,6 +295,11 @@ export function ResultPanel({
             </p>
           </div>
           {actions ? <div className="flex shrink-0 items-center">{actions}</div> : null}
+          {renderedHtml && templateId ? (
+            <button type="button" disabled={exporting} onClick={handleTemplateDownload} className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)]">
+              <Download size={12} /> {templateReturnFileType.toUpperCase()}
+            </button>
+          ) : null}
           {showToolbar && !toolbarVisible ? (
             <ShowMarkdownToolbarButton onClick={() => onToolbarVisibleChange?.(true)} />
           ) : null}
@@ -354,6 +397,11 @@ export function ResultPanel({
           ) : error ? (
             <div className="flex min-h-0 flex-1 items-center justify-center px-8 text-center">
               <p className="max-w-md text-sm text-[var(--danger)]">{error}</p>
+            </div>
+          ) : renderedHtml ? (
+            <div className="min-h-0 flex-1 overflow-auto bg-white text-slate-900">
+              {templateWarning ? <p className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">{templateWarning}</p> : null}
+              <div className="p-5" dangerouslySetInnerHTML={{ __html: renderedHtml }} />
             </div>
           ) : empty ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center text-[var(--ink-muted)]">

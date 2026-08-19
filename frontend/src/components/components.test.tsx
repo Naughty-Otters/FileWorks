@@ -258,6 +258,24 @@ describe("ExtractOptionsPanel", () => {
 });
 
 describe("ConvertControls", () => {
+  it("defaults to Standard output layout", () => {
+    render(
+      <ConvertControls
+        options={DEFAULT_EXTRACT_OPTIONS}
+        onChange={vi.fn()}
+        me={guestMe}
+        health={null}
+        loading={false}
+        canExtract={false}
+        quotaBlocked={false}
+        onConvert={vi.fn()}
+        onStop={vi.fn()}
+      />,
+    );
+    expect(screen.getByLabelText("Output layout")).toHaveValue("standard");
+    expect(screen.queryByLabelText("Return file type")).not.toBeInTheDocument();
+  });
+
   it("converts and opens options", async () => {
     const user = userEvent.setup();
     const onConvert = vi.fn();

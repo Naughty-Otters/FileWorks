@@ -31,6 +31,11 @@ type ConvertControlsProps = {
   onConvert: () => void;
   onStop: () => void;
   compact?: boolean;
+  outputLayout?: string;
+  templates?: Array<{ id: string; name: string }>;
+  returnFileType?: "docx" | "pdf";
+  onOutputLayoutChange?: (value: string) => void;
+  onReturnFileTypeChange?: (value: "docx" | "pdf") => void;
 };
 
 export function ConvertControls({
@@ -46,6 +51,11 @@ export function ConvertControls({
   onConvert,
   onStop,
   compact = false,
+  outputLayout = "standard",
+  templates = [],
+  returnFileType = "docx",
+  onOutputLayoutChange,
+  onReturnFileTypeChange,
 }: ConvertControlsProps) {
   const [open, setOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
@@ -91,6 +101,34 @@ export function ConvertControls({
     <div ref={rootRef} className={cn("flex items-center gap-2", compact && "min-w-0")}>
       {compact && fileName ? (
         <p className="hidden min-w-0 truncate text-sm text-[var(--ink-muted)] sm:block">{fileName}</p>
+      ) : null}
+      <label className="flex items-center gap-1.5 text-[11px] text-[var(--ink-muted)]">
+        <span className="hidden xl:inline">Output layout</span>
+        <select
+          aria-label="Output layout"
+          value={outputLayout}
+          disabled={loading}
+          onChange={(event) => onOutputLayoutChange?.(event.target.value)}
+          className="max-w-28 rounded-full border border-[var(--line)] bg-[var(--bg-panel)] px-2 py-1.5 text-xs text-[var(--ink)] outline-none sm:max-w-36"
+        >
+          <option value="standard">Standard</option>
+          {templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
+        </select>
+      </label>
+      {outputLayout !== "standard" ? (
+        <label className="flex items-center gap-1.5 text-[11px] text-[var(--ink-muted)]">
+          <span className="hidden xl:inline">Return file type</span>
+          <select
+            aria-label="Return file type"
+            value={returnFileType}
+            disabled={loading}
+            onChange={(event) => onReturnFileTypeChange?.(event.target.value as "docx" | "pdf")}
+            className="rounded-full border border-[var(--line)] bg-[var(--bg-panel)] px-2 py-1.5 text-xs text-[var(--ink)] outline-none"
+          >
+            <option value="docx">DOCX</option>
+            <option value="pdf">PDF</option>
+          </select>
+        </label>
       ) : null}
       <div className="relative">
         <button

@@ -7,6 +7,7 @@ import {
   setSession,
   type MeResponse,
 } from "@/lib/auth";
+import type { DesignDocument } from "@/design-pad/types";
 
 export type { MeResponse };
 
@@ -699,4 +700,96 @@ export function downloadTextFile(content: string, filename: string, mime: string
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
+}
+
+export type TemplateRecord = {
+  id: string;
+  name: string;
+  document: DesignDocument;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+function normalizeTemplate(payload: unknown): TemplateRecord {
+  const source = (payload && typeof payload === "object" && "template" in payload
+    ? (payload as { template: unknown }).template
+    : payload) as Record<string, unknown>;
+  const rawDocument = source.document ?? source.design_document ?? source.content;
+  const document = typeof rawDocument === "string" ? JSON.parse(rawDocument) : rawDocument;
+  return {
+    id: String(source.id),
+    name: String(source.name || source.title || "Untitled template"),
+    document: document as DesignDocument,
+    created_at: typeof source.created_at === "string" ? source.created_at : null,
+    updated_at: typeof source.updated_at === "string" ? source.updated_at : null,
+  };
+}
+
+export async function fetchTemplates(): Promise<TemplateRecord[]> {
+  const res = await apiFetch("/api/templates", { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Failed to load templates (${res.status})`));
+  const payload = await res.json();
+  const items = Array.isArray(payload) ? payload : payload?.items ?? payload?.templates ?? [];
+  return items.map(normalizeTemplate);
+}
+
+export async function createTemplate(input: { name: string; document: DesignDocument }): Promise<TemplateRecord> {
+  const res = await apiFetch("/api/templates", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(await readError(res, `Failed to create template (${res.status})`));
+  return normalizeTemplate(await res.json());
+}
+
+export async function fetchTemplate(id: string): Promise<TemplateRecord> {
+  const res = await apiFetch(`/api/templates/${encodeURIComponent(id)}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Failed to load template (${res.status})`));
+  return normalizeTemplate(await res.json());
+}
+
+export async function updateTemplate(
+  id: string,
+  input: { name: string; document: DesignDocument },
+): Promise<TemplateRecord> {
+  const res = await apiFetch(`/api/templates/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(await readError(res, `Failed to save template (${res.status})`));
+  return normalizeTemplate(await res.json());
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  const res = await apiFetch(`/api/templates/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await readError(res, `Failed to delete template (${res.status})`));
+}
+
+export type TemplateRenderResponse = {
+  html: string;
+  filename?: string;
+  docx?: Blob;
+};
+
+export async function renderTemplate(
+  id: string,
+  input: { markdown: string; variables?: Record<string, unknown>; format?: "html" | "docx" },
+): Promise<TemplateRenderResponse> {
+  const res = await apiFetch(`/api/templates/${encodeURIComponent(id)}/render`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(await readError(res, `Template render failed (${res.status})`));
+  const contentType = res.headers.get("Content-Type") || "";
+  if (contentType.includes("application/json")) {
+    const payload = await res.json();
+    return { html: payload.html ?? payload.rendered_html ?? "", filename: payload.filename };
+  }
+  if (input.format === "docx" || contentType.includes("wordprocessingml")) {
+    return { html: "", docx: await res.blob() };
+  }
+  return { html: await res.text() };
 }

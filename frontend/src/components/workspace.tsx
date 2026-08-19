@@ -12,12 +12,15 @@ import {
   fetchHistory,
   fetchHistoryDetail,
   fetchHistoryFile,
+  fetchTemplates,
   isAbortError,
+  renderTemplate,
   DEFAULT_EXTRACT_OPTIONS,
   type ExtractOptions,
   type ExtractResponse,
   type HealthResponse,
   type HistoryItem,
+  type TemplateRecord,
 } from "@/lib/api";
 import { AuthBar } from "@/components/auth-bar";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -37,6 +40,7 @@ import {
   saveWorkspacePrefs,
   type MarkdownMode,
 } from "@/lib/workspace-session";
+import { isStaticTemplate } from "@/design-pad/templating";
 
 const HistoryPanel = dynamic(
   () => import("@/components/history-panel").then((mod) => mod.HistoryPanel),
@@ -63,6 +67,11 @@ export function Workspace() {
   const [markdownDraft, setMarkdownDraft] = useState("");
   const [markdownMode, setMarkdownMode] = useState<MarkdownMode>("preview");
   const [markdownToolbar, setMarkdownToolbar] = useState(true);
+  const [templates, setTemplates] = useState<TemplateRecord[]>([]);
+  const [outputLayout, setOutputLayout] = useState("standard");
+  const [returnFileType, setReturnFileType] = useState<"docx" | "pdf">("docx");
+  const [renderedHtml, setRenderedHtml] = useState<string | null>(null);
+  const [templateWarning, setTemplateWarning] = useState<string | null>(null);
   const convertAbortRef = useRef<AbortController | null>(null);
   const convertRunIdRef = useRef<string | null>(null);
   const historySelectGenRef = useRef(0);
@@ -187,6 +196,11 @@ export function Workspace() {
   }, [authStatus, me?.user?.id, refreshHistory]);
 
   useEffect(() => {
+    if (!me?.user) return;
+    void fetchTemplates().then(setTemplates).catch(() => setTemplates([]));
+  }, [me?.user]);
+
+  useEffect(() => {
     const prefs = loadWorkspacePrefs();
     setView(prefs.view);
     setHistoryOpen(prefs.historyOpen);
@@ -260,13 +274,15 @@ export function Workspace() {
   }, [me]);
 
   const signedIn = Boolean(me?.user);
+  const selectedTemplate = signedIn ? templates.find((template) => template.id === outputLayout) || null : null;
+  const selectedTemplateStatic = selectedTemplate ? isStaticTemplate(selectedTemplate.document) : false;
   const quotaBlocked =
     signedIn && (me?.quota.remaining_day === 0 || me?.quota.remaining_month === 0);
   // Never cover the workspace with a boot gate. New visitors should see the
   // dropzone and a sign-in prompt immediately; history loads inside its panel.
   const uiLocked = loading || restoring;
   const canExtract =
-    Boolean(file) &&
+    (Boolean(file) || selectedTemplateStatic) &&
     !loading &&
     !restoring &&
     signedIn &&
@@ -286,7 +302,7 @@ export function Workspace() {
   }
 
   async function handleExtract() {
-    if (uiLocked || !file || !me?.user || !me.permissions["extract"]) return;
+    if (uiLocked || (!file && !selectedTemplateStatic) || !me?.user || !me.permissions["extract"]) return;
     stopActiveRun();
     const controller = new AbortController();
     convertAbortRef.current = controller;
@@ -295,11 +311,25 @@ export function Workspace() {
     setBusyKind("convert");
     setLoading(true);
     setError(null);
+    setRenderedHtml(null);
+    setTemplateWarning(null);
     try {
-      const data = await extractDocument(file, "both", extractOptions, controller.signal, {
-        directUpload: health?.direct_upload === true || health?.storage_backend === "s3",
-        runId,
-      });
+      const data = file
+        ? await extractDocument(file, "both", extractOptions, controller.signal, {
+            directUpload: health?.direct_upload === true || health?.storage_backend === "s3",
+            runId,
+          })
+        : {
+            filename: selectedTemplate?.name || "Template output",
+            content_type: "text/html",
+            size_bytes: 0,
+            engine: "FileWorks",
+            page_count: 1,
+            format: "both" as const,
+            markdown: "",
+            json: null,
+            pages: [],
+          };
       if (controller.signal.aborted) return;
       setResult(data);
       setMarkdownDraft(data.markdown || "");
@@ -307,13 +337,26 @@ export function Workspace() {
       setActiveRegionId(null);
       if (!data.markdown && data.json) setView("json");
       else setView("markdown");
-      if (data.id) {
-        historyCache.putDetail(data.id, data, null, file);
+      if (selectedTemplate) {
+        const rendered = await renderTemplate(selectedTemplate.id, {
+          markdown: data.markdown || "",
+          variables: { markdown: data.markdown || "" },
+          format: "html",
+        });
+        setRenderedHtml(rendered.html);
+        if (selectedTemplateStatic) {
+          setTemplateWarning("This template is static; its output ignores the uploaded document.");
+        }
       }
-      const items = await refreshHistory();
-      if (data.id && items) {
-        const summary = items.find((item) => item.id === data.id) ?? null;
-        historyCache.putDetail(data.id, data, summary, file);
+      if (file) {
+        if (data.id) {
+          historyCache.putDetail(data.id, data, null, file);
+        }
+        const items = await refreshHistory();
+        if (data.id && items) {
+          const summary = items.find((item) => item.id === data.id) ?? null;
+          historyCache.putDetail(data.id, data, summary, file);
+        }
       }
       await reloadSession().catch(() => undefined);
     } catch (err) {
@@ -343,6 +386,8 @@ export function Workspace() {
     setMarkdownDraft("");
     setMarkdownMode("preview");
     setError(null);
+    setRenderedHtml(null);
+    setTemplateWarning(null);
     setSelectedId(null);
     setActiveRegionId(null);
   }
@@ -421,10 +466,19 @@ export function Workspace() {
       health={health}
       loading={loading}
       canExtract={canExtract}
-      fileReady={Boolean(file)}
+      fileReady={Boolean(file) || selectedTemplateStatic}
       quotaBlocked={Boolean(quotaBlocked)}
       onConvert={handleExtract}
       onStop={handleStopConvert}
+      outputLayout={signedIn ? outputLayout : "standard"}
+      templates={signedIn ? templates : []}
+      returnFileType={returnFileType}
+      onOutputLayoutChange={(value) => {
+        setOutputLayout(value);
+        setRenderedHtml(null);
+        setTemplateWarning(null);
+      }}
+      onReturnFileTypeChange={setReturnFileType}
     />
   );
 
@@ -439,6 +493,12 @@ export function Workspace() {
             PDF & Office → Markdown · AI reading & translation
           </p>
           <div className="ml-auto flex items-center gap-1.5">
+            <a
+              href="/templates"
+              className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+            >
+              Templates
+            </a>
             <a
               href="/pricing"
               className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
@@ -555,6 +615,11 @@ export function Workspace() {
                   </>
                 )
               }
+              renderedHtml={renderedHtml}
+              templateId={selectedTemplate?.id || null}
+              templateName={selectedTemplate?.name || null}
+              templateWarning={templateWarning}
+              templateReturnFileType={returnFileType}
             />
           </div>
           {historyOpen ? (
