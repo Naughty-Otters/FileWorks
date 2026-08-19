@@ -20,6 +20,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from app.core.config import Settings
 from app.processing.models import OutputKind
 from app.processing.pipeline import DocumentPipeline
 from app.services.options import ExtractOptions
@@ -344,6 +345,7 @@ class PreferStructureRoutingTests(unittest.TestCase):
     def _order(self, path: Path, **kwargs) -> list[str]:
         from app.processing.decision import PriorityFallbackDecisionMaker
         from app.processing.models import SourceFile
+        from app.processing.reading.registry import ReaderRegistry
         from unittest.mock import patch
 
         source = SourceFile(
@@ -352,9 +354,14 @@ class PreferStructureRoutingTests(unittest.TestCase):
             mime_type="application/pdf",
             suffix=".pdf",
         )
-        with patch("app.processing.paddle_gate.paddle_ocr_is_enabled", return_value=True):
+        ocr_settings = Settings(paddle_ocr_enabled=True)
+        with (
+            patch("app.core.config.get_settings", return_value=ocr_settings),
+            patch("app.processing.paddle_gate.paddle_ocr_is_enabled", return_value=True),
+        ):
+            readers = ReaderRegistry(settings=ocr_settings).all()
             candidates = PriorityFallbackDecisionMaker().decide(
-                source, DocumentPipeline().readers.all(), ExtractOptions(**kwargs)
+                source, readers, ExtractOptions(**kwargs)
             )
         return [reader.id for reader, _ in candidates]
 

@@ -51,11 +51,10 @@ class OCRReader(Reader):
         options: ExtractOptions | None = None,
     ) -> Capability:
         del options
-        from app.processing.pipeline_config import get_pipeline_spec
+        from app.processing import paddle_gate
 
-        blocked = get_pipeline_spec(get_settings()).reader_disabled_reason(self.id)
-        if blocked:
-            return Capability.no(blocked)
+        if not paddle_gate.paddle_ocr_is_enabled():
+            return Capability.no("Paddle OCR is disabled (PADDLE_OCR_ENABLED=false)")
         if source.is_image:
             return Capability.yes("raster image — OCR", confidence=1.0)
         if source.suffix == ".pdf":

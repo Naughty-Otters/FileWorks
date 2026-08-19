@@ -66,6 +66,23 @@ class V1ConvertTests(unittest.TestCase):
         )
         paddle = next(item for item in body["pipeline"]["ocr_backends"] if item["id"] == "paddle")
         self.assertFalse(paddle["enabled"])
+        stage_ids = [item["id"] for item in body["pipeline"]["stages"]]
+        self.assertEqual(
+            stage_ids,
+            [
+                "prepare_ocr_input",
+                "read",
+                "media",
+                "structure_edit",
+                "translate",
+                "normalize",
+                "fill",
+                "project",
+                "export",
+            ],
+        )
+        tesseract = next(item for item in body["pipeline"]["ocr_backends"] if item["id"] == "tesseract")
+        self.assertTrue(tesseract["enabled"])
 
     def test_guest_cannot_convert(self) -> None:
         principal = Principal(plan=get_plan("anonymous"), anonymous_id="anon")

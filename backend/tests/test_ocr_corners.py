@@ -102,6 +102,29 @@ class LiteparsePlanCornerTests(unittest.TestCase):
         attempts = build_liteparse_attempts(OcrRoute.FAST, assessment, settings)
         self.assertEqual([a.name for a in attempts], ["tesseract", "deep"])
 
+    def test_surya_only_still_plans_deep(self) -> None:
+        settings = Settings(
+            easyocr_enabled=False,
+            paddle_ocr_enabled=False,
+            liteparse_use_paddle_ocr=True,
+            surya_enabled=True,
+        )
+        assessment = OcrAssessment(needs_ocr=True, pages=[])
+        attempts = build_liteparse_attempts(OcrRoute.DEEP, assessment, settings)
+        self.assertEqual([a.name for a in attempts], ["tesseract", "deep"])
+
+    def test_explicit_unified_url_ignores_backend_flags(self) -> None:
+        settings = Settings(
+            ocr_unified_server_url="https://ocr.example/ocr",
+            easyocr_enabled=False,
+            paddle_ocr_enabled=False,
+            surya_enabled=False,
+        )
+        assessment = OcrAssessment(needs_ocr=True, pages=[])
+        attempts = build_liteparse_attempts(OcrRoute.FAST, assessment, settings)
+        self.assertEqual([a.name for a in attempts], ["custom"])
+        self.assertEqual(attempts[0].ocr_server_url, "https://ocr.example/ocr")
+
     def test_no_deep_backends_skips_deep_attempt(self) -> None:
         settings = Settings(
             easyocr_enabled=True,
@@ -407,7 +430,7 @@ class ReaderOrderingCornerTests(unittest.TestCase):
         maker = PriorityFallbackReaderOrdering()
         source = SourceFile(path=Path("scan.png"), filename="scan.png", suffix=".png")
         settings = Settings(llm_priority_fallback=88)
-        with patch("app.processing.strategy.reader.llm.llm_vision_ready", return_value=False):
+        with patch("app.processing.strategy.reader.priority.llm_vision_ready", return_value=False):
             with patch(
                 "app.processing.strategy.reader.priority.get_settings",
                 return_value=settings,

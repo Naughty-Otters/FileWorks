@@ -44,7 +44,7 @@ class WorkerCrashed(RuntimeError):
 
 
 def _convert_from_message(message: dict[str, Any]) -> dict[str, Any]:
-    from app.services.cancel_token import cancel_scope, check_cancelled
+    from app.services.cancel_token import cancel_scope, check_cancelled, is_cancelled
     from app.services.convert import convert_document
     from app.services.options import ExtractOptions
 
@@ -52,6 +52,9 @@ def _convert_from_message(message: dict[str, Any]) -> dict[str, Any]:
     run_id = str(message.get("run_id") or "").strip() or None
     with cancel_scope(run_id):
         check_cancelled(where="worker start")
+        if os.environ.get("FW_TEST_SLOW_CONVERT"):
+            while not is_cancelled(run_id):
+                time.sleep(0.05)
         return convert_document(
             Path(message["path"]),
             output_format=message.get("output_format", "both"),

@@ -23,6 +23,9 @@ from app.processing.postprocess.media import (
     embed_read_result_media,
     extract_pdf_images,
     normalize_image_bytes,
+    place_images,
+    protect_embedded_images,
+    restore_embedded_images,
     to_data_url,
     _pdf_object_bytes,
     _pdf_object_to_image,
@@ -69,6 +72,46 @@ class MediaGapTests(unittest.TestCase):
         huge.save(buf, format="JPEG", quality=95)
         resized = normalize_image_bytes(buf.getvalue(), "image/jpeg")
         self.assertIsNotNone(resized)
+
+    def test_normalize_without_pil(self) -> None:
+        data = b"fake-image-bytes"
+        with patch.dict("sys.modules", {"PIL": None}):
+            out = normalize_image_bytes(data, "image/png")
+        self.assertEqual(out, (data, "image/png"))
+
+    def test_normalize_without_pil_rejects_non_image(self) -> None:
+        with patch.dict("sys.modules", {"PIL": None}):
+            self.assertIsNone(normalize_image_bytes(b"x", None))
+
+    def test_place_images_empty_budget(self) -> None:
+        md = place_images(
+            "hello",
+            [EmbeddedImage(alt="a", data=_png(), mime="image/png")],
+            budget=0,
+        )
+        self.assertEqual(md, "hello")
+
+    def test_protect_and_restore_embedded_images(self) -> None:
+        url = to_data_url(_png(), "image/png")
+        md = f"Intro ![a]({url}) tail"
+        protected, held = protect_embedded_images(md)
+        self.assertNotIn("data:image", protected)
+        restored = restore_embedded_images(protected, held)
+        self.assertIn("data:image", restored)
+        kept = restore_embedded_images("missing @@FWIMG9@@ token", held, drop_missing=False)
+        self.assertIn("@@FWIMG9@@", kept)
+
+    def test_place_images_skips_bad_data_and_uses_appendix(self) -> None:
+        md = "Page one\n\n---\n\nPage two mentions logo"
+        images = [
+            EmbeddedImage(alt="chart", data=_png(), mime="image/png", page=1),
+            EmbeddedImage(alt="tiny", data=b"x", mime="image/png", page=1),
+            EmbeddedImage(alt="logo", data=_png(), mime="image/png", page=2),
+            EmbeddedImage(alt="orphan", data=_png(), mime="image/png", page=99),
+        ]
+        out = place_images(md, images, budget=4)
+        self.assertIn("data:image", out)
+        self.assertIn("Embedded images", out)
 
     def test_embed_raster_source(self) -> None:
         with NamedTemporaryFile(suffix=".png", delete=False) as handle:
@@ -226,6 +269,58 @@ class MediaGapTests(unittest.TestCase):
         extract.assert_not_called()
         self.assertNotIn("data:image", updated.markdown())
 
+    def test_preserve_images_skips_already_embedded_digest(self) -> None:
+        with NamedTemporaryFile(suffix=".pdf", delete=False) as handle:
+            handle.write(b"%PDF-1.4\n")
+            path = Path(handle.name)
+        source = SourceFile.from_path(path, mime_type="application/pdf")
+        data, mime = normalize_image_bytes(_png())
+        url = to_data_url(data, mime)
+        result = ReadResult(
+            engine_id="anydoc",
+            engine_label="AnyDoc",
+            outputs=[DocumentOutput(kind=OutputKind.MARKDOWN, content=f"Intro ![fig]({url})")],
+            pages=[{"page": 1, "markdown": f"Intro ![fig]({url})"}],
+            page_count=1,
+        )
+        with patch(
+            "app.processing.postprocess.media.extract_pdf_images",
+            return_value=[EmbeddedImage(alt="dup", data=data, mime=mime, page=1)],
+        ):
+            updated = embed_read_result_media(result, source, preserve_images=True)
+        self.assertEqual(count_embedded_images(updated.pages[0]["markdown"]), 1)
+
+    def test_preserve_images_off_skips_source_raster(self) -> None:
+        with NamedTemporaryFile(suffix=".png", delete=False) as handle:
+            handle.write(_png())
+            path = Path(handle.name)
+        source = SourceFile.from_path(path, mime_type="image/png")
+        result = ReadResult(
+            engine_id="ocr",
+            engine_label="OCR",
+            outputs=[DocumentOutput(kind=OutputKind.MARKDOWN, content="Hello logo")],
+            pages=[{"page": 1, "markdown": "Hello logo"}],
+        )
+        updated = embed_read_result_media(result, source, preserve_images=False)
+        self.assertNotIn("data:image", updated.markdown())
+
+    def test_docx_does_not_extract_pdf_xobjects(self) -> None:
+        with NamedTemporaryFile(suffix=".docx", delete=False) as handle:
+            handle.write(b"PK")
+            path = Path(handle.name)
+        source = SourceFile.from_path(path, mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        result = ReadResult(
+            engine_id="anydoc",
+            engine_label="AnyDoc",
+            outputs=[DocumentOutput(kind=OutputKind.MARKDOWN, content="Office text")],
+            pages=[{"page": 1, "markdown": "Office text"}],
+            page_count=1,
+        )
+        with patch("app.processing.postprocess.media.extract_pdf_images") as extract:
+            updated = embed_read_result_media(result, source, preserve_images=True)
+        extract.assert_not_called()
+        self.assertNotIn("data:image", updated.markdown())
+
 
 class MarkdownGapTests(unittest.TestCase):
     def test_pil_and_resolve(self) -> None:
@@ -364,6 +459,65 @@ class OCRFallbackTests(unittest.TestCase):
             get_svc.return_value.registry = registry
             with self.assertRaises(RuntimeError):
                 reader.read(SourceFile(path=Path("a.png"), filename="a.png", suffix=".png"))
+
+    def test_prefer_structure_skips_flat_structure_output(self) -> None:
+        reader = OCRReader()
+        flat = ExtractResult(engine="Structure", page_count=1, markdown="word " * 80)
+        good = ExtractResult(engine="OCR", page_count=1, markdown="# structured", json_data={})
+        structure = MagicMock()
+        structure.id = "structure"
+        structure.label = "Structure"
+        structure.extract.return_value = flat
+        structure.ensure_ready.return_value = None
+        ocr = MagicMock()
+        ocr.id = "ocr"
+        ocr.label = "OCR"
+        ocr.extract.return_value = good
+        ocr.ensure_ready.return_value = None
+        registry = MagicMock()
+        registry.get.side_effect = lambda pid: structure if pid == "structure" else ocr
+        with (
+            patch("app.processing.paddle_gate.paddle_ocr_is_enabled", return_value=True),
+            patch("app.processing.reading.ocr.get_ocr_service") as get_svc,
+            patch("app.processing.reading.ocr.markdown_looks_flat", return_value=True),
+        ):
+            get_svc.return_value.registry = registry
+            source = SourceFile(path=Path("a.png"), filename="a.png", suffix=".png")
+            result = reader.read(source, options=ExtractOptions(prefer_structure=True))
+        self.assertIn("structured", result.markdown())
+
+    def test_empty_markdown_returns_last_provider_result(self) -> None:
+        reader = OCRReader()
+        empty = ExtractResult(engine="OCR", page_count=1, markdown="")
+        structure = MagicMock()
+        structure.id = "structure"
+        structure.label = "Structure"
+        structure.extract.return_value = empty
+        structure.ensure_ready.return_value = None
+        ocr = MagicMock()
+        ocr.id = "ocr"
+        ocr.label = "OCR"
+        ocr.extract.return_value = empty
+        ocr.ensure_ready.return_value = None
+        registry = MagicMock()
+        registry.get.side_effect = lambda pid: ocr if pid == "ocr" else structure
+        with (
+            patch("app.processing.paddle_gate.paddle_ocr_is_enabled", return_value=True),
+            patch("app.processing.reading.ocr.get_ocr_service") as get_svc,
+        ):
+            get_svc.return_value.registry = registry
+            source = SourceFile(path=Path("a.png"), filename="a.png", suffix=".png")
+            result = reader.read(source)
+        self.assertEqual(result.engine_id, "ocr")
+
+    def test_can_process_image_suffixes(self) -> None:
+        reader = OCRReader()
+        with patch("app.processing.paddle_gate.paddle_ocr_is_enabled", return_value=True):
+            tiff = SourceFile(path=Path("a.tiff"), filename="a.tiff", suffix=".tiff")
+            self.assertTrue(reader.can_process(tiff).supported)
+            self.assertFalse(reader.can_process(
+                SourceFile(path=Path("a.txt"), filename="a.txt", suffix=".txt")
+            ).supported)
 
     def test_registry_get_and_register(self) -> None:
         class Extra(Reader):
@@ -564,6 +718,13 @@ class ExtraEngineTests(unittest.TestCase):
             with TestClient(app) as client:
                 self.assertTrue(getattr(client.app, "title", True))
 
+    def test_app_main_entrypoint(self) -> None:
+        from app.__main__ import main
+
+        with patch("uvicorn.run") as run:
+            main()
+        run.assert_called_once()
+
     def test_google_verify(self) -> None:
         from app.core.config import get_settings
         from app.auth.google import verify_google_id_token
@@ -644,6 +805,143 @@ class ExtraEngineTests(unittest.TestCase):
             txt = SourceFile(path=Path("a.txt"), filename="a.txt", suffix=".txt")
             self.assertFalse(reader.can_process(txt, ExtractOptions(use_ai=True)).supported)
             self.assertFalse(reader.can_process(img, ExtractOptions(use_ai=False)).supported)
+
+
+class PipelineStageGapTests(unittest.TestCase):
+    def test_text_layer_probe_failure(self) -> None:
+        from app.processing.models import SourceFile
+        from app.processing.strategy.reader.priority import _has_pdf_text_layer
+
+        source = SourceFile(path=Path("a.pdf"), filename="a.pdf", suffix=".pdf")
+        with patch(
+            "app.services.pages.pdf_has_text_layer_majority",
+            side_effect=RuntimeError("bad pdf"),
+        ):
+            self.assertFalse(_has_pdf_text_layer(source))
+
+    def test_normalize_stage_without_raw(self) -> None:
+        from app.processing.stages.base import PipelineContext
+        from app.processing.stages.structure_stages import FillStage, NormalizeStage
+        from app.processing.models import SourceFile
+
+        ctx = PipelineContext(
+            source=SourceFile(path=Path("a.txt"), filename="a.txt", suffix=".txt"),
+            options=ExtractOptions(),
+            raw=None,
+        )
+        NormalizeStage().run(ctx)
+        FillStage().run(ctx)
+        self.assertIsNone(ctx.structure)
+
+    def test_project_stage_without_raw(self) -> None:
+        from app.processing.stages.base import PipelineContext
+        from app.processing.stages.structure_stages import ProjectStage
+        from app.processing.models import SourceFile
+
+        ctx = PipelineContext(
+            source=SourceFile(path=Path("a.txt"), filename="a.txt", suffix=".txt"),
+            options=ExtractOptions(),
+            raw=None,
+        )
+        ProjectStage().run(ctx)
+        self.assertEqual(ctx.markdown, "")
+
+
+class StructureProjectGapTests(unittest.TestCase):
+    def test_table_and_block_variants(self) -> None:
+        from app.processing.structure.project import project_markdown
+        from app.processing.structure.schema import (
+            StructureBlock,
+            StructureDocument,
+            StructureTable,
+            StructureTableCell,
+        )
+
+        table = StructureTable(
+            rows=2,
+            cols=2,
+            cells=[
+                StructureTableCell(r=0, c=0, text="H1", is_header=True, align="center"),
+                StructureTableCell(r=0, c=1, text="H2", is_header=True, style="color:red"),
+                StructureTableCell(r=1, c=0, text="A", rs=2, cs=1),
+                StructureTableCell(r=1, c=1, text="B"),
+            ],
+        )
+        html_table = StructureTable(rows=1, cols=1, html="<table><tr><td>x</td></tr></table>")
+        doc = StructureDocument(
+            engine="test",
+            page_count=2,
+            blocks=[
+                StructureBlock(id="empty", page=1, label="table", table=StructureTable(), order=0),
+                StructureBlock(id="html", page=1, label="table", table=html_table, order=0.5),
+                StructureBlock(id="t", page=1, label="table", table=table, order=1),
+                StructureBlock(id="title", page=1, label="doc_title", rich_text="# Rich title", order=1.5),
+                StructureBlock(id="f", page=1, label="formula", text="E=mc2", order=2),
+                StructureBlock(id="f2", page=1, label="formula", text="$E=mc^2$", order=2.5),
+                StructureBlock(id="c", page=2, label="code", text="print(1)", order=1),
+                StructureBlock(
+                    id="c2",
+                    page=2,
+                    label="code",
+                    text="```python\nprint(2)\n```",
+                    order=1.5,
+                ),
+                StructureBlock(
+                    id="i",
+                    page=2,
+                    label="image",
+                    text='<img src="data:image/png;base64,abc">',
+                    order=2,
+                ),
+                StructureBlock(id="a", page=2, label="aside_text", text="aside note", order=2.5),
+                StructureBlock(id="h", page=2, label="header", text="skip me", order=3),
+                StructureBlock(
+                    id="fn",
+                    page=2,
+                    label="footnote",
+                    rich_text="<em>note</em>",
+                    order=4,
+                ),
+            ],
+        )
+        markdown = project_markdown(doc)
+        self.assertIn("<table", markdown)
+        self.assertIn("rowspan", markdown)
+        self.assertIn("# Rich title", markdown)
+        self.assertIn("$E=mc^2$", markdown)
+        self.assertIn("```python", markdown)
+        self.assertIn("<img src=", markdown)
+        self.assertIn("<aside>", markdown)
+        self.assertIn("$$", markdown)
+
+
+class WorkerSlowConvertTests(unittest.TestCase):
+    def test_slow_convert_loop_exits_on_cancel(self) -> None:
+        import os
+        import threading
+        import time
+
+        from app.services.cancel_token import mark_cancelled, reset_local_tokens
+        from app.services.worker import _convert_from_message
+
+        reset_local_tokens()
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "a.txt"
+            path.write_text("hi", encoding="utf-8")
+
+            def cancel_soon() -> None:
+                time.sleep(0.08)
+                mark_cancelled("run-1")
+
+            threading.Thread(target=cancel_soon, daemon=True).start()
+            with (
+                patch.dict(os.environ, {"FW_TEST_SLOW_CONVERT": "1"}),
+                patch("app.services.convert.convert_document", return_value={"markdown": "ok"}),
+            ):
+                payload = _convert_from_message(
+                    {"path": str(path), "run_id": "run-1", "options": {}}
+                )
+        self.assertEqual(payload["markdown"], "ok")
 
 
 if __name__ == "__main__":

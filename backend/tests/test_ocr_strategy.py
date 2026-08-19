@@ -193,6 +193,27 @@ class OcrChainTests(unittest.TestCase):
         self.assertTrue(backend.startswith("deep:"))
         self.assertEqual(results, strong)
 
+    def test_fast_chain_raises_when_easyocr_disabled(self) -> None:
+        with self.assertRaises(RuntimeError) as ctx:
+            run_fast_ocr_chain(
+                b"img",
+                settings=Settings(easyocr_enabled=False, upload_dir=Path("/tmp")),
+            )
+        self.assertIn("No OCR backends", str(ctx.exception))
+
+    def test_deep_chain_raises_when_paddle_and_surya_off(self) -> None:
+        with self.assertRaises(RuntimeError) as ctx:
+            run_deep_ocr_chain(
+                b"img",
+                settings=Settings(
+                    paddle_ocr_enabled=False,
+                    liteparse_use_paddle_ocr=True,
+                    surya_enabled=False,
+                    upload_dir=Path("/tmp"),
+                ),
+            )
+        self.assertIn("No OCR backends", str(ctx.exception))
+
 
 class QualityTests(unittest.TestCase):
     def test_markdown_is_weak(self) -> None:

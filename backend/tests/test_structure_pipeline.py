@@ -254,6 +254,51 @@ class NormalizeFillProjectTests(unittest.TestCase):
         self.assertIn("![chart](data:image/png;base64,abc)", projected)
         self.assertIn("Notes", projected)
 
+    def test_html_img_and_image_only_page_become_image_blocks(self) -> None:
+        result = ReadResult(
+            engine_id="anydoc",
+            engine_label="AnyDoc",
+            outputs=[
+                DocumentOutput(
+                    kind=OutputKind.MARKDOWN,
+                    content='Caption\n\n<img src="data:image/png;base64,abc" alt="c">',
+                )
+            ],
+            pages=[
+                {
+                    "page": 1,
+                    "markdown": 'Caption\n\n<img src="data:image/png;base64,abc" alt="c">',
+                },
+                {"page": 2, "markdown": "![Page 2](data:image/jpeg;base64,xyz)"},
+            ],
+            page_count=2,
+        )
+        doc = normalize_read_result(result)
+        assert doc is not None
+        by_page = {}
+        for block in doc.blocks:
+            by_page.setdefault(block.page, []).append(block.label)
+        self.assertEqual(by_page[1], ["text", "image"])
+        self.assertEqual(by_page[2], ["image"])
+        self.assertIn("data:image/png;base64,abc", doc.blocks[1].image_ref or "")
+
+    def test_joined_markdown_fallback_splits_pages(self) -> None:
+        from app.services.pages import PAGE_SEPARATOR
+
+        md = f"Page one\n\n![a](data:image/png;base64,aa){PAGE_SEPARATOR}Page two"
+        result = ReadResult(
+            engine_id="anydoc",
+            engine_label="AnyDoc",
+            outputs=[DocumentOutput(kind=OutputKind.MARKDOWN, content=md)],
+            pages=[],
+            page_count=2,
+        )
+        doc = normalize_read_result(result)
+        assert doc is not None
+        self.assertEqual({block.page for block in doc.blocks}, {1, 2})
+        self.assertTrue(any(block.label == "image" and block.page == 1 for block in doc.blocks))
+        self.assertEqual([block.text for block in doc.blocks if block.page == 2], ["Page two"])
+
     def test_project_keeps_engine_markdown_that_already_has_figures(self) -> None:
         from pathlib import Path
 

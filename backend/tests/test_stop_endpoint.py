@@ -47,6 +47,7 @@ class StopEndpointTests(unittest.TestCase):
 
         monkeypatch.setenv("CONVERT_IN_SUBPROCESS", "true")
         monkeypatch.setenv("CONVERT_MAX_CONCURRENT", "1")
+        monkeypatch.setenv("FW_TEST_SLOW_CONVERT", "1")
         get_settings.cache_clear()
         reset_conversion_gate()
         yield
@@ -91,9 +92,8 @@ class StopEndpointTests(unittest.TestCase):
         assert handle is not None
         self.assertIsNotNone(handle.worker, "run never got a worker process")
 
-        # Let the child get properly into the work (model load / OCR), so this
-        # covers killing real inference rather than just an idle worker.
-        idle.wait(4.0)
+        # Let the child enter the slow conversion loop before we cancel.
+        idle.wait(0.5)
         self.assertTrue(worker_thread.is_alive(), "conversion finished before we could stop it")
 
         stopped_at = threading.Event()

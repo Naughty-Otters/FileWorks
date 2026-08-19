@@ -200,7 +200,26 @@ class LegacyModuleReexportTests(unittest.TestCase):
 
 class LlmVisionReadyTests(unittest.TestCase):
     def test_not_ready_without_provider(self) -> None:
-        self.assertFalse(llm_vision_ready(Settings()))
+        settings = Settings(
+            llm_provider=None,
+            llm_api_key=None,
+            llm_lambda_function=None,
+            openai_api_key=None,
+            anthropic_api_key=None,
+            claude_api_key=None,
+            deepseek_api_key=None,
+            openrouter_api_key=None,
+            fireworks_api_key=None,
+            grok_api_key=None,
+            xai_api_key=None,
+            kimi_api_key=None,
+            moonshot_api_key=None,
+            glm_api_key=None,
+            zhipu_api_key=None,
+            gemini_api_key=None,
+            google_api_key=None,
+        )
+        self.assertFalse(llm_vision_ready(settings))
 
     def test_ready_when_configured(self) -> None:
         settings = Settings(llm_provider="openai", llm_api_key="sk-test", llm_model="gpt-4o")
