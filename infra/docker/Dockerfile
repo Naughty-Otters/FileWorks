@@ -7,7 +7,7 @@
 # `fw push-image` overrides the model-cache context with the previously
 # published image so qemu does not re-import Docling/OpenCV.
 FROM scratch AS model-cache
-COPY infra/docker/empty-dot-cache /var/task/.cache
+COPY infra/docker/empty-dot-cache /var/task/.cache/
 
 FROM public.ecr.aws/docker/library/python:3.12-slim-bookworm
 
@@ -57,15 +57,17 @@ RUN rm -rf /var/task/.venv/lib/python3.12/site-packages/nvidia \
 RUN python -c "from pathlib import Path; old='cv.gapi.wip.GStreamerPipeline = cv.gapi_wip_gst_GStreamerPipeline'; new='cv.gapi.wip.GStreamerPipeline = getattr(cv, \"gapi_wip_gst_GStreamerPipeline\", None)';\
 [p.write_text(p.read_text().replace(old,new), encoding='utf-8') for p in Path('/var/task/.venv/lib').glob('python*/site-packages/cv2/gapi/__init__.py') if old in p.read_text()]"
 
-# Bake weights into the image. Runtime HOME=/tmp is scratch and the VPC has no NAT.
-# Keep PYTHONPATH off the prefetch layer: duplicating site-packages on sys.path
-# makes OpenCV's gapi import crash under qemu.
+# `fw push-image` overrides the model-cache context with the previously
+# published image so qemu does not re-import Docling/OpenCV. Older images
+# may not have /var/task/.cache yet — copy when present, else start empty.
 ENV DOCLING_ARTIFACTS_PATH=/var/task/.cache/docling/models \
     HF_HOME=/var/task/.cache/huggingface \
     EASYOCR_MODEL_DIR=/var/task/.cache/easyocr \
     PADDLE_PDX_CACHE_HOME=/var/task/.cache/paddlex \
     TMPDIR=/tmp
-COPY --from=model-cache /var/task/.cache /var/task/.cache
+RUN --mount=from=model-cache,target=/mc,readonly \
+    mkdir -p /var/task/.cache \
+    && if [ -d /mc/var/task/.cache ]; then cp -a /mc/var/task/.cache/. /var/task/.cache/; fi
 COPY infra/docker/prefetch-models.py /var/task/prefetch-models.py
 RUN python /var/task/prefetch-models.py && rm /var/task/prefetch-models.py
 

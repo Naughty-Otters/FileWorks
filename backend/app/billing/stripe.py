@@ -383,14 +383,27 @@ def _prefer_subscription(
 
 
 def _list_customer_subscriptions(stripe, customer_id: str) -> list[dict[str, Any]]:
-    listed = _as_dict(
-        stripe.Subscription.list(
-            customer=customer_id,
-            status="all",
-            limit=10,
-            expand=["data.items.data.price.product"],
+    """List subscriptions for a customer.
+
+    Stripe caps list expands at four levels, so ``data.items.data.price.product``
+    (five) fails. Product metadata is resolved from price id / metadata instead.
+    """
+    kwargs: dict[str, Any] = {
+        "customer": customer_id,
+        "status": "all",
+        "limit": 10,
+    }
+    try:
+        listed = _as_dict(
+            stripe.Subscription.list(**kwargs, expand=["data.items.data.price"])
         )
-    )
+    except Exception as exc:  # noqa: BLE001
+        if _stripe_customer_missing(exc):
+            raise
+        if "expand more than" in str(exc).lower():
+            listed = _as_dict(stripe.Subscription.list(**kwargs))
+        else:
+            raise
     data = listed.get("data") or []
     if not isinstance(data, list):
         return []
@@ -417,13 +430,40 @@ def _load_subscription_pool(stripe, user: User) -> list[dict[str, Any]]:
     retrieved_ws = _retrieve_subscription(stripe, user.stripe_subscription_id)
     retrieved_api = _retrieve_subscription(stripe, user.stripe_api_subscription_id)
     listed: list[dict[str, Any]] | None = None
+    stale_customer = False
     if user.stripe_customer_id:
         try:
             listed = _list_customer_subscriptions(stripe, user.stripe_customer_id)
         except Exception as exc:  # noqa: BLE001
-            if retrieved_ws is None and retrieved_api is None:
+            if _stripe_customer_missing(exc):
+                logger.warning(
+                    "Clearing stale Stripe customer %s during subscription sync for user %s",
+                    user.stripe_customer_id,
+                    user.id,
+                )
+                _clear_stripe_customer_links(user)
+                stale_customer = True
+                listed = None
+            elif "expand more than" in str(exc).lower():
+                logger.warning(
+                    "Stripe subscription list expand failed for %s; retrying without expand",
+                    user.stripe_customer_id,
+                )
+                try:
+                    listed = _list_customer_subscriptions(stripe, user.stripe_customer_id)
+                except Exception as retry_exc:  # noqa: BLE001
+                    if _stripe_customer_missing(retry_exc):
+                        _clear_stripe_customer_links(user)
+                        stale_customer = True
+                        listed = None
+                    elif retrieved_ws is None and retrieved_api is None:
+                        raise RuntimeError("Stripe subscription list failed") from retry_exc
+                    else:
+                        listed = None
+            elif retrieved_ws is None and retrieved_api is None:
                 raise RuntimeError("Stripe subscription list failed") from exc
-            listed = None
+            else:
+                listed = None
     pool: list[dict[str, Any]] = []
     if listed:
         pool.extend(listed)
@@ -431,6 +471,8 @@ def _load_subscription_pool(stripe, user: User) -> list[dict[str, Any]]:
         if retrieved and not any(row.get("id") == retrieved.get("id") for row in pool):
             pool.append(retrieved)
     if not pool and retrieved_ws is None and retrieved_api is None and listed is None:
+        if stale_customer:
+            return []
         raise RuntimeError("Stripe subscription lookup failed")
     return pool
 
@@ -446,16 +488,75 @@ def _find_customer_by_email(stripe, email: str) -> str | None:
     ids = [str(row.get("id") or "") for row in rows if row.get("id")]
     if not ids:
         return None
-    if len(ids) == 1:
-        return ids[0]
-    for customer_id in ids:
+    valid_ids = [cid for cid in ids if _retrieve_stripe_customer(stripe, cid) is not None]
+    if not valid_ids:
+        return None
+    if len(valid_ids) == 1:
+        return valid_ids[0]
+    for customer_id in valid_ids:
         try:
             subs = _list_customer_subscriptions(stripe, customer_id)
         except Exception:  # noqa: BLE001
             continue
         if any(str(row.get("status") or "") in ACTIVE_STATUSES for row in subs):
             return customer_id
-    return ids[0]
+    return valid_ids[0]
+
+
+def _stripe_customer_missing(exc: Exception) -> bool:
+    """True when Stripe says the stored customer id no longer exists."""
+    if "no such customer" in str(exc).lower():
+        return True
+    return getattr(exc, "code", None) == "resource_missing" and getattr(exc, "param", None) == "customer"
+
+
+def _clear_stripe_customer_links(user: User) -> None:
+    user.stripe_customer_id = None
+    user.stripe_subscription_id = None
+    user.stripe_api_subscription_id = None
+
+
+def _persist_user(db: Session, user: User) -> None:
+    db.add(user)
+    flush = getattr(db, "flush", None)
+    if callable(flush):
+        flush()
+
+
+def _retrieve_stripe_customer(stripe, customer_id: str) -> dict[str, Any] | None:
+    """Return a live customer, or None if Stripe has deleted / never had this id.
+
+    ``Customer.retrieve`` of a deleted customer succeeds with ``deleted: true``.
+    Checkout then fails with "No such customer" and no retrieve traceback, which
+    is what prod was logging.
+    """
+    try:
+        row = _as_dict(stripe.Customer.retrieve(customer_id))
+    except Exception as exc:  # noqa: BLE001
+        if _stripe_customer_missing(exc):
+            logger.warning("Stripe customer %s is missing: %s", customer_id, exc)
+            return None
+        raise
+    if not row.get("id") or row.get("deleted"):
+        logger.warning("Stripe customer %s is deleted or empty", customer_id)
+        return None
+    return row
+
+
+def _create_stripe_customer(db: Session, user: User, stripe) -> str | None:
+    created = _as_dict(
+        stripe.Customer.create(
+            email=user.email,
+            name=user.name or None,
+            metadata={"user_id": str(user.id)},
+        )
+    )
+    customer_id = str(created.get("id") or "") or None
+    if not customer_id:
+        return None
+    user.stripe_customer_id = customer_id
+    _persist_user(db, user)
+    return customer_id
 
 
 def _ensure_stripe_customer(
@@ -466,22 +567,23 @@ def _ensure_stripe_customer(
     create: bool,
 ) -> str | None:
     if user.stripe_customer_id:
-        return user.stripe_customer_id
-    customer_id = _find_customer_by_email(stripe, user.email)
-    if not customer_id and create:
-        created = _as_dict(
-            stripe.Customer.create(
-                email=user.email,
-                name=user.name or None,
-                metadata={"user_id": str(user.id)},
-            )
+        if _retrieve_stripe_customer(stripe, user.stripe_customer_id) is not None:
+            return user.stripe_customer_id
+        logger.warning(
+            "Clearing stale Stripe customer %s for user %s",
+            user.stripe_customer_id,
+            user.id,
         )
-        customer_id = str(created.get("id") or "") or None
-    if not customer_id:
+        _clear_stripe_customer_links(user)
+        _persist_user(db, user)
+    customer_id = _find_customer_by_email(stripe, user.email)
+    if customer_id:
+        user.stripe_customer_id = customer_id
+        _persist_user(db, user)
+        return customer_id
+    if not create:
         return None
-    user.stripe_customer_id = customer_id
-    db.add(user)
-    return customer_id
+    return _create_stripe_customer(db, user, stripe)
 
 
 def _apply_product_from_pool(
@@ -851,30 +953,44 @@ def create_checkout_session(
                     detail="Stripe could not open a plan-change confirmation",
                 )
             return {"url": confirm_url, "updated": False, "plan": target}
-        session = _as_dict(
-            stripe.checkout.Session.create(
-                mode="subscription",
-                customer=customer_id,
-                client_reference_id=str(user.id),
-                metadata={"user_id": str(user.id), "plan": target, "fileworks_product": bucket},
-                subscription_data={
-                    "metadata": {
-                        "user_id": str(user.id),
-                        "plan": target,
-                        "fileworks_plan": target,
-                        "fileworks_product": bucket,
-                    }
-                },
-                line_items=(
-                    [{"price": price_id, "quantity": 1}]
-                    if price_id
-                    else [_checkout_line_item(target, settings)]
-                ),
-                success_url=f"{_app_url(settings)}{dest}?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{_app_url(settings)}{dest}?checkout=cancel",
-                allow_promotion_codes=True,
-            )
+        checkout_kwargs = dict(
+            mode="subscription",
+            customer=customer_id,
+            client_reference_id=str(user.id),
+            metadata={"user_id": str(user.id), "plan": target, "fileworks_product": bucket},
+            subscription_data={
+                "metadata": {
+                    "user_id": str(user.id),
+                    "plan": target,
+                    "fileworks_plan": target,
+                    "fileworks_product": bucket,
+                }
+            },
+            line_items=(
+                [{"price": price_id, "quantity": 1}]
+                if price_id
+                else [_checkout_line_item(target, settings)]
+            ),
+            success_url=f"{_app_url(settings)}{dest}?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{_app_url(settings)}{dest}?checkout=cancel",
+            allow_promotion_codes=True,
         )
+        try:
+            session = _as_dict(stripe.checkout.Session.create(**checkout_kwargs))
+        except Exception as exc:  # noqa: BLE001
+            if not _stripe_customer_missing(exc):
+                raise
+            logger.warning(
+                "Checkout customer %s rejected by Stripe; creating a new customer",
+                customer_id,
+            )
+            _clear_stripe_customer_links(user)
+            _persist_user(db, user)
+            customer_id = _create_stripe_customer(db, user, stripe)
+            if not customer_id:
+                raise HTTPException(status_code=502, detail="Could not create a Stripe customer") from exc
+            checkout_kwargs["customer"] = customer_id
+            session = _as_dict(stripe.checkout.Session.create(**checkout_kwargs))
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
