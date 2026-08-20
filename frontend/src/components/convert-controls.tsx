@@ -80,6 +80,8 @@ export function ConvertControls({
   const optionCount = (
     Object.keys(DEFAULT_EXTRACT_OPTIONS) as Array<keyof ExtractOptions>
   ).filter((key) => options[key] !== DEFAULT_EXTRACT_OPTIONS[key]).length;
+  const layoutCustom = outputLayout !== "standard";
+  const badgeCount = optionCount + (layoutCustom ? 1 : 0);
 
   useEffect(() => {
     if (!open) return;
@@ -97,65 +99,81 @@ export function ConvertControls({
     };
   }, [open]);
 
-  return (
-    <div ref={rootRef} className={cn("flex items-center gap-2", compact && "min-w-0")}>
-      {compact && fileName ? (
-        <p className="hidden min-w-0 truncate text-sm text-[var(--ink-muted)] sm:block">{fileName}</p>
-      ) : null}
-      <label className="flex items-center gap-1.5 text-[11px] text-[var(--ink-muted)]">
-        <span className="hidden xl:inline">Output layout</span>
+  const outputFields = (
+    <div className="space-y-2">
+      <label className="flex flex-col gap-1.5 text-[11px] text-[var(--ink-muted)]">
+        <span className="uppercase tracking-[0.12em]">Output layout</span>
         <select
           aria-label="Output layout"
           value={outputLayout}
           disabled={loading}
           onChange={(event) => onOutputLayoutChange?.(event.target.value)}
-          className="max-w-28 rounded-full border border-[var(--line)] bg-[var(--bg-panel)] px-2 py-1.5 text-xs text-[var(--ink)] outline-none sm:max-w-36"
+          className="w-full rounded-xl border border-[var(--line)] bg-[var(--bg-panel)] px-3 py-2 text-sm text-[var(--ink)] outline-none"
         >
           <option value="standard">Standard</option>
-          {templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
+          {templates.map((template) => (
+            <option key={template.id} value={template.id}>
+              {template.name}
+            </option>
+          ))}
         </select>
       </label>
-      {outputLayout !== "standard" ? (
-        <label className="flex items-center gap-1.5 text-[11px] text-[var(--ink-muted)]">
-          <span className="hidden xl:inline">Return file type</span>
+      {layoutCustom ? (
+        <label className="flex flex-col gap-1.5 text-[11px] text-[var(--ink-muted)]">
+          <span className="uppercase tracking-[0.12em]">Return file type</span>
           <select
             aria-label="Return file type"
             value={returnFileType}
             disabled={loading}
             onChange={(event) => onReturnFileTypeChange?.(event.target.value as "docx" | "pdf")}
-            className="rounded-full border border-[var(--line)] bg-[var(--bg-panel)] px-2 py-1.5 text-xs text-[var(--ink)] outline-none"
+            className="w-full rounded-xl border border-[var(--line)] bg-[var(--bg-panel)] px-3 py-2 text-sm text-[var(--ink)] outline-none"
           >
             <option value="docx">DOCX</option>
             <option value="pdf">PDF</option>
           </select>
         </label>
       ) : null}
+    </div>
+  );
+
+  return (
+    <div ref={rootRef} className={cn("flex shrink-0 items-center gap-1.5", compact && "min-w-0")}>
+      {compact && fileName ? (
+        <p className="hidden min-w-0 truncate text-sm text-[var(--ink-muted)] sm:block">{fileName}</p>
+      ) : null}
       <div className="relative">
         <button
           type="button"
+          aria-label="Options"
           aria-expanded={open}
           aria-haspopup="dialog"
+          title="Conversion options"
           onClick={() => setOpen((value) => !value)}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-medium transition",
-            open || optionCount > 0
+            "inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition",
+            open || badgeCount > 0
               ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
               : "border-[var(--line)] bg-[var(--bg-panel)] text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)]",
+            compact && "px-2",
           )}
         >
           <Settings2 size={14} />
-          Options
-          {optionCount > 0 ? (
-            <span className="rounded-full bg-[var(--accent)] px-1.5 text-[10px] text-white dark:text-[#06281d]">
-              {optionCount}
+          {!compact ? <span>Options</span> : null}
+          {badgeCount > 0 ? (
+            <span className="rounded-full bg-[var(--accent)] px-1.5 text-[10px] leading-[16px] text-white dark:text-[#06281d]">
+              {badgeCount}
             </span>
           ) : null}
         </button>
         {open ? (
           <div className="absolute right-0 top-full z-30 mt-2 max-h-[min(70vh,34rem)] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-[var(--line)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow)]">
+            <p className="mb-2 px-1 text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">
+              Output
+            </p>
+            {outputFields}
             <label
               className={cn(
-                "flex items-center gap-3 rounded-xl border px-3 py-2.5",
+                "mt-3 flex items-center gap-3 rounded-xl border px-3 py-2.5",
                 options.use_ai
                   ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                   : "border-[var(--line)]",
@@ -256,7 +274,7 @@ export function ConvertControls({
         <button
           type="button"
           onClick={onStop}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[var(--danger)] bg-[color-mix(in_oklab,var(--danger)_12%,transparent)] px-4 py-2 text-sm font-medium text-[var(--danger)]"
+          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--danger)] bg-[color-mix(in_oklab,var(--danger)_12%,transparent)] px-3 text-sm font-medium text-[var(--danger)]"
         >
           <Square size={13} fill="currentColor" />
           Stop
@@ -265,7 +283,15 @@ export function ConvertControls({
         <button
           type="button"
           disabled={!fileReady}
-          title={!fileReady ? "Choose a file to convert" : gate !== "ready" ? convertGateTitle(gate) : undefined}
+          title={
+            !fileReady
+              ? "Choose a file to convert"
+              : gate !== "ready"
+                ? convertGateTitle(gate)
+                : options.use_ai
+                  ? "Convert with AI"
+                  : "Convert"
+          }
           onClick={() => {
             if (gate !== "ready") {
               setPolicyOpen(true);
@@ -273,10 +299,10 @@ export function ConvertControls({
             }
             onConvert();
           }}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition enabled:hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-45 dark:text-[#06281d]"
+          className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--accent)] px-3 text-sm font-medium text-white transition enabled:hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-45 dark:text-[#06281d]"
         >
-          <Sparkles size={15} />
-          {options.use_ai ? "Convert with AI" : "Convert"}
+          <Sparkles size={14} />
+          {options.use_ai ? "AI Convert" : "Convert"}
         </button>
       )}
       {policyOpen ? (

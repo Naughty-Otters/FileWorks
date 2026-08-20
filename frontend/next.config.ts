@@ -1,20 +1,27 @@
-const staticExport = process.env.FILEWORKS_STATIC_EXPORT === "1";
-const emptyPolyfill = "./src/lib/empty-polyfill.ts";
+import path from "node:path";
+import type { NextConfig } from "next";
+import type { Configuration as WebpackConfig } from "webpack";
 
-// Next always `require("../build/polyfills/polyfill-module")` from app-globals.
-// Package-path aliases do not match that relative request, so Lighthouse still
-// sees Array.prototype.at / Object.hasOwn / etc. in the client bundle.
-const polyfillAliases = {
-  "../build/polyfills/polyfill-module": emptyPolyfill,
-  "../build/polyfills/polyfill-nomodule": emptyPolyfill,
+const staticExport = process.env.FILEWORKS_STATIC_EXPORT === "1";
+const emptyPolyfill = path.join(__dirname, "src/lib/empty-polyfill.ts");
+
+// Next always pulls polyfill-module from app-globals. Package-path aliases do
+// not always match that relative request (especially under webpack), so we
+ // map both the public package paths and rewrite relative polyfill requires.
+const polyfillPackageAliases: Record<string, string> = {
   "next/dist/build/polyfills/polyfill-module": emptyPolyfill,
   "next/dist/esm/build/polyfills/polyfill-module": emptyPolyfill,
   "next/dist/build/polyfills/polyfill-nomodule": emptyPolyfill,
   "next/dist/esm/build/polyfills/polyfill-nomodule": emptyPolyfill,
 };
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+const polyfillTurbopackAliases: Record<string, string> = {
+  "../build/polyfills/polyfill-module": emptyPolyfill,
+  "../build/polyfills/polyfill-nomodule": emptyPolyfill,
+  ...polyfillPackageAliases,
+};
+
+const nextConfig: NextConfig = {
   ...(staticExport
     ? {
         output: "export" as const,
@@ -33,13 +40,21 @@ const nextConfig = {
   // Keep tooling rooted at the frontend package (nested git / monorepo safety).
   turbopack: {
     root: __dirname,
-    resolveAlias: polyfillAliases,
+    resolveAlias: polyfillTurbopackAliases,
   },
-  webpack(config: { resolve: { alias?: Record<string, string> } }) {
+  webpack(config: WebpackConfig, { webpack }) {
+    config.resolve = config.resolve || {};
     config.resolve.alias = {
-      ...config.resolve.alias,
-      ...polyfillAliases,
+      ...(config.resolve.alias as Record<string, string | false | string[]>),
+      ...polyfillPackageAliases,
     };
+    config.plugins = config.plugins || [];
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /[\\/]next[\\/]dist[\\/](?:esm[\\/])?build[\\/]polyfills[\\/]polyfill-(?:no)?module(?:\.js)?$/,
+        emptyPolyfill,
+      ),
+    );
     return config;
   },
   // Omitted entirely for `output: export`, which warns about any rewrites key.

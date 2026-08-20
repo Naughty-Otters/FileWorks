@@ -26,7 +26,7 @@ export function TemplateShell({ children, fixed = false }: { children: ReactNode
         </div>
       </header>
       {children}
-      <SiteFooter compact />
+      {fixed ? null : <SiteFooter compact />}
     </div>
   );
 }

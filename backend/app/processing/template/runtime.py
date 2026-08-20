@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import copy
+import json
 import re
 from collections.abc import Mapping
 from typing import Any
 
-from app.processing.template.schema import DesignDocument, DesignNode
+from app.processing.template.schema import DesignDocument, DesignNode, VariableSchema
 
 TOKEN_RE = re.compile(r"\{\{\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*)\s*\}\}")
 
@@ -24,12 +25,46 @@ def template_analysis(document: DesignDocument) -> tuple[bool, list[str]]:
     used = used_variables(document)
     repeaters = [node for node in document.iter_nodes() if node.repeat is not None]
     warnings: list[str] = []
-    declared = set(document.variables)
+    declared = set(document.variable_map())
     undeclared = sorted({name.split(".", 1)[0] for name in used} - declared)
     if undeclared:
         warnings.append(f"Undeclared variables used: {', '.join(undeclared)}")
     is_static = not declared and not used and not repeaters
     return is_static, warnings
+
+
+def _parse_default(variable: VariableSchema) -> Any:
+    raw = (variable.sample_value or "").strip()
+    if variable.type == "list":
+        if not raw:
+            return []
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, list) else []
+        except json.JSONDecodeError:
+            return []
+    if variable.type == "object":
+        if not raw:
+            return {}
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+    if raw:
+        return raw
+    if variable.type == "number":
+        return "0"
+    if variable.type == "currency":
+        return "$0.00"
+    if variable.type in {"text", "date"}:
+        return (variable.label or variable.name or "").strip()
+    return ""
+
+
+def default_context(document: DesignDocument) -> dict[str, Any]:
+    """Build a render context from each variable's default / sample value."""
+    return {name: _parse_default(variable) for name, variable in document.variable_map().items()}
 
 
 def resolve_path(context: Mapping[str, Any], path: str) -> Any:

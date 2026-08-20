@@ -18,13 +18,16 @@ from app.core.config import get_settings
 from app.db.models import Base
 from app.db.session import get_db
 from app.processing.template.extract import extract_template_context, extraction_schema
+from app.processing.template.render import render_docx, render_html
 from app.processing.template.runtime import (
     auto_layout,
+    default_context,
     expand_repeats,
     interpolate,
+    resolve_path,
     template_analysis,
 )
-from app.processing.template.schema import DesignDocument
+from app.processing.template.schema import DesignDocument, VariableSchema
 from app.storage import get_document_store
 from app.storage.s3 import S3DocumentStore
 from app.storage.templates import (
@@ -212,3 +215,281 @@ def test_static_template_crud_and_render_skips_llm() -> None:
     session.close()
     get_template_store.cache_clear()
     get_document_store.cache_clear()
+
+
+def test_default_context_parses_sample_values() -> None:
+    document = DesignDocument.model_validate(
+        {
+            "version": 2,
+            "pageSize": {"w": 850, "h": 1100},
+            "root": {
+                "id": "root",
+                "kind": "box",
+                "label": "Document",
+                "x": 0,
+                "y": 0,
+                "w": 850,
+                "h": 1100,
+                "children": [],
+            },
+            "variables": [
+                {"id": "1", "name": "items", "label": "Items", "type": "list", "sampleValue": '[{"a":1}]'},
+                {"id": "2", "name": "bad_list", "label": "Bad", "type": "list", "sampleValue": "nope"},
+                {"id": "3", "name": "empty_list", "label": "Empty", "type": "list", "sampleValue": ""},
+                {"id": "4", "name": "customer", "label": "Customer", "type": "object", "sampleValue": '{"name":"Ada"}'},
+                {"id": "5", "name": "bad_obj", "label": "BadObj", "type": "object", "sampleValue": "["},
+                {"id": "6", "name": "empty_obj", "label": "EmptyObj", "type": "object", "sampleValue": ""},
+                {"id": "7", "name": "qty", "label": "Qty", "type": "number", "sampleValue": ""},
+                {"id": "8", "name": "price", "label": "Price", "type": "currency", "sampleValue": ""},
+                {"id": "9", "name": "co", "label": "Acme", "type": "text", "sampleValue": ""},
+                {"id": "10", "name": "logo", "label": "Logo", "type": "image", "sampleValue": ""},
+                {"id": "11", "name": "note", "label": "Note", "type": "text", "sampleValue": " hello "},
+                {"id": "12", "name": "not_list", "label": "NL", "type": "list", "sampleValue": '{"x":1}'},
+                {"id": "13", "name": "not_obj", "label": "NO", "type": "object", "sampleValue": "[1]"},
+            ],
+        }
+    )
+    ctx = default_context(document)
+    assert ctx["items"] == [{"a": 1}]
+    assert ctx["bad_list"] == []
+    assert ctx["empty_list"] == []
+    assert ctx["customer"] == {"name": "Ada"}
+    assert ctx["bad_obj"] == {}
+    assert ctx["empty_obj"] == {}
+    assert ctx["qty"] == "0"
+    assert ctx["price"] == "$0.00"
+    assert ctx["co"] == "Acme"
+    assert ctx["logo"] == ""
+    assert ctx["note"] == "hello"
+    assert ctx["not_list"] == []
+    assert ctx["not_obj"] == {}
+
+
+def test_resolve_path_and_interpolate_collections() -> None:
+    context = {"rows": [{"name": "A"}, {"name": "B"}], "meta": {"n": 1}}
+    assert resolve_path(context, "rows.0.name") == "A"
+    assert resolve_path(context, "rows.9.name") is None
+    assert resolve_path(context, "rows.x") is None
+    assert resolve_path(context, "bad path!") is None
+    assert interpolate(None, context) == ""
+    assert interpolate("{{ rows }} / {{ meta }}", context) == str(context["rows"]) + " / " + str(context["meta"])
+
+
+def test_expand_skips_non_list_repeats_and_clamps_layout() -> None:
+    document = DesignDocument.model_validate(
+        {
+            "version": 2,
+            "pageSize": {"w": 100, "h": 80},
+            "root": {
+                "id": "root",
+                "kind": "box",
+                "label": "Document",
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 80,
+                "children": [
+                    {
+                        "id": "row",
+                        "kind": "box",
+                        "label": "Row",
+                        "x": 0,
+                        "y": 0,
+                        "w": 40,
+                        "h": 20,
+                        "repeat": {"over": "missing", "as": "item"},
+                        "children": [],
+                    },
+                    {
+                        "id": "tall",
+                        "kind": "paragraph",
+                        "label": "Hi",
+                        "x": -10,
+                        "y": 90,
+                        "w": 200,
+                        "h": 50,
+                    },
+                ],
+            },
+            "variables": [],
+        }
+    )
+    expanded = expand_repeats(document, {})
+    assert len(expanded.root.children) == 1
+    laid_out, warnings = auto_layout(expanded)
+    assert warnings
+    tall = next(node for node in laid_out.iter_nodes() if node.id == "tall")
+    assert tall.x == 0
+    assert tall.w <= 100
+    assert tall.y + tall.h <= 80
+
+
+def test_render_html_and_docx_cover_node_kinds() -> None:
+    document = DesignDocument.model_validate(
+        {
+            "version": 2,
+            "pageSize": {"w": 400, "h": 500},
+            "root": {
+                "id": "root",
+                "kind": "box",
+                "label": "Document",
+                "x": 0,
+                "y": 0,
+                "w": 400,
+                "h": 500,
+                "style": {"bold": True, "italic": True, "underline": True, "fontSize": 14},
+                "children": [
+                    {
+                        "id": "h",
+                        "kind": "heading",
+                        "label": "Title",
+                        "level": 2,
+                        "x": 10,
+                        "y": 10,
+                        "w": 200,
+                        "h": 40,
+                    },
+                    {
+                        "id": "p",
+                        "kind": "paragraph",
+                        "label": "Line\nTwo",
+                        "x": 10,
+                        "y": 60,
+                        "w": 200,
+                        "h": 40,
+                    },
+                    {
+                        "id": "img",
+                        "kind": "image",
+                        "label": "Logo",
+                        "imageSrc": "https://example.com/a.png",
+                        "objectFit": "contain",
+                        "x": 10,
+                        "y": 120,
+                        "w": 80,
+                        "h": 80,
+                    },
+                    {
+                        "id": "bad",
+                        "kind": "image",
+                        "label": "Bad",
+                        "imageSrc": "javascript:alert(1)",
+                        "x": 10,
+                        "y": 220,
+                        "w": 80,
+                        "h": 80,
+                    },
+                    {
+                        "id": "empty",
+                        "kind": "image",
+                        "label": "Empty",
+                        "imageSrc": "",
+                        "x": 10,
+                        "y": 320,
+                        "w": 80,
+                        "h": 80,
+                    },
+                ],
+            },
+            "variables": [],
+        }
+    )
+    html = render_html(document, title="Demo")
+    assert "Title" in html
+    assert "Line<br>Two" in html
+    assert "https://example.com/a.png" in html
+    assert "javascript:alert" not in html
+    docx = render_docx(document, title="Demo")
+    assert docx[:2] == b"PK"
+
+
+def test_render_uses_variable_defaults_without_request_context() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    user_id = uuid4()
+    user = SimpleNamespace(id=user_id, plan="basic")
+    principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+    app = FastAPI()
+    app.include_router(router, prefix="/api")
+    app.dependency_overrides[get_principal] = lambda: principal
+    app.dependency_overrides[get_db] = lambda: session
+    get_document_store.cache_clear()
+    get_template_store.cache_clear()
+    settings = get_settings()
+    settings.storage_backend = "local"
+    client = TestClient(app)
+    created = client.post(
+        "/api/templates",
+        json={
+            "name": "Paystub",
+            "document": {
+                "version": 2,
+                "pageSize": {"w": 850, "h": 1100},
+                "root": {
+                    "id": "root",
+                    "kind": "box",
+                    "label": "Document",
+                    "x": 0,
+                    "y": 0,
+                    "w": 850,
+                    "h": 1100,
+                    "children": [
+                        {
+                            "id": "p",
+                            "kind": "paragraph",
+                            "label": "Hello {{ employee_name }}",
+                            "x": 20,
+                            "y": 20,
+                            "w": 300,
+                            "h": 60,
+                        }
+                    ],
+                },
+                "variables": [
+                    {
+                        "id": "v1",
+                        "name": "employee_name",
+                        "label": "Employee",
+                        "type": "text",
+                        "sampleValue": "Jane Doe",
+                    }
+                ],
+            },
+        },
+    )
+    assert created.status_code == 201, created.text
+    template_id = created.json()["id"]
+    rendered = client.post(f"/api/templates/{template_id}/render", json={"format": "html"})
+    assert rendered.status_code == 200, rendered.text
+    assert "Jane Doe" in rendered.text
+    assert client.delete(f"/api/templates/{template_id}").status_code == 200
+    session.close()
+    get_template_store.cache_clear()
+    get_document_store.cache_clear()
+
+
+def test_variable_schema_label_fallback() -> None:
+    variable = VariableSchema(name="x", label="", type="date", sampleValue="")
+    document = DesignDocument.model_validate(
+        {
+            "version": 2,
+            "pageSize": {"w": 100, "h": 100},
+            "root": {
+                "id": "root",
+                "kind": "box",
+                "label": "Document",
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 100,
+                "children": [],
+            },
+            "variables": [variable.model_dump(by_alias=True)],
+        }
+    )
+    assert default_context(document)["x"] == "x"

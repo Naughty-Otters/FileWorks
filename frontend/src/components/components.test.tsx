@@ -258,7 +258,8 @@ describe("ExtractOptionsPanel", () => {
 });
 
 describe("ConvertControls", () => {
-  it("defaults to Standard output layout", () => {
+  it("defaults to Standard output layout", async () => {
+    const user = userEvent.setup();
     render(
       <ConvertControls
         options={DEFAULT_EXTRACT_OPTIONS}
@@ -272,6 +273,7 @@ describe("ConvertControls", () => {
         onStop={vi.fn()}
       />,
     );
+    await user.click(screen.getByRole("button", { name: "Options" }));
     expect(screen.getByLabelText("Output layout")).toHaveValue("standard");
     expect(screen.queryByLabelText("Return file type")).not.toBeInTheDocument();
   });
@@ -310,9 +312,9 @@ describe("ConvertControls", () => {
         onStop={vi.fn()}
       />,
     );
-    await user.click(screen.getByText("Convert with AI"));
+    await user.click(screen.getByRole("button", { name: "AI Convert" }));
     expect(onConvert).toHaveBeenCalled();
-    await user.click(screen.getByText("Options"));
+    await user.click(screen.getByRole("button", { name: "Options" }));
     await user.click(screen.getByText("Read with AI"));
     expect(screen.queryByText(/AnyDoc/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/openai/i)).not.toBeInTheDocument();
@@ -484,7 +486,7 @@ describe("ConvertControls", () => {
         onStop={vi.fn()}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Convert with AI" }));
+    await user.click(screen.getByRole("button", { name: "AI Convert" }));
     expect(screen.getByRole("dialog", { name: "Monthly AI allowance reached" })).toBeInTheDocument();
     expect(screen.getByText(/40 with AI or translation/)).toBeInTheDocument();
   });

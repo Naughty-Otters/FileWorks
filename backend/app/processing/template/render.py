@@ -89,7 +89,8 @@ def render_docx(document: DesignDocument, *, title: str = "Document") -> bytes:
             elif node.type == "paragraph":
                 output.add_paragraph(node.label)
             elif node.type == "image":
-                output.add_paragraph(node.alt or node.label or f"[Image: {node.image_src or ''}]")
+                alt = getattr(node, "alt", None) or node.label or f"[Image: {node.image_src or ''}]"
+                output.add_paragraph(alt)
             add(node.children, depth + 1)
 
     add([document.root])

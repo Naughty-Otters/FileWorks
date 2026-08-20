@@ -18,6 +18,7 @@ from app.processing.template.extract import extract_template_context
 from app.processing.template.render import render_docx, render_html
 from app.processing.template.runtime import (
     auto_layout,
+    default_context,
     expand_repeats,
     template_analysis,
     used_variables,
@@ -133,6 +134,17 @@ def _update_metadata(row: UserTemplate, document: DesignDocument) -> None:
     row.has_repeaters = any(node.repeat is not None for node in document.iter_nodes())
 
 
+def _try_load_document(owner_id: str, template_id: str) -> DesignDocument | None:
+    """Load a stored design; return None if missing/corrupt so list stays up."""
+    payload = get_template_store().get(owner_id, template_id)
+    if payload is None:
+        return None
+    try:
+        return DesignDocument.model_validate(payload)
+    except ValueError:
+        return None
+
+
 @router.get("", response_model=TemplateListResponse)
 def list_templates(
     principal: PrincipalDep,
@@ -149,7 +161,7 @@ def list_templates(
     for row in rows:
         if not isinstance(row, UserTemplate):
             continue
-        document = _load_document(owner_id, row.id)
+        document = _try_load_document(owner_id, row.id)
         items.append(_response(row, document))
     return TemplateListResponse(items=items)
 
@@ -266,7 +278,9 @@ def render_template(
     row = _owned(session, principal.user_id, template_id)
     document = _load_document(owner_id, template_id)
     is_static, warnings = template_analysis(document)
-    context = dict(body.context)
+    # Start from each variable's default value, then layer request context on top.
+    defaults = default_context(document)
+    context = {**defaults, **dict(body.context)}
     needed = set(document.variable_map())
     needed.update(path.split(".", 1)[0] for path in used_variables(document))
     missing = needed - set(context)
@@ -279,8 +293,8 @@ def render_template(
             translate=False,
         )
         extracted = extract_template_context(document, body.source_markdown or "")
-        extracted.update(context)
-        context = extracted
+        # Defaults < AI extract < explicit request context.
+        context = {**defaults, **extracted, **dict(body.context)}
         session.add(UsageEvent(user_id=principal.user_id, action=AI_ACTION))
     elif not is_static and missing:
         raise HTTPException(

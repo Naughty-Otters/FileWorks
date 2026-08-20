@@ -1,5 +1,37 @@
 import type { DesignDocument, DesignNode, TemplateVariable } from "./types";
 import { VARIABLE_TOKEN_RE, nextId } from "./types";
+import { effectiveDefault } from "./defaults";
+
+export type TextSegment = { type: "text"; value: string } | { type: "var"; name: string };
+
+/** Splits a string into literal-text and `{{ name }}` segments for design-time
+ * token highlighting. */
+export function parseSegments(text: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  let lastIndex = 0;
+  const re = new RegExp(VARIABLE_TOKEN_RE.source, "g");
+  for (const match of text.matchAll(re)) {
+    const start = match.index ?? 0;
+    if (start > lastIndex) segments.push({ type: "text", value: text.slice(lastIndex, start) });
+    segments.push({ type: "var", name: match[1] });
+    lastIndex = start + match[0].length;
+  }
+  if (lastIndex < text.length) segments.push({ type: "text", value: text.slice(lastIndex) });
+  return segments;
+}
+
+/** True if the whole (trimmed) string is exactly one `{{ name }}` token. */
+export function isPureVariableToken(text: string): string | null {
+  const trimmed = text.trim();
+  const match = trimmed.match(/^\{\{\s*([a-zA-Z_][\w]*(?:\.[a-zA-Z_][\w]*)*)\s*\}\}$/);
+  return match ? match[1] : null;
+}
+
+/** Substitutes `{{ name }}` with each variable's default value for Preview. */
+export function resolveTemplate(text: string, variables: TemplateVariable[]): string {
+  const data = defaultData(variables);
+  return resolve(text, data, {});
+}
 
 export function extractUsedVariableNames(root: DesignNode): Set<string> {
   const names = new Set<string>();
@@ -8,6 +40,7 @@ export function extractUsedVariableNames(root: DesignNode): Set<string> {
       if (!text) continue;
       for (const match of text.matchAll(new RegExp(VARIABLE_TOKEN_RE.source, "g"))) names.add(match[1]);
     }
+    if (node.repeat?.over) names.add(node.repeat.over);
     node.children.forEach(walk);
   };
   walk(root);
@@ -26,12 +59,13 @@ export function isStaticTemplate(doc: DesignDocument): boolean {
   return !dynamic;
 }
 
-function sampleData(variables: TemplateVariable[]): Record<string, unknown> {
+function defaultData(variables: TemplateVariable[]): Record<string, unknown> {
   return Object.fromEntries(
     variables.map((variable) => {
+      const raw = effectiveDefault(variable);
       if (variable.type === "list") {
         try {
-          const parsed = JSON.parse(variable.sampleValue || "[]");
+          const parsed = JSON.parse(raw || "[]");
           return [variable.name, Array.isArray(parsed) ? parsed : []];
         } catch {
           return [variable.name, []];
@@ -39,12 +73,12 @@ function sampleData(variables: TemplateVariable[]): Record<string, unknown> {
       }
       if (variable.type === "object") {
         try {
-          return [variable.name, JSON.parse(variable.sampleValue || "{}")];
+          return [variable.name, JSON.parse(raw || "{}")];
         } catch {
           return [variable.name, {}];
         }
       }
-      return [variable.name, variable.sampleValue];
+      return [variable.name, raw];
     }),
   );
 }
@@ -106,7 +140,8 @@ function relayout(node: DesignNode) {
   else node.w = Math.max(node.w, cursor - gap + padding);
 }
 
+/** Full preview expansion including list repeats — uses default values. */
 export function expandSampleDocument(doc: DesignDocument): DesignDocument {
-  const data = sampleData(doc.variables);
+  const data = defaultData(doc.variables);
   return { ...structuredClone(doc), root: expandNode(doc.root, data, {})[0] };
 }

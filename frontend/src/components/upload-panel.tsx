@@ -137,61 +137,68 @@ export function UploadPanel({
           file && dragging && "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]",
         )}
       >
-        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-t-2xl border-b border-[var(--line)] px-3 py-2">
+        <div className="flex shrink-0 items-center gap-2 rounded-t-2xl border-b border-[var(--line)] px-3 py-2">
           {leadingToggle}
-          {file ? (
-            isPdf || isText ? (
-              <FileText size={15} className="shrink-0 text-[var(--accent)]" />
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            {file ? (
+              isPdf || isText ? (
+                <FileText size={15} className="shrink-0 text-[var(--accent)]" />
+              ) : (
+                <FileImage size={15} className="shrink-0 text-[var(--accent)]" />
+              )
             ) : (
-              <FileImage size={15} className="shrink-0 text-[var(--accent)]" />
-            )
-          ) : (
-            <Upload size={15} className="shrink-0 text-[var(--accent)]" />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{file ? file.name : "Source"}</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">
-              {file
-                ? `${formatBytes(file.size)}${regions.length > 0 ? ` · ${regions.length} regions` : ""}`
-                : "Drop a file or browse"}
-            </p>
+              <Upload size={15} className="shrink-0 text-[var(--accent)]" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{file ? file.name : "Source"}</p>
+              <p className="truncate text-[11px] text-[var(--ink-muted)]">
+                {dragging && file
+                  ? "Drop to replace"
+                  : file
+                    ? `${formatBytes(file.size)}${regions.length > 0 ? ` · ${regions.length} regions` : ""}`
+                    : "Drop a file or browse"}
+              </p>
+            </div>
           </div>
-          {dragging && file ? (
-            <span className="text-xs text-[var(--accent-strong)]">Drop to replace</span>
-          ) : null}
-          {file ? (
-            <>
+
+          <div className="flex shrink-0 items-center gap-0.5">
+            {file ? (
+              <>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={openPicker}
+                  aria-label="Replace file"
+                  title="Replace file"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] disabled:opacity-50"
+                >
+                  <Replace size={14} />
+                </button>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  aria-label="Clear file"
+                  title="Clear file"
+                  onClick={() => onFileSelect(null)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--danger)] disabled:opacity-50"
+                >
+                  <X size={14} />
+                </button>
+              </>
+            ) : null}
+            {onCollapse ? (
               <button
                 type="button"
-                disabled={disabled}
-                onClick={openPicker}
-                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] disabled:opacity-50"
+                aria-label="Hide source"
+                title="Hide source"
+                onClick={onCollapse}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
               >
-                <Replace size={13} />
-                Replace
+                <PanelLeftClose size={14} />
               </button>
-              <button
-                type="button"
-                disabled={disabled}
-                aria-label="Clear file"
-                onClick={() => onFileSelect(null)}
-                className="rounded-full p-1.5 text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--danger)] disabled:opacity-50"
-              >
-                <X size={14} />
-              </button>
-            </>
-          ) : null}
-          {onCollapse ? (
-            <button
-              type="button"
-              aria-label="Hide source"
-              onClick={onCollapse}
-              className="rounded-full p-1.5 text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
-            >
-              <PanelLeftClose size={14} />
-            </button>
-          ) : null}
-          {actions ? <div className="ml-auto flex shrink-0 items-center">{actions}</div> : null}
+            ) : null}
+            {actions ? <div className="ml-1 flex shrink-0 items-center">{actions}</div> : null}
+          </div>
         </div>
 
         {!file ? (
