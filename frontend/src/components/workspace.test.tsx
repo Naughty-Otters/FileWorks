@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { Workspace } from "@/components/workspace";
 import type { MeResponse } from "@/lib/auth";
 import * as api from "@/lib/api";
+import { historyCache } from "@/lib/history-cache";
 
 const guestMe: MeResponse = {
   user: { id: "u1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
@@ -123,6 +124,7 @@ vi.mock("@/lib/prefetch", () => ({
 describe("Workspace", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    historyCache.clear();
     historyState.items = [{ ...pastItem }];
     vi.mocked(api.fetchHistoryDetail).mockClear();
     vi.mocked(api.fetchHistoryFile).mockClear();
@@ -140,6 +142,7 @@ describe("Workspace", () => {
     expect(screen.getByText("Drop a file here")).toBeInTheDocument();
     expect(screen.getByText(/Drop a file and convert/)).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument());
     expect(api.fetchHistoryDetail).not.toHaveBeenCalled();
     expect(api.fetchHistoryFile).not.toHaveBeenCalled();
 
@@ -157,6 +160,63 @@ describe("Workspace", () => {
 
     await user.click(screen.getByLabelText("Delete old.pdf"));
     await waitFor(() => expect(api.deleteHistoryItem).toHaveBeenCalled());
+  });
+
+  it("blocks upload until workspace boot finishes", async () => {
+    let resolveHistory: (value: { items: typeof pastItem[]; storage_backend: string }) => void = () => undefined;
+    vi.mocked(api.fetchHistory).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveHistory = resolve;
+        }),
+    );
+    render(<Workspace />);
+    await waitFor(() => expect(screen.getByLabelText("Loading workspace")).toBeInTheDocument());
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).toBeDisabled();
+    resolveHistory({ items: [{ ...pastItem }], storage_backend: "local" });
+    await waitFor(() => expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument());
+    await waitFor(() => expect(fileInput).not.toBeDisabled());
+  });
+
+  it("reuses cached detail and file on a second click", async () => {
+    const user = userEvent.setup();
+    render(<Workspace />);
+    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
+
+    const historyRow = () => screen.getByTitle("old.pdf");
+    await user.click(historyRow());
+    await waitFor(() => expect(api.fetchHistoryDetail).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(api.fetchHistoryFile).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByText("restored")).toBeInTheDocument());
+
+    vi.mocked(api.fetchHistoryDetail).mockClear();
+    vi.mocked(api.fetchHistoryFile).mockClear();
+
+    await user.click(historyRow());
+    await waitFor(() => expect(screen.getByText("restored")).toBeInTheDocument());
+    expect(api.fetchHistoryDetail).not.toHaveBeenCalled();
+    expect(api.fetchHistoryFile).not.toHaveBeenCalled();
+  });
+
+  it("seeds cache from convert so opening that history row skips detail fetch", async () => {
+    const user = userEvent.setup();
+    render(<Workspace />);
+    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, new File(["abc"], "note.png", { type: "image/png" }));
+    await waitFor(() => expect(screen.getByText("note.png")).toBeInTheDocument());
+    await user.click(screen.getByText("Convert"));
+    await waitFor(() => expect(screen.getByText("1 page")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTitle("a.png")).toBeInTheDocument());
+
+    vi.mocked(api.fetchHistoryDetail).mockClear();
+    vi.mocked(api.fetchHistoryFile).mockClear();
+
+    await user.click(screen.getByTitle("a.png"));
+    await waitFor(() => expect(screen.getByText("hi")).toBeInTheDocument());
+    expect(api.fetchHistoryDetail).not.toHaveBeenCalled();
+    expect(api.fetchHistoryFile).not.toHaveBeenCalled();
   });
 
   it("converts a new file and prepends it in history", async () => {

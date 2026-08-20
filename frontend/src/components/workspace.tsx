@@ -26,6 +26,7 @@ import { ResultPanel } from "@/components/result-panel";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UploadPanel } from "@/components/upload-panel";
+import { historyCache } from "@/lib/history-cache";
 import { prefetchHeavyUi } from "@/lib/prefetch";
 import { reloadSession, useSession } from "@/lib/session";
 import { aiQuotaLeft } from "@/lib/plans";
@@ -47,6 +48,7 @@ export function Workspace() {
   const [result, setResult] = useState<ExtractResponse | null>(null);
   const [view, setView] = useState<"markdown" | "json">("markdown");
   const [loading, setLoading] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [busyKind, setBusyKind] = useState<"convert" | "restore">("convert");
   const [error, setError] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -63,6 +65,7 @@ export function Workspace() {
   const [markdownToolbar, setMarkdownToolbar] = useState(true);
   const convertAbortRef = useRef<AbortController | null>(null);
   const convertRunIdRef = useRef<string | null>(null);
+  const historySelectGenRef = useRef(0);
   const [sessionReady, setSessionReady] = useState(false);
   const { status: authStatus, me, displayUser } = useSession();
   const meLoaded = authStatus !== "unknown" && me !== null;
@@ -71,46 +74,60 @@ export function Workspace() {
   const refreshHistory = useCallback(async () => {
     try {
       const data = await fetchHistory();
+      historyCache.syncWithList(data.items);
       setHistory(data.items);
       setStorageBackend(data.storage_backend);
+      return data.items;
     } catch {
       // Keep existing list if refresh fails
+      return null;
     } finally {
       setHistoryLoading(false);
     }
   }, []);
 
-  const applyHistoryDetail = useCallback(async (id: string) => {
-    const [detail, restored] = await Promise.all([
-      fetchHistoryDetail(id),
-      fetchHistoryFile(id, "document", null),
-    ]);
-    const fileFromHistory = new File([restored], detail.filename, {
-      type: detail.content_type || restored.type,
-      lastModified: Date.now(),
-    });
-    setFile(fileFromHistory);
-    setResult({
-      id: detail.id,
-      filename: detail.filename,
-      content_type: detail.content_type,
-      size_bytes: detail.size_bytes,
-      engine: detail.engine || "FileWorks",
-      page_count: detail.page_count,
-      format: (detail.format as ExtractResponse["format"]) || "both",
-      markdown: detail.markdown,
-      json: detail.json,
-      pages: detail.pages,
-      created_at: detail.created_at,
-      storage_backend: detail.storage_backend,
-      regions: detail.regions || [],
-      image_size: detail.image_size || null,
-    });
-    setSelectedId(id);
-    setMarkdownDraft(detail.markdown || "");
-    if (!detail.markdown && detail.json) setView("json");
-    else setView("markdown");
-  }, []);
+  const paintHistoryDetail = useCallback(
+    (id: string, detail: ExtractResponse, nextFile: File | null) => {
+      if (nextFile) setFile(nextFile);
+      setResult({
+        id: detail.id ?? id,
+        filename: detail.filename,
+        content_type: detail.content_type,
+        size_bytes: detail.size_bytes,
+        engine: detail.engine || "FileWorks",
+        page_count: detail.page_count,
+        format: (detail.format as ExtractResponse["format"]) || "both",
+        markdown: detail.markdown,
+        json: detail.json,
+        pages: detail.pages,
+        created_at: detail.created_at,
+        storage_backend: detail.storage_backend,
+        regions: detail.regions || [],
+        image_size: detail.image_size || null,
+        structure: detail.structure ?? null,
+        options: detail.options ?? null,
+      });
+      setSelectedId(id);
+      setMarkdownDraft(detail.markdown || "");
+      if (!detail.markdown && detail.json) setView("json");
+      else setView("markdown");
+    },
+    [],
+  );
+
+  const loadHistoryFile = useCallback(
+    async (id: string, detail: ExtractResponse, selectGen: number) => {
+      const restored = await fetchHistoryFile(id, detail.filename, detail.content_type);
+      const fileFromHistory = new File([restored], detail.filename, {
+        type: detail.content_type || restored.type,
+        lastModified: Date.now(),
+      });
+      historyCache.putFile(id, fileFromHistory);
+      if (selectGen !== historySelectGenRef.current) return;
+      setFile(fileFromHistory);
+    },
+    [],
+  );
 
   useEffect(() => {
     let active = true;
@@ -154,6 +171,7 @@ export function Workspace() {
     }
     if (userId === historyUserRef.current) return;
     historyUserRef.current = userId;
+    historyCache.clear();
     void refreshHistory();
   }, [me?.user?.id, meLoaded, refreshHistory]);
 
@@ -233,8 +251,17 @@ export function Workspace() {
   const signedIn = Boolean(me?.user);
   const quotaBlocked =
     signedIn && (me?.quota.remaining_day === 0 || me?.quota.remaining_month === 0);
+  // Block upload/convert/history until prefs, auth, health, and first history load settle.
+  const bootReady = sessionReady && authStatus !== "unknown" && health !== null && !historyLoading;
+  const uiLocked = !bootReady || loading || restoring;
   const canExtract =
-    Boolean(file) && !loading && signedIn && Boolean(me?.permissions["extract"]) && !quotaBlocked;
+    Boolean(file) &&
+    bootReady &&
+    !loading &&
+    !restoring &&
+    signedIn &&
+    Boolean(me?.permissions["extract"]) &&
+    !quotaBlocked;
 
   function stopActiveRun() {
     convertAbortRef.current?.abort();
@@ -249,7 +276,7 @@ export function Workspace() {
   }
 
   async function handleExtract() {
-    if (!file || !me?.user || !me.permissions["extract"]) return;
+    if (!bootReady || !file || !me?.user || !me.permissions["extract"]) return;
     stopActiveRun();
     const controller = new AbortController();
     convertAbortRef.current = controller;
@@ -270,7 +297,14 @@ export function Workspace() {
       setActiveRegionId(null);
       if (!data.markdown && data.json) setView("json");
       else setView("markdown");
-      await refreshHistory();
+      if (data.id) {
+        historyCache.putDetail(data.id, data, null, file);
+      }
+      const items = await refreshHistory();
+      if (data.id && items) {
+        const summary = items.find((item) => item.id === data.id) ?? null;
+        historyCache.putDetail(data.id, data, summary, file);
+      }
       await reloadSession().catch(() => undefined);
     } catch (err) {
       if (isAbortError(err) || controller.signal.aborted) {
@@ -293,6 +327,7 @@ export function Workspace() {
   }
 
   function handleFileSelect(next: File | null) {
+    if (!bootReady || loading || restoring) return;
     setFile(next);
     setResult(null);
     setMarkdownDraft("");
@@ -303,23 +338,56 @@ export function Workspace() {
   }
 
   async function handleSelectHistory(id: string) {
-    setBusyKind("restore");
-    setLoading(true);
+    if (!bootReady || loading || restoring) return;
+    const selectGen = ++historySelectGenRef.current;
     setError(null);
     setActiveRegionId(null);
+    setRestoring(true);
+
+    const summary = history.find((item) => item.id === id) ?? null;
+    const cached = historyCache.getIfFresh(id, summary);
     try {
-      await applyHistoryDetail(id);
+      if (cached) {
+        paintHistoryDetail(id, cached.detail, cached.file);
+        if (!cached.file) {
+          await loadHistoryFile(id, cached.detail, selectGen);
+        }
+        return;
+      }
+
+      setBusyKind("restore");
+      setLoading(true);
+      try {
+        const detail = await fetchHistoryDetail(id);
+        if (selectGen !== historySelectGenRef.current) return;
+        historyCache.putDetail(id, detail, summary, null);
+        paintHistoryDetail(id, detail, null);
+        setLoading(false);
+        await loadHistoryFile(id, detail, selectGen);
+      } catch (err) {
+        if (selectGen !== historySelectGenRef.current) return;
+        setError(err instanceof Error ? err.message : "Failed to restore document");
+        await refreshHistory();
+      } finally {
+        if (selectGen === historySelectGenRef.current) {
+          setLoading(false);
+        }
+      }
     } catch (err) {
+      if (selectGen !== historySelectGenRef.current) return;
       setError(err instanceof Error ? err.message : "Failed to restore document");
-      await refreshHistory();
     } finally {
-      setLoading(false);
+      if (selectGen === historySelectGenRef.current) {
+        setRestoring(false);
+      }
     }
   }
 
   async function handleDeleteHistory(id: string) {
+    if (!bootReady || loading || restoring) return;
     try {
       await deleteHistoryItem(id);
+      historyCache.delete(id);
       if (selectedId === id) {
         setSelectedId(null);
         setFile(null);
@@ -391,9 +459,23 @@ export function Workspace() {
       </header>
 
       <main className="relative z-10 mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col overflow-hidden px-4 py-3 md:px-6 md:py-4">
+        {!bootReady ? (
+          <div
+            className="absolute inset-0 z-20 flex items-center justify-center bg-[color-mix(in_oklab,var(--bg)_78%,transparent)] backdrop-blur-[1px]"
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            aria-label="Loading workspace"
+          >
+            <p className="rounded-full border border-[var(--line)] bg-[var(--bg-panel)] px-4 py-2 text-sm text-[var(--ink-muted)] shadow-sm">
+              Loading workspace…
+            </p>
+          </div>
+        ) : null}
         <div
           className={cn(
             "grid min-h-0 min-w-0 flex-1 gap-3 overflow-hidden lg:gap-4",
+            !bootReady && "pointer-events-none select-none",
             previewOpen && historyOpen && "grid-rows-[minmax(140px,0.9fr)_minmax(0,1.2fr)_minmax(140px,0.8fr)] lg:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_220px]",
             previewOpen && !historyOpen && "grid-rows-[minmax(140px,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]",
             !previewOpen && historyOpen && "grid-rows-[minmax(0,1.2fr)_minmax(140px,0.8fr)] lg:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_220px]",
@@ -405,7 +487,7 @@ export function Workspace() {
               <UploadPanel
                 file={file}
                 previewUrl={previewUrl}
-                disabled={loading}
+                disabled={uiLocked}
                 regions={result?.regions || []}
                 imageSize={result?.image_size || null}
                 activeRegionId={activeRegionId}
@@ -467,6 +549,7 @@ export function Workspace() {
                 items={history}
                 selectedId={selectedId}
                 loading={historyLoading}
+                disabled={uiLocked}
                 storageBackend={storageBackend}
                 requiresLogin={authStatus === "guest" || (me != null && !me.permissions?.["history.read"])}
                 onSelect={handleSelectHistory}

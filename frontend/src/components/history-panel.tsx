@@ -8,6 +8,7 @@ type HistoryPanelProps = {
   items: HistoryItem[];
   selectedId: string | null;
   loading?: boolean;
+  disabled?: boolean;
   storageBackend?: string | null;
   requiresLogin?: boolean;
   onSelect: (id: string) => void;
@@ -30,6 +31,7 @@ export function HistoryPanel({
   items,
   selectedId,
   loading,
+  disabled,
   storageBackend,
   requiresLogin,
   onSelect,
@@ -38,7 +40,11 @@ export function HistoryPanel({
 }: HistoryPanelProps) {
   return (
     <aside
-      className="panel flex h-full min-h-0 flex-col overflow-hidden rounded-2xl"
+      className={cn(
+        "panel flex h-full min-h-0 flex-col overflow-hidden rounded-2xl",
+        disabled && "pointer-events-none opacity-60",
+      )}
+      aria-busy={disabled || undefined}
       aria-label="History"
     >
       <div className="flex shrink-0 items-center justify-between gap-1 border-b border-[var(--line)] px-3 py-2">
@@ -99,8 +105,9 @@ export function HistoryPanel({
                     <button
                       type="button"
                       title={item.filename}
+                      disabled={disabled}
                       onClick={() => onSelect(item.id)}
-                      className="flex min-w-0 flex-1 items-start gap-2 text-left"
+                      className="flex min-w-0 flex-1 items-start gap-2 text-left disabled:cursor-not-allowed"
                     >
                       <span className="mt-0.5 text-[var(--accent)]">
                         {isPdf ? <FileText size={14} /> : <FileImage size={14} />}
@@ -116,11 +123,12 @@ export function HistoryPanel({
                     <button
                       type="button"
                       aria-label={`Delete ${item.filename}`}
+                      disabled={disabled}
                       onClick={(e) => {
                         e.stopPropagation();
                         onDelete(item.id);
                       }}
-                      className="rounded-full p-1.5 text-[var(--ink-muted)] opacity-0 transition hover:bg-[var(--accent-soft)] hover:text-[var(--danger)] group-hover:opacity-100"
+                      className="rounded-full p-1.5 text-[var(--ink-muted)] opacity-0 transition hover:bg-[var(--accent-soft)] hover:text-[var(--danger)] group-hover:opacity-100 disabled:opacity-40"
                     >
                       <Trash2 size={13} />
                     </button>
