@@ -15,12 +15,26 @@ export function TemplateShell({ children, fixed = false }: { children: ReactNode
       <header className="relative z-10 shrink-0 border-b border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
           <BrandLockup />
-          <a href="/templates" className="ml-auto rounded-full px-2.5 py-1.5 text-xs text-[var(--accent-strong)] transition hover:bg-[var(--accent-soft)]">
-            Templates
-          </a>
-          <a href="/pricing" className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]">
-            Pricing
-          </a>
+          <nav className="ml-auto flex items-center gap-1" aria-label="Primary">
+            <a
+              href="/"
+              className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+            >
+              Home
+            </a>
+            <a
+              href="/templates"
+              className="rounded-full px-2.5 py-1.5 text-xs text-[var(--accent-strong)] transition hover:bg-[var(--accent-soft)]"
+            >
+              Templates
+            </a>
+            <a
+              href="/pricing"
+              className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+            >
+              Pricing
+            </a>
+          </nav>
           <AuthBar me={me} status={status} user={displayUser} />
           <ThemeToggle className="h-8 w-8" />
         </div>
