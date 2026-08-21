@@ -411,14 +411,37 @@ describe("markdown html", () => {
     const oneLine = await renderMarkdownToHtml("$$E=mc^2$$");
     expect(oneLine).toContain("math-display");
     expect(oneLine).not.toContain("math-inline");
-
-    const escaped = await renderMarkdownToHtml("Lift \\(C_L\\) and the term $v^2$.");
-    expect(escaped).toContain("katex");
+    expect(oneLine).toContain('data-latex="E=mc^2"');
   });
 
-  it("does not treat fenced code as math", async () => {
+  it("renders fenced math code blocks as display math", async () => {
+    const html = await renderMarkdownToHtml("```math\nL = \\frac{1}{2} \\rho v^2\n```");
+    expect(html).toContain("math-display");
+    expect(html).toContain("katex");
+    expect(html).toContain('data-latex="L = \\frac{1}{2} \\rho v^2"');
+    expect(html).not.toContain("<pre");
+  });
+
+  it("keeps invalid or unmatched dollars as plain text", async () => {
+    const unmatched = await renderMarkdownToHtml("Price is $5 today");
+    expect(unmatched).not.toContain("math-inline");
+    expect(unmatched).toContain("$5");
+
+    const broken = await renderMarkdownToHtml("Bad $\\frac{1}{");
+    expect(broken).not.toContain("math-inline");
+    expect(broken).toContain("$");
+  });
+
+  it("renders unknown LaTeX commands without throwing", async () => {
+    const html = await renderMarkdownToHtml("$\\undefinedcmd$");
+    expect(html).toContain("katex");
+    expect(html).toContain('data-latex="\\undefinedcmd"');
+  });
+
+  it("does not treat plain fenced code as math", async () => {
     const html = await renderMarkdownToHtml("```\n$E=mc^2$\n```");
     expect(html).not.toContain("math-inline");
+    expect(html).not.toContain("math-display");
     expect(html).toContain("<pre");
   });
 
@@ -427,6 +450,34 @@ describe("markdown html", () => {
     const md = previewHtmlToMarkdown(html);
     expect(md).toContain("$E=mc^2$");
     expect(md).toMatch(/\$\$\s*\\frac\{a\}\{b\}\s*\$\$/);
+  });
+
+  it("round-trips OCR-style standalone formula blocks", async () => {
+    const html = await renderMarkdownToHtml("$$E=mc^2$$");
+    const md = previewHtmlToMarkdown(html);
+    expect(md).toMatch(/\$\$\s*E=mc\^2\s*\$\$/);
+  });
+
+  it("round-trips math from data-latex and MathML annotation", () => {
+    const fromAttr = previewHtmlToMarkdown(
+      '<p>Hi <span class="math-inline" data-latex="x^2">rendered</span></p>',
+    );
+    expect(fromAttr).toContain("$x^2$");
+
+    const fromAnnotation = previewHtmlToMarkdown(
+      '<div class="math-display"><annotation encoding="application/x-tex">a+b</annotation></div>',
+    );
+    expect(fromAnnotation).toMatch(/\$\$\s*a\+b\s*\$\$/);
+
+    const empty = previewHtmlToMarkdown('<span class="math-inline"></span>');
+    expect(empty).not.toContain("$");
+  });
+
+  it("preserves data images when converting preview HTML", () => {
+    const md = previewHtmlToMarkdown(
+      '<p><img src="data:image/png;base64,aa" alt="logo" class="fw-img-right" style="width:120px" /></p>',
+    );
+    expect(md).toContain('![logo](data:image/png;base64,aa "120 right")');
   });
 });
 

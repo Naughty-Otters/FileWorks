@@ -1508,4 +1508,34 @@ describe("EditableMarkdownPreview", () => {
     fireEvent.keyDown(editor, { key: "Escape" });
     fireEvent.mouseDown(editor.querySelector("img")!);
   });
+
+  it("renders LaTeX formulas with KaTeX in the preview", async () => {
+    render(<EditableMarkdownPreview markdown={"Energy $E=mc^2$\n\n$$\\frac{a}{b}$$"} />);
+    await waitFor(() => {
+      const editor = document.querySelector('[aria-label="Editable Markdown preview"]') as HTMLElement;
+      expect(editor.querySelector(".katex")).toBeTruthy();
+      expect(editor.querySelector(".math-inline")?.getAttribute("data-latex")).toBe("E=mc^2");
+      expect(editor.querySelector(".math-display")?.getAttribute("data-latex")).toBe("\\frac{a}{b}");
+      expect(editor.querySelector(".math-inline")?.getAttribute("contenteditable")).toBe("false");
+    });
+  });
+
+  it("commits preview math back to markdown on blur", async () => {
+    const onChange = vi.fn();
+    render(<EditableMarkdownPreview markdown="placeholder" onChange={onChange} />);
+    const editor = await waitFor(() => {
+      const node = document.querySelector('[aria-label="Editable Markdown preview"]') as HTMLElement;
+      expect(node.textContent).toContain("placeholder");
+      return node;
+    });
+    fireEvent.focus(editor);
+    editor.innerHTML =
+      '<p>See <span class="math-inline" data-latex="E=mc^2"><span class="katex">x</span></span></p>';
+    fireEvent.blur(editor);
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+      const value = onChange.mock.calls.at(-1)?.[0] as string;
+      expect(value).toContain("$E=mc^2$");
+    });
+  });
 });
