@@ -122,6 +122,7 @@ class StarterDetailResponse(StarterSummary):
 
 
 def _workspace(principal: Principal, db: Session | None) -> tuple[str, Session]:
+    """Saved Design CRUD is workspace JWT only (not API keys)."""
     if principal.user_id is None or principal.via_api_key:
         raise HTTPException(status_code=401, detail="JWT workspace authentication required")
     if db is None:
@@ -130,7 +131,7 @@ def _workspace(principal: Principal, db: Session | None) -> tuple[str, Session]:
 
 
 def _authenticated_user(principal: Principal, db: Session | None) -> tuple[str, Session]:
-    """JWT or API-key user — used for built-in starter catalog/render."""
+    """JWT or API-key user — starter catalog for convert `design=` targeting."""
     if principal.user_id is None:
         raise HTTPException(status_code=401, detail="Authentication required")
     if db is None:

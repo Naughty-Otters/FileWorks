@@ -832,3 +832,48 @@ def test_builtin_starters_catalog_and_render_with_variables() -> None:
     assert missing.status_code == 404
 
     session.close()
+
+
+
+
+def test_api_key_cannot_create_or_update_saved_designs() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    user_id = uuid4()
+    user = SimpleNamespace(id=user_id, plan="basic")
+    principal = Principal(plan=get_plan("basic"), user=user, via_api_key=True)  # type: ignore[arg-type]
+    app = FastAPI()
+    app.include_router(router, prefix="/api")
+    app.dependency_overrides[get_principal] = lambda: principal
+    app.dependency_overrides[get_db] = lambda: session
+    client = TestClient(app)
+
+    created = client.post(
+        "/api/templates",
+        json={
+            "name": "Nope",
+            "document": {
+                "version": 2,
+                "pageSize": {"w": 850, "h": 1100},
+                "root": {
+                    "id": "root",
+                    "kind": "box",
+                    "label": "Document",
+                    "x": 0,
+                    "y": 0,
+                    "w": 850,
+                    "h": 1100,
+                    "children": [],
+                },
+                "variables": [],
+            },
+        },
+    )
+    assert created.status_code == 401
+    assert "JWT" in created.json()["detail"]
+    session.close()

@@ -982,10 +982,15 @@ describe("ApiPage", () => {
     expect(sampleText).toContain("jq -r .markdown");
     expect(sampleText).toContain("import requests");
     expect(sampleText).toContain("const body = new FormData");
+    expect(sampleText).toContain("-F design=invoice");
+    expect(sampleText).toContain("design_fill");
+    expect(sampleText).not.toContain("Updated via API");
+    expect(sampleText).not.toContain("/api/templates");
     expect(screen.getByText("X-Api-Key")).toBeInTheDocument();
-    expect(screen.getAllByText("POST").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("/api/v1/convert").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("/api/templates/starters").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/\/api\/v1\/convert/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Convert" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Endpoints" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Design examples" })).not.toBeInTheDocument();
   });
 });
 

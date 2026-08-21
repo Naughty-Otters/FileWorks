@@ -101,7 +101,7 @@ export const HOME_FAQS: FaqItem[] = [
   {
     question: "Can I turn converted Markdown into invoices, schedules, or agendas?",
     answer:
-      "Yes. Choose a Design in the workspace (family daily/weekly/monthly/yearly schedules, invoices, receipts, meeting agendas, project plans, task lists, timesheets, and more). FileWorks AI-fills the Design placeholders from the extracted Markdown, or you can pass explicit variables via the Design starters API (/api/templates/starters).",
+      "Yes. Choose a Design in the workspace (family daily/weekly/monthly/yearly schedules, invoices, receipts, meeting agendas, project plans, task lists, timesheets, and more). FileWorks AI-fills the Design placeholders from the extracted Markdown. Via Convert API, pass design=invoice (or another starter id) on POST /api/v1/convert.",
   },
   {
     question: "How much does FileWorks cost?",
@@ -124,7 +124,7 @@ export const TEMPLATE_FAQS: FaqItem[] = [
   {
     question: "Is there an API for built-in Design starters?",
     answer:
-      "Yes. Authenticated clients can GET /api/templates/starters for the catalog and variable schemas, then POST /api/templates/starters/{id}/render with variables (or markdown + fill: auto) to receive HTML, Markdown, DOCX, or PDF-mode HTML. JWT or API key auth is supported for starters.",
+      "Yes. POST /api/v1/convert with design=<starter_id> (invoice, family_daily, …) fills that Design from the extracted Markdown. GET /api/v1/convert lists available designs. Creating or editing custom Designs remains in the signed-in Design studio, not the Convert API.",
   },
 ];
 

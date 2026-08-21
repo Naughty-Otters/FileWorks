@@ -286,6 +286,49 @@ def convert_catalog(
         }
     )
 
+    try:
+        from app.processing.template.starters import list_starter_summaries
+
+        design_items = list_starter_summaries()
+        design_ids = [item["id"] for item in design_items]
+    except Exception:  # noqa: BLE001
+        design_items = []
+        design_ids = []
+
+    options.append(
+        {
+            "name": "design",
+            "type": "enum",
+            "label": "Design starter",
+            "description": (
+                "Optional built-in Design id (invoice, family_daily, …). "
+                "When set, convert fills that Design from the extracted Markdown and returns "
+                "the Design as content (html/docx/md via target)."
+            ),
+            "default": "",
+            "values": design_ids,
+            "available": bool(design_ids),
+            "allowed": bool(design_ids),
+            "unavailable_reason": None if design_ids else "Design starters are not packaged on this server",
+        }
+    )
+    options.append(
+        {
+            "name": "design_fill",
+            "type": "enum",
+            "label": "Design fill mode",
+            "description": (
+                "How to fill Design placeholders: auto (AI from Markdown), defaults (samples), "
+                "or none (require design_variables JSON)."
+            ),
+            "default": "auto",
+            "values": ["auto", "defaults", "none"],
+            "available": True,
+            "allowed": True,
+            "unavailable_reason": None,
+        }
+    )
+
     return {
         "max_upload_mb": settings.max_upload_mb,
         "plan": None if plan is None else plan.id,
@@ -310,6 +353,7 @@ def convert_catalog(
             "remaining": None if credits is None else credits.get("remaining_credits"),
         },
         "pipeline": get_pipeline_spec(settings).to_public_dict(),
+        "designs": design_items,
     }
 
 
