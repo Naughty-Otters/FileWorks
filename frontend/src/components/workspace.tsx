@@ -53,7 +53,7 @@ export function Workspace() {
   const [error, setError] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -68,10 +68,10 @@ export function Workspace() {
   const historySelectGenRef = useRef(0);
   const [sessionReady, setSessionReady] = useState(false);
   const { status: authStatus, me, displayUser } = useSession();
-  const meLoaded = authStatus !== "unknown" && me !== null;
-  const historyUserRef = useRef<string | null | undefined>(undefined);
+  const historyUserRef = useRef<string | null>(null);
 
   const refreshHistory = useCallback(async () => {
+    setHistoryLoading(true);
     try {
       const data = await fetchHistory();
       historyCache.syncWithList(data.items);
@@ -156,24 +156,35 @@ export function Workspace() {
           });
         }
       });
-    refreshHistory();
     return () => {
       active = false;
     };
-  }, [refreshHistory]);
+  }, []);
 
   useEffect(() => {
-    if (!meLoaded) return;
-    const userId = me?.user?.id ?? null;
-    if (historyUserRef.current === undefined) {
-      historyUserRef.current = userId;
+    // Guests skip the history request so first paint is the product, not a spinner.
+    if (authStatus === "unknown") return;
+    if (authStatus !== "signed-in") {
+      if (historyUserRef.current) historyCache.clear();
+      historyUserRef.current = null;
+      setHistory([]);
+      setHistoryLoading(false);
       return;
     }
-    if (userId === historyUserRef.current) return;
-    historyUserRef.current = userId;
-    historyCache.clear();
-    void refreshHistory();
-  }, [me?.user?.id, meLoaded, refreshHistory]);
+    const key = me?.user?.id ?? "session";
+    if (historyUserRef.current == null) {
+      historyUserRef.current = key;
+      void refreshHistory();
+      return;
+    }
+    if (me?.user?.id && historyUserRef.current !== me.user.id) {
+      if (historyUserRef.current !== "session") {
+        historyCache.clear();
+        void refreshHistory();
+      }
+      historyUserRef.current = me.user.id;
+    }
+  }, [authStatus, me?.user?.id, refreshHistory]);
 
   useEffect(() => {
     const prefs = loadWorkspacePrefs();
@@ -251,12 +262,11 @@ export function Workspace() {
   const signedIn = Boolean(me?.user);
   const quotaBlocked =
     signedIn && (me?.quota.remaining_day === 0 || me?.quota.remaining_month === 0);
-  // Block upload/convert/history until prefs, auth, health, and first history load settle.
-  const bootReady = sessionReady && authStatus !== "unknown" && health !== null && !historyLoading;
-  const uiLocked = !bootReady || loading || restoring;
+  // Never cover the workspace with a boot gate. New visitors should see the
+  // dropzone and a sign-in prompt immediately; history loads inside its panel.
+  const uiLocked = loading || restoring;
   const canExtract =
     Boolean(file) &&
-    bootReady &&
     !loading &&
     !restoring &&
     signedIn &&
@@ -276,7 +286,7 @@ export function Workspace() {
   }
 
   async function handleExtract() {
-    if (!bootReady || !file || !me?.user || !me.permissions["extract"]) return;
+    if (uiLocked || !file || !me?.user || !me.permissions["extract"]) return;
     stopActiveRun();
     const controller = new AbortController();
     convertAbortRef.current = controller;
@@ -327,7 +337,7 @@ export function Workspace() {
   }
 
   function handleFileSelect(next: File | null) {
-    if (!bootReady || loading || restoring) return;
+    if (uiLocked) return;
     setFile(next);
     setResult(null);
     setMarkdownDraft("");
@@ -338,7 +348,7 @@ export function Workspace() {
   }
 
   async function handleSelectHistory(id: string) {
-    if (!bootReady || loading || restoring) return;
+    if (uiLocked) return;
     const selectGen = ++historySelectGenRef.current;
     setError(null);
     setActiveRegionId(null);
@@ -384,7 +394,7 @@ export function Workspace() {
   }
 
   async function handleDeleteHistory(id: string) {
-    if (!bootReady || loading || restoring) return;
+    if (uiLocked) return;
     try {
       await deleteHistoryItem(id);
       historyCache.delete(id);
@@ -459,31 +469,23 @@ export function Workspace() {
       </header>
 
       <main className="relative z-10 mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col overflow-hidden px-4 py-3 md:px-6 md:py-4">
-        {!bootReady ? (
-          <div
-            className="absolute inset-0 z-20 flex items-center justify-center bg-[color-mix(in_oklab,var(--bg)_78%,transparent)] backdrop-blur-[1px]"
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-            aria-label="Loading workspace"
-          >
-            <p className="rounded-full border border-[var(--line)] bg-[var(--bg-panel)] px-4 py-2 text-sm text-[var(--ink-muted)] shadow-sm">
-              Loading workspace…
-            </p>
-          </div>
-        ) : null}
         <div
           className={cn(
             "grid min-h-0 min-w-0 flex-1 gap-3 overflow-hidden lg:gap-4",
-            !bootReady && "pointer-events-none select-none",
-            previewOpen && historyOpen && "grid-rows-[minmax(140px,0.9fr)_minmax(0,1.2fr)_minmax(140px,0.8fr)] lg:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_220px]",
-            previewOpen && !historyOpen && "grid-rows-[minmax(140px,1fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]",
-            !previewOpen && historyOpen && "grid-rows-[minmax(0,1.2fr)_minmax(140px,0.8fr)] lg:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_220px]",
-            !previewOpen && !historyOpen && "grid-rows-1 lg:grid-cols-1",
+            previewOpen &&
+              historyOpen &&
+              "grid-rows-[minmax(140px,0.8fr)_minmax(140px,0.9fr)_minmax(0,1.2fr)] [grid-template-areas:'history'_'source'_'result'] lg:grid-rows-1 lg:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)] lg:[grid-template-areas:'history_source_result']",
+            previewOpen &&
+              !historyOpen &&
+              "grid-rows-[minmax(140px,1fr)_minmax(0,1.2fr)] [grid-template-areas:'source'_'result'] lg:grid-rows-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:[grid-template-areas:'source_result']",
+            !previewOpen &&
+              historyOpen &&
+              "grid-rows-[minmax(140px,0.8fr)_minmax(0,1.2fr)] [grid-template-areas:'history'_'result'] lg:grid-rows-1 lg:grid-cols-[220px_minmax(0,1fr)] lg:[grid-template-areas:'history_result']",
+            !previewOpen && !historyOpen && "grid-rows-1 [grid-template-areas:'result'] lg:grid-cols-1",
           )}
         >
           {previewOpen ? (
-            <div id="source-preview-panel" className="min-h-0 overflow-hidden">
+            <div id="source-preview-panel" className="min-h-0 overflow-hidden [grid-area:source]">
               <UploadPanel
                 file={file}
                 previewUrl={previewUrl}
@@ -495,10 +497,22 @@ export function Workspace() {
                 onFileSelect={handleFileSelect}
                 onCollapse={() => setPreviewOpen(false)}
                 actions={convertControls}
+                leadingToggle={
+                  historyOpen ? undefined : (
+                    <PaneIcon
+                      label="Show history"
+                      controls="history-panel"
+                      badge={history.length}
+                      onClick={() => setHistoryOpen(true)}
+                    >
+                      <Clock3 size={15} />
+                    </PaneIcon>
+                  )
+                }
               />
             </div>
           ) : null}
-          <div className="min-h-0 overflow-hidden">
+          <div className="min-h-0 overflow-hidden [grid-area:result]">
             <ResultPanel
               result={result}
               loading={loading}
@@ -520,38 +534,38 @@ export function Workspace() {
               actions={previewOpen ? undefined : convertControls}
               leadingToggle={
                 previewOpen ? undefined : (
-                  <PaneIcon
-                    label="Show source"
-                    controls="source-preview-panel"
-                    onClick={() => setPreviewOpen(true)}
-                  >
-                    <FileImage size={15} />
-                  </PaneIcon>
-                )
-              }
-              trailingToggle={
-                historyOpen ? undefined : (
-                  <PaneIcon
-                    label="Show history"
-                    controls="history-panel"
-                    badge={history.length}
-                    onClick={() => setHistoryOpen(true)}
-                  >
-                    <Clock3 size={15} />
-                  </PaneIcon>
+                  <>
+                    {historyOpen ? null : (
+                      <PaneIcon
+                        label="Show history"
+                        controls="history-panel"
+                        badge={history.length}
+                        onClick={() => setHistoryOpen(true)}
+                      >
+                        <Clock3 size={15} />
+                      </PaneIcon>
+                    )}
+                    <PaneIcon
+                      label="Show source"
+                      controls="source-preview-panel"
+                      onClick={() => setPreviewOpen(true)}
+                    >
+                      <FileImage size={15} />
+                    </PaneIcon>
+                  </>
                 )
               }
             />
           </div>
           {historyOpen ? (
-            <div id="history-panel" className="min-h-0 overflow-hidden">
+            <div id="history-panel" className="min-h-0 overflow-hidden [grid-area:history]">
               <HistoryPanel
                 items={history}
                 selectedId={selectedId}
                 loading={historyLoading}
                 disabled={uiLocked}
                 storageBackend={storageBackend}
-                requiresLogin={authStatus === "guest" || (me != null && !me.permissions?.["history.read"])}
+                requiresLogin={authStatus !== "signed-in" || (me != null && !me.permissions?.["history.read"])}
                 onSelect={handleSelectHistory}
                 onDelete={handleDeleteHistory}
                 onCollapse={() => setHistoryOpen(false)}

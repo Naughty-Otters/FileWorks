@@ -17,6 +17,7 @@ type UploadPanelProps = {
   onFileSelect: (file: File | null) => void;
   onCollapse?: () => void;
   actions?: ReactNode;
+  leadingToggle?: ReactNode;
 };
 
 const ACCEPT = [
@@ -55,6 +56,7 @@ export function UploadPanel({
   onFileSelect,
   onCollapse,
   actions,
+  leadingToggle,
 }: UploadPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -136,6 +138,7 @@ export function UploadPanel({
         )}
       >
         <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-t-2xl border-b border-[var(--line)] px-3 py-2">
+          {leadingToggle}
           {file ? (
             isPdf || isText ? (
               <FileText size={15} className="shrink-0 text-[var(--accent)]" />

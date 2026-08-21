@@ -34,14 +34,11 @@ const avatarClass =
 export function AuthBar({ me, status, user, loginHref = "/login" }: AuthBarProps) {
   const account = user ?? me?.user ?? null;
   const resolved: SessionStatus = status ?? (me ? (me.user ? "signed-in" : "guest") : "unknown");
+  // Unknown without a cached identity is a new visitor — show Sign in, not a
+  // loading stand-in. Returning users hydrate as signed-in with a hint.
+  const signedIn = resolved === "signed-in" || Boolean(account);
 
-  // Never guess "signed out" before local storage is read: that guess is what makes
-  // a refresh flash "Sign in" and then swap to the avatar a moment later.
-  if (resolved === "unknown") {
-    return <span aria-hidden className="inline-block h-8 w-8 rounded-full bg-[var(--accent-soft)]" />;
-  }
-
-  if (resolved === "signed-in") {
+  if (signedIn) {
     const title = account ? accountTitle(account, me) : "Account";
     return (
       <a href="/profile" aria-label="Account" title={title} className={avatarClass}>

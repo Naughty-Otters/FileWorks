@@ -475,9 +475,9 @@ describe("ConvertControls", () => {
 describe("AuthBar", () => {
   const ada = { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" };
 
-  it("shows neither state until the session is known", () => {
+  it("treats an unknown session as a guest so first-time visitors see Sign in", () => {
     render(<AuthBar me={null} status="unknown" user={null} />);
-    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
     expect(screen.queryByRole("link", { name: "Account" })).not.toBeInTheDocument();
   });
 

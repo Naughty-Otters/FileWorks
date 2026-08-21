@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, FileImage, FileText, PanelRightClose, Trash2 } from "lucide-react";
+import { Clock3, FileImage, FileText, PanelLeftClose, Trash2 } from "lucide-react";
 import type { HistoryItem } from "@/lib/api";
 import { cn, formatBytes } from "@/lib/utils";
 
@@ -64,7 +64,7 @@ export function HistoryPanel({
             onClick={onCollapse}
             className="rounded-full p-1.5 text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
           >
-            <PanelRightClose size={14} />
+            <PanelLeftClose size={14} />
           </button>
         ) : null}
       </div>

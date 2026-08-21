@@ -4,6 +4,7 @@ import { Workspace } from "@/components/workspace";
 import type { MeResponse } from "@/lib/auth";
 import * as api from "@/lib/api";
 import { historyCache } from "@/lib/history-cache";
+import { setSession } from "@/lib/auth";
 
 const guestMe: MeResponse = {
   user: { id: "u1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
@@ -128,9 +129,15 @@ describe("Workspace", () => {
     historyState.items = [{ ...pastItem }];
     vi.mocked(api.fetchHistoryDetail).mockClear();
     vi.mocked(api.fetchHistoryFile).mockClear();
-    vi.mocked(api.fetchHistory).mockClear();
+    vi.mocked(api.fetchHistory).mockReset();
+    vi.mocked(api.fetchHistory).mockImplementation(async () => ({
+      items: historyState.items,
+      storage_backend: "local",
+    }));
     vi.mocked(api.extractDocument).mockClear();
     vi.mocked(api.deleteHistoryItem).mockClear();
+    vi.mocked(api.fetchMe).mockReset();
+    vi.mocked(api.fetchMe).mockImplementation(async () => guestMe);
   });
 
   it("lands empty with history visible and only loads blobs on click", async () => {
@@ -141,8 +148,9 @@ describe("Workspace", () => {
     expect(screen.getByRole("link", { name: "About" })).toHaveAttribute("href", "/about");
     expect(screen.getByText("Drop a file here")).toBeInTheDocument();
     expect(screen.getByText(/Drop a file and convert/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
-    await waitFor(() => expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument());
+    expect(document.getElementById("history-panel")?.className).toContain("[grid-area:history]");
     expect(api.fetchHistoryDetail).not.toHaveBeenCalled();
     expect(api.fetchHistoryFile).not.toHaveBeenCalled();
 
@@ -162,7 +170,8 @@ describe("Workspace", () => {
     await waitFor(() => expect(api.deleteHistoryItem).toHaveBeenCalled());
   });
 
-  it("blocks upload until workspace boot finishes", async () => {
+  it("lets signed-in users browse while history loads", async () => {
+    setSession("access", "refresh");
     let resolveHistory: (value: { items: typeof pastItem[]; storage_backend: string }) => void = () => undefined;
     vi.mocked(api.fetchHistory).mockImplementationOnce(
       () =>
@@ -171,12 +180,30 @@ describe("Workspace", () => {
         }),
     );
     render(<Workspace />);
-    await waitFor(() => expect(screen.getByLabelText("Loading workspace")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Drop a file here")).toBeInTheDocument());
+    expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument();
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    expect(fileInput).toBeDisabled();
+    expect(fileInput).not.toBeDisabled();
     resolveHistory({ items: [{ ...pastItem }], storage_backend: "local" });
-    await waitFor(() => expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument());
-    await waitFor(() => expect(fileInput).not.toBeDisabled());
+    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
+  });
+
+  it("shows a usable guest workspace instead of a boot overlay", async () => {
+    vi.mocked(api.fetchMe).mockResolvedValue({
+      ...guestMe,
+      user: null,
+      plan: "anonymous",
+      permissions: {},
+    });
+    render(<Workspace />);
+    expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument();
+    expect(screen.queryByText("Loading history…")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Drop a file here")).toBeInTheDocument());
+    expect(screen.getAllByRole("link", { name: "Sign in" })[0]).toHaveAttribute("href", "/login");
+    expect(screen.getByText(/to save conversions and see history/i)).toBeInTheDocument();
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).not.toBeDisabled();
+    expect(api.fetchHistory).not.toHaveBeenCalled();
   });
 
   it("reuses cached detail and file on a second click", async () => {
