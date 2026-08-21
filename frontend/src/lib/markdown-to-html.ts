@@ -77,7 +77,6 @@ export const markdownSanitizeSchema = {
 function classNames(node: Element): string[] {
   const value = node.properties?.className;
   if (Array.isArray(value)) return value.map(String);
-  if (typeof value === "string") return value.split(/\s+/).filter(Boolean);
   return [];
 }
 
@@ -170,9 +169,7 @@ function rehypeSizedImages() {
       if (!title) return;
       const classes = Array.isArray(node.properties.className)
         ? [...node.properties.className]
-        : typeof node.properties.className === "string"
-          ? [node.properties.className]
-          : [];
+        : [];
       const widthMatch = /^(\d+)/.exec(title);
       if (widthMatch) {
         const width = Number(widthMatch[1]);
