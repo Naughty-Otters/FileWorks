@@ -225,7 +225,7 @@ export const KIND_DEFAULTS: Record<ElementKind, KindDefaults> = {
   heading: {
     label: "Heading",
     w: 320,
-    h: 42,
+    h: 44,
     container: false,
     level: 1,
     style: { ...BASE_STYLE, fontSize: 28, bold: true, color: "#0f172a" },
@@ -234,7 +234,7 @@ export const KIND_DEFAULTS: Record<ElementKind, KindDefaults> = {
     label:
       "Paragraph text. Double-click to edit — write the body copy for this block here.",
     w: 340,
-    h: 100,
+    h: 88,
     container: false,
     style: { ...BASE_STYLE, fontSize: 14, color: "#334155" },
   },
@@ -284,8 +284,9 @@ export function createNode(kind: ElementKind, x = 0, y = 0): DesignNode {
 }
 
 /** A page-like default canvas size (Letter, ~96dpi) so the editor reads as
- * a printable document rather than an arbitrary whiteboard. The page
- * itself is always freeform: top-level boxes can be dragged anywhere. */
+ * a printable document rather than an arbitrary whiteboard. Blank documents
+ * start freeform (top-level boxes can be dragged anywhere); built-in
+ * templates opt into page-level auto-arrange so sections stack cleanly. */
 export function createEmptyDocument(pageSize: PageSize = PAGE_SIZE_PRESETS[0].size): DesignDocument {
   return {
     version: 2,

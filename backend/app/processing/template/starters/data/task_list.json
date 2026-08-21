@@ -1,0 +1,702 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 20,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt38o2qz_306",
+        "kind": "box",
+        "label": "Header",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 119,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#f8fafc",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 16,
+          "padding": 22,
+          "align": "start",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "box_mt38o2qz_302",
+            "kind": "box",
+            "label": "Title",
+            "x": 22,
+            "y": 22,
+            "w": 446,
+            "h": 72,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2qz_300",
+                "kind": "paragraph",
+                "label": "TASK LIST",
+                "x": 0,
+                "y": 0,
+                "w": 446,
+                "h": 24,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 11,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "heading_mt38o2qz_301",
+                "kind": "heading",
+                "label": "{{ board_name }}",
+                "level": 2,
+                "x": 0,
+                "y": 28,
+                "w": 446,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 23,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2qz_305",
+            "kind": "box",
+            "label": "Period",
+            "x": 484,
+            "y": 22,
+            "w": 264,
+            "h": 75,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "end",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2qz_303",
+                "kind": "paragraph",
+                "label": "Period",
+                "x": 8,
+                "y": 0,
+                "w": 256,
+                "h": 27,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#64748b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "heading_mt38o2qz_304",
+                "kind": "heading",
+                "label": "{{ task_period }}",
+                "level": 3,
+                "x": 8,
+                "y": 31,
+                "w": 256,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 19,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2qz_318",
+        "kind": "box",
+        "label": "Tasks",
+        "x": 40,
+        "y": 179,
+        "w": 770,
+        "h": 160,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2qz_317",
+            "kind": "heading",
+            "label": "Work items",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt38o2qz_311",
+            "kind": "box",
+            "label": "Column headers",
+            "x": 20,
+            "y": 60,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2qz_307",
+                "kind": "paragraph",
+                "label": "Task",
+                "x": 0,
+                "y": 2,
+                "w": 306,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qz_308",
+                "kind": "paragraph",
+                "label": "Owner",
+                "x": 306,
+                "y": 2,
+                "w": 131,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qz_309",
+                "kind": "paragraph",
+                "label": "Due",
+                "x": 437,
+                "y": 2,
+                "w": 116,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qz_310",
+                "kind": "paragraph",
+                "label": "Status",
+                "x": 553,
+                "y": 2,
+                "w": 177,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2qz_316",
+            "kind": "box",
+            "label": "Task",
+            "x": 20,
+            "y": 104,
+            "w": 730,
+            "h": 36,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2qz_312",
+                "kind": "paragraph",
+                "label": "{{ task.title }}",
+                "x": 0,
+                "y": 4,
+                "w": 306,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qz_313",
+                "kind": "paragraph",
+                "label": "{{ task.owner }}",
+                "x": 306,
+                "y": 4,
+                "w": 131,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#64748b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qz_314",
+                "kind": "paragraph",
+                "label": "{{ task.due }}",
+                "x": 437,
+                "y": 4,
+                "w": 116,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qz_315",
+                "kind": "paragraph",
+                "label": "{{ task.status }}",
+                "x": 553,
+                "y": 4,
+                "w": 177,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ],
+            "repeat": {
+              "over": "task_list_items",
+              "as": "task"
+            }
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2qz_321",
+        "kind": "box",
+        "label": "Notes",
+        "x": 40,
+        "y": 359,
+        "w": 770,
+        "h": 112,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 8,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2qz_319",
+            "kind": "heading",
+            "label": "Notes",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt38o2qz_320",
+            "kind": "paragraph",
+            "label": "{{ task_notes }}",
+            "x": 20,
+            "y": 56,
+            "w": 730,
+            "h": 36,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt38o2qz_322",
+      "name": "board_name",
+      "label": "Task list or board name",
+      "type": "text",
+      "sampleValue": "Launch readiness"
+    },
+    {
+      "id": "var_mt38o2qz_323",
+      "name": "task_period",
+      "label": "Sprint or date range for this task list",
+      "type": "text",
+      "sampleValue": "Mar 17 – Mar 28"
+    },
+    {
+      "id": "var_mt38o2qz_324",
+      "name": "task_list_items",
+      "label": "Tasks with title, owner, due date, and status",
+      "type": "list",
+      "sampleValue": "[{\"title\":\"Finalize pricing table copy\",\"owner\":\"Priya\",\"due\":\"Mar 19\",\"status\":\"In progress\"},{\"title\":\"Accessibility pass on templates\",\"owner\":\"Jordan\",\"due\":\"Mar 21\",\"status\":\"Todo\"},{\"title\":\"Set up status page\",\"owner\":\"Sam\",\"due\":\"Mar 20\",\"status\":\"In progress\"},{\"title\":\"Customer email draft\",\"owner\":\"Alex\",\"due\":\"Mar 24\",\"status\":\"Todo\"},{\"title\":\"Load-test preview pipeline\",\"owner\":\"Jordan\",\"due\":\"Mar 25\",\"status\":\"Blocked\"}]",
+      "itemSchema": [
+        {
+          "id": "field_mt38o2qz_325",
+          "name": "title",
+          "label": "Task title",
+          "type": "text"
+        },
+        {
+          "id": "field_mt38o2qz_326",
+          "name": "owner",
+          "label": "Task owner",
+          "type": "text"
+        },
+        {
+          "id": "field_mt38o2qz_327",
+          "name": "due",
+          "label": "Task due date",
+          "type": "date"
+        },
+        {
+          "id": "field_mt38o2qz_328",
+          "name": "status",
+          "label": "Task status",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "var_mt38o2qz_329",
+      "name": "task_notes",
+      "label": "Notes or blockers for the task list",
+      "type": "text",
+      "sampleValue": "Blocked item waiting on staging credentials from infra."
+    }
+  ]
+}

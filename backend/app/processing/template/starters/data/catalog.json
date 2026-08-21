@@ -1,0 +1,1458 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "family",
+      "label": "Family",
+      "blurb": "Schedules and planners for the household"
+    },
+    {
+      "id": "business",
+      "label": "Business",
+      "blurb": "Invoices, planning sheets, meetings, tasks, and contracts"
+    },
+    {
+      "id": "general",
+      "label": "General",
+      "blurb": "Flexible layouts for extracted documents"
+    }
+  ],
+  "starters": [
+    {
+      "id": "family_daily",
+      "name": "Daily family schedule",
+      "description": "Fridge-ready day card — timed blocks, meals, and reminders",
+      "category": "family",
+      "document_file": "family_daily.json",
+      "variables": [
+        {
+          "name": "family_name",
+          "label": "Family or household name on the schedule",
+          "type": "text",
+          "sampleValue": "The Rivera Family",
+          "itemSchema": []
+        },
+        {
+          "name": "day_name",
+          "label": "Weekday name for this daily schedule",
+          "type": "text",
+          "sampleValue": "Tuesday",
+          "itemSchema": []
+        },
+        {
+          "name": "schedule_date",
+          "label": "Calendar date for this daily schedule",
+          "type": "date",
+          "sampleValue": "March 18, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "family_daily_blocks",
+          "label": "Timed activity blocks for the day (time and what happens)",
+          "type": "list",
+          "sampleValue": "[{\"time\":\"7:00 AM\",\"activity\":\"Breakfast & get ready\"},{\"time\":\"8:15 AM\",\"activity\":\"School drop-off\"},{\"time\":\"12:30 PM\",\"activity\":\"Lunch (kids at school)\"},{\"time\":\"3:30 PM\",\"activity\":\"Pickup · snacks · homework\"},{\"time\":\"5:30 PM\",\"activity\":\"Soccer practice (Maya)\"},{\"time\":\"7:00 PM\",\"activity\":\"Family dinner\"},{\"time\":\"8:30 PM\",\"activity\":\"Baths · bedtime stories\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt38o2qw_38",
+              "name": "time",
+              "label": "Clock time for this block",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2qw_39",
+              "name": "activity",
+              "label": "What the family does in this block",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "breakfast",
+          "label": "Breakfast plan for the day",
+          "type": "text",
+          "sampleValue": "Oatmeal and fruit",
+          "itemSchema": []
+        },
+        {
+          "name": "lunch",
+          "label": "Lunch plan for the day",
+          "type": "text",
+          "sampleValue": "School lunch / leftovers",
+          "itemSchema": []
+        },
+        {
+          "name": "dinner",
+          "label": "Dinner plan for the day",
+          "type": "text",
+          "sampleValue": "Tacos and salad",
+          "itemSchema": []
+        },
+        {
+          "name": "daily_reminders",
+          "label": "Short reminders or errands for the day",
+          "type": "text",
+          "sampleValue": "Library books due\nBring soccer cleats\nCall grandma after dinner",
+          "itemSchema": []
+        },
+        {
+          "name": "daily_notes",
+          "label": "Freeform notes at the bottom of the daily card",
+          "type": "text",
+          "sampleValue": "Early bedtime tonight — big field trip tomorrow.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "family_weekly",
+      "name": "Weekly family schedule",
+      "description": "Landscape week-at-a-glance with seven day columns and dinners",
+      "category": "family",
+      "document_file": "family_weekly.json",
+      "variables": [
+        {
+          "name": "family_name",
+          "label": "Family or household name on the weekly card",
+          "type": "text",
+          "sampleValue": "The Rivera Family",
+          "itemSchema": []
+        },
+        {
+          "name": "week_of",
+          "label": "Start date of the week shown on the card",
+          "type": "date",
+          "sampleValue": "March 16, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "monday_plan",
+          "label": "Monday activities for the weekly schedule",
+          "type": "text",
+          "sampleValue": "School\nPiano 4:00 PM\nEarly bedtime",
+          "itemSchema": []
+        },
+        {
+          "name": "tuesday_plan",
+          "label": "Tuesday activities for the weekly schedule",
+          "type": "text",
+          "sampleValue": "School\nGrocery run\nHomework club",
+          "itemSchema": []
+        },
+        {
+          "name": "wednesday_plan",
+          "label": "Wednesday activities for the weekly schedule",
+          "type": "text",
+          "sampleValue": "School\nSoccer 5:30 PM",
+          "itemSchema": []
+        },
+        {
+          "name": "thursday_plan",
+          "label": "Thursday activities for the weekly schedule",
+          "type": "text",
+          "sampleValue": "School\nLibrary books\nPack lunches",
+          "itemSchema": []
+        },
+        {
+          "name": "friday_plan",
+          "label": "Friday activities for the weekly schedule",
+          "type": "text",
+          "sampleValue": "School\nPizza night\nGame night",
+          "itemSchema": []
+        },
+        {
+          "name": "saturday_plan",
+          "label": "Saturday activities for the weekly schedule",
+          "type": "text",
+          "sampleValue": "Park morning\nChores\nMovie night",
+          "itemSchema": []
+        },
+        {
+          "name": "sunday_plan",
+          "label": "Sunday activities for the weekly schedule",
+          "type": "text",
+          "sampleValue": "Brunch out\nMeal prep\nFamily video call",
+          "itemSchema": []
+        },
+        {
+          "name": "mon_dinner",
+          "label": "Monday dinner",
+          "type": "text",
+          "sampleValue": "Pasta",
+          "itemSchema": []
+        },
+        {
+          "name": "tue_dinner",
+          "label": "Tuesday dinner",
+          "type": "text",
+          "sampleValue": "Tacos",
+          "itemSchema": []
+        },
+        {
+          "name": "wed_dinner",
+          "label": "Wednesday dinner",
+          "type": "text",
+          "sampleValue": "Stir-fry",
+          "itemSchema": []
+        },
+        {
+          "name": "thu_dinner",
+          "label": "Thursday dinner",
+          "type": "text",
+          "sampleValue": "Soup and bread",
+          "itemSchema": []
+        },
+        {
+          "name": "fri_dinner",
+          "label": "Friday dinner",
+          "type": "text",
+          "sampleValue": "Pizza",
+          "itemSchema": []
+        },
+        {
+          "name": "sat_dinner",
+          "label": "Saturday dinner",
+          "type": "text",
+          "sampleValue": "Grill",
+          "itemSchema": []
+        },
+        {
+          "name": "sun_dinner",
+          "label": "Sunday dinner",
+          "type": "text",
+          "sampleValue": "Roast chicken",
+          "itemSchema": []
+        },
+        {
+          "name": "week_focus",
+          "label": "One short focus or goal for the household this week",
+          "type": "text",
+          "sampleValue": "Pack sports bags the night before. No screens after 8:30 on school nights.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 1100,
+        "h": 850
+      }
+    },
+    {
+      "id": "family_monthly",
+      "name": "Monthly family planner",
+      "description": "Month overview with key dates, rhythms, and household goals",
+      "category": "family",
+      "document_file": "family_monthly.json",
+      "variables": [
+        {
+          "name": "family_name",
+          "label": "Family or household name on the monthly planner",
+          "type": "text",
+          "sampleValue": "The Rivera Family",
+          "itemSchema": []
+        },
+        {
+          "name": "month_name",
+          "label": "Month name for the planner",
+          "type": "text",
+          "sampleValue": "March",
+          "itemSchema": []
+        },
+        {
+          "name": "month_year",
+          "label": "Year for the monthly planner",
+          "type": "text",
+          "sampleValue": "2026",
+          "itemSchema": []
+        },
+        {
+          "name": "family_monthly_events",
+          "label": "Important dates this month (date, event title, and who is involved)",
+          "type": "list",
+          "sampleValue": "[{\"date\":\"Mar 3\",\"title\":\"Parent-teacher conferences\",\"who\":\"Alex & Jordan\"},{\"date\":\"Mar 12\",\"title\":\"Maya's birthday party\",\"who\":\"Whole family\"},{\"date\":\"Mar 18\",\"title\":\"School field trip\",\"who\":\"Leo\"},{\"date\":\"Mar 22\",\"title\":\"Family photo session\",\"who\":\"Whole family\"},{\"date\":\"Mar 28\",\"title\":\"Spring break starts\",\"who\":\"Kids\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt38o2qx_129",
+              "name": "date",
+              "label": "Date of the event",
+              "type": "date"
+            },
+            {
+              "id": "field_mt38o2qx_130",
+              "name": "title",
+              "label": "Event title or description",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2qx_131",
+              "name": "who",
+              "label": "Who the event involves",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "monthly_rhythms",
+          "label": "Recurring monthly habits or routines for the household",
+          "type": "text",
+          "sampleValue": "1st — pay bills & review calendar\n2nd Sunday — grandparents dinner\nLast Friday — family game night\nEvery Wednesday — recycling out",
+          "itemSchema": []
+        },
+        {
+          "name": "monthly_goals",
+          "label": "Family goals or intentions for the month",
+          "type": "text",
+          "sampleValue": "Eat dinner together 5 nights/week\nOne device-free Saturday morning\nFinish spring closet clean-out",
+          "itemSchema": []
+        },
+        {
+          "name": "monthly_errands",
+          "label": "Money, errands, or logistics to remember this month",
+          "type": "text",
+          "sampleValue": "Renew soccer registration · Schedule dentist · Order birthday gift for Maya",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "family_yearly",
+      "name": "Yearly family calendar",
+      "description": "Landscape year wall calendar with twelve months and annual goals",
+      "category": "family",
+      "document_file": "family_yearly.json",
+      "variables": [
+        {
+          "name": "family_name",
+          "label": "Family or household name on the yearly calendar",
+          "type": "text",
+          "sampleValue": "The Rivera Family",
+          "itemSchema": []
+        },
+        {
+          "name": "calendar_year",
+          "label": "Calendar year shown on the yearly planner",
+          "type": "text",
+          "sampleValue": "2026",
+          "itemSchema": []
+        },
+        {
+          "name": "jan_notes",
+          "label": "January highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "New Year · ski weekend",
+          "itemSchema": []
+        },
+        {
+          "name": "feb_notes",
+          "label": "February highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "Maya birthday (12th)",
+          "itemSchema": []
+        },
+        {
+          "name": "mar_notes",
+          "label": "March highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "Spring break · photos",
+          "itemSchema": []
+        },
+        {
+          "name": "apr_notes",
+          "label": "April highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "Taxes · Easter",
+          "itemSchema": []
+        },
+        {
+          "name": "may_notes",
+          "label": "May highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "Mother's Day · field day",
+          "itemSchema": []
+        },
+        {
+          "name": "jun_notes",
+          "label": "June highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "Last day of school",
+          "itemSchema": []
+        },
+        {
+          "name": "jul_notes",
+          "label": "July highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "Beach trip (week 2)",
+          "itemSchema": []
+        },
+        {
+          "name": "aug_notes",
+          "label": "August highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "Back-to-school shopping",
+          "itemSchema": []
+        },
+        {
+          "name": "sep_notes",
+          "label": "September highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "School starts · soccer",
+          "itemSchema": []
+        },
+        {
+          "name": "oct_notes",
+          "label": "October highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "Halloween · fall fest",
+          "itemSchema": []
+        },
+        {
+          "name": "nov_notes",
+          "label": "November highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "Thanksgiving travel",
+          "itemSchema": []
+        },
+        {
+          "name": "dec_notes",
+          "label": "December highlights on the yearly calendar",
+          "type": "text",
+          "sampleValue": "Holidays · year review",
+          "itemSchema": []
+        },
+        {
+          "name": "yearly_goals",
+          "label": "Family goals for the full year",
+          "type": "text",
+          "sampleValue": "Save for summer beach trip\nCook together every Sunday\nVisit both sets of grandparents",
+          "itemSchema": []
+        },
+        {
+          "name": "yearly_trips",
+          "label": "Major trips and celebrations planned for the year",
+          "type": "text",
+          "sampleValue": "July — beach week\nNovember — Thanksgiving travel\nDecember — holiday open house",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 1100,
+        "h": 850
+      }
+    },
+    {
+      "id": "meeting_agenda",
+      "name": "Meeting agenda",
+      "description": "Timed topics, attendees, notes, and action items",
+      "category": "business",
+      "document_file": "meeting_agenda.json",
+      "variables": [
+        {
+          "name": "meeting_title",
+          "label": "Meeting title on the agenda",
+          "type": "text",
+          "sampleValue": "Weekly product sync",
+          "itemSchema": []
+        },
+        {
+          "name": "meeting_date",
+          "label": "Meeting date",
+          "type": "date",
+          "sampleValue": "March 18, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "meeting_time",
+          "label": "Meeting start time and duration",
+          "type": "text",
+          "sampleValue": "10:00–10:45 AM",
+          "itemSchema": []
+        },
+        {
+          "name": "facilitator",
+          "label": "Person running the meeting",
+          "type": "text",
+          "sampleValue": "Alex Rivera",
+          "itemSchema": []
+        },
+        {
+          "name": "attendees",
+          "label": "People invited or present at the meeting",
+          "type": "text",
+          "sampleValue": "Alex, Jordan, Sam, Priya",
+          "itemSchema": []
+        },
+        {
+          "name": "meeting_location",
+          "label": "Meeting room or video link",
+          "type": "text",
+          "sampleValue": "Zoom · Product room",
+          "itemSchema": []
+        },
+        {
+          "name": "meeting_agenda_items",
+          "label": "Agenda topics with time box, topic title, and owner",
+          "type": "list",
+          "sampleValue": "[{\"time\":\"5 min\",\"topic\":\"Wins since last week\",\"owner\":\"All\"},{\"time\":\"15 min\",\"topic\":\"Sprint goals and blockers\",\"owner\":\"Jordan\"},{\"time\":\"15 min\",\"topic\":\"Launch checklist review\",\"owner\":\"Priya\"},{\"time\":\"10 min\",\"topic\":\"Decisions and next steps\",\"owner\":\"Alex\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt38o2qy_245",
+              "name": "time",
+              "label": "Time box for this agenda topic",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2qy_246",
+              "name": "topic",
+              "label": "Agenda topic title",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2qy_247",
+              "name": "owner",
+              "label": "Person leading this topic",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "meeting_notes",
+          "label": "Discussion notes captured during the meeting",
+          "type": "text",
+          "sampleValue": "Launch date confirmed for Apr 2.\nNeed design QA sign-off by Friday.",
+          "itemSchema": []
+        },
+        {
+          "name": "action_items",
+          "label": "Follow-up actions with owners and due dates",
+          "type": "text",
+          "sampleValue": "Priya — finish QA checklist (Mar 20)\nSam — update status page copy (Mar 21)\nAlex — send notes to stakeholders (today)",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "project_plan",
+      "name": "Project plan",
+      "description": "Objectives, milestones, owners, and risks on one page",
+      "category": "business",
+      "document_file": "project_plan.json",
+      "variables": [
+        {
+          "name": "project_name",
+          "label": "Project name on the plan",
+          "type": "text",
+          "sampleValue": "Website redesign launch",
+          "itemSchema": []
+        },
+        {
+          "name": "project_status",
+          "label": "Current project status label",
+          "type": "text",
+          "sampleValue": "On track",
+          "itemSchema": []
+        },
+        {
+          "name": "project_summary",
+          "label": "Short project summary or objective",
+          "type": "text",
+          "sampleValue": "Ship the new marketing site with updated brand, pricing page, and template gallery by April 2.",
+          "itemSchema": []
+        },
+        {
+          "name": "project_owner",
+          "label": "Project owner or lead",
+          "type": "text",
+          "sampleValue": "Alex Rivera",
+          "itemSchema": []
+        },
+        {
+          "name": "project_start",
+          "label": "Project start date",
+          "type": "date",
+          "sampleValue": "Feb 10, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "project_target",
+          "label": "Project target ship date",
+          "type": "date",
+          "sampleValue": "Apr 2, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "success_criteria",
+          "label": "How success will be measured for this project",
+          "type": "text",
+          "sampleValue": "Lighthouse perf > 90 on homepage\nAll starters render in preview\nZero severity-1 bugs at launch",
+          "itemSchema": []
+        },
+        {
+          "name": "project_plan_milestones",
+          "label": "Project milestones with date, title, and owner",
+          "type": "list",
+          "sampleValue": "[{\"date\":\"Feb 28\",\"title\":\"Design system freeze\",\"owner\":\"Sam\"},{\"date\":\"Mar 14\",\"title\":\"Content migration complete\",\"owner\":\"Priya\"},{\"date\":\"Mar 21\",\"title\":\"QA + accessibility pass\",\"owner\":\"Jordan\"},{\"date\":\"Apr 2\",\"title\":\"Public launch\",\"owner\":\"Alex\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt38o2qz_296",
+              "name": "date",
+              "label": "Milestone target date",
+              "type": "date"
+            },
+            {
+              "id": "field_mt38o2qz_297",
+              "name": "title",
+              "label": "Milestone title",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2qz_298",
+              "name": "owner",
+              "label": "Milestone owner",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "project_risks",
+          "label": "Risks, dependencies, or open questions for the project",
+          "type": "text",
+          "sampleValue": "CMS migration may slip if redirects are incomplete.\nNeed legal review on pricing copy before launch.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "task_list",
+      "name": "Task list",
+      "description": "Printable work tracker — task, owner, due date, status",
+      "category": "business",
+      "document_file": "task_list.json",
+      "variables": [
+        {
+          "name": "board_name",
+          "label": "Task list or board name",
+          "type": "text",
+          "sampleValue": "Launch readiness",
+          "itemSchema": []
+        },
+        {
+          "name": "task_period",
+          "label": "Sprint or date range for this task list",
+          "type": "text",
+          "sampleValue": "Mar 17 – Mar 28",
+          "itemSchema": []
+        },
+        {
+          "name": "task_list_items",
+          "label": "Tasks with title, owner, due date, and status",
+          "type": "list",
+          "sampleValue": "[{\"title\":\"Finalize pricing table copy\",\"owner\":\"Priya\",\"due\":\"Mar 19\",\"status\":\"In progress\"},{\"title\":\"Accessibility pass on templates\",\"owner\":\"Jordan\",\"due\":\"Mar 21\",\"status\":\"Todo\"},{\"title\":\"Set up status page\",\"owner\":\"Sam\",\"due\":\"Mar 20\",\"status\":\"In progress\"},{\"title\":\"Customer email draft\",\"owner\":\"Alex\",\"due\":\"Mar 24\",\"status\":\"Todo\"},{\"title\":\"Load-test preview pipeline\",\"owner\":\"Jordan\",\"due\":\"Mar 25\",\"status\":\"Blocked\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt38o2qz_325",
+              "name": "title",
+              "label": "Task title",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2qz_326",
+              "name": "owner",
+              "label": "Task owner",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2qz_327",
+              "name": "due",
+              "label": "Task due date",
+              "type": "date"
+            },
+            {
+              "id": "field_mt38o2qz_328",
+              "name": "status",
+              "label": "Task status",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "task_notes",
+          "label": "Notes or blockers for the task list",
+          "type": "text",
+          "sampleValue": "Blocked item waiting on staging credentials from infra.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "timesheet",
+      "name": "Timesheet",
+      "description": "Employee hours by project for a pay or billing period",
+      "category": "business",
+      "document_file": "timesheet.json",
+      "variables": [
+        {
+          "name": "employee_name",
+          "label": "Employee name on the timesheet",
+          "type": "text",
+          "sampleValue": "Jordan Lee",
+          "itemSchema": []
+        },
+        {
+          "name": "timesheet_period",
+          "label": "Pay or billing period for the timesheet",
+          "type": "text",
+          "sampleValue": "Mar 1 – Mar 15, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "employee_id",
+          "label": "Employee ID on the timesheet",
+          "type": "text",
+          "sampleValue": "EMP-00214",
+          "itemSchema": []
+        },
+        {
+          "name": "manager_name",
+          "label": "Approving manager name",
+          "type": "text",
+          "sampleValue": "Alex Rivera",
+          "itemSchema": []
+        },
+        {
+          "name": "timesheet_entries",
+          "label": "Timesheet rows with date, project code, hours, and notes",
+          "type": "list",
+          "sampleValue": "[{\"date\":\"Mar 2\",\"project\":\"Website redesign\",\"hours\":\"8.0\",\"notes\":\"Template polish\"},{\"date\":\"Mar 3\",\"project\":\"Website redesign\",\"hours\":\"7.5\",\"notes\":\"Preview QA\"},{\"date\":\"Mar 4\",\"project\":\"Client support\",\"hours\":\"8.0\",\"notes\":\"On-call\"},{\"date\":\"Mar 5\",\"project\":\"Website redesign\",\"hours\":\"8.0\",\"notes\":\"Family starters\"},{\"date\":\"Mar 6\",\"project\":\"Internal\",\"hours\":\"4.0\",\"notes\":\"Planning\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt38o2qz_366",
+              "name": "date",
+              "label": "Work date",
+              "type": "date"
+            },
+            {
+              "id": "field_mt38o2qz_367",
+              "name": "project",
+              "label": "Project name or cost code",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2qz_368",
+              "name": "hours",
+              "label": "Hours worked",
+              "type": "number"
+            },
+            {
+              "id": "field_mt38o2qz_369",
+              "name": "notes",
+              "label": "Short note for the entry",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "total_hours",
+          "label": "Total hours for the timesheet period",
+          "type": "number",
+          "sampleValue": "35.5",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "invoice",
+      "name": "Client invoice",
+      "description": "Design the invoice customers receive — bill-to, line items, and total",
+      "category": "business",
+      "document_file": "invoice.json",
+      "variables": [
+        {
+          "name": "company_name",
+          "label": "Issuing company name on the invoice",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "company_address",
+          "label": "Issuing company mailing address",
+          "type": "text",
+          "sampleValue": "123 Market St, City, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "company_email",
+          "label": "Issuing company billing email",
+          "type": "text",
+          "sampleValue": "billing@acme.example",
+          "itemSchema": []
+        },
+        {
+          "name": "invoice_number",
+          "label": "Invoice number or identifier",
+          "type": "text",
+          "sampleValue": "INV-1042",
+          "itemSchema": []
+        },
+        {
+          "name": "invoice_date",
+          "label": "Invoice issue date",
+          "type": "date",
+          "sampleValue": "March 1, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "client_name",
+          "label": "Bill-to client or customer name",
+          "type": "text",
+          "sampleValue": "Northwind Trading",
+          "itemSchema": []
+        },
+        {
+          "name": "client_address",
+          "label": "Bill-to client address",
+          "type": "text",
+          "sampleValue": "500 Harbor Ave, City, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "client_email",
+          "label": "Bill-to client email",
+          "type": "text",
+          "sampleValue": "ap@northwind.example",
+          "itemSchema": []
+        },
+        {
+          "name": "invoice_spending_items",
+          "label": "Invoice spending items: each billed line from the source (description and amount)",
+          "type": "list",
+          "sampleValue": "[{\"description\":\"Design retainer — March\",\"amount\":\"$2,400.00\"},{\"description\":\"Print production\",\"amount\":\"$350.00\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt38o2r0_404",
+              "name": "description",
+              "label": "What this invoice line billed",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2r0_405",
+              "name": "amount",
+              "label": "Amount charged on this invoice line",
+              "type": "currency"
+            }
+          ]
+        },
+        {
+          "name": "invoice_total",
+          "label": "Invoice grand total due",
+          "type": "currency",
+          "sampleValue": "$2,750.00",
+          "itemSchema": []
+        },
+        {
+          "name": "invoice_notes",
+          "label": "Invoice notes, payment terms, or footer remarks",
+          "type": "text",
+          "sampleValue": "Payment due within 30 days. Thank you for your business.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "receipt",
+      "name": "Store receipt",
+      "description": "Narrow till-print layout for itemized purchases and tax",
+      "category": "business",
+      "document_file": "receipt.json",
+      "variables": [
+        {
+          "name": "store_name",
+          "label": "Store or merchant name on the receipt",
+          "type": "text",
+          "sampleValue": "Your Store",
+          "itemSchema": []
+        },
+        {
+          "name": "store_address",
+          "label": "Store address printed on the receipt",
+          "type": "text",
+          "sampleValue": "123 Main St, City, ST",
+          "itemSchema": []
+        },
+        {
+          "name": "store_phone",
+          "label": "Store phone number",
+          "type": "text",
+          "sampleValue": "(555) 123-4567",
+          "itemSchema": []
+        },
+        {
+          "name": "receipt_date",
+          "label": "Receipt transaction date",
+          "type": "date",
+          "sampleValue": "March 15, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "receipt_number",
+          "label": "Receipt number or identifier",
+          "type": "text",
+          "sampleValue": "R-8821",
+          "itemSchema": []
+        },
+        {
+          "name": "receipt_purchased_items",
+          "label": "Receipt purchased items: each sold line from the source (description and amount)",
+          "type": "list",
+          "sampleValue": "[{\"description\":\"Coffee\",\"amount\":\"$4.50\"},{\"description\":\"Pastry\",\"amount\":\"$3.25\"},{\"description\":\"Sandwich\",\"amount\":\"$9.75\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt38o2r0_435",
+              "name": "description",
+              "label": "Purchased item description",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2r0_436",
+              "name": "amount",
+              "label": "Purchased item amount",
+              "type": "currency"
+            }
+          ]
+        },
+        {
+          "name": "receipt_subtotal",
+          "label": "Receipt subtotal before tax",
+          "type": "currency",
+          "sampleValue": "$17.50",
+          "itemSchema": []
+        },
+        {
+          "name": "receipt_tax",
+          "label": "Receipt tax amount",
+          "type": "currency",
+          "sampleValue": "$1.40",
+          "itemSchema": []
+        },
+        {
+          "name": "receipt_total",
+          "label": "Receipt total charged",
+          "type": "currency",
+          "sampleValue": "$18.90",
+          "itemSchema": []
+        },
+        {
+          "name": "thank_you_message",
+          "label": "Receipt thank-you or footer message",
+          "type": "text",
+          "sampleValue": "Thank you for your purchase!",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 340,
+        "h": 620
+      }
+    },
+    {
+      "id": "statement",
+      "name": "Account statement",
+      "description": "Bank-style summary with balances and transaction rows",
+      "category": "business",
+      "document_file": "statement.json",
+      "variables": [
+        {
+          "name": "bank_name",
+          "label": "Bank or financial institution name on the statement",
+          "type": "text",
+          "sampleValue": "First National Bank",
+          "itemSchema": []
+        },
+        {
+          "name": "statement_period",
+          "label": "Statement period covered",
+          "type": "text",
+          "sampleValue": "01/01/2026 – 01/31/2026",
+          "itemSchema": []
+        },
+        {
+          "name": "account_number",
+          "label": "Account number shown on the statement",
+          "type": "text",
+          "sampleValue": "**** 4821",
+          "itemSchema": []
+        },
+        {
+          "name": "opening_balance",
+          "label": "Opening balance for the statement period",
+          "type": "currency",
+          "sampleValue": "$4,210.55",
+          "itemSchema": []
+        },
+        {
+          "name": "closing_balance",
+          "label": "Closing balance for the statement period",
+          "type": "currency",
+          "sampleValue": "$5,032.10",
+          "itemSchema": []
+        },
+        {
+          "name": "statement_transactions",
+          "label": "Account statement transactions for the period (date, description, amount)",
+          "type": "list",
+          "sampleValue": "[{\"date\":\"01/03\",\"description\":\"Grocery Store\",\"amount\":\"-$86.20\"},{\"date\":\"01/07\",\"description\":\"Payroll Deposit\",\"amount\":\"+$2,400.00\"},{\"date\":\"01/15\",\"description\":\"Electric Utility\",\"amount\":\"-$120.44\"},{\"date\":\"01/22\",\"description\":\"Online Transfer\",\"amount\":\"-$300.00\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt38o2r0_477",
+              "name": "date",
+              "label": "Transaction date",
+              "type": "date"
+            },
+            {
+              "id": "field_mt38o2r0_478",
+              "name": "description",
+              "label": "Transaction description",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2r0_479",
+              "name": "amount",
+              "label": "Transaction amount (signed)",
+              "type": "currency"
+            }
+          ]
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "insurance",
+      "name": "Coverage certificate",
+      "description": "Proof-of-insurance page: holder, coverage table, and policy period",
+      "category": "business",
+      "document_file": "insurance.json",
+      "variables": [
+        {
+          "name": "holder_name",
+          "label": "Insured policy holder name",
+          "type": "text",
+          "sampleValue": "Jane Doe",
+          "itemSchema": []
+        },
+        {
+          "name": "holder_address",
+          "label": "Policy holder address",
+          "type": "text",
+          "sampleValue": "123 Main St, City, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "policy_number",
+          "label": "Insurance policy number",
+          "type": "text",
+          "sampleValue": "INS-000123",
+          "itemSchema": []
+        },
+        {
+          "name": "insurance_coverages",
+          "label": "Insurance coverages on the certificate (coverage type and limit)",
+          "type": "list",
+          "sampleValue": "[{\"type\":\"General Liability\",\"limit\":\"$1,000,000\"},{\"type\":\"Property Damage\",\"limit\":\"$500,000\"},{\"type\":\"Personal Injury\",\"limit\":\"$250,000\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt38o2r1_509",
+              "name": "type",
+              "label": "Coverage type",
+              "type": "text"
+            },
+            {
+              "id": "field_mt38o2r1_510",
+              "name": "limit",
+              "label": "Coverage limit",
+              "type": "currency"
+            }
+          ]
+        },
+        {
+          "name": "effective_date",
+          "label": "Policy effective date",
+          "type": "date",
+          "sampleValue": "01/01/2026",
+          "itemSchema": []
+        },
+        {
+          "name": "expiration_date",
+          "label": "Policy expiration date",
+          "type": "date",
+          "sampleValue": "01/01/2027",
+          "itemSchema": []
+        },
+        {
+          "name": "insurer_name",
+          "label": "Insurance company issuing the certificate",
+          "type": "text",
+          "sampleValue": "Acme Mutual Insurance Co.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "paystub",
+      "name": "Payroll stub",
+      "description": "Employee earnings slip driven entirely by {{ variables }}",
+      "category": "business",
+      "document_file": "paystub.json",
+      "variables": [
+        {
+          "name": "employer_name",
+          "label": "Employer company name on the pay stub",
+          "type": "text",
+          "sampleValue": "Acme Corporation",
+          "itemSchema": []
+        },
+        {
+          "name": "employer_address",
+          "label": "Employer address on the pay stub",
+          "type": "text",
+          "sampleValue": "123 Main St, City, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "pay_date",
+          "label": "Pay date printed on the stub",
+          "type": "date",
+          "sampleValue": "02/15/2026",
+          "itemSchema": []
+        },
+        {
+          "name": "employee_name",
+          "label": "Employee name on the pay stub",
+          "type": "text",
+          "sampleValue": "Jane Doe",
+          "itemSchema": []
+        },
+        {
+          "name": "employee_id",
+          "label": "Employee ID on the pay stub",
+          "type": "text",
+          "sampleValue": "EMP-00214",
+          "itemSchema": []
+        },
+        {
+          "name": "pay_period_start",
+          "label": "Pay period start date",
+          "type": "date",
+          "sampleValue": "02/01/2026",
+          "itemSchema": []
+        },
+        {
+          "name": "pay_period_end",
+          "label": "Pay period end date",
+          "type": "date",
+          "sampleValue": "02/15/2026",
+          "itemSchema": []
+        },
+        {
+          "name": "filing_status",
+          "label": "Employee tax filing status",
+          "type": "text",
+          "sampleValue": "Single",
+          "itemSchema": []
+        },
+        {
+          "name": "regular_hours",
+          "label": "Regular hours worked this period",
+          "type": "number",
+          "sampleValue": "80",
+          "itemSchema": []
+        },
+        {
+          "name": "hourly_rate",
+          "label": "Employee hourly rate",
+          "type": "currency",
+          "sampleValue": "$32.00",
+          "itemSchema": []
+        },
+        {
+          "name": "overtime_pay",
+          "label": "Overtime pay this period",
+          "type": "currency",
+          "sampleValue": "$0.00",
+          "itemSchema": []
+        },
+        {
+          "name": "gross_pay",
+          "label": "Gross pay this period",
+          "type": "currency",
+          "sampleValue": "$2,560.00",
+          "itemSchema": []
+        },
+        {
+          "name": "federal_tax",
+          "label": "Federal tax withheld",
+          "type": "currency",
+          "sampleValue": "$384.00",
+          "itemSchema": []
+        },
+        {
+          "name": "state_tax",
+          "label": "State tax withheld",
+          "type": "currency",
+          "sampleValue": "$128.00",
+          "itemSchema": []
+        },
+        {
+          "name": "insurance_deduction",
+          "label": "Insurance deduction this period",
+          "type": "currency",
+          "sampleValue": "$60.00",
+          "itemSchema": []
+        },
+        {
+          "name": "retirement_deduction",
+          "label": "Retirement (401k) deduction this period",
+          "type": "currency",
+          "sampleValue": "$102.40",
+          "itemSchema": []
+        },
+        {
+          "name": "total_deductions",
+          "label": "Total deductions this period",
+          "type": "currency",
+          "sampleValue": "$674.40",
+          "itemSchema": []
+        },
+        {
+          "name": "net_pay",
+          "label": "Net pay on the stub",
+          "type": "currency",
+          "sampleValue": "$1,885.60",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "rental",
+      "name": "Residential lease",
+      "description": "Apartment lease terms, parties, and signature blocks",
+      "category": "business",
+      "document_file": "rental.json",
+      "variables": [
+        {
+          "name": "agreement_date",
+          "label": "Lease agreement date",
+          "type": "date",
+          "sampleValue": "01/01/2026",
+          "itemSchema": []
+        },
+        {
+          "name": "landlord_name",
+          "label": "Landlord name on the lease",
+          "type": "text",
+          "sampleValue": "Acme Properties LLC",
+          "itemSchema": []
+        },
+        {
+          "name": "tenant_name",
+          "label": "Tenant name on the lease",
+          "type": "text",
+          "sampleValue": "John Smith",
+          "itemSchema": []
+        },
+        {
+          "name": "property_address",
+          "label": "Leased property address",
+          "type": "text",
+          "sampleValue": "456 Oak Avenue, Apt 3B, Springfield, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "lease_start_date",
+          "label": "Lease start date",
+          "type": "date",
+          "sampleValue": "02/01/2026",
+          "itemSchema": []
+        },
+        {
+          "name": "lease_end_date",
+          "label": "Lease end date",
+          "type": "date",
+          "sampleValue": "01/31/2027",
+          "itemSchema": []
+        },
+        {
+          "name": "monthly_rent",
+          "label": "Monthly rent amount",
+          "type": "currency",
+          "sampleValue": "$1,650.00",
+          "itemSchema": []
+        },
+        {
+          "name": "security_deposit",
+          "label": "Security deposit amount",
+          "type": "currency",
+          "sampleValue": "$1,650.00",
+          "itemSchema": []
+        },
+        {
+          "name": "rent_due_date",
+          "label": "Rent due date each month",
+          "type": "text",
+          "sampleValue": "1st of each month",
+          "itemSchema": []
+        },
+        {
+          "name": "additional_terms",
+          "label": "Additional lease terms and clauses from the source",
+          "type": "text",
+          "sampleValue": "Tenant agrees to pay rent in full on or before the due date each month, keep the property in good condition, and comply with all applicable building and safety codes. Late payments may incur a fee as permitted by local law.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "letter",
+      "name": "Letterhead letter",
+      "description": "Formal correspondence with sender, recipient, and body",
+      "category": "business",
+      "document_file": "letter.json",
+      "variables": [
+        {
+          "name": "sender_name",
+          "label": "Letter sender name",
+          "type": "text",
+          "sampleValue": "Alex Rivera",
+          "itemSchema": []
+        },
+        {
+          "name": "sender_company",
+          "label": "Letter sender company",
+          "type": "text",
+          "sampleValue": "Rivera Consulting",
+          "itemSchema": []
+        },
+        {
+          "name": "sender_address",
+          "label": "Letter sender address",
+          "type": "text",
+          "sampleValue": "123 Main St, City, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "sender_title",
+          "label": "Letter sender title",
+          "type": "text",
+          "sampleValue": "Principal",
+          "itemSchema": []
+        },
+        {
+          "name": "letter_date",
+          "label": "Letter date",
+          "type": "date",
+          "sampleValue": "March 20, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "recipient_name",
+          "label": "Letter recipient name",
+          "type": "text",
+          "sampleValue": "Jordan Lee",
+          "itemSchema": []
+        },
+        {
+          "name": "recipient_company",
+          "label": "Letter recipient company",
+          "type": "text",
+          "sampleValue": "Northwind Trading",
+          "itemSchema": []
+        },
+        {
+          "name": "recipient_address",
+          "label": "Letter recipient address",
+          "type": "text",
+          "sampleValue": "500 Harbor Ave, City, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "letter_body",
+          "label": "Letter body paragraphs from the source correspondence",
+          "type": "text",
+          "sampleValue": "I am writing to follow up on our recent conversation and outline the next steps we discussed. Please let me know if you have any questions or would like to schedule a call.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "report",
+      "name": "Markdown report",
+      "description": "Page layout for FileWorks-extracted Markdown from the workspace",
+      "category": "general",
+      "document_file": "report.json",
+      "variables": [
+        {
+          "name": "report_title",
+          "label": "Report title taken from the source document",
+          "type": "text",
+          "sampleValue": "Document report",
+          "itemSchema": []
+        },
+        {
+          "name": "report_body",
+          "label": "Full report body transcribed from the source Markdown",
+          "type": "text",
+          "sampleValue": "Preview of extracted content from FileWorks.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    }
+  ]
+}

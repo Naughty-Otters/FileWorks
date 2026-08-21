@@ -12,6 +12,7 @@ import {
 import type { MeResponse } from "@/lib/auth";
 import { aiQuotaLeft, convertGate, convertGateTitle } from "@/lib/plans";
 import { PlanPolicyDialog } from "@/components/plan-policy-dialog";
+import { PRODUCT } from "@/lib/product-copy";
 import { cn } from "@/lib/utils";
 
 const ExtractOptionsPanel = dynamic(
@@ -38,9 +39,9 @@ type ConvertControlsProps = {
   onConvertWithDefaults?: () => void;
   onStop: () => void;
   compact?: boolean;
-  /** "standard" = Markdown; "builtin:<id>" = Design target; else saved template id. */
+  /** "standard" = Markdown; "builtin:<id>" = starter template; else saved template id. */
   outputLayout?: string;
-  /** Built-in Design targets (predefined starters with variables). */
+  /** Built-in starter templates (predefined layouts with variables). */
   designTargets?: TargetTemplateOption[];
   /** User-saved templates that declare variables. */
   templates?: TargetTemplateOption[];
@@ -100,7 +101,7 @@ export function ConvertControls({
   const selectedTemplateName = layoutCustom
     ? designTargets.find((template) => template.id === outputLayout)?.name ||
       templates.find((template) => template.id === outputLayout)?.name ||
-      "Template"
+      PRODUCT.design
     : null;
   const targetLabel = selectedTemplateName || "Markdown";
   const showDefaultsEscape =
@@ -138,10 +139,10 @@ export function ConvertControls({
       ) : null}
       <button
         type="button"
-        aria-label="Target format"
+        aria-label={PRODUCT.produceAs}
         aria-haspopup="dialog"
         aria-expanded={targetOpen}
-        title="Choose Markdown or a fillable template"
+        title={PRODUCT.chooseTarget}
         disabled={loading}
         onClick={() => setTargetOpen(true)}
         className={cn(
@@ -386,11 +387,11 @@ function TargetFormatDialog({
               id="target-format-title"
               className="font-[family-name:var(--font-display)] text-2xl tracking-tight"
             >
-              Target format
+              {PRODUCT.produceAs}
             </p>
             <p className="mt-1 text-sm leading-6 text-[var(--ink-muted)]">
-              Markdown is the default. Choose a designed template or one of your saved templates to
-              AI-fill from the converted document.
+              Markdown is the default. Choose a starter design (family schedules, invoices, agendas,
+              plans) or one of your saved designs to AI-fill from the converted document.
             </p>
           </div>
           <button
@@ -404,7 +405,7 @@ function TargetFormatDialog({
         </div>
 
         <fieldset className="mt-5 space-y-2">
-          <legend className="sr-only">Target format</legend>
+          <legend className="sr-only">{PRODUCT.produceAs}</legend>
 
           <label
             className={cn(
@@ -449,14 +450,14 @@ function TargetFormatDialog({
                   }}
                 />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium text-[var(--ink)]">Designed template</span>
+                  <span className="block text-sm font-medium text-[var(--ink)]">{PRODUCT.starterDesign}</span>
                   <span className="mt-0.5 block text-xs text-[var(--ink-muted)]">
-                    Predefined layout from Design targets
+                    Family, business, and general fillable layouts
                   </span>
                 </span>
               </label>
               <select
-                aria-label="Designed template"
+                aria-label={PRODUCT.starterDesign}
                 value={selectedDesignId}
                 onChange={(event) => onOutputLayoutChange?.(event.target.value)}
                 onFocus={() => {
@@ -493,17 +494,17 @@ function TargetFormatDialog({
                 }}
               />
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium text-[var(--ink)]">My template</span>
+                <span className="block text-sm font-medium text-[var(--ink)]">{PRODUCT.myDesign}</span>
                 <span className="mt-0.5 block text-xs text-[var(--ink-muted)]">
                   {templates.length > 0
-                    ? "One of your saved fillable templates"
-                    : "Save a template in Templates to enable this"}
+                    ? "One of your saved fillable designs"
+                    : `Save a design in ${PRODUCT.designs} to enable this`}
                 </span>
               </span>
             </label>
             {templates.length > 0 ? (
               <select
-                aria-label="My template"
+                aria-label={PRODUCT.myDesign}
                 value={selectedMineId}
                 onChange={(event) => onOutputLayoutChange?.(event.target.value)}
                 onFocus={() => {
@@ -523,9 +524,9 @@ function TargetFormatDialog({
                   href="/templates"
                   className="text-[var(--accent-strong)] underline-offset-2 hover:underline"
                 >
-                  Open Templates
+                  Open {PRODUCT.designs}
                 </a>{" "}
-                to design and save one.
+                to create and save one.
               </p>
             )}
           </div>

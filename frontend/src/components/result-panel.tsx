@@ -226,7 +226,7 @@ export function ResultPanel({
     if (!templateId) return;
     setExporting(true);
     try {
-      const base = templateName || "template-output";
+      const base = templateName || "design-output";
       if (templateReturnFileType === "pdf") {
         const win = window.open("", "_blank");
         if (win) {

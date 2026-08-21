@@ -1,20 +1,30 @@
 import type { DesignNode, LayoutProps } from "../types";
 
-/** Bottom-up pass: grow auto-layout containers (justify "start" only) to
- * fit their children. Mirrors `resolve_auto_size` in the Rust engine. */
+/** Bottom-up pass: grow auto-layout containers to fit their children.
+ * - Main axis: hug when justify is "start" (mirrors the Rust engine).
+ * - Cross axis (rows): always at least as tall as the tallest child so
+ *   text that grew during preview fit is never clipped by a short row. */
 export function resolveAutoSize(node: DesignNode): void {
   for (const child of node.children) resolveAutoSize(child);
   if (node.children.length === 0 || !node.layout) return;
-  if (node.layout.justify !== "start") return;
 
   const isRow = node.layout.direction !== "column";
   const gapTotal = node.layout.gap * Math.max(0, node.children.length - 1);
+  const pad = 2 * node.layout.padding;
+
+  if (node.layout.justify === "start") {
+    if (isRow) {
+      const contentW = node.children.reduce((sum, c) => sum + c.w, 0) + gapTotal;
+      node.w = contentW + pad;
+    } else {
+      const contentH = node.children.reduce((sum, c) => sum + c.h, 0) + gapTotal;
+      node.h = contentH + pad;
+    }
+  }
+
   if (isRow) {
-    const contentW = node.children.reduce((sum, c) => sum + c.w, 0) + gapTotal;
-    node.w = contentW + 2 * node.layout.padding;
-  } else {
-    const contentH = node.children.reduce((sum, c) => sum + c.h, 0) + gapTotal;
-    node.h = contentH + 2 * node.layout.padding;
+    const maxH = Math.max(...node.children.map((c) => c.h));
+    node.h = Math.max(node.h, maxH + pad);
   }
 }
 
@@ -95,6 +105,27 @@ function arrangeNode(node: DesignNode, props: LayoutProps): void {
 export function arrange(node: DesignNode): void {
   if (node.layout) arrangeNode(node, node.layout);
   for (const child of node.children) arrange(child);
+}
+
+/** After children grow (e.g. list-repeat preview expansion), freeform
+ * parents still keep authored sibling `y` values — so later sections sit
+ * under expanded content. Push freeform children down in y-order so each
+ * starts below the previous bottom, preserving any positive authored gap
+ * (or a default gap when they already overlap). Auto-layout boxes are
+ * left alone; recurse into every subtree first. */
+export function reflowFreeformStacks(node: DesignNode, defaultGap = 16): void {
+  for (const child of node.children) reflowFreeformStacks(child, defaultGap);
+  if (node.layout !== null || node.children.length < 2) return;
+
+  const ordered = [...node.children].sort((a, b) => a.y - b.y || a.x - b.x);
+  for (let i = 1; i < ordered.length; i++) {
+    const prev = ordered[i - 1];
+    const cur = ordered[i];
+    const naturalGap = cur.y - (prev.y + prev.h);
+    const gap = naturalGap > 0 ? naturalGap : defaultGap;
+    const minY = prev.y + prev.h + gap;
+    if (cur.y < minY) cur.y = minY;
+  }
 }
 
 /** Walk from `startId` up to the page root, re-arranging each auto-layout

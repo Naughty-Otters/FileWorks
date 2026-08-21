@@ -1,0 +1,948 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 24,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt38o2r0_446",
+        "kind": "box",
+        "label": "Header",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 90,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 16,
+          "padding": 0,
+          "align": "start",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "box_mt38o2r0_442",
+            "kind": "box",
+            "label": "Bank",
+            "x": 0,
+            "y": 0,
+            "w": 369,
+            "h": 44,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 12,
+              "padding": 0,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2r0_441",
+                "kind": "heading",
+                "label": "{{ bank_name }}",
+                "level": 2,
+                "x": 0,
+                "y": 0,
+                "w": 369,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 23,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2r0_445",
+            "kind": "box",
+            "label": "Statement info",
+            "x": 424,
+            "y": 0,
+            "w": 346,
+            "h": 78,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "end",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2r0_443",
+                "kind": "heading",
+                "label": "Account Statement",
+                "level": 3,
+                "x": 8,
+                "y": 0,
+                "w": 338,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 19,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r0_444",
+                "kind": "paragraph",
+                "label": "Period: {{ statement_period }}",
+                "x": 8,
+                "y": 48,
+                "w": 338,
+                "h": 30,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#334155",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r0_458",
+        "kind": "box",
+        "label": "Account summary",
+        "x": 40,
+        "y": 154,
+        "w": 770,
+        "h": 159,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r0_447",
+            "kind": "heading",
+            "label": "Account summary",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt38o2r0_457",
+            "kind": "box",
+            "label": "Summary columns",
+            "x": 20,
+            "y": 62,
+            "w": 730,
+            "h": 77,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 10,
+              "padding": 0,
+              "align": "start",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "box_mt38o2r0_450",
+                "kind": "box",
+                "label": "Account Number",
+                "x": 0,
+                "y": 0,
+                "w": 236,
+                "h": 77,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "column",
+                  "gap": 6,
+                  "padding": 0,
+                  "align": "stretch",
+                  "justify": "start"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r0_448",
+                    "kind": "paragraph",
+                    "label": "Account Number",
+                    "x": 0,
+                    "y": 0,
+                    "w": 236,
+                    "h": 27,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "heading_mt38o2r0_449",
+                    "kind": "heading",
+                    "label": "{{ account_number }}",
+                    "level": 3,
+                    "x": 0,
+                    "y": 33,
+                    "w": 236,
+                    "h": 44,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 19,
+                      "color": "#0f172a",
+                      "bold": true,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2r0_453",
+                "kind": "box",
+                "label": "Opening Balance",
+                "x": 247,
+                "y": 0,
+                "w": 236,
+                "h": 77,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "column",
+                  "gap": 6,
+                  "padding": 0,
+                  "align": "stretch",
+                  "justify": "start"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r0_451",
+                    "kind": "paragraph",
+                    "label": "Opening Balance",
+                    "x": 0,
+                    "y": 0,
+                    "w": 236,
+                    "h": 27,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "heading_mt38o2r0_452",
+                    "kind": "heading",
+                    "label": "{{ opening_balance }}",
+                    "level": 3,
+                    "x": 0,
+                    "y": 33,
+                    "w": 236,
+                    "h": 44,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 19,
+                      "color": "#0f172a",
+                      "bold": true,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2r0_456",
+                "kind": "box",
+                "label": "Closing Balance",
+                "x": 494,
+                "y": 0,
+                "w": 236,
+                "h": 77,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "column",
+                  "gap": 6,
+                  "padding": 0,
+                  "align": "stretch",
+                  "justify": "start"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r0_454",
+                    "kind": "paragraph",
+                    "label": "Closing Balance",
+                    "x": 0,
+                    "y": 0,
+                    "w": 236,
+                    "h": 27,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "heading_mt38o2r0_455",
+                    "kind": "heading",
+                    "label": "{{ closing_balance }}",
+                    "level": 3,
+                    "x": 0,
+                    "y": 33,
+                    "w": 236,
+                    "h": 44,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 19,
+                      "color": "#0f172a",
+                      "bold": true,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r0_468",
+        "kind": "box",
+        "label": "Transactions",
+        "x": 40,
+        "y": 337,
+        "w": 770,
+        "h": 169,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r0_467",
+            "kind": "heading",
+            "label": "Transactions",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt38o2r0_462",
+            "kind": "box",
+            "label": "Column headers",
+            "x": 20,
+            "y": 60,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2r0_459",
+                "kind": "paragraph",
+                "label": "Date",
+                "x": 0,
+                "y": 2,
+                "w": 90,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r0_460",
+                "kind": "paragraph",
+                "label": "Description",
+                "x": 90,
+                "y": 2,
+                "w": 530,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r0_461",
+                "kind": "paragraph",
+                "label": "Amount",
+                "x": 620,
+                "y": 2,
+                "w": 110,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2r0_466",
+            "kind": "box",
+            "label": "Transaction",
+            "x": 20,
+            "y": 104,
+            "w": 730,
+            "h": 45,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2r0_463",
+                "kind": "paragraph",
+                "label": "{{ tx.date }}",
+                "x": 0,
+                "y": 0,
+                "w": 90,
+                "h": 45,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r0_464",
+                "kind": "paragraph",
+                "label": "{{ tx.description }}",
+                "x": 90,
+                "y": 8.5,
+                "w": 530,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r0_465",
+                "kind": "paragraph",
+                "label": "{{ tx.amount }}",
+                "x": 620,
+                "y": 0,
+                "w": 110,
+                "h": 45,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ],
+            "repeat": {
+              "over": "statement_transactions",
+              "as": "tx"
+            }
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r0_470",
+        "kind": "box",
+        "label": "Footer",
+        "x": 40,
+        "y": 530,
+        "w": 770,
+        "h": 72,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 16,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "paragraph_mt38o2r0_469",
+            "kind": "paragraph",
+            "label": "This statement is provided for informational purposes. Please contact us within 30 days of any discrepancy.",
+            "x": 16,
+            "y": 16,
+            "w": 738,
+            "h": 40,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 13,
+              "color": "#64748b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt38o2r0_471",
+      "name": "bank_name",
+      "label": "Bank or financial institution name on the statement",
+      "type": "text",
+      "sampleValue": "First National Bank"
+    },
+    {
+      "id": "var_mt38o2r0_472",
+      "name": "statement_period",
+      "label": "Statement period covered",
+      "type": "text",
+      "sampleValue": "01/01/2026 – 01/31/2026"
+    },
+    {
+      "id": "var_mt38o2r0_473",
+      "name": "account_number",
+      "label": "Account number shown on the statement",
+      "type": "text",
+      "sampleValue": "**** 4821"
+    },
+    {
+      "id": "var_mt38o2r0_474",
+      "name": "opening_balance",
+      "label": "Opening balance for the statement period",
+      "type": "currency",
+      "sampleValue": "$4,210.55"
+    },
+    {
+      "id": "var_mt38o2r0_475",
+      "name": "closing_balance",
+      "label": "Closing balance for the statement period",
+      "type": "currency",
+      "sampleValue": "$5,032.10"
+    },
+    {
+      "id": "var_mt38o2r0_476",
+      "name": "statement_transactions",
+      "label": "Account statement transactions for the period (date, description, amount)",
+      "type": "list",
+      "sampleValue": "[{\"date\":\"01/03\",\"description\":\"Grocery Store\",\"amount\":\"-$86.20\"},{\"date\":\"01/07\",\"description\":\"Payroll Deposit\",\"amount\":\"+$2,400.00\"},{\"date\":\"01/15\",\"description\":\"Electric Utility\",\"amount\":\"-$120.44\"},{\"date\":\"01/22\",\"description\":\"Online Transfer\",\"amount\":\"-$300.00\"}]",
+      "itemSchema": [
+        {
+          "id": "field_mt38o2r0_477",
+          "name": "date",
+          "label": "Transaction date",
+          "type": "date"
+        },
+        {
+          "id": "field_mt38o2r0_478",
+          "name": "description",
+          "label": "Transaction description",
+          "type": "text"
+        },
+        {
+          "id": "field_mt38o2r0_479",
+          "name": "amount",
+          "label": "Transaction amount (signed)",
+          "type": "currency"
+        }
+      ]
+    }
+  ]
+}

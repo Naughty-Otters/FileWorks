@@ -54,9 +54,10 @@ export function AboutPage() {
               {SITE_URL}
             </a>
             . We turn PDF, Microsoft Office, images, and scans into editable Markdown for writing,
-            coding agents, Obsidian vaults, and RAG pipelines — with optional AI reading (OCR) and
-            translation into 19 languages in the same pass — then sell monthly software
-            subscriptions for that workspace and Convert API. We do not sell physical goods.
+            coding agents, Obsidian vaults, and RAG pipelines — with optional AI reading (OCR),
+            translation into 19 languages, and fillable Designs (family schedules, invoices,
+            agendas, and more) — then sell monthly software subscriptions for that workspace and
+            Convert API. We do not sell physical goods.
           </p>
         </div>
 
@@ -69,7 +70,9 @@ export function AboutPage() {
             Office (Word, Excel, PowerPoint), OpenDocument, CSV, images, scans, Markdown, and TXT
             into editable Markdown. Optional add-ons in the same pass: AI reading of scans and
             images, and translation into 19 languages. Results download as Markdown, TXT, HTML,
-            JSON, Word (.docx), or print-ready PDF.
+            JSON, Word (.docx), or print-ready PDF. Signed-in users can also apply fillable Designs —
+            family planners, business documents, and custom layouts — and fill them from extracted
+            Markdown or Design starter API variable params.
           </p>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             What we charge for: workspace access (file quotas and AI / translation allowances) and

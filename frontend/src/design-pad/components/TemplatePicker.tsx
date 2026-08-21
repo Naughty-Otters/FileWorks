@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useEditorStore } from "../store";
-import { TEMPLATES } from "../templates";
+import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "../templates";
 import { PAGE_SIZE_PRESETS, createEmptyDocument, type PageSize } from "../types";
 import { IconFile } from "../icons";
+import { PRODUCT } from "@/lib/product-copy";
 
 export default function TemplatePicker({ onPicked }: { onPicked?: (name: string) => void }) {
   const loadDocument = useEditorStore((s) => s.loadDocument);
@@ -15,7 +16,7 @@ export default function TemplatePicker({ onPicked }: { onPicked?: (name: string)
 
   function startBlank(size: PageSize) {
     loadDocument(createEmptyDocument(size));
-    onPicked?.("Untitled template");
+    onPicked?.(PRODUCT.untitledDesign);
     close();
   }
 
@@ -23,6 +24,25 @@ export default function TemplatePicker({ onPicked }: { onPicked?: (name: string)
     loadDocument(build());
     onPicked?.(`${label} copy`);
     close();
+  }
+
+  function TemplateCard({ t }: { t: Template }) {
+    return (
+      <button
+        type="button"
+        className="template-card"
+        onClick={() => pickTemplate(t.label, t.build)}
+      >
+        <div className={`template-thumb thumb-${t.id}`}>
+          <div className="thumb-line thumb-title" />
+          <div className="thumb-line" />
+          <div className="thumb-line short" />
+          <div className="thumb-line" />
+        </div>
+        <span className="template-name">{t.label}</span>
+        <span className="template-desc">{t.description}</span>
+      </button>
+    );
   }
 
   if (step === "size") {
@@ -75,7 +95,7 @@ export default function TemplatePicker({ onPicked }: { onPicked?: (name: string)
             </button>
           </div>
           <button type="button" className="template-back" onClick={() => setStep("grid")}>
-            ◀ Back to templates
+            ◀ {PRODUCT.backToDesigns}
           </button>
         </div>
       </div>
@@ -84,38 +104,38 @@ export default function TemplatePicker({ onPicked }: { onPicked?: (name: string)
 
   return (
     <div className="template-overlay" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="template-modal">
+      <div className="template-modal template-modal-wide">
         <button type="button" className="template-close" title="Cancel" onClick={close}>
           ×
         </button>
-        <h2>Design a document</h2>
-        <p>Choose the output you want to produce, then refine it. Or start blank.</p>
-        <div className="template-grid">
-          <button type="button" className="template-card" onClick={() => setStep("size")}>
-            <div className="template-thumb blank">
-              <IconFile />
-            </div>
-            <span className="template-name">Blank page</span>
-            <span className="template-desc">Choose a page size to start with</span>
-          </button>
-          {TEMPLATES.map((t) => (
-            <button
-              type="button"
-              key={t.id}
-              className="template-card"
-              onClick={() => pickTemplate(t.label, t.build)}
-            >
-              <div className={`template-thumb thumb-${t.id}`}>
-                <div className="thumb-line thumb-title" />
-                <div className="thumb-line" />
-                <div className="thumb-line short" />
-                <div className="thumb-line" />
+        <h2>{PRODUCT.whatToCreate}</h2>
+        <p>Pick a starter design to produce, then refine it. Or start blank.</p>
+
+        <button type="button" className="template-card template-card-blank" onClick={() => setStep("size")}>
+          <div className="template-thumb blank">
+            <IconFile />
+          </div>
+          <span className="template-name">{PRODUCT.blankPage}</span>
+          <span className="template-desc">Choose a page size to start with</span>
+        </button>
+
+        {TEMPLATE_CATEGORIES.map((cat) => {
+          const items = TEMPLATES.filter((t) => t.category === cat.id);
+          if (!items.length) return null;
+          return (
+            <section key={cat.id} className="template-category">
+              <div className="template-category-head">
+                <h3>{cat.label}</h3>
+                <p>{cat.blurb}</p>
               </div>
-              <span className="template-name">{t.label}</span>
-              <span className="template-desc">{t.description}</span>
-            </button>
-          ))}
-        </div>
+              <div className="template-grid">
+                {items.map((t) => (
+                  <TemplateCard key={t.id} t={t} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );

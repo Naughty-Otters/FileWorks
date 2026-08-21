@@ -1,0 +1,446 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 18,
+      "padding": 64,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt38o2r1_630",
+        "kind": "box",
+        "label": "Sender",
+        "x": 64,
+        "y": 64,
+        "w": 722,
+        "h": 67,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 0,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "paragraph_mt38o2r1_629",
+            "kind": "paragraph",
+            "label": "{{ sender_name }}\n{{ sender_company }}\n{{ sender_address }}",
+            "x": 0,
+            "y": 0,
+            "w": 722,
+            "h": 67,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_632",
+        "kind": "box",
+        "label": "Date",
+        "x": 64,
+        "y": 149,
+        "w": 722,
+        "h": 28,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 0,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "paragraph_mt38o2r1_631",
+            "kind": "paragraph",
+            "label": "{{ letter_date }}",
+            "x": 0,
+            "y": 0,
+            "w": 722,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_634",
+        "kind": "box",
+        "label": "Recipient",
+        "x": 64,
+        "y": 195,
+        "w": 722,
+        "h": 67,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 0,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "paragraph_mt38o2r1_633",
+            "kind": "paragraph",
+            "label": "{{ recipient_name }}\n{{ recipient_company }}\n{{ recipient_address }}",
+            "x": 0,
+            "y": 0,
+            "w": 722,
+            "h": 67,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_636",
+        "kind": "box",
+        "label": "Greeting",
+        "x": 64,
+        "y": 280,
+        "w": 722,
+        "h": 28,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 0,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "paragraph_mt38o2r1_635",
+            "kind": "paragraph",
+            "label": "Dear {{ recipient_name }},",
+            "x": 0,
+            "y": 0,
+            "w": 722,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_638",
+        "kind": "box",
+        "label": "Body",
+        "x": 64,
+        "y": 326,
+        "w": 722,
+        "h": 200,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 0,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "paragraph_mt38o2r1_637",
+            "kind": "paragraph",
+            "label": "{{ letter_body }}",
+            "x": 0,
+            "y": 0,
+            "w": 722,
+            "h": 200,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_640",
+        "kind": "box",
+        "label": "Closing",
+        "x": 64,
+        "y": 544,
+        "w": 722,
+        "h": 87,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 0,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "paragraph_mt38o2r1_639",
+            "kind": "paragraph",
+            "label": "Sincerely,\n\n{{ sender_name }}\n{{ sender_title }}",
+            "x": 0,
+            "y": 0,
+            "w": 722,
+            "h": 87,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt38o2r1_641",
+      "name": "sender_name",
+      "label": "Letter sender name",
+      "type": "text",
+      "sampleValue": "Alex Rivera"
+    },
+    {
+      "id": "var_mt38o2r1_642",
+      "name": "sender_company",
+      "label": "Letter sender company",
+      "type": "text",
+      "sampleValue": "Rivera Consulting"
+    },
+    {
+      "id": "var_mt38o2r1_643",
+      "name": "sender_address",
+      "label": "Letter sender address",
+      "type": "text",
+      "sampleValue": "123 Main St, City, ST 00000"
+    },
+    {
+      "id": "var_mt38o2r1_644",
+      "name": "sender_title",
+      "label": "Letter sender title",
+      "type": "text",
+      "sampleValue": "Principal"
+    },
+    {
+      "id": "var_mt38o2r1_645",
+      "name": "letter_date",
+      "label": "Letter date",
+      "type": "date",
+      "sampleValue": "March 20, 2026"
+    },
+    {
+      "id": "var_mt38o2r1_646",
+      "name": "recipient_name",
+      "label": "Letter recipient name",
+      "type": "text",
+      "sampleValue": "Jordan Lee"
+    },
+    {
+      "id": "var_mt38o2r1_647",
+      "name": "recipient_company",
+      "label": "Letter recipient company",
+      "type": "text",
+      "sampleValue": "Northwind Trading"
+    },
+    {
+      "id": "var_mt38o2r1_648",
+      "name": "recipient_address",
+      "label": "Letter recipient address",
+      "type": "text",
+      "sampleValue": "500 Harbor Ave, City, ST 00000"
+    },
+    {
+      "id": "var_mt38o2r1_649",
+      "name": "letter_body",
+      "label": "Letter body paragraphs from the source correspondence",
+      "type": "text",
+      "sampleValue": "I am writing to follow up on our recent conversation and outline the next steps we discussed. Please let me know if you have any questions or would like to schedule a call."
+    }
+  ]
+}

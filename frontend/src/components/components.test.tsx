@@ -280,11 +280,11 @@ describe("ConvertControls", () => {
     await user.click(screen.getByRole("button", { name: "Options" }));
     expect(screen.queryByLabelText("Output layout")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Return file type")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Target format" }));
-    expect(screen.getByRole("dialog", { name: "Target format" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Produce as" }));
+    expect(screen.getByRole("dialog", { name: "Produce as" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Markdown/i })).toBeChecked();
-    expect(screen.getByRole("radio", { name: /Designed template/i })).toBeInTheDocument();
-    expect(screen.getByLabelText("Designed template")).toHaveDisplayValue("Client invoice");
+    expect(screen.getByRole("radio", { name: /Starter design/i })).toBeInTheDocument();
+    expect(screen.getByLabelText("Starter design")).toHaveDisplayValue("Client invoice");
   });
 
   it("converts and opens options", async () => {
@@ -983,8 +983,9 @@ describe("ApiPage", () => {
     expect(sampleText).toContain("import requests");
     expect(sampleText).toContain("const body = new FormData");
     expect(screen.getByText("X-Api-Key")).toBeInTheDocument();
-    expect(screen.getByText("POST")).toBeInTheDocument();
+    expect(screen.getAllByText("POST").length).toBeGreaterThan(0);
     expect(screen.getAllByText("/api/v1/convert").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("/api/templates/starters").length).toBeGreaterThan(0);
   });
 });
 

@@ -12,6 +12,9 @@ import {
   createVariable,
   nextId,
 } from "./types";
+import { arrange, resolveAutoSize } from "./layout/arrange";
+import { enforcePageBounds } from "./layout/page-bounds";
+import { estimateTextHeight, fitTextContent } from "./layout/text-fit";
 
 function heading(w: number, label: string, level: 1 | 2 | 3 = 2, align: "left" | "center" | "right" = "left") {
   const n = createNode("heading", 0, 0);
@@ -20,6 +23,8 @@ function heading(w: number, label: string, level: 1 | 2 | 3 = 2, align: "left" |
   n.w = w;
   n.style.fontSize = HEADING_LEVEL_PRESET[level].fontSize;
   n.style.align = align;
+  n.style.color = "#0f172a";
+  n.h = Math.max(n.h, estimateTextHeight(n));
   return n;
 }
 
@@ -28,29 +33,60 @@ function paragraph(
   h: number,
   label: string,
   align: "left" | "center" | "right" = "left",
+  styleOverride?: Partial<NodeStyle>,
 ) {
   const n = createNode("paragraph", 0, 0);
   n.label = label;
   n.w = w;
   n.h = h;
   n.style.align = align;
+  n.style.color = "#334155";
+  if (styleOverride) n.style = { ...n.style, ...styleOverride };
+  n.h = Math.max(n.h, estimateTextHeight(n));
   return n;
 }
 
-/** Same "invisible structural wrapper" preset used for rows/columns that
- * only exist to group a couple of fields — no fill, no border, no
- * caption chip. */
+/** Invisible structural wrapper — no fill, border, or caption chip. */
 const INVISIBLE: Partial<NodeStyle> = {
   backgroundColor: "transparent",
   borderStyle: "none",
   borderWidth: 0,
 };
 
+/** Soft card for named sections (Bill to, Earnings, …). */
+const CARD: Partial<NodeStyle> = {
+  backgroundColor: "#ffffff",
+  borderStyle: "solid",
+  borderWidth: 1,
+  borderColor: "#e2e8f0",
+};
+
+const LABEL_STYLE: Partial<NodeStyle> = {
+  color: "#64748b",
+  fontSize: 13,
+};
+
+const VALUE_STYLE: Partial<NodeStyle> = {
+  color: "#0f172a",
+  fontSize: 13,
+};
+
+/** Printed section title (survives preview — editor captions do not). */
+function sectionTitle(width: number, text: string) {
+  const n = createNode("heading", 0, 0);
+  n.label = text;
+  n.level = 3;
+  n.w = width;
+  n.style.fontSize = 15;
+  n.style.bold = true;
+  n.style.color = "#0f172a";
+  n.h = Math.max(28, estimateTextHeight(n));
+  return n;
+}
+
 /** Builds a Box and immediately resolves its auto-sized dimension (height
- * for a column, width for a row) using the exact same formula the Rust
- * layout engine applies later — so callers can read the real `.h`/`.w`
- * back and use it to place the *next* sibling correctly, instead of
- * guessing a height that gets silently overridden on the first relayout. */
+ * for a column, width for a row) using the exact same formula the layout
+ * engine applies later — so callers can size nested halves correctly. */
 function box(
   wGuess: number,
   hGuess: number,
@@ -71,24 +107,88 @@ function box(
     const isRow = n.layout.direction === "row";
     const gapTotal = n.layout.gap * (children.length - 1);
     if (isRow) {
-      n.w = children.reduce((a, c) => a + c.w, 0) + gapTotal + 2 * n.layout.padding;
-    } else {
+      // Keep the authored width when justify distributes leftover space;
+      // only hug when start-justified so halves/space-between rows stay put.
+      if (n.layout.justify === "start") {
+        n.w = children.reduce((a, c) => a + c.w, 0) + gapTotal + 2 * n.layout.padding;
+      }
+      // Never shorter than the tallest child on the cross axis.
+      n.h = Math.max(n.h, Math.max(...children.map((c) => c.h)) + 2 * n.layout.padding);
+    } else if (n.layout.justify === "start") {
       n.h = children.reduce((a, c) => a + c.h, 0) + gapTotal + 2 * n.layout.padding;
     }
   }
   return n;
 }
 
-const GAP = 16;
+/** Label/value row that fits inside `width` without overflowing. */
+function infoRow(width: number, labelText: string, valueText: string) {
+  const labelW = Math.min(150, Math.max(90, Math.floor(width * 0.4)));
+  const valueW = Math.max(70, width - labelW);
+  const label = paragraph(labelW, 28, labelText, "left", LABEL_STYLE);
+  const valueNode = paragraph(valueW, 28, valueText, "right", VALUE_STYLE);
+  return box(
+    width,
+    32,
+    "Row",
+    [label, valueNode],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+}
 
-function placeStacked(doc: DesignDocument, boxes: DesignNode[], startY = 40, x = 40) {
-  doc.root.children = boxes;
-  let y = startY;
-  for (const b of boxes) {
-    b.x = x;
-    b.y = y;
-    y += b.h + GAP;
+/** Two-column table row sized to exactly `width` (gap 0). */
+function twoColRow(
+  width: number,
+  left: string,
+  right: string,
+  caption = "Row",
+  leftRatio = 0.72,
+  header = false,
+) {
+  const leftW = Math.floor(width * leftRatio);
+  const rightW = width - leftW;
+  const style = header
+    ? { ...LABEL_STYLE, fontSize: 12, bold: true as const }
+    : VALUE_STYLE;
+  return box(
+    width,
+    32,
+    caption,
+    [
+      paragraph(leftW, 28, left, "left", style),
+      paragraph(rightW, 28, right, "right", style),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+}
+
+/** Mount top-level sections on an auto-arranged page column so preview
+ * expansion can grow height and push later sections down. */
+function assemblePage(
+  doc: DesignDocument,
+  sections: DesignNode[],
+  opts: { gap?: number; padding?: number } = {},
+) {
+  const gap = opts.gap ?? 24;
+  const padding = opts.padding ?? 40;
+  doc.root.layout = {
+    direction: "column",
+    gap,
+    padding,
+    align: "stretch",
+    justify: "start",
+  };
+  doc.root.children = sections;
+  for (const section of sections) {
+    section.x = 0;
+    section.y = 0;
   }
+  fitTextContent(doc.root);
+  resolveAutoSize(doc.root);
+  arrange(doc.root);
+  enforcePageBounds(doc.root, doc.pageSize);
 }
 
 /** Declares a template's variables in one shot — used by starters that lean
@@ -122,8 +222,8 @@ function declareVars(doc: DesignDocument, entries: VarEntry[]) {
 
 function invoice(): DesignDocument {
   const doc = createEmptyDocument();
-  const pageW = doc.root.w;
-  const contentW = pageW - 80;
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
 
   const header = box(
     contentW,
@@ -131,29 +231,34 @@ function invoice(): DesignDocument {
     "Header",
     [
       box(
-        300,
+        Math.floor(contentW * 0.55),
         70,
         "Company",
         [
-          heading(280, "{{ company_name }}", 2),
-          paragraph(280, 36, "{{ company_address }}\n{{ company_email }}"),
+          heading(Math.floor(contentW * 0.55) - 8, "{{ company_name }}", 2),
+          paragraph(Math.floor(contentW * 0.55) - 8, 36, "{{ company_address }}\n{{ company_email }}"),
         ],
         { direction: "column", gap: 4, padding: 0 },
         INVISIBLE,
       ),
       box(
-        220,
+        Math.floor(contentW * 0.38),
         70,
         "Invoice meta",
         [
-          heading(200, "INVOICE", 1, "right"),
-          paragraph(200, 36, "Invoice #: {{ invoice_number }}\nDate: {{ invoice_date }}", "right"),
+          heading(Math.floor(contentW * 0.38) - 8, "INVOICE", 1, "right"),
+          paragraph(
+            Math.floor(contentW * 0.38) - 8,
+            36,
+            "Invoice #: {{ invoice_number }}\nDate: {{ invoice_date }}",
+            "right",
+          ),
         ],
         { direction: "column", gap: 4, padding: 0, align: "end" },
         INVISIBLE,
       ),
     ],
-    { direction: "row", justify: "space-between", padding: 24, gap: 24 },
+    { direction: "row", justify: "space-between", padding: 0, gap: 24, align: "start" },
     INVISIBLE,
   );
 
@@ -162,41 +267,25 @@ function invoice(): DesignDocument {
     90,
     "Bill to",
     [
-      heading(200, "Bill To", 3),
-      paragraph(360, 54, "{{ client_name }}\n{{ client_address }}\n{{ client_email }}"),
+      sectionTitle(contentW - 40, "Bill To"),
+      paragraph(contentW - 40, 54, "{{ client_name }}\n{{ client_address }}\n{{ client_email }}"),
     ],
-    { direction: "column", gap: 6, padding: 20 },
+    { direction: "column", gap: 10, padding: 20 },
+    CARD,
   );
 
-  const headerRow = box(
-    contentW - 40,
-    28,
-    "Column headers",
-    [paragraph(360, 20, "Description"), paragraph(120, 20, "Amount", "right")],
-    { direction: "row", justify: "space-between", align: "center", padding: 0 },
-    INVISIBLE,
-  );
-  headerRow.style.bold = true;
-
-  const itemRow = box(
-    contentW - 40,
-    28,
-    "Line item",
-    [
-      paragraph(360, 20, "{{ item.description }}"),
-      paragraph(120, 20, "{{ item.amount }}", "right"),
-    ],
-    { direction: "row", justify: "space-between", align: "center", padding: 0 },
-    INVISIBLE,
-  );
+  const rowW = contentW - 40;
+  const headerRow = twoColRow(rowW, "Description", "Amount", "Column headers", 0.72, true);
+  const itemRow = twoColRow(rowW, "{{ item.description }}", "{{ item.amount }}", "Line item", 0.72);
   itemRow.repeat = { over: "invoice_spending_items", as: "item" };
 
   const lineItems = box(
     contentW,
     160,
     "Line items",
-    [headerRow, itemRow],
-    { direction: "column", gap: 10, padding: 20 },
+    [sectionTitle(rowW, "Line items"), headerRow, itemRow],
+    { direction: "column", gap: 12, padding: 20 },
+    CARD,
   );
 
   const totals = box(
@@ -204,19 +293,23 @@ function invoice(): DesignDocument {
     56,
     "Total",
     [heading(200, "Total", 3), heading(160, "{{ invoice_total }}", 3, "right")],
-    { direction: "row", justify: "space-between", padding: 16 },
+    { direction: "row", justify: "space-between", align: "center", padding: 18 },
+    CARD,
   );
 
   const notes = box(
     contentW,
     70,
     "Notes",
-    [paragraph(contentW - 40, 50, "{{ invoice_notes }}")],
-    { direction: "column", padding: 20 },
+    [
+      sectionTitle(contentW - 32, "Notes"),
+      paragraph(contentW - 32, 50, "{{ invoice_notes }}"),
+    ],
+    { direction: "column", gap: 8, padding: 16 },
     INVISIBLE,
   );
 
-  placeStacked(doc, [header, billTo, lineItems, totals, notes]);
+  assemblePage(doc, [header, billTo, lineItems, totals, notes], { padding: pad, gap: 24 });
   declareVars(doc, [
     ["company_name", "Issuing company name on the invoice", "text", "Acme Studio"],
     ["company_address", "Issuing company mailing address", "text", "123 Market St, City, ST 00000"],
@@ -247,18 +340,19 @@ function invoice(): DesignDocument {
 
 function receipt(): DesignDocument {
   const doc = createEmptyDocument({ w: 340, h: 620 });
-  const pageW = doc.root.w;
-  const contentW = pageW - 32;
+  const pad = 16;
+  const contentW = doc.root.w - pad * 2;
+  const innerW = contentW - 24;
 
   const header = box(
     contentW,
     90,
     "Header",
     [
-      heading(pageW - 64, "{{ store_name }}", 2, "center"),
-      paragraph(pageW - 64, 40, "{{ store_address }}\n{{ store_phone }}", "center"),
+      heading(innerW, "{{ store_name }}", 2, "center"),
+      paragraph(innerW, 40, "{{ store_address }}\n{{ store_phone }}", "center"),
     ],
-    { direction: "column", gap: 4, padding: 16, align: "center" },
+    { direction: "column", gap: 6, padding: 12, align: "center" },
     INVISIBLE,
   );
 
@@ -266,22 +360,12 @@ function receipt(): DesignDocument {
     contentW,
     40,
     "Meta",
-    [paragraph(pageW - 64, 28, "Date: {{ receipt_date }}\nReceipt #: {{ receipt_number }}", "center")],
-    { direction: "column", padding: 8, align: "center" },
+    [paragraph(innerW, 28, "Date: {{ receipt_date }}\nReceipt #: {{ receipt_number }}", "center")],
+    { direction: "column", padding: 4, align: "center" },
     INVISIBLE,
   );
 
-  const itemRow = box(
-    contentW - 32,
-    24,
-    "Item",
-    [
-      paragraph(160, 20, "{{ item.description }}"),
-      paragraph(100, 20, "{{ item.amount }}", "right"),
-    ],
-    { direction: "row", justify: "space-between", align: "center", padding: 0 },
-    INVISIBLE,
-  );
+  const itemRow = twoColRow(innerW, "{{ item.description }}", "{{ item.amount }}", "Item", 0.65);
   itemRow.repeat = { over: "receipt_purchased_items", as: "item" };
 
   const items = box(
@@ -289,7 +373,7 @@ function receipt(): DesignDocument {
     100,
     "Items",
     [itemRow],
-    { direction: "column", gap: 10, padding: 16 },
+    { direction: "column", gap: 8, padding: 12 },
   );
 
   const totals = box(
@@ -298,43 +382,43 @@ function receipt(): DesignDocument {
     "Totals",
     [
       box(
-        contentW - 32,
+        innerW,
         24,
         "Subtotal row",
-        [paragraph(120, 20, "Subtotal"), paragraph(100, 20, "{{ receipt_subtotal }}", "right")],
-        { direction: "row", justify: "space-between", align: "center", padding: 0 },
+        [paragraph(Math.floor(innerW * 0.55), 20, "Subtotal"), paragraph(innerW - Math.floor(innerW * 0.55), 20, "{{ receipt_subtotal }}", "right")],
+        { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
         INVISIBLE,
       ),
       box(
-        contentW - 32,
+        innerW,
         24,
         "Tax row",
-        [paragraph(120, 20, "Tax"), paragraph(100, 20, "{{ receipt_tax }}", "right")],
-        { direction: "row", justify: "space-between", align: "center", padding: 0 },
+        [paragraph(Math.floor(innerW * 0.55), 20, "Tax"), paragraph(innerW - Math.floor(innerW * 0.55), 20, "{{ receipt_tax }}", "right")],
+        { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
         INVISIBLE,
       ),
       box(
-        contentW - 32,
+        innerW,
         28,
         "Total row",
-        [heading(120, "Total", 3), heading(100, "{{ receipt_total }}", 3, "right")],
-        { direction: "row", justify: "space-between", align: "center", padding: 0 },
+        [heading(Math.floor(innerW * 0.55), "Total", 3), heading(innerW - Math.floor(innerW * 0.55), "{{ receipt_total }}", 3, "right")],
+        { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
         INVISIBLE,
       ),
     ],
-    { direction: "column", gap: 6, padding: 16 },
+    { direction: "column", gap: 6, padding: 12 },
   );
 
   const footer = box(
     contentW,
     50,
     "Footer",
-    [paragraph(pageW - 64, 30, "{{ thank_you_message }}", "center")],
-    { direction: "column", padding: 16, align: "center" },
+    [paragraph(innerW, 30, "{{ thank_you_message }}", "center")],
+    { direction: "column", padding: 8, align: "center" },
     INVISIBLE,
   );
 
-  placeStacked(doc, [header, meta, items, totals, footer], 16, 16);
+  assemblePage(doc, [header, meta, items, totals, footer], { padding: pad, gap: 12 });
   declareVars(doc, [
     ["store_name", "Store or merchant name on the receipt", "text", "Your Store"],
     ["store_address", "Store address printed on the receipt", "text", "123 Main St, City, ST"],
@@ -365,8 +449,8 @@ function receipt(): DesignDocument {
 
 function bankStatement(): DesignDocument {
   const doc = createEmptyDocument();
-  const pageW = doc.root.w;
-  const contentW = pageW - 80;
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
 
   const header = box(
     contentW,
@@ -374,36 +458,42 @@ function bankStatement(): DesignDocument {
     "Header",
     [
       box(
-        340,
+        Math.floor(contentW * 0.48),
         42,
         "Bank",
-        [heading(320, "{{ bank_name }}", 2)],
+        [heading(Math.floor(contentW * 0.48) - 8, "{{ bank_name }}", 2)],
         { direction: "column", padding: 0 },
         INVISIBLE,
       ),
       box(
-        300,
+        Math.floor(contentW * 0.45),
         76,
         "Statement info",
         [
-          heading(280, "Account Statement", 3, "right"),
-          paragraph(280, 30, "Period: {{ statement_period }}", "right"),
+          heading(Math.floor(contentW * 0.45) - 8, "Account Statement", 3, "right"),
+          paragraph(Math.floor(contentW * 0.45) - 8, 30, "Period: {{ statement_period }}", "right"),
         ],
         { direction: "column", gap: 4, padding: 0, align: "end" },
         INVISIBLE,
       ),
     ],
-    { direction: "row", justify: "space-between", padding: 24, gap: 24 },
+    { direction: "row", justify: "space-between", padding: 0, gap: 16, align: "start" },
     INVISIBLE,
   );
 
+  const summaryInner = contentW - 40;
+  const summaryColW = Math.floor((summaryInner - 20) / 3);
+
   function summaryItem(label: string, value: string) {
     return box(
-      170,
-      60,
+      summaryColW,
+      56,
       label,
-      [paragraph(150, 18, label), heading(150, value, 3)],
-      { direction: "column", gap: 4, padding: 0 },
+      [
+        paragraph(summaryColW - 4, 22, label, "left", LABEL_STYLE),
+        heading(summaryColW - 4, value, 3),
+      ],
+      { direction: "column", gap: 6, padding: 0 },
       INVISIBLE,
     );
   }
@@ -413,37 +503,51 @@ function bankStatement(): DesignDocument {
     100,
     "Account summary",
     [
-      summaryItem("Account Number", "{{ account_number }}"),
-      summaryItem("Opening Balance", "{{ opening_balance }}"),
-      summaryItem("Closing Balance", "{{ closing_balance }}"),
+      sectionTitle(summaryInner, "Account summary"),
+      box(
+        summaryInner,
+        56,
+        "Summary columns",
+        [
+          summaryItem("Account Number", "{{ account_number }}"),
+          summaryItem("Opening Balance", "{{ opening_balance }}"),
+          summaryItem("Closing Balance", "{{ closing_balance }}"),
+        ],
+        { direction: "row", justify: "space-between", padding: 0, gap: 10, align: "start" },
+        INVISIBLE,
+      ),
     ],
-    { direction: "row", justify: "space-between", padding: 20, gap: 10 },
+    { direction: "column", gap: 14, padding: 20 },
+    CARD,
   );
 
+  const rowW = contentW - 40;
+  const dateW = 90;
+  const amountW = 110;
+  const descW = rowW - dateW - amountW;
   const txHeader = box(
-    contentW - 40,
-    28,
+    rowW,
+    32,
     "Column headers",
     [
-      paragraph(80, 20, "Date"),
-      paragraph(260, 20, "Description"),
-      paragraph(100, 20, "Amount", "right"),
+      paragraph(dateW, 28, "Date", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(descW, 28, "Description", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(amountW, 28, "Amount", "right", { ...LABEL_STYLE, fontSize: 12, bold: true }),
     ],
-    { direction: "row", justify: "space-between", align: "center", padding: 0 },
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
     INVISIBLE,
   );
-  txHeader.style.bold = true;
 
   const txRow = box(
-    contentW - 40,
-    28,
+    rowW,
+    32,
     "Transaction",
     [
-      paragraph(80, 20, "{{ tx.date }}"),
-      paragraph(260, 20, "{{ tx.description }}"),
-      paragraph(100, 20, "{{ tx.amount }}", "right"),
+      paragraph(dateW, 28, "{{ tx.date }}", "left", VALUE_STYLE),
+      paragraph(descW, 28, "{{ tx.description }}", "left", VALUE_STYLE),
+      paragraph(amountW, 28, "{{ tx.amount }}", "right", VALUE_STYLE),
     ],
-    { direction: "row", justify: "space-between", align: "center", padding: 0 },
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
     INVISIBLE,
   );
   txRow.repeat = { over: "statement_transactions", as: "tx" };
@@ -452,8 +556,9 @@ function bankStatement(): DesignDocument {
     contentW,
     200,
     "Transactions",
-    [txHeader, txRow],
+    [sectionTitle(rowW, "Transactions"), txHeader, txRow],
     { direction: "column", gap: 12, padding: 20 },
+    CARD,
   );
 
   const footer = box(
@@ -462,16 +567,18 @@ function bankStatement(): DesignDocument {
     "Footer",
     [
       paragraph(
-        contentW - 40,
+        contentW - 32,
         40,
         "This statement is provided for informational purposes. Please contact us within 30 days of any discrepancy.",
+        "left",
+        LABEL_STYLE,
       ),
     ],
-    { direction: "column", padding: 20 },
+    { direction: "column", padding: 16 },
     INVISIBLE,
   );
 
-  placeStacked(doc, [header, summary, transactions, footer]);
+  assemblePage(doc, [header, summary, transactions, footer], { padding: pad, gap: 24 });
   declareVars(doc, [
     ["bank_name", "Bank or financial institution name on the statement", "text", "First National Bank"],
     ["statement_period", "Statement period covered", "text", "01/01/2026 – 01/31/2026"],
@@ -500,18 +607,18 @@ function bankStatement(): DesignDocument {
 
 function insuranceCertificate(): DesignDocument {
   const doc = createEmptyDocument();
-  const pageW = doc.root.w;
-  const contentW = pageW - 80;
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
 
   const header = box(
     contentW,
     90,
     "Header",
     [
-      heading(contentW - 40, "Certificate of Insurance", 1, "center"),
-      paragraph(contentW - 40, 30, "This certifies that the policy described below is in effect.", "center"),
+      heading(contentW - 16, "Certificate of Insurance", 1, "center"),
+      paragraph(contentW - 16, 30, "This certifies that the policy described below is in effect.", "center"),
     ],
-    { direction: "column", gap: 6, padding: 20, align: "center" },
+    { direction: "column", gap: 8, padding: 8, align: "center" },
     INVISIBLE,
   );
 
@@ -520,73 +627,73 @@ function insuranceCertificate(): DesignDocument {
     110,
     "Policy holder",
     [
-      heading(300, "Policy Holder", 3),
+      sectionTitle(contentW - 40, "Policy holder"),
       paragraph(
-        360,
+        contentW - 40,
         70,
         "{{ holder_name }}\n{{ holder_address }}\nPolicy #: {{ policy_number }}",
       ),
     ],
-    { direction: "column", gap: 6, padding: 20 },
+    { direction: "column", gap: 10, padding: 20 },
+    CARD,
   );
 
-  const covHeader = box(
-    contentW - 40,
-    28,
-    "Column headers",
-    [paragraph(280, 20, "Coverage Type"), paragraph(160, 20, "Limit", "right")],
-    { direction: "row", justify: "space-between", align: "center", padding: 0 },
-    INVISIBLE,
-  );
-  covHeader.style.bold = true;
-
-  const coverageRow = box(
-    contentW - 40,
-    28,
-    "Coverage",
-    [
-      paragraph(280, 20, "{{ coverage.type }}"),
-      paragraph(160, 20, "{{ coverage.limit }}", "right"),
-    ],
-    { direction: "row", justify: "space-between", align: "center", padding: 0 },
-    INVISIBLE,
-  );
+  const rowW = contentW - 40;
+  const covHeader = twoColRow(rowW, "Coverage Type", "Limit", "Column headers", 0.68, true);
+  const coverageRow = twoColRow(rowW, "{{ coverage.type }}", "{{ coverage.limit }}", "Coverage", 0.68);
   coverageRow.repeat = { over: "insurance_coverages", as: "coverage" };
 
   const coverage = box(
     contentW,
     160,
     "Coverage",
-    [covHeader, coverageRow],
+    [sectionTitle(rowW, "Coverage"), covHeader, coverageRow],
     { direction: "column", gap: 12, padding: 20 },
+    CARD,
   );
 
+  const periodInner = contentW - 40;
+  const periodColW = Math.floor((periodInner - 24) / 2);
   const period = box(
     contentW,
     90,
     "Policy period",
     [
+      sectionTitle(periodInner, "Policy period"),
       box(
-        260,
-        42,
-        "Effective",
-        [paragraph(240, 18, "Effective Date"), heading(240, "{{ effective_date }}", 3)],
-        { direction: "column", gap: 4, padding: 0 },
-        INVISIBLE,
-      ),
-      box(
-        260,
-        42,
-        "Expiration",
+        periodInner,
+        48,
+        "Period columns",
         [
-          paragraph(240, 18, "Expiration Date", "right"),
-          heading(240, "{{ expiration_date }}", 3, "right"),
+          box(
+            periodColW,
+            48,
+            "Effective",
+            [
+              paragraph(periodColW - 4, 22, "Effective Date", "left", LABEL_STYLE),
+              heading(periodColW - 4, "{{ effective_date }}", 3),
+            ],
+            { direction: "column", gap: 4, padding: 0 },
+            INVISIBLE,
+          ),
+          box(
+            periodColW,
+            48,
+            "Expiration",
+            [
+              paragraph(periodColW - 4, 22, "Expiration Date", "right", LABEL_STYLE),
+              heading(periodColW - 4, "{{ expiration_date }}", 3, "right"),
+            ],
+            { direction: "column", gap: 4, padding: 0, align: "end" },
+            INVISIBLE,
+          ),
         ],
-        { direction: "column", gap: 4, padding: 0, align: "end" },
+        { direction: "row", justify: "space-between", padding: 0, gap: 24, align: "start" },
         INVISIBLE,
       ),
     ],
-    { direction: "row", justify: "space-between", padding: 20 },
+    { direction: "column", gap: 14, padding: 20 },
+    CARD,
   );
 
   const footer = box(
@@ -595,16 +702,16 @@ function insuranceCertificate(): DesignDocument {
     "Footer",
     [
       paragraph(
-        contentW - 40,
+        contentW - 32,
         40,
         "Insurer: {{ insurer_name }}\nAuthorized Signature: ______________________",
       ),
     ],
-    { direction: "column", padding: 20 },
+    { direction: "column", padding: 16 },
     INVISIBLE,
   );
 
-  placeStacked(doc, [header, policyHolder, coverage, period, footer]);
+  assemblePage(doc, [header, policyHolder, coverage, period, footer], { padding: pad, gap: 24 });
   declareVars(doc, [
     ["holder_name", "Insured policy holder name", "text", "Jane Doe"],
     ["holder_address", "Policy holder address", "text", "123 Main St, City, ST 00000"],
@@ -632,8 +739,8 @@ function insuranceCertificate(): DesignDocument {
 
 function businessLetter(): DesignDocument {
   const doc = createEmptyDocument();
-  const pageW = doc.root.w;
-  const contentW = pageW - 160;
+  const pad = 64;
+  const contentW = doc.root.w - pad * 2;
 
   const sender = box(
     contentW,
@@ -689,7 +796,7 @@ function businessLetter(): DesignDocument {
     INVISIBLE,
   );
 
-  placeStacked(doc, [sender, date, recipient, greeting, body, closing], 60, 80);
+  assemblePage(doc, [sender, date, recipient, greeting, body, closing], { padding: pad, gap: 18 });
   declareVars(doc, [
     ["sender_name", "Letter sender name", "text", "Alex Rivera"],
     ["sender_company", "Letter sender company", "text", "Rivera Consulting"],
@@ -711,114 +818,140 @@ function businessLetter(): DesignDocument {
 
 function payStub(): DesignDocument {
   const doc = createEmptyDocument();
-  const pageW = doc.root.w;
-  const contentW = pageW - 80;
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
 
+  const leftW = Math.floor(contentW * 0.55);
+  const rightW = Math.floor(contentW * 0.38);
   const header = box(
     contentW,
     90,
     "Header",
     [
       box(
-        340,
+        leftW,
         66,
         "Company",
-        [heading(320, "{{ employer_name }}", 2), paragraph(320, 30, "{{ employer_address }}")],
+        [heading(leftW - 8, "{{ employer_name }}", 2), paragraph(leftW - 8, 30, "{{ employer_address }}")],
         { direction: "column", gap: 4, padding: 0 },
         INVISIBLE,
       ),
       box(
-        300,
+        rightW,
         66,
         "Stub info",
         [
-          heading(280, "PAY STUB", 2, "right"),
-          paragraph(280, 30, "Pay date: {{ pay_date }}", "right"),
+          heading(rightW - 8, "PAY STUB", 2, "right"),
+          paragraph(rightW - 8, 30, "Pay date: {{ pay_date }}", "right"),
         ],
         { direction: "column", gap: 4, padding: 0, align: "end" },
         INVISIBLE,
       ),
     ],
-    { direction: "row", justify: "space-between", padding: 24, gap: 24 },
+    { direction: "row", justify: "space-between", padding: 0, gap: 20, align: "start" },
     INVISIBLE,
   );
 
-  function infoRow(labelText: string, value: string) {
-    return box(
-      340,
-      28,
-      "Row",
-      [paragraph(200, 20, labelText), paragraph(140, 20, value, "right")],
-      { direction: "row", justify: "space-between", align: "center", padding: 0 },
-      INVISIBLE,
-    );
-  }
-
+  // Two equal columns that fit inside the card (padding + gap accounted for).
+  const empPad = 20;
+  const empGap = 20;
+  const empColW = Math.floor((contentW - empPad * 2 - empGap) / 2);
   const employeeInfo = box(
     contentW,
     100,
     "Employee info",
     [
+      sectionTitle(contentW - empPad * 2, "Employee"),
       box(
-        contentW - 40,
-        56,
-        "col",
-        [infoRow("Employee", "{{ employee_name }}"), infoRow("Employee ID", "{{ employee_id }}")],
-        { direction: "column", gap: 8, padding: 0 },
-        INVISIBLE,
-      ),
-      box(
-        contentW - 40,
-        56,
-        "col",
+        contentW - empPad * 2,
+        64,
+        "Employee columns",
         [
-          infoRow("Pay period", "{{ pay_period_start }} – {{ pay_period_end }}"),
-          infoRow("Filing status", "{{ filing_status }}"),
+          box(
+            empColW,
+            64,
+            "Identity",
+            [
+              infoRow(empColW, "Employee", "{{ employee_name }}"),
+              infoRow(empColW, "Employee ID", "{{ employee_id }}"),
+            ],
+            { direction: "column", gap: 10, padding: 0 },
+            INVISIBLE,
+          ),
+          box(
+            empColW,
+            64,
+            "Period",
+            [
+              infoRow(empColW, "Pay period", "{{ pay_period_start }} – {{ pay_period_end }}"),
+              infoRow(empColW, "Filing status", "{{ filing_status }}"),
+            ],
+            { direction: "column", gap: 10, padding: 0 },
+            INVISIBLE,
+          ),
         ],
-        { direction: "column", gap: 8, padding: 0 },
+        { direction: "row", justify: "space-between", padding: 0, gap: empGap, align: "start" },
         INVISIBLE,
       ),
     ],
-    { direction: "row", justify: "space-between", padding: 20, gap: 24 },
+    { direction: "column", gap: 14, padding: empPad },
+    CARD,
   );
 
+  const detailsGap = 16;
+  const halfW = Math.floor((contentW - detailsGap) / 2);
+  const halfInner = halfW - 32;
+
   const earnings = box(
-    contentW,
+    halfW,
     150,
     "Earnings",
     [
-      infoRow("Regular hours", "{{ regular_hours }}"),
-      infoRow("Hourly rate", "{{ hourly_rate }}"),
-      infoRow("Overtime pay", "{{ overtime_pay }}"),
-      infoRow("Gross pay", "{{ gross_pay }}"),
+      sectionTitle(halfInner, "Earnings"),
+      infoRow(halfInner, "Regular hours", "{{ regular_hours }}"),
+      infoRow(halfInner, "Hourly rate", "{{ hourly_rate }}"),
+      infoRow(halfInner, "Overtime pay", "{{ overtime_pay }}"),
+      infoRow(halfInner, "Gross pay", "{{ gross_pay }}"),
     ],
-    { direction: "column", gap: 10, padding: 20 },
+    { direction: "column", gap: 10, padding: 16 },
+    CARD,
   );
 
   const deductions = box(
-    contentW,
+    halfW,
     170,
     "Deductions",
     [
-      infoRow("Federal tax", "{{ federal_tax }}"),
-      infoRow("State tax", "{{ state_tax }}"),
-      infoRow("Insurance", "{{ insurance_deduction }}"),
-      infoRow("Retirement (401k)", "{{ retirement_deduction }}"),
-      infoRow("Total deductions", "{{ total_deductions }}"),
+      sectionTitle(halfInner, "Deductions"),
+      infoRow(halfInner, "Federal tax", "{{ federal_tax }}"),
+      infoRow(halfInner, "State tax", "{{ state_tax }}"),
+      infoRow(halfInner, "Insurance", "{{ insurance_deduction }}"),
+      infoRow(halfInner, "Retirement (401k)", "{{ retirement_deduction }}"),
+      infoRow(halfInner, "Total deductions", "{{ total_deductions }}"),
     ],
-    { direction: "column", gap: 10, padding: 20 },
+    { direction: "column", gap: 10, padding: 16 },
+    CARD,
+  );
+
+  const payDetails = box(
+    contentW,
+    180,
+    "Pay details",
+    [earnings, deductions],
+    { direction: "row", justify: "start", padding: 0, gap: detailsGap, align: "start" },
+    INVISIBLE,
   );
 
   const netPay = box(
     contentW,
-    70,
+    64,
     "Net pay",
-    [heading(300, "Net Pay: {{ net_pay }}", 2, "right")],
-    { direction: "row", justify: "end", padding: 20 },
+    [heading(contentW - 40, "Net Pay: {{ net_pay }}", 2, "right")],
+    { direction: "row", justify: "end", padding: 18, align: "center" },
     { backgroundColor: "#f0fdf4", borderStyle: "solid", borderWidth: 1, borderColor: "#bbf7d0" },
   );
 
-  placeStacked(doc, [header, employeeInfo, earnings, deductions, netPay]);
+  assemblePage(doc, [header, employeeInfo, payDetails, netPay], { padding: pad, gap: 24 });
 
   declareVars(doc, [
     ["employer_name", "Employer company name on the pay stub", "text", "Acme Corporation"],
@@ -846,15 +979,15 @@ function payStub(): DesignDocument {
 
 function rentalAgreement(): DesignDocument {
   const doc = createEmptyDocument();
-  const pageW = doc.root.w;
-  const contentW = pageW - 80;
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
 
   const title = box(
     contentW,
     60,
     "Title",
-    [heading(contentW - 40, "Residential Lease Agreement", 1, "center")],
-    { direction: "column", padding: 20, align: "center" },
+    [heading(contentW - 16, "Residential Lease Agreement", 1, "center")],
+    { direction: "column", padding: 8, align: "center" },
     INVISIBLE,
   );
 
@@ -870,17 +1003,12 @@ function rentalAgreement(): DesignDocument {
       ),
     ],
     { direction: "column", padding: 20 },
+    CARD,
   );
 
+  const rowW = contentW - 40;
   function termRow(labelText: string, value: string) {
-    return box(
-      contentW - 40,
-      28,
-      "Row",
-      [paragraph(280, 20, labelText), paragraph(160, 20, value, "right")],
-      { direction: "row", justify: "space-between", align: "center", padding: 0 },
-      INVISIBLE,
-    );
+    return infoRow(rowW, labelText, value);
   }
 
   const terms = box(
@@ -888,6 +1016,7 @@ function rentalAgreement(): DesignDocument {
     180,
     "Lease terms",
     [
+      sectionTitle(rowW, "Lease terms"),
       termRow("Lease start date", "{{ lease_start_date }}"),
       termRow("Lease end date", "{{ lease_end_date }}"),
       termRow("Monthly rent", "{{ monthly_rent }}"),
@@ -895,42 +1024,51 @@ function rentalAgreement(): DesignDocument {
       termRow("Rent due date", "{{ rent_due_date }}"),
     ],
     { direction: "column", gap: 12, padding: 20 },
+    CARD,
   );
 
   const clauses = box(
     contentW,
     110,
     "Additional terms",
-    [paragraph(contentW - 40, 90, "{{ additional_terms }}")],
-    { direction: "column", padding: 20 },
+    [
+      sectionTitle(contentW - 40, "Additional terms"),
+      paragraph(contentW - 40, 90, "{{ additional_terms }}"),
+    ],
+    { direction: "column", gap: 10, padding: 20 },
+    CARD,
   );
 
+  const sigGap = 32;
+  const sigPad = 20;
+  const sigColW = Math.floor((contentW - sigPad * 2 - sigGap) / 2);
   const signatures = box(
     contentW,
     90,
     "Signatures",
     [
       box(
-        (contentW - 80) / 2,
+        sigColW,
         50,
         "Landlord",
-        [paragraph(280, 40, "Landlord signature: ______________________\nDate: ______________")],
+        [paragraph(sigColW, 40, "Landlord signature: ______________________\nDate: ______________")],
         { direction: "column", padding: 0 },
         INVISIBLE,
       ),
       box(
-        (contentW - 80) / 2,
+        sigColW,
         50,
         "Tenant",
-        [paragraph(280, 40, "Tenant signature: ______________________\nDate: ______________")],
+        [paragraph(sigColW, 40, "Tenant signature: ______________________\nDate: ______________")],
         { direction: "column", padding: 0 },
         INVISIBLE,
       ),
     ],
-    { direction: "row", justify: "space-between", padding: 20, gap: 40 },
+    { direction: "row", justify: "space-between", padding: sigPad, gap: sigGap, align: "start" },
+    CARD,
   );
 
-  placeStacked(doc, [title, parties, terms, clauses, signatures]);
+  assemblePage(doc, [title, parties, terms, clauses, signatures], { padding: pad, gap: 24 });
 
   declareVars(doc, [
     ["agreement_date", "Lease agreement date", "date", "01/01/2026"],
@@ -956,8 +1094,8 @@ function rentalAgreement(): DesignDocument {
 /** FileWorks-specific: layout driven by extracted Markdown from the workspace. */
 function documentReport(): DesignDocument {
   const doc = createEmptyDocument();
-  const pageW = doc.root.w;
-  const contentW = pageW - 80;
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
   const header = box(
     contentW,
     80,
@@ -972,7 +1110,7 @@ function documentReport(): DesignDocument {
     [paragraph(contentW - 40, 700, "{{ report_body }}")],
     { direction: "column", gap: 8, padding: 20 },
   );
-  placeStacked(doc, [header, body]);
+  assemblePage(doc, [header, body], { padding: pad, gap: 16 });
   declareVars(doc, [
     ["report_title", "Report title taken from the source document", "text", "Document report"],
     ["report_body", "Full report body transcribed from the source Markdown", "text", "Preview of extracted content from FileWorks."],
@@ -980,60 +1118,1418 @@ function documentReport(): DesignDocument {
   return doc;
 }
 
+const FAMILY_HEADER: Partial<NodeStyle> = {
+  backgroundColor: "#f8fafc",
+  borderStyle: "solid",
+  borderWidth: 1,
+  borderColor: "#e2e8f0",
+};
+
+const DAY_CARD: Partial<NodeStyle> = {
+  backgroundColor: "#ffffff",
+  borderStyle: "solid",
+  borderWidth: 1,
+  borderColor: "#e2e8f0",
+};
+
+/** One fridge-ready day: timed blocks the whole household can follow. */
+function familyDaily(): DesignDocument {
+  const doc = createEmptyDocument();
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
+  const inner = contentW - 40;
+
+  const header = box(
+    contentW,
+    100,
+    "Header",
+    [
+      box(
+        Math.floor(contentW * 0.58),
+        70,
+        "Family",
+        [
+          paragraph(Math.floor(contentW * 0.58) - 8, 22, "FAMILY SCHEDULE", "left", {
+            ...LABEL_STYLE,
+            fontSize: 11,
+            bold: true,
+          }),
+          heading(Math.floor(contentW * 0.58) - 8, "{{ family_name }}", 2),
+        ],
+        { direction: "column", gap: 4, padding: 0 },
+        INVISIBLE,
+      ),
+      box(
+        Math.floor(contentW * 0.36),
+        70,
+        "When",
+        [
+          heading(Math.floor(contentW * 0.36) - 8, "{{ day_name }}", 2, "right"),
+          paragraph(Math.floor(contentW * 0.36) - 8, 28, "{{ schedule_date }}", "right", LABEL_STYLE),
+        ],
+        { direction: "column", gap: 4, padding: 0, align: "end" },
+        INVISIBLE,
+      ),
+    ],
+    { direction: "row", justify: "space-between", padding: 22, gap: 20, align: "start" },
+    FAMILY_HEADER,
+  );
+
+  const timeW = 110;
+  const activityW = inner - timeW;
+  const blockHeader = box(
+    inner,
+    32,
+    "Column headers",
+    [
+      paragraph(timeW, 28, "Time", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(activityW, 28, "Activity", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+
+  const blockRow = box(
+    inner,
+    36,
+    "Block",
+    [
+      paragraph(timeW, 28, "{{ block.time }}", "left", { ...VALUE_STYLE, bold: true }),
+      paragraph(activityW, 28, "{{ block.activity }}", "left", VALUE_STYLE),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+  blockRow.repeat = { over: "family_daily_blocks", as: "block" };
+
+  const timeline = box(
+    contentW,
+    280,
+    "Timeline",
+    [sectionTitle(inner, "Today's plan"), blockHeader, blockRow],
+    { direction: "column", gap: 12, padding: 20 },
+    CARD,
+  );
+
+  const sideInner = Math.floor((contentW - 16) / 2) - 32;
+  const meals = box(
+    Math.floor((contentW - 16) / 2),
+    120,
+    "Meals",
+    [
+      sectionTitle(sideInner, "Meals"),
+      infoRow(sideInner, "Breakfast", "{{ breakfast }}"),
+      infoRow(sideInner, "Lunch", "{{ lunch }}"),
+      infoRow(sideInner, "Dinner", "{{ dinner }}"),
+    ],
+    { direction: "column", gap: 10, padding: 16 },
+    CARD,
+  );
+
+  const focus = box(
+    Math.floor((contentW - 16) / 2),
+    120,
+    "Focus",
+    [
+      sectionTitle(sideInner, "Don’t forget"),
+      paragraph(sideInner, 70, "{{ daily_reminders }}"),
+    ],
+    { direction: "column", gap: 10, padding: 16 },
+    CARD,
+  );
+
+  const extras = box(
+    contentW,
+    140,
+    "Extras",
+    [meals, focus],
+    { direction: "row", justify: "start", padding: 0, gap: 16, align: "start" },
+    INVISIBLE,
+  );
+
+  const notes = box(
+    contentW,
+    70,
+    "Notes",
+    [
+      sectionTitle(contentW - 32, "Notes"),
+      paragraph(contentW - 32, 40, "{{ daily_notes }}"),
+    ],
+    { direction: "column", gap: 8, padding: 16 },
+    INVISIBLE,
+  );
+
+  assemblePage(doc, [header, timeline, extras, notes], { padding: pad, gap: 20 });
+  declareVars(doc, [
+    ["family_name", "Family or household name on the schedule", "text", "The Rivera Family"],
+    ["day_name", "Weekday name for this daily schedule", "text", "Tuesday"],
+    ["schedule_date", "Calendar date for this daily schedule", "date", "March 18, 2026"],
+    [
+      "family_daily_blocks",
+      "Timed activity blocks for the day (time and what happens)",
+      "list",
+      JSON.stringify([
+        { time: "7:00 AM", activity: "Breakfast & get ready" },
+        { time: "8:15 AM", activity: "School drop-off" },
+        { time: "12:30 PM", activity: "Lunch (kids at school)" },
+        { time: "3:30 PM", activity: "Pickup · snacks · homework" },
+        { time: "5:30 PM", activity: "Soccer practice (Maya)" },
+        { time: "7:00 PM", activity: "Family dinner" },
+        { time: "8:30 PM", activity: "Baths · bedtime stories" },
+      ]),
+      [
+        ["time", "Clock time for this block", "text"],
+        ["activity", "What the family does in this block", "text"],
+      ],
+    ],
+    ["breakfast", "Breakfast plan for the day", "text", "Oatmeal and fruit"],
+    ["lunch", "Lunch plan for the day", "text", "School lunch / leftovers"],
+    ["dinner", "Dinner plan for the day", "text", "Tacos and salad"],
+    [
+      "daily_reminders",
+      "Short reminders or errands for the day",
+      "text",
+      "Library books due\nBring soccer cleats\nCall grandma after dinner",
+    ],
+    ["daily_notes", "Freeform notes at the bottom of the daily card", "text", "Early bedtime tonight — big field trip tomorrow."],
+  ]);
+  return doc;
+}
+
+/** Landscape week-at-a-glance card — seven day columns for the fridge. */
+function familyWeekly(): DesignDocument {
+  const doc = createEmptyDocument({ w: 1100, h: 850 });
+  const pad = 32;
+  const contentW = doc.root.w - pad * 2;
+  const gap = 10;
+  const dayW = Math.floor((contentW - gap * 6) / 7);
+  const dayInner = dayW - 20;
+
+  const header = box(
+    contentW,
+    88,
+    "Header",
+    [
+      box(
+        Math.floor(contentW * 0.55),
+        64,
+        "Title",
+        [
+          paragraph(Math.floor(contentW * 0.55) - 8, 20, "WEEKLY FAMILY SCHEDULE", "left", {
+            ...LABEL_STYLE,
+            fontSize: 11,
+            bold: true,
+          }),
+          heading(Math.floor(contentW * 0.55) - 8, "{{ family_name }}", 2),
+        ],
+        { direction: "column", gap: 4, padding: 0 },
+        INVISIBLE,
+      ),
+      box(
+        Math.floor(contentW * 0.4),
+        64,
+        "Range",
+        [
+          paragraph(Math.floor(contentW * 0.4) - 8, 22, "Week of", "right", LABEL_STYLE),
+          heading(Math.floor(contentW * 0.4) - 8, "{{ week_of }}", 3, "right"),
+        ],
+        { direction: "column", gap: 4, padding: 0, align: "end" },
+        INVISIBLE,
+      ),
+    ],
+    { direction: "row", justify: "space-between", padding: 20, gap: 16, align: "start" },
+    FAMILY_HEADER,
+  );
+
+  const days: Array<[string, string]> = [
+    ["Mon", "monday_plan"],
+    ["Tue", "tuesday_plan"],
+    ["Wed", "wednesday_plan"],
+    ["Thu", "thursday_plan"],
+    ["Fri", "friday_plan"],
+    ["Sat", "saturday_plan"],
+    ["Sun", "sunday_plan"],
+  ];
+
+  const dayColumns = days.map(([label, planVar]) =>
+    box(
+      dayW,
+      420,
+      label,
+      [
+        paragraph(dayInner, 26, label, "center", {
+          ...VALUE_STYLE,
+          fontSize: 14,
+          bold: true,
+          align: "center",
+        }),
+        paragraph(dayInner, 360, `{{ ${planVar} }}`, "left", { ...VALUE_STYLE, fontSize: 12 }),
+      ],
+      { direction: "column", gap: 10, padding: 10, align: "stretch" },
+      DAY_CARD,
+    ),
+  );
+
+  const weekGrid = box(
+    contentW,
+    440,
+    "Week",
+    dayColumns,
+    { direction: "row", justify: "start", padding: 0, gap, align: "start" },
+    INVISIBLE,
+  );
+
+  const eveningW = Math.floor((contentW - 16) / 2);
+  const eveningInner = eveningW - 32;
+  const dinners = box(
+    eveningW,
+    100,
+    "Dinners",
+    [
+      sectionTitle(eveningInner, "Dinner plan"),
+      paragraph(
+        eveningInner,
+        56,
+        "Mon {{ mon_dinner }} · Tue {{ tue_dinner }} · Wed {{ wed_dinner }}\nThu {{ thu_dinner }} · Fri {{ fri_dinner }} · Sat {{ sat_dinner }} · Sun {{ sun_dinner }}",
+      ),
+    ],
+    { direction: "column", gap: 8, padding: 16 },
+    CARD,
+  );
+
+  const focus = box(
+    eveningW,
+    100,
+    "Week focus",
+    [
+      sectionTitle(eveningInner, "This week’s focus"),
+      paragraph(eveningInner, 56, "{{ week_focus }}"),
+    ],
+    { direction: "column", gap: 8, padding: 16 },
+    CARD,
+  );
+
+  const footerRow = box(
+    contentW,
+    110,
+    "Footer row",
+    [dinners, focus],
+    { direction: "row", justify: "start", padding: 0, gap: 16, align: "start" },
+    INVISIBLE,
+  );
+
+  assemblePage(doc, [header, weekGrid, footerRow], { padding: pad, gap: 18 });
+  declareVars(doc, [
+    ["family_name", "Family or household name on the weekly card", "text", "The Rivera Family"],
+    ["week_of", "Start date of the week shown on the card", "date", "March 16, 2026"],
+    ["monday_plan", "Monday activities for the weekly schedule", "text", "School\nPiano 4:00 PM\nEarly bedtime"],
+    ["tuesday_plan", "Tuesday activities for the weekly schedule", "text", "School\nGrocery run\nHomework club"],
+    ["wednesday_plan", "Wednesday activities for the weekly schedule", "text", "School\nSoccer 5:30 PM"],
+    ["thursday_plan", "Thursday activities for the weekly schedule", "text", "School\nLibrary books\nPack lunches"],
+    ["friday_plan", "Friday activities for the weekly schedule", "text", "School\nPizza night\nGame night"],
+    ["saturday_plan", "Saturday activities for the weekly schedule", "text", "Park morning\nChores\nMovie night"],
+    ["sunday_plan", "Sunday activities for the weekly schedule", "text", "Brunch out\nMeal prep\nFamily video call"],
+    ["mon_dinner", "Monday dinner", "text", "Pasta"],
+    ["tue_dinner", "Tuesday dinner", "text", "Tacos"],
+    ["wed_dinner", "Wednesday dinner", "text", "Stir-fry"],
+    ["thu_dinner", "Thursday dinner", "text", "Soup and bread"],
+    ["fri_dinner", "Friday dinner", "text", "Pizza"],
+    ["sat_dinner", "Saturday dinner", "text", "Grill"],
+    ["sun_dinner", "Sunday dinner", "text", "Roast chicken"],
+    [
+      "week_focus",
+      "One short focus or goal for the household this week",
+      "text",
+      "Pack sports bags the night before. No screens after 8:30 on school nights.",
+    ],
+  ]);
+  return doc;
+}
+
+/** Month overview: key dates, recurring rhythms, and household priorities. */
+function familyMonthly(): DesignDocument {
+  const doc = createEmptyDocument();
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
+  const inner = contentW - 40;
+
+  const header = box(
+    contentW,
+    100,
+    "Header",
+    [
+      box(
+        Math.floor(contentW * 0.58),
+        70,
+        "Title",
+        [
+          paragraph(Math.floor(contentW * 0.58) - 8, 20, "MONTHLY FAMILY PLANNER", "left", {
+            ...LABEL_STYLE,
+            fontSize: 11,
+            bold: true,
+          }),
+          heading(Math.floor(contentW * 0.58) - 8, "{{ family_name }}", 2),
+        ],
+        { direction: "column", gap: 4, padding: 0 },
+        INVISIBLE,
+      ),
+      box(
+        Math.floor(contentW * 0.36),
+        70,
+        "Month",
+        [
+          heading(Math.floor(contentW * 0.36) - 8, "{{ month_name }}", 1, "right"),
+          paragraph(Math.floor(contentW * 0.36) - 8, 28, "{{ month_year }}", "right", LABEL_STYLE),
+        ],
+        { direction: "column", gap: 4, padding: 0, align: "end" },
+        INVISIBLE,
+      ),
+    ],
+    { direction: "row", justify: "space-between", padding: 22, gap: 20, align: "start" },
+    FAMILY_HEADER,
+  );
+
+  const dateW = 100;
+  const eventW = Math.floor(inner * 0.45);
+  const whoW = inner - dateW - eventW;
+  const eventHeader = box(
+    inner,
+    32,
+    "Column headers",
+    [
+      paragraph(dateW, 28, "Date", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(eventW, 28, "Event", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(whoW, 28, "Who", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+
+  const eventRow = box(
+    inner,
+    36,
+    "Event",
+    [
+      paragraph(dateW, 28, "{{ event.date }}", "left", { ...VALUE_STYLE, bold: true }),
+      paragraph(eventW, 28, "{{ event.title }}", "left", VALUE_STYLE),
+      paragraph(whoW, 28, "{{ event.who }}", "left", LABEL_STYLE),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+  eventRow.repeat = { over: "family_monthly_events", as: "event" };
+
+  const events = box(
+    contentW,
+    260,
+    "Key dates",
+    [sectionTitle(inner, "Key dates & events"), eventHeader, eventRow],
+    { direction: "column", gap: 12, padding: 20 },
+    CARD,
+  );
+
+  const halfW = Math.floor((contentW - 16) / 2);
+  const halfInner = halfW - 32;
+  const rhythms = box(
+    halfW,
+    160,
+    "Rhythms",
+    [
+      sectionTitle(halfInner, "Monthly rhythms"),
+      paragraph(halfInner, 110, "{{ monthly_rhythms }}"),
+    ],
+    { direction: "column", gap: 10, padding: 16 },
+    CARD,
+  );
+
+  const goals = box(
+    halfW,
+    160,
+    "Goals",
+    [
+      sectionTitle(halfInner, "Family goals"),
+      paragraph(halfInner, 110, "{{ monthly_goals }}"),
+    ],
+    { direction: "column", gap: 10, padding: 16 },
+    CARD,
+  );
+
+  const mid = box(
+    contentW,
+    170,
+    "Mid",
+    [rhythms, goals],
+    { direction: "row", justify: "start", padding: 0, gap: 16, align: "start" },
+    INVISIBLE,
+  );
+
+  const budget = box(
+    contentW,
+    90,
+    "Budget notes",
+    [
+      sectionTitle(inner, "Money & errands"),
+      paragraph(inner, 40, "{{ monthly_errands }}"),
+    ],
+    { direction: "column", gap: 8, padding: 20 },
+    CARD,
+  );
+
+  assemblePage(doc, [header, events, mid, budget], { padding: pad, gap: 20 });
+  declareVars(doc, [
+    ["family_name", "Family or household name on the monthly planner", "text", "The Rivera Family"],
+    ["month_name", "Month name for the planner", "text", "March"],
+    ["month_year", "Year for the monthly planner", "text", "2026"],
+    [
+      "family_monthly_events",
+      "Important dates this month (date, event title, and who is involved)",
+      "list",
+      JSON.stringify([
+        { date: "Mar 3", title: "Parent-teacher conferences", who: "Alex & Jordan" },
+        { date: "Mar 12", title: "Maya's birthday party", who: "Whole family" },
+        { date: "Mar 18", title: "School field trip", who: "Leo" },
+        { date: "Mar 22", title: "Family photo session", who: "Whole family" },
+        { date: "Mar 28", title: "Spring break starts", who: "Kids" },
+      ]),
+      [
+        ["date", "Date of the event", "date"],
+        ["title", "Event title or description", "text"],
+        ["who", "Who the event involves", "text"],
+      ],
+    ],
+    [
+      "monthly_rhythms",
+      "Recurring monthly habits or routines for the household",
+      "text",
+      "1st — pay bills & review calendar\n2nd Sunday — grandparents dinner\nLast Friday — family game night\nEvery Wednesday — recycling out",
+    ],
+    [
+      "monthly_goals",
+      "Family goals or intentions for the month",
+      "text",
+      "Eat dinner together 5 nights/week\nOne device-free Saturday morning\nFinish spring closet clean-out",
+    ],
+    [
+      "monthly_errands",
+      "Money, errands, or logistics to remember this month",
+      "text",
+      "Renew soccer registration · Schedule dentist · Order birthday gift for Maya",
+    ],
+  ]);
+  return doc;
+}
+
+/** Landscape year wall calendar — twelve month cards plus annual priorities. */
+function familyYearly(): DesignDocument {
+  const doc = createEmptyDocument({ w: 1100, h: 850 });
+  const pad = 28;
+  const contentW = doc.root.w - pad * 2;
+  const colGap = 12;
+  const rowGap = 12;
+  const monthW = Math.floor((contentW - colGap * 3) / 4);
+  const monthInner = monthW - 20;
+
+  const header = box(
+    contentW,
+    88,
+    "Header",
+    [
+      box(
+        Math.floor(contentW * 0.55),
+        64,
+        "Title",
+        [
+          paragraph(Math.floor(contentW * 0.55) - 8, 20, "YEARLY FAMILY CALENDAR", "left", {
+            ...LABEL_STYLE,
+            fontSize: 11,
+            bold: true,
+          }),
+          heading(Math.floor(contentW * 0.55) - 8, "{{ family_name }}", 2),
+        ],
+        { direction: "column", gap: 4, padding: 0 },
+        INVISIBLE,
+      ),
+      box(
+        Math.floor(contentW * 0.38),
+        64,
+        "Year",
+        [heading(Math.floor(contentW * 0.38) - 8, "{{ calendar_year }}", 1, "right")],
+        { direction: "column", gap: 0, padding: 0, align: "end" },
+        INVISIBLE,
+      ),
+    ],
+    { direction: "row", justify: "space-between", padding: 20, gap: 16, align: "center" },
+    FAMILY_HEADER,
+  );
+
+  const months: Array<[string, string, string]> = [
+    ["January", "jan_notes", "New Year · ski weekend"],
+    ["February", "feb_notes", "Maya birthday (12th)"],
+    ["March", "mar_notes", "Spring break · photos"],
+    ["April", "apr_notes", "Taxes · Easter"],
+    ["May", "may_notes", "Mother's Day · field day"],
+    ["June", "jun_notes", "Last day of school"],
+    ["July", "jul_notes", "Beach trip (week 2)"],
+    ["August", "aug_notes", "Back-to-school shopping"],
+    ["September", "sep_notes", "School starts · soccer"],
+    ["October", "oct_notes", "Halloween · fall fest"],
+    ["November", "nov_notes", "Thanksgiving travel"],
+    ["December", "dec_notes", "Holidays · year review"],
+  ];
+
+  function monthCard(name: string, varName: string) {
+    return box(
+      monthW,
+      118,
+      name,
+      [
+        paragraph(monthInner, 24, name, "left", { ...VALUE_STYLE, fontSize: 13, bold: true }),
+        paragraph(monthInner, 70, `{{ ${varName} }}`, "left", { ...VALUE_STYLE, fontSize: 12 }),
+      ],
+      { direction: "column", gap: 6, padding: 10 },
+      DAY_CARD,
+    );
+  }
+
+  const rows = [0, 1, 2].map((row) => {
+    const slice = months.slice(row * 4, row * 4 + 4);
+    return box(
+      contentW,
+      118,
+      `Row ${row + 1}`,
+      slice.map(([name, varName]) => monthCard(name, varName)),
+      { direction: "row", justify: "start", padding: 0, gap: colGap, align: "start" },
+      INVISIBLE,
+    );
+  });
+
+  const yearGrid = box(
+    contentW,
+    380,
+    "Months",
+    rows,
+    { direction: "column", gap: rowGap, padding: 0 },
+    INVISIBLE,
+  );
+
+  const halfW = Math.floor((contentW - 16) / 2);
+  const halfInner = halfW - 32;
+  const goals = box(
+    halfW,
+    120,
+    "Annual goals",
+    [
+      sectionTitle(halfInner, "Annual goals"),
+      paragraph(halfInner, 70, "{{ yearly_goals }}"),
+    ],
+    { direction: "column", gap: 8, padding: 16 },
+    CARD,
+  );
+
+  const trips = box(
+    halfW,
+    120,
+    "Trips",
+    [
+      sectionTitle(halfInner, "Trips & big moments"),
+      paragraph(halfInner, 70, "{{ yearly_trips }}"),
+    ],
+    { direction: "column", gap: 8, padding: 16 },
+    CARD,
+  );
+
+  const bottom = box(
+    contentW,
+    130,
+    "Bottom",
+    [goals, trips],
+    { direction: "row", justify: "start", padding: 0, gap: 16, align: "start" },
+    INVISIBLE,
+  );
+
+  assemblePage(doc, [header, yearGrid, bottom], { padding: pad, gap: 16 });
+  declareVars(doc, [
+    ["family_name", "Family or household name on the yearly calendar", "text", "The Rivera Family"],
+    ["calendar_year", "Calendar year shown on the yearly planner", "text", "2026"],
+    ["jan_notes", "January highlights on the yearly calendar", "text", months[0][2]],
+    ["feb_notes", "February highlights on the yearly calendar", "text", months[1][2]],
+    ["mar_notes", "March highlights on the yearly calendar", "text", months[2][2]],
+    ["apr_notes", "April highlights on the yearly calendar", "text", months[3][2]],
+    ["may_notes", "May highlights on the yearly calendar", "text", months[4][2]],
+    ["jun_notes", "June highlights on the yearly calendar", "text", months[5][2]],
+    ["jul_notes", "July highlights on the yearly calendar", "text", months[6][2]],
+    ["aug_notes", "August highlights on the yearly calendar", "text", months[7][2]],
+    ["sep_notes", "September highlights on the yearly calendar", "text", months[8][2]],
+    ["oct_notes", "October highlights on the yearly calendar", "text", months[9][2]],
+    ["nov_notes", "November highlights on the yearly calendar", "text", months[10][2]],
+    ["dec_notes", "December highlights on the yearly calendar", "text", months[11][2]],
+    [
+      "yearly_goals",
+      "Family goals for the full year",
+      "text",
+      "Save for summer beach trip\nCook together every Sunday\nVisit both sets of grandparents",
+    ],
+    [
+      "yearly_trips",
+      "Major trips and celebrations planned for the year",
+      "text",
+      "July — beach week\nNovember — Thanksgiving travel\nDecember — holiday open house",
+    ],
+  ]);
+  return doc;
+}
+
+/** Meeting agenda with timed topics and action items. */
+function meetingAgenda(): DesignDocument {
+  const doc = createEmptyDocument();
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
+  const inner = contentW - 40;
+
+  const header = box(
+    contentW,
+    100,
+    "Header",
+    [
+      box(
+        Math.floor(contentW * 0.62),
+        72,
+        "Title",
+        [
+          paragraph(Math.floor(contentW * 0.62) - 8, 20, "MEETING AGENDA", "left", {
+            ...LABEL_STYLE,
+            fontSize: 11,
+            bold: true,
+          }),
+          heading(Math.floor(contentW * 0.62) - 8, "{{ meeting_title }}", 2),
+        ],
+        { direction: "column", gap: 4, padding: 0 },
+        INVISIBLE,
+      ),
+      box(
+        Math.floor(contentW * 0.32),
+        72,
+        "When",
+        [
+          paragraph(Math.floor(contentW * 0.32) - 8, 28, "{{ meeting_date }}", "right", VALUE_STYLE),
+          paragraph(Math.floor(contentW * 0.32) - 8, 28, "{{ meeting_time }}", "right", LABEL_STYLE),
+        ],
+        { direction: "column", gap: 4, padding: 0, align: "end" },
+        INVISIBLE,
+      ),
+    ],
+    { direction: "row", justify: "space-between", padding: 22, gap: 16, align: "start" },
+    FAMILY_HEADER,
+  );
+
+  const meta = box(
+    contentW,
+    80,
+    "Meta",
+    [
+      infoRow(inner, "Facilitator", "{{ facilitator }}"),
+      infoRow(inner, "Attendees", "{{ attendees }}"),
+      infoRow(inner, "Location", "{{ meeting_location }}"),
+    ],
+    { direction: "column", gap: 8, padding: 20 },
+    CARD,
+  );
+
+  const topicW = Math.floor(inner * 0.48);
+  const ownerW = Math.floor(inner * 0.22);
+  const minsW = inner - topicW - ownerW;
+  const agendaHeader = box(
+    inner,
+    32,
+    "Column headers",
+    [
+      paragraph(minsW, 28, "Time", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(topicW, 28, "Topic", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(ownerW, 28, "Owner", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+  const agendaRow = box(
+    inner,
+    36,
+    "Agenda item",
+    [
+      paragraph(minsW, 28, "{{ item.time }}", "left", { ...VALUE_STYLE, bold: true }),
+      paragraph(topicW, 28, "{{ item.topic }}", "left", VALUE_STYLE),
+      paragraph(ownerW, 28, "{{ item.owner }}", "left", LABEL_STYLE),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+  agendaRow.repeat = { over: "meeting_agenda_items", as: "item" };
+
+  const agenda = box(
+    contentW,
+    220,
+    "Agenda",
+    [sectionTitle(inner, "Agenda"), agendaHeader, agendaRow],
+    { direction: "column", gap: 12, padding: 20 },
+    CARD,
+  );
+
+  const halfW = Math.floor((contentW - 16) / 2);
+  const halfInner = halfW - 32;
+  const notes = box(
+    halfW,
+    140,
+    "Notes",
+    [sectionTitle(halfInner, "Discussion notes"), paragraph(halfInner, 90, "{{ meeting_notes }}")],
+    { direction: "column", gap: 8, padding: 16 },
+    CARD,
+  );
+  const actions = box(
+    halfW,
+    140,
+    "Actions",
+    [sectionTitle(halfInner, "Action items"), paragraph(halfInner, 90, "{{ action_items }}")],
+    { direction: "column", gap: 8, padding: 16 },
+    CARD,
+  );
+  const bottom = box(
+    contentW,
+    150,
+    "Bottom",
+    [notes, actions],
+    { direction: "row", justify: "start", padding: 0, gap: 16, align: "start" },
+    INVISIBLE,
+  );
+
+  assemblePage(doc, [header, meta, agenda, bottom], { padding: pad, gap: 20 });
+  declareVars(doc, [
+    ["meeting_title", "Meeting title on the agenda", "text", "Weekly product sync"],
+    ["meeting_date", "Meeting date", "date", "March 18, 2026"],
+    ["meeting_time", "Meeting start time and duration", "text", "10:00–10:45 AM"],
+    ["facilitator", "Person running the meeting", "text", "Alex Rivera"],
+    ["attendees", "People invited or present at the meeting", "text", "Alex, Jordan, Sam, Priya"],
+    ["meeting_location", "Meeting room or video link", "text", "Zoom · Product room"],
+    [
+      "meeting_agenda_items",
+      "Agenda topics with time box, topic title, and owner",
+      "list",
+      JSON.stringify([
+        { time: "5 min", topic: "Wins since last week", owner: "All" },
+        { time: "15 min", topic: "Sprint goals and blockers", owner: "Jordan" },
+        { time: "15 min", topic: "Launch checklist review", owner: "Priya" },
+        { time: "10 min", topic: "Decisions and next steps", owner: "Alex" },
+      ]),
+      [
+        ["time", "Time box for this agenda topic", "text"],
+        ["topic", "Agenda topic title", "text"],
+        ["owner", "Person leading this topic", "text"],
+      ],
+    ],
+    [
+      "meeting_notes",
+      "Discussion notes captured during the meeting",
+      "text",
+      "Launch date confirmed for Apr 2.\nNeed design QA sign-off by Friday.",
+    ],
+    [
+      "action_items",
+      "Follow-up actions with owners and due dates",
+      "text",
+      "Priya — finish QA checklist (Mar 20)\nSam — update status page copy (Mar 21)\nAlex — send notes to stakeholders (today)",
+    ],
+  ]);
+  return doc;
+}
+
+/** Project plan with milestones and risks. */
+function projectPlan(): DesignDocument {
+  const doc = createEmptyDocument();
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
+  const inner = contentW - 40;
+
+  const header = box(
+    contentW,
+    100,
+    "Header",
+    [
+      box(
+        Math.floor(contentW * 0.62),
+        72,
+        "Title",
+        [
+          paragraph(Math.floor(contentW * 0.62) - 8, 20, "PROJECT PLAN", "left", {
+            ...LABEL_STYLE,
+            fontSize: 11,
+            bold: true,
+          }),
+          heading(Math.floor(contentW * 0.62) - 8, "{{ project_name }}", 2),
+        ],
+        { direction: "column", gap: 4, padding: 0 },
+        INVISIBLE,
+      ),
+      box(
+        Math.floor(contentW * 0.32),
+        72,
+        "Status",
+        [
+          paragraph(Math.floor(contentW * 0.32) - 8, 22, "Status", "right", LABEL_STYLE),
+          heading(Math.floor(contentW * 0.32) - 8, "{{ project_status }}", 3, "right"),
+        ],
+        { direction: "column", gap: 4, padding: 0, align: "end" },
+        INVISIBLE,
+      ),
+    ],
+    { direction: "row", justify: "space-between", padding: 22, gap: 16, align: "start" },
+    FAMILY_HEADER,
+  );
+
+  const overview = box(
+    contentW,
+    110,
+    "Overview",
+    [
+      sectionTitle(inner, "Overview"),
+      paragraph(inner, 60, "{{ project_summary }}"),
+    ],
+    { direction: "column", gap: 8, padding: 20 },
+    CARD,
+  );
+
+  const metaHalf = Math.floor((contentW - 16) / 2);
+  const metaInner = metaHalf - 32;
+  const details = box(
+    metaHalf,
+    130,
+    "Details",
+    [
+      sectionTitle(metaInner, "Details"),
+      infoRow(metaInner, "Owner", "{{ project_owner }}"),
+      infoRow(metaInner, "Start", "{{ project_start }}"),
+      infoRow(metaInner, "Target", "{{ project_target }}"),
+    ],
+    { direction: "column", gap: 8, padding: 16 },
+    CARD,
+  );
+  const success = box(
+    metaHalf,
+    130,
+    "Success",
+    [
+      sectionTitle(metaInner, "Success criteria"),
+      paragraph(metaInner, 70, "{{ success_criteria }}"),
+    ],
+    { direction: "column", gap: 8, padding: 16 },
+    CARD,
+  );
+  const mid = box(
+    contentW,
+    140,
+    "Mid",
+    [details, success],
+    { direction: "row", justify: "start", padding: 0, gap: 16, align: "start" },
+    INVISIBLE,
+  );
+
+  const mDate = 100;
+  const mTitle = Math.floor(inner * 0.45);
+  const mOwner = inner - mDate - mTitle;
+  const mileHeader = box(
+    inner,
+    32,
+    "Column headers",
+    [
+      paragraph(mDate, 28, "Date", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(mTitle, 28, "Milestone", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(mOwner, 28, "Owner", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+  const mileRow = box(
+    inner,
+    36,
+    "Milestone",
+    [
+      paragraph(mDate, 28, "{{ mile.date }}", "left", { ...VALUE_STYLE, bold: true }),
+      paragraph(mTitle, 28, "{{ mile.title }}", "left", VALUE_STYLE),
+      paragraph(mOwner, 28, "{{ mile.owner }}", "left", LABEL_STYLE),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+  mileRow.repeat = { over: "project_plan_milestones", as: "mile" };
+
+  const milestones = box(
+    contentW,
+    200,
+    "Milestones",
+    [sectionTitle(inner, "Milestones"), mileHeader, mileRow],
+    { direction: "column", gap: 12, padding: 20 },
+    CARD,
+  );
+
+  const risks = box(
+    contentW,
+    90,
+    "Risks",
+    [sectionTitle(inner, "Risks and open questions"), paragraph(inner, 40, "{{ project_risks }}")],
+    { direction: "column", gap: 8, padding: 20 },
+    CARD,
+  );
+
+  assemblePage(doc, [header, overview, mid, milestones, risks], { padding: pad, gap: 18 });
+  declareVars(doc, [
+    ["project_name", "Project name on the plan", "text", "Website redesign launch"],
+    ["project_status", "Current project status label", "text", "On track"],
+    [
+      "project_summary",
+      "Short project summary or objective",
+      "text",
+      "Ship the new marketing site with updated brand, pricing page, and template gallery by April 2.",
+    ],
+    ["project_owner", "Project owner or lead", "text", "Alex Rivera"],
+    ["project_start", "Project start date", "date", "Feb 10, 2026"],
+    ["project_target", "Project target ship date", "date", "Apr 2, 2026"],
+    [
+      "success_criteria",
+      "How success will be measured for this project",
+      "text",
+      "Lighthouse perf > 90 on homepage\nAll starters render in preview\nZero severity-1 bugs at launch",
+    ],
+    [
+      "project_plan_milestones",
+      "Project milestones with date, title, and owner",
+      "list",
+      JSON.stringify([
+        { date: "Feb 28", title: "Design system freeze", owner: "Sam" },
+        { date: "Mar 14", title: "Content migration complete", owner: "Priya" },
+        { date: "Mar 21", title: "QA + accessibility pass", owner: "Jordan" },
+        { date: "Apr 2", title: "Public launch", owner: "Alex" },
+      ]),
+      [
+        ["date", "Milestone target date", "date"],
+        ["title", "Milestone title", "text"],
+        ["owner", "Milestone owner", "text"],
+      ],
+    ],
+    [
+      "project_risks",
+      "Risks, dependencies, or open questions for the project",
+      "text",
+      "CMS migration may slip if redirects are incomplete.\nNeed legal review on pricing copy before launch.",
+    ],
+  ]);
+  return doc;
+}
+
+/** Printable team task tracker sheet. */
+function taskList(): DesignDocument {
+  const doc = createEmptyDocument();
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
+  const inner = contentW - 40;
+
+  const header = box(
+    contentW,
+    90,
+    "Header",
+    [
+      box(
+        Math.floor(contentW * 0.58),
+        64,
+        "Title",
+        [
+          paragraph(Math.floor(contentW * 0.58) - 8, 20, "TASK LIST", "left", {
+            ...LABEL_STYLE,
+            fontSize: 11,
+            bold: true,
+          }),
+          heading(Math.floor(contentW * 0.58) - 8, "{{ board_name }}", 2),
+        ],
+        { direction: "column", gap: 4, padding: 0 },
+        INVISIBLE,
+      ),
+      box(
+        Math.floor(contentW * 0.36),
+        64,
+        "Period",
+        [
+          paragraph(Math.floor(contentW * 0.36) - 8, 22, "Period", "right", LABEL_STYLE),
+          heading(Math.floor(contentW * 0.36) - 8, "{{ task_period }}", 3, "right"),
+        ],
+        { direction: "column", gap: 4, padding: 0, align: "end" },
+        INVISIBLE,
+      ),
+    ],
+    { direction: "row", justify: "space-between", padding: 22, gap: 16, align: "start" },
+    FAMILY_HEADER,
+  );
+
+  const taskW = Math.floor(inner * 0.42);
+  const ownerW = Math.floor(inner * 0.18);
+  const dueW = Math.floor(inner * 0.16);
+  const statusW = inner - taskW - ownerW - dueW;
+  const taskHeader = box(
+    inner,
+    32,
+    "Column headers",
+    [
+      paragraph(taskW, 28, "Task", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(ownerW, 28, "Owner", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(dueW, 28, "Due", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(statusW, 28, "Status", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+  const taskRow = box(
+    inner,
+    36,
+    "Task",
+    [
+      paragraph(taskW, 28, "{{ task.title }}", "left", VALUE_STYLE),
+      paragraph(ownerW, 28, "{{ task.owner }}", "left", LABEL_STYLE),
+      paragraph(dueW, 28, "{{ task.due }}", "left", VALUE_STYLE),
+      paragraph(statusW, 28, "{{ task.status }}", "left", { ...VALUE_STYLE, bold: true }),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+  taskRow.repeat = { over: "task_list_items", as: "task" };
+
+  const sheet = box(
+    contentW,
+    320,
+    "Tasks",
+    [sectionTitle(inner, "Work items"), taskHeader, taskRow],
+    { direction: "column", gap: 12, padding: 20 },
+    CARD,
+  );
+
+  const notes = box(
+    contentW,
+    80,
+    "Notes",
+    [sectionTitle(inner, "Notes"), paragraph(inner, 36, "{{ task_notes }}")],
+    { direction: "column", gap: 8, padding: 20 },
+    INVISIBLE,
+  );
+
+  assemblePage(doc, [header, sheet, notes], { padding: pad, gap: 20 });
+  declareVars(doc, [
+    ["board_name", "Task list or board name", "text", "Launch readiness"],
+    ["task_period", "Sprint or date range for this task list", "text", "Mar 17 – Mar 28"],
+    [
+      "task_list_items",
+      "Tasks with title, owner, due date, and status",
+      "list",
+      JSON.stringify([
+        { title: "Finalize pricing table copy", owner: "Priya", due: "Mar 19", status: "In progress" },
+        { title: "Accessibility pass on templates", owner: "Jordan", due: "Mar 21", status: "Todo" },
+        { title: "Set up status page", owner: "Sam", due: "Mar 20", status: "In progress" },
+        { title: "Customer email draft", owner: "Alex", due: "Mar 24", status: "Todo" },
+        { title: "Load-test preview pipeline", owner: "Jordan", due: "Mar 25", status: "Blocked" },
+      ]),
+      [
+        ["title", "Task title", "text"],
+        ["owner", "Task owner", "text"],
+        ["due", "Task due date", "date"],
+        ["status", "Task status", "text"],
+      ],
+    ],
+    [
+      "task_notes",
+      "Notes or blockers for the task list",
+      "text",
+      "Blocked item waiting on staging credentials from infra.",
+    ],
+  ]);
+  return doc;
+}
+
+/** Employee timesheet for a pay or billing period. */
+function timesheet(): DesignDocument {
+  const doc = createEmptyDocument();
+  const pad = 40;
+  const contentW = doc.root.w - pad * 2;
+  const inner = contentW - 40;
+
+  const header = box(
+    contentW,
+    100,
+    "Header",
+    [
+      box(
+        Math.floor(contentW * 0.58),
+        72,
+        "Title",
+        [
+          paragraph(Math.floor(contentW * 0.58) - 8, 20, "TIMESHEET", "left", {
+            ...LABEL_STYLE,
+            fontSize: 11,
+            bold: true,
+          }),
+          heading(Math.floor(contentW * 0.58) - 8, "{{ employee_name }}", 2),
+        ],
+        { direction: "column", gap: 4, padding: 0 },
+        INVISIBLE,
+      ),
+      box(
+        Math.floor(contentW * 0.36),
+        72,
+        "Period",
+        [
+          paragraph(Math.floor(contentW * 0.36) - 8, 22, "Period", "right", LABEL_STYLE),
+          heading(Math.floor(contentW * 0.36) - 8, "{{ timesheet_period }}", 3, "right"),
+        ],
+        { direction: "column", gap: 4, padding: 0, align: "end" },
+        INVISIBLE,
+      ),
+    ],
+    { direction: "row", justify: "space-between", padding: 22, gap: 16, align: "start" },
+    FAMILY_HEADER,
+  );
+
+  const info = box(
+    contentW,
+    70,
+    "Info",
+    [
+      infoRow(inner, "Employee ID", "{{ employee_id }}"),
+      infoRow(inner, "Manager", "{{ manager_name }}"),
+    ],
+    { direction: "column", gap: 8, padding: 20 },
+    CARD,
+  );
+
+  const dateW = 100;
+  const projectW = Math.floor(inner * 0.42);
+  const hoursW = 80;
+  const notesW = inner - dateW - projectW - hoursW;
+  const entryHeader = box(
+    inner,
+    32,
+    "Column headers",
+    [
+      paragraph(dateW, 28, "Date", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(projectW, 28, "Project / code", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(hoursW, 28, "Hours", "right", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+      paragraph(notesW, 28, "Notes", "left", { ...LABEL_STYLE, fontSize: 12, bold: true }),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+  const entryRow = box(
+    inner,
+    36,
+    "Entry",
+    [
+      paragraph(dateW, 28, "{{ entry.date }}", "left", { ...VALUE_STYLE, bold: true }),
+      paragraph(projectW, 28, "{{ entry.project }}", "left", VALUE_STYLE),
+      paragraph(hoursW, 28, "{{ entry.hours }}", "right", VALUE_STYLE),
+      paragraph(notesW, 28, "{{ entry.notes }}", "left", LABEL_STYLE),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0, gap: 0 },
+    INVISIBLE,
+  );
+  entryRow.repeat = { over: "timesheet_entries", as: "entry" };
+
+  const entries = box(
+    contentW,
+    260,
+    "Entries",
+    [sectionTitle(inner, "Time entries"), entryHeader, entryRow],
+    { direction: "column", gap: 12, padding: 20 },
+    CARD,
+  );
+
+  const totals = box(
+    contentW,
+    64,
+    "Totals",
+    [
+      heading(220, "Total hours", 3),
+      heading(160, "{{ total_hours }}", 3, "right"),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 18 },
+    CARD,
+  );
+
+  const sign = box(
+    contentW,
+    80,
+    "Signatures",
+    [
+      paragraph(
+        inner,
+        48,
+        "Employee signature: ______________________     Manager approval: ______________________",
+      ),
+    ],
+    { direction: "column", padding: 16 },
+    INVISIBLE,
+  );
+
+  assemblePage(doc, [header, info, entries, totals, sign], { padding: pad, gap: 18 });
+  declareVars(doc, [
+    ["employee_name", "Employee name on the timesheet", "text", "Jordan Lee"],
+    ["timesheet_period", "Pay or billing period for the timesheet", "text", "Mar 1 – Mar 15, 2026"],
+    ["employee_id", "Employee ID on the timesheet", "text", "EMP-00214"],
+    ["manager_name", "Approving manager name", "text", "Alex Rivera"],
+    [
+      "timesheet_entries",
+      "Timesheet rows with date, project code, hours, and notes",
+      "list",
+      JSON.stringify([
+        { date: "Mar 2", project: "Website redesign", hours: "8.0", notes: "Template polish" },
+        { date: "Mar 3", project: "Website redesign", hours: "7.5", notes: "Preview QA" },
+        { date: "Mar 4", project: "Client support", hours: "8.0", notes: "On-call" },
+        { date: "Mar 5", project: "Website redesign", hours: "8.0", notes: "Family starters" },
+        { date: "Mar 6", project: "Internal", hours: "4.0", notes: "Planning" },
+      ]),
+      [
+        ["date", "Work date", "date"],
+        ["project", "Project name or cost code", "text"],
+        ["hours", "Hours worked", "number"],
+        ["notes", "Short note for the entry", "text"],
+      ],
+    ],
+    ["total_hours", "Total hours for the timesheet period", "number", "35.5"],
+  ]);
+  return doc;
+}
+
+export type TemplateCategory = "business" | "family" | "general";
+
 export interface Template {
   id: string;
   label: string;
   description: string;
+  category: TemplateCategory;
   build: () => DesignDocument;
 }
 
+export const TEMPLATE_CATEGORIES: { id: TemplateCategory; label: string; blurb: string }[] = [
+  { id: "family", label: "Family", blurb: "Schedules and planners for the household" },
+  {
+    id: "business",
+    label: "Business",
+    blurb: "Invoices, planning sheets, meetings, tasks, and contracts",
+  },
+  { id: "general", label: "General", blurb: "Flexible layouts for extracted documents" },
+];
+
 export const TEMPLATES: Template[] = [
+  {
+    id: "family_daily",
+    label: "Daily family schedule",
+    description: "Fridge-ready day card — timed blocks, meals, and reminders",
+    category: "family",
+    build: familyDaily,
+  },
+  {
+    id: "family_weekly",
+    label: "Weekly family schedule",
+    description: "Landscape week-at-a-glance with seven day columns and dinners",
+    category: "family",
+    build: familyWeekly,
+  },
+  {
+    id: "family_monthly",
+    label: "Monthly family planner",
+    description: "Month overview with key dates, rhythms, and household goals",
+    category: "family",
+    build: familyMonthly,
+  },
+  {
+    id: "family_yearly",
+    label: "Yearly family calendar",
+    description: "Landscape year wall calendar with twelve months and annual goals",
+    category: "family",
+    build: familyYearly,
+  },
+  {
+    id: "meeting_agenda",
+    label: "Meeting agenda",
+    description: "Timed topics, attendees, notes, and action items",
+    category: "business",
+    build: meetingAgenda,
+  },
+  {
+    id: "project_plan",
+    label: "Project plan",
+    description: "Objectives, milestones, owners, and risks on one page",
+    category: "business",
+    build: projectPlan,
+  },
+  {
+    id: "task_list",
+    label: "Task list",
+    description: "Printable work tracker — task, owner, due date, status",
+    category: "business",
+    build: taskList,
+  },
+  {
+    id: "timesheet",
+    label: "Timesheet",
+    description: "Employee hours by project for a pay or billing period",
+    category: "business",
+    build: timesheet,
+  },
   {
     id: "invoice",
     label: "Client invoice",
     description: "Design the invoice customers receive — bill-to, line items, and total",
+    category: "business",
     build: invoice,
   },
   {
     id: "receipt",
     label: "Store receipt",
     description: "Narrow till-print layout for itemized purchases and tax",
+    category: "business",
     build: receipt,
   },
   {
     id: "statement",
     label: "Account statement",
     description: "Bank-style summary with balances and transaction rows",
+    category: "business",
     build: bankStatement,
   },
   {
     id: "insurance",
     label: "Coverage certificate",
     description: "Proof-of-insurance page: holder, coverage table, and policy period",
+    category: "business",
     build: insuranceCertificate,
   },
   {
     id: "paystub",
     label: "Payroll stub",
     description: "Employee earnings slip driven entirely by {{ variables }}",
+    category: "business",
     build: payStub,
   },
   {
     id: "rental",
     label: "Residential lease",
     description: "Apartment lease terms, parties, and signature blocks",
+    category: "business",
     build: rentalAgreement,
   },
   {
     id: "letter",
     label: "Letterhead letter",
     description: "Formal correspondence with sender, recipient, and body",
+    category: "business",
     build: businessLetter,
   },
   {
     id: "report",
     label: "Markdown report",
     description: "Page layout for FileWorks-extracted Markdown from the workspace",
+    category: "general",
     build: documentReport,
   },
 ];
@@ -1043,6 +2539,7 @@ export const BUILT_IN_TEMPLATES = TEMPLATES.map((t) => ({
   id: t.id,
   name: t.label,
   description: t.description,
+  category: t.category,
   build: t.build,
 }));
 

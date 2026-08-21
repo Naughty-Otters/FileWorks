@@ -92,7 +92,7 @@ export default function VariablesPanel() {
         <button type="button" className="template-close" title="Close" onClick={close}>
           ×
         </button>
-        <h2>Variables</h2>
+        <h2>Placeholders</h2>
         <p>
           Bind page content with <code className="var-token">{"{{ name }}"}</code>. Use the cards
           below for <strong>List</strong>, <strong>Object</strong>, and <strong>Image</strong> —

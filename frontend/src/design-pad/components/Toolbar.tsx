@@ -82,7 +82,7 @@ export default function Toolbar({
         aria-label="Template name"
         value={name}
         onChange={(e) => onNameChange(e.target.value)}
-        placeholder="Untitled template"
+        placeholder="Untitled design"
       />
       <div className="toolbar-group">
         <button
@@ -167,7 +167,7 @@ export default function Toolbar({
         <button
           type="button"
           className={`icon-btn${showVariablesPanel ? " active" : ""}`}
-          title="Variables — List, Object, Image open structured editors"
+          title="Placeholders — List, Object, Image open structured editors"
           onClick={() => setShowVariablesPanel(!showVariablesPanel)}
         >
           <IconVariable />

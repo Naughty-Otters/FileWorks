@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { Clock3, FileImage, WifiOff } from "lucide-react";
 import {
   cancelExtract,
-  createTemplate,
   deleteHistoryItem,
   extractDocument,
   fetchHealth,
@@ -15,6 +14,7 @@ import {
   fetchHistoryFile,
   fetchTemplates,
   isAbortError,
+  renderStarter,
   renderTemplate,
   DEFAULT_EXTRACT_OPTIONS,
   type ExtractOptions,
@@ -49,10 +49,6 @@ const HistoryPanel = dynamic(
 );
 
 const BUILTIN_PREFIX = "builtin:";
-
-function starterPageLabel(starterId: string) {
-  return `starter:${starterId}`;
-}
 
 function parseBuiltinLayout(layout: string): string | null {
   if (!layout.startsWith(BUILTIN_PREFIX)) return null;
@@ -298,7 +294,7 @@ export function Workspace() {
     ? templates.filter((template) => {
         const declared = template.variable_count ?? template.document?.variables?.length ?? 0;
         if (declared <= 0) return false;
-        // Starter copies used for Home fill stay under Design targets, not My templates.
+        // Starter copies used for Home fill stay under starter designs, not My designs.
         if (template.page_label?.startsWith("starter:")) return false;
         return true;
       })
@@ -331,31 +327,18 @@ export function Workspace() {
     id: string;
     name: string;
     isStatic: boolean;
+    kind: "starter" | "saved";
   } | null> {
     if (outputLayout === "standard") return null;
     if (builtinStarterId) {
       const builtIn = builtInTemplate(builtinStarterId);
       if (!builtIn) return null;
-      const pageLabel = starterPageLabel(builtinStarterId);
-      const existing = templates.find((template) => template.page_label === pageLabel);
-      if (existing) {
-        return {
-          id: existing.id,
-          name: existing.name,
-          isStatic: isStaticTemplate(existing.document),
-        };
-      }
-      const created = await createTemplate({
-        name: builtIn.name,
-        description: builtIn.description,
-        page_label: pageLabel,
-        document: builtIn.build(),
-      });
-      setTemplates((current) => [created, ...current.filter((item) => item.id !== created.id)]);
+      const document = builtIn.build();
       return {
-        id: created.id,
-        name: created.name,
-        isStatic: isStaticTemplate(created.document),
+        id: builtinStarterId,
+        name: builtIn.name,
+        isStatic: isStaticTemplate(document),
+        kind: "starter",
       };
     }
     if (!selectedSaved) return null;
@@ -363,7 +346,23 @@ export function Workspace() {
       id: selectedSaved.id,
       name: selectedSaved.name,
       isStatic: isStaticTemplate(selectedSaved.document),
+      kind: "saved",
     };
+  }
+
+  async function renderTarget(
+    target: { id: string; kind: "starter" | "saved" },
+    input: {
+      markdown: string;
+      format?: "html" | "docx" | "pdf" | "markdown";
+      fill?: "auto" | "defaults" | "none";
+      variables?: Record<string, unknown>;
+    },
+  ) {
+    if (target.kind === "starter") {
+      return renderStarter(target.id, input);
+    }
+    return renderTemplate(target.id, input);
   }
   const quotaBlocked =
     signedIn && (me?.quota.remaining_day === 0 || me?.quota.remaining_month === 0);
@@ -412,7 +411,7 @@ export function Workspace() {
             runId,
           })
         : {
-            filename: target?.name || "Template output",
+            filename: target?.name || "Design output",
             content_type: "text/html",
             size_bytes: 0,
             engine: "FileWorks",
@@ -435,7 +434,7 @@ export function Workspace() {
         const fill =
           opts?.fill ?? (target.isStatic || !(data.markdown || "").trim() ? "defaults" : "auto");
         try {
-          const rendered = await renderTemplate(target.id, {
+          const rendered = await renderTarget(target, {
             markdown: data.markdown || "",
             format: "html",
             fill,
@@ -443,7 +442,7 @@ export function Workspace() {
           setRenderedHtml(rendered.html);
           setMarkdownMode("preview");
           if (target.isStatic) {
-            setTemplateWarning("This template is static; its output ignores the uploaded document.");
+            setTemplateWarning("This design is static; its output ignores the uploaded document.");
           } else if (fill === "defaults") {
             setTemplateWarning("Showing sample defaults (AI fill skipped).");
           } else {
@@ -453,7 +452,7 @@ export function Workspace() {
           setRenderedHtml(null);
           setMarkdownMode("edit");
           setTemplateWarning(
-            renderErr instanceof Error ? renderErr.message : "Template fill failed",
+            renderErr instanceof Error ? renderErr.message : "Design fill failed",
           );
         }
       }
@@ -505,7 +504,7 @@ export function Workspace() {
       if (!target || target.isStatic) return;
       setActiveTemplateId(target.id);
       setActiveTemplateName(target.name);
-      const rendered = await renderTemplate(target.id, {
+      const rendered = await renderTarget(target, {
         markdown,
         format: "html",
         fill: "auto",
@@ -516,7 +515,7 @@ export function Workspace() {
       setTemplateWarning(null);
       await reloadSession().catch(() => undefined);
     } catch (err) {
-      setTemplateWarning(err instanceof Error ? err.message : "Template fill failed");
+      setTemplateWarning(err instanceof Error ? err.message : "Design fill failed");
     } finally {
       setLoading(false);
     }
@@ -647,7 +646,7 @@ export function Workspace() {
               href="/templates"
               className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
             >
-              Templates
+              Designs
             </a>
             <a
               href="/pricing"

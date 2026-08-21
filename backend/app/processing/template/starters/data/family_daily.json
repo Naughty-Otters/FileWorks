@@ -1,0 +1,1044 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 20,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt38o2qw_7",
+        "kind": "box",
+        "label": "Header",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 120,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#f8fafc",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 20,
+          "padding": 22,
+          "align": "start",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "box_mt38o2qw_3",
+            "kind": "box",
+            "label": "Family",
+            "x": 22,
+            "y": 22,
+            "w": 446,
+            "h": 72,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2qw_1",
+                "kind": "paragraph",
+                "label": "FAMILY SCHEDULE",
+                "x": 0,
+                "y": 0,
+                "w": 446,
+                "h": 24,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 11,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "heading_mt38o2qw_2",
+                "kind": "heading",
+                "label": "{{ family_name }}",
+                "level": 2,
+                "x": 0,
+                "y": 28,
+                "w": 446,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 23,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2qw_6",
+            "kind": "box",
+            "label": "When",
+            "x": 488,
+            "y": 22,
+            "w": 260,
+            "h": 76,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "end",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2qw_4",
+                "kind": "heading",
+                "label": "{{ day_name }}",
+                "level": 2,
+                "x": 8,
+                "y": 0,
+                "w": 252,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 23,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qw_5",
+                "kind": "paragraph",
+                "label": "{{ schedule_date }}",
+                "x": 8,
+                "y": 48,
+                "w": 252,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#64748b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2qw_15",
+        "kind": "box",
+        "label": "Timeline",
+        "x": 40,
+        "y": 180,
+        "w": 770,
+        "h": 169,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2qw_14",
+            "kind": "heading",
+            "label": "Today's plan",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt38o2qw_10",
+            "kind": "box",
+            "label": "Column headers",
+            "x": 20,
+            "y": 60,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2qw_8",
+                "kind": "paragraph",
+                "label": "Time",
+                "x": 0,
+                "y": 2,
+                "w": 110,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qw_9",
+                "kind": "paragraph",
+                "label": "Activity",
+                "x": 110,
+                "y": 2,
+                "w": 620,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2qw_13",
+            "kind": "box",
+            "label": "Block",
+            "x": 20,
+            "y": 104,
+            "w": 730,
+            "h": 45,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2qw_11",
+                "kind": "paragraph",
+                "label": "{{ block.time }}",
+                "x": 0,
+                "y": 0,
+                "w": 110,
+                "h": 45,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qw_12",
+                "kind": "paragraph",
+                "label": "{{ block.activity }}",
+                "x": 110,
+                "y": 8.5,
+                "w": 620,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ],
+            "repeat": {
+              "over": "family_daily_blocks",
+              "as": "block"
+            }
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2qw_30",
+        "kind": "box",
+        "label": "Extras",
+        "x": 40,
+        "y": 369,
+        "w": 770,
+        "h": 186,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 16,
+          "padding": 0,
+          "align": "start",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "box_mt38o2qw_26",
+            "kind": "box",
+            "label": "Meals",
+            "x": 0,
+            "y": 0,
+            "w": 377,
+            "h": 186,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 1,
+              "borderStyle": "solid"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 10,
+              "padding": 16,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2qw_16",
+                "kind": "heading",
+                "label": "Meals",
+                "level": 3,
+                "x": 16,
+                "y": 16,
+                "w": 345,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 15,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "box_mt38o2qw_19",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 54,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2qw_17",
+                    "kind": "paragraph",
+                    "label": "Breakfast",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2qw_18",
+                    "kind": "paragraph",
+                    "label": "{{ breakfast }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2qw_22",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 96,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2qw_20",
+                    "kind": "paragraph",
+                    "label": "Lunch",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2qw_21",
+                    "kind": "paragraph",
+                    "label": "{{ lunch }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2qw_25",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 138,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2qw_23",
+                    "kind": "paragraph",
+                    "label": "Dinner",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2qw_24",
+                    "kind": "paragraph",
+                    "label": "{{ dinner }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2qw_29",
+            "kind": "box",
+            "label": "Focus",
+            "x": 393,
+            "y": 0,
+            "w": 377,
+            "h": 140,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 1,
+              "borderStyle": "solid"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 10,
+              "padding": 16,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2qw_27",
+                "kind": "heading",
+                "label": "Don’t forget",
+                "level": 3,
+                "x": 16,
+                "y": 16,
+                "w": 345,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 15,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qw_28",
+                "kind": "paragraph",
+                "label": "{{ daily_reminders }}",
+                "x": 16,
+                "y": 54,
+                "w": 345,
+                "h": 70,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#334155",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2qw_33",
+        "kind": "box",
+        "label": "Notes",
+        "x": 40,
+        "y": 575,
+        "w": 770,
+        "h": 108,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 8,
+          "padding": 16,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2qw_31",
+            "kind": "heading",
+            "label": "Notes",
+            "level": 3,
+            "x": 16,
+            "y": 16,
+            "w": 738,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt38o2qw_32",
+            "kind": "paragraph",
+            "label": "{{ daily_notes }}",
+            "x": 16,
+            "y": 52,
+            "w": 738,
+            "h": 40,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt38o2qw_34",
+      "name": "family_name",
+      "label": "Family or household name on the schedule",
+      "type": "text",
+      "sampleValue": "The Rivera Family"
+    },
+    {
+      "id": "var_mt38o2qw_35",
+      "name": "day_name",
+      "label": "Weekday name for this daily schedule",
+      "type": "text",
+      "sampleValue": "Tuesday"
+    },
+    {
+      "id": "var_mt38o2qw_36",
+      "name": "schedule_date",
+      "label": "Calendar date for this daily schedule",
+      "type": "date",
+      "sampleValue": "March 18, 2026"
+    },
+    {
+      "id": "var_mt38o2qw_37",
+      "name": "family_daily_blocks",
+      "label": "Timed activity blocks for the day (time and what happens)",
+      "type": "list",
+      "sampleValue": "[{\"time\":\"7:00 AM\",\"activity\":\"Breakfast & get ready\"},{\"time\":\"8:15 AM\",\"activity\":\"School drop-off\"},{\"time\":\"12:30 PM\",\"activity\":\"Lunch (kids at school)\"},{\"time\":\"3:30 PM\",\"activity\":\"Pickup · snacks · homework\"},{\"time\":\"5:30 PM\",\"activity\":\"Soccer practice (Maya)\"},{\"time\":\"7:00 PM\",\"activity\":\"Family dinner\"},{\"time\":\"8:30 PM\",\"activity\":\"Baths · bedtime stories\"}]",
+      "itemSchema": [
+        {
+          "id": "field_mt38o2qw_38",
+          "name": "time",
+          "label": "Clock time for this block",
+          "type": "text"
+        },
+        {
+          "id": "field_mt38o2qw_39",
+          "name": "activity",
+          "label": "What the family does in this block",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "var_mt38o2qw_40",
+      "name": "breakfast",
+      "label": "Breakfast plan for the day",
+      "type": "text",
+      "sampleValue": "Oatmeal and fruit"
+    },
+    {
+      "id": "var_mt38o2qw_41",
+      "name": "lunch",
+      "label": "Lunch plan for the day",
+      "type": "text",
+      "sampleValue": "School lunch / leftovers"
+    },
+    {
+      "id": "var_mt38o2qw_42",
+      "name": "dinner",
+      "label": "Dinner plan for the day",
+      "type": "text",
+      "sampleValue": "Tacos and salad"
+    },
+    {
+      "id": "var_mt38o2qw_43",
+      "name": "daily_reminders",
+      "label": "Short reminders or errands for the day",
+      "type": "text",
+      "sampleValue": "Library books due\nBring soccer cleats\nCall grandma after dinner"
+    },
+    {
+      "id": "var_mt38o2qw_44",
+      "name": "daily_notes",
+      "label": "Freeform notes at the bottom of the daily card",
+      "type": "text",
+      "sampleValue": "Early bedtime tonight — big field trip tomorrow."
+    }
+  ]
+}

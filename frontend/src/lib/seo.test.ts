@@ -5,7 +5,14 @@ import {
   buildPageMetadata,
   guideBySlug,
   homeJsonLdGraph,
+  HOME_FAQS,
   INDEXABLE_ROUTES,
+  PRIMARY_KEYWORDS,
+  SITE_DESCRIPTION,
+  SITE_TAGLINE,
+  softwareApplicationJsonLd,
+  TEMPLATE_FAQS,
+  TEMPLATE_KEYWORDS,
 } from "@/lib/seo";
 
 describe("seo helpers", () => {
@@ -53,9 +60,24 @@ describe("seo helpers", () => {
     expect(paths).toContain("/");
     expect(paths).toContain("/pricing");
     expect(paths).toContain("/docs");
+    expect(paths).toContain("/templates");
     expect(paths).toContain("/about");
     for (const guide of CONVERT_GUIDES) {
       expect(paths).toContain(guide.path);
     }
+  });
+
+  it("documents Design-related SEO copy and FAQs", () => {
+    expect(SITE_DESCRIPTION.toLowerCase()).toContain("design");
+    expect(SITE_TAGLINE.toLowerCase()).toContain("design");
+    expect(PRIMARY_KEYWORDS.some((k) => /design/i.test(k))).toBe(true);
+    expect(PRIMARY_KEYWORDS.some((k) => /template/i.test(k))).toBe(true); // search alias
+    expect(TEMPLATE_KEYWORDS.some((k) => /design/i.test(k))).toBe(true);
+    expect(TEMPLATE_KEYWORDS.length).toBeGreaterThan(5);
+    expect(TEMPLATE_FAQS.length).toBeGreaterThanOrEqual(3);
+    expect(TEMPLATE_FAQS.some((item) => /design/i.test(item.question))).toBe(true);
+    expect(HOME_FAQS.some((item) => /design/i.test(`${item.question} ${item.answer}`))).toBe(true);
+    const app = softwareApplicationJsonLd();
+    expect(app.featureList.some((feature: string) => /design/i.test(feature))).toBe(true);
   });
 });

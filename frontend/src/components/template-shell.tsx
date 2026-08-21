@@ -5,6 +5,7 @@ import { AuthBar } from "@/components/auth-bar";
 import { BrandLockup } from "@/components/brand-lockup";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { PRODUCT } from "@/lib/product-copy";
 import { useSession } from "@/lib/session";
 
 export function TemplateShell({ children, fixed = false }: { children: ReactNode; fixed?: boolean }) {
@@ -26,7 +27,7 @@ export function TemplateShell({ children, fixed = false }: { children: ReactNode
               href="/templates"
               className="rounded-full px-2.5 py-1.5 text-xs text-[var(--accent-strong)] transition hover:bg-[var(--accent-soft)]"
             >
-              Templates
+              {PRODUCT.designs}
             </a>
             <a
               href="/pricing"

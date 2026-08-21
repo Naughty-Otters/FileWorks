@@ -411,6 +411,37 @@
   min-height: 0;
 }
 
+/* Preview = finished document. Hide editor chrome so nothing looks clipped
+ * or "half labeled" by caption chips / structure hatch. */
+.canvas-viewport.previewing .container-caption {
+  display: none !important;
+}
+
+.canvas-viewport.previewing .shape-box.structure-only {
+  outline: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.canvas-viewport.previewing .shape:not(.canvas-root):hover {
+  box-shadow: none;
+}
+
+.canvas-viewport.previewing .shape.selected {
+  outline: none;
+  box-shadow: none;
+}
+
+.canvas-viewport.previewing .resize-handle,
+.canvas-viewport.previewing .page-number-tag,
+.canvas-viewport.previewing .page-break {
+  display: none !important;
+}
+
+.canvas-viewport.previewing .canvas-surface {
+  background-image: none;
+}
+
 .canvas-surface {
   background-image:
     linear-gradient(to right, #e2e8f0 1px, transparent 1px),
@@ -1064,11 +1095,12 @@
   min-height: 0;
   border: 1px solid var(--border);
   border-radius: 10px;
-  overflow: hidden;
+  overflow: auto;
   background: #e8ece9;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding: 20px;
 }
 
 .document-preview-scaler {
@@ -1357,8 +1389,9 @@
 .shape-paragraph {
   background: transparent;
   padding: 4px 6px;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-start;
+  overflow: visible;
 }
 
 .shape-paragraph {
@@ -1370,16 +1403,15 @@
   width: 100%;
 }
 
-.text-content.single-line {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .text-content.wrap {
   white-space: pre-wrap;
-  overflow: hidden;
+  overflow: visible;
   line-height: 1.4;
+  word-break: break-word;
+}
+
+.shape-heading .text-content.wrap {
+  line-height: 1.25;
 }
 
 .text-edit-input,
@@ -1612,6 +1644,40 @@
   max-height: 85vh;
   overflow-y: auto;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+}
+
+.template-modal-wide {
+  width: min(920px, 94vw);
+  max-height: min(90vh, 900px);
+}
+
+.template-card-blank {
+  width: 100%;
+  max-width: 220px;
+  margin-bottom: 4px;
+}
+
+.template-category {
+  margin-top: 22px;
+}
+
+.template-category-head {
+  margin-bottom: 10px;
+}
+
+.template-category-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.template-category-head p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .template-close {

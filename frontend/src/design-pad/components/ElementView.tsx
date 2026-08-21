@@ -131,7 +131,9 @@ export default function ElementView({ node, parentIsFreeform, zoom }: Props) {
   // row). Showing a caption chip on top of it would just overlap its
   // content, so skip it; the Layers panel still shows the name.
   const showCaption =
-    container && (node.style.backgroundColor !== "transparent" || node.style.borderStyle !== "none");
+    !previewMode &&
+    container &&
+    (node.style.backgroundColor !== "transparent" || node.style.borderStyle !== "none");
   const structureOnly =
     container &&
     !isRoot &&
@@ -423,10 +425,7 @@ export default function ElementView({ node, parentIsFreeform, zoom }: Props) {
       )}
 
       {textKind && !editing && (
-        <span
-          className={`text-content${node.kind === "paragraph" ? " wrap" : " single-line"}`}
-          style={textStyle}
-        >
+        <span className="text-content wrap" style={textStyle}>
           {renderTokenizedText(node.label, previewMode, variables)}
         </span>
       )}

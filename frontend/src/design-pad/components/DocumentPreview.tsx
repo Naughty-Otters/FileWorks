@@ -77,8 +77,9 @@ export default function DocumentPreview({
     const update = () => {
       const pad = 20;
       const availableW = Math.max(1, frame.clientWidth - pad * 2);
-      const availableH = Math.max(1, frame.clientHeight - pad * 2);
-      const next = Math.min(1, availableW / page.w, availableH / page.h);
+      // Fit width only — tall expanded docs should scroll vertically
+      // instead of being shrunk (and clipped) to the modal height.
+      const next = Math.min(1, availableW / page.w);
       setScale(Number.isFinite(next) && next > 0 ? next : 1);
     };
 

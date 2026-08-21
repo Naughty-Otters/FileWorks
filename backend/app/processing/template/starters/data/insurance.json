@@ -1,0 +1,809 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 24,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt38o2r1_482",
+        "kind": "box",
+        "label": "Header",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 98,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 8,
+          "padding": 8,
+          "align": "center",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r1_480",
+            "kind": "heading",
+            "label": "Certificate of Insurance",
+            "level": 1,
+            "x": 8,
+            "y": 8,
+            "w": 754,
+            "h": 44,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 28,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "center",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt38o2r1_481",
+            "kind": "paragraph",
+            "label": "This certifies that the policy described below is in effect.",
+            "x": 8,
+            "y": 60,
+            "w": 754,
+            "h": 30,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "center",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_485",
+        "kind": "box",
+        "label": "Policy holder",
+        "x": 40,
+        "y": 162,
+        "w": 770,
+        "h": 148,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r1_483",
+            "kind": "heading",
+            "label": "Policy holder",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt38o2r1_484",
+            "kind": "paragraph",
+            "label": "{{ holder_name }}\n{{ holder_address }}\nPolicy #: {{ policy_number }}",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 70,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_493",
+        "kind": "box",
+        "label": "Coverage",
+        "x": 40,
+        "y": 334,
+        "w": 770,
+        "h": 156,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r1_492",
+            "kind": "heading",
+            "label": "Coverage",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt38o2r1_488",
+            "kind": "box",
+            "label": "Column headers",
+            "x": 20,
+            "y": 60,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2r1_486",
+                "kind": "paragraph",
+                "label": "Coverage Type",
+                "x": 0,
+                "y": 2,
+                "w": 496,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r1_487",
+                "kind": "paragraph",
+                "label": "Limit",
+                "x": 496,
+                "y": 2,
+                "w": 234,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2r1_491",
+            "kind": "box",
+            "label": "Coverage",
+            "x": 20,
+            "y": 104,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2r1_489",
+                "kind": "paragraph",
+                "label": "{{ coverage.type }}",
+                "x": 0,
+                "y": 2,
+                "w": 496,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r1_490",
+                "kind": "paragraph",
+                "label": "{{ coverage.limit }}",
+                "x": 496,
+                "y": 2,
+                "w": 234,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ],
+            "repeat": {
+              "over": "insurance_coverages",
+              "as": "coverage"
+            }
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_502",
+        "kind": "box",
+        "label": "Policy period",
+        "x": 40,
+        "y": 514,
+        "w": 770,
+        "h": 157,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r1_494",
+            "kind": "heading",
+            "label": "Policy period",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt38o2r1_501",
+            "kind": "box",
+            "label": "Period columns",
+            "x": 20,
+            "y": 62,
+            "w": 730,
+            "h": 75,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 24,
+              "padding": 0,
+              "align": "start",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "box_mt38o2r1_497",
+                "kind": "box",
+                "label": "Effective",
+                "x": 0,
+                "y": 0,
+                "w": 353,
+                "h": 75,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "column",
+                  "gap": 4,
+                  "padding": 0,
+                  "align": "stretch",
+                  "justify": "start"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r1_495",
+                    "kind": "paragraph",
+                    "label": "Effective Date",
+                    "x": 0,
+                    "y": 0,
+                    "w": 353,
+                    "h": 27,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "heading_mt38o2r1_496",
+                    "kind": "heading",
+                    "label": "{{ effective_date }}",
+                    "level": 3,
+                    "x": 0,
+                    "y": 31,
+                    "w": 353,
+                    "h": 44,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 19,
+                      "color": "#0f172a",
+                      "bold": true,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2r1_500",
+                "kind": "box",
+                "label": "Expiration",
+                "x": 377,
+                "y": 0,
+                "w": 353,
+                "h": 75,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "column",
+                  "gap": 4,
+                  "padding": 0,
+                  "align": "end",
+                  "justify": "start"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r1_498",
+                    "kind": "paragraph",
+                    "label": "Expiration Date",
+                    "x": 4,
+                    "y": 0,
+                    "w": 349,
+                    "h": 27,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "heading_mt38o2r1_499",
+                    "kind": "heading",
+                    "label": "{{ expiration_date }}",
+                    "level": 3,
+                    "x": 4,
+                    "y": 31,
+                    "w": 349,
+                    "h": 44,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 19,
+                      "color": "#0f172a",
+                      "bold": true,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_504",
+        "kind": "box",
+        "label": "Footer",
+        "x": 40,
+        "y": 695,
+        "w": 770,
+        "h": 80,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 16,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "paragraph_mt38o2r1_503",
+            "kind": "paragraph",
+            "label": "Insurer: {{ insurer_name }}\nAuthorized Signature: ______________________",
+            "x": 16,
+            "y": 16,
+            "w": 738,
+            "h": 48,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt38o2r1_505",
+      "name": "holder_name",
+      "label": "Insured policy holder name",
+      "type": "text",
+      "sampleValue": "Jane Doe"
+    },
+    {
+      "id": "var_mt38o2r1_506",
+      "name": "holder_address",
+      "label": "Policy holder address",
+      "type": "text",
+      "sampleValue": "123 Main St, City, ST 00000"
+    },
+    {
+      "id": "var_mt38o2r1_507",
+      "name": "policy_number",
+      "label": "Insurance policy number",
+      "type": "text",
+      "sampleValue": "INS-000123"
+    },
+    {
+      "id": "var_mt38o2r1_508",
+      "name": "insurance_coverages",
+      "label": "Insurance coverages on the certificate (coverage type and limit)",
+      "type": "list",
+      "sampleValue": "[{\"type\":\"General Liability\",\"limit\":\"$1,000,000\"},{\"type\":\"Property Damage\",\"limit\":\"$500,000\"},{\"type\":\"Personal Injury\",\"limit\":\"$250,000\"}]",
+      "itemSchema": [
+        {
+          "id": "field_mt38o2r1_509",
+          "name": "type",
+          "label": "Coverage type",
+          "type": "text"
+        },
+        {
+          "id": "field_mt38o2r1_510",
+          "name": "limit",
+          "label": "Coverage limit",
+          "type": "currency"
+        }
+      ]
+    },
+    {
+      "id": "var_mt38o2r1_511",
+      "name": "effective_date",
+      "label": "Policy effective date",
+      "type": "date",
+      "sampleValue": "01/01/2026"
+    },
+    {
+      "id": "var_mt38o2r1_512",
+      "name": "expiration_date",
+      "label": "Policy expiration date",
+      "type": "date",
+      "sampleValue": "01/01/2027"
+    },
+    {
+      "id": "var_mt38o2r1_513",
+      "name": "insurer_name",
+      "label": "Insurance company issuing the certificate",
+      "type": "text",
+      "sampleValue": "Acme Mutual Insurance Co."
+    }
+  ]
+}

@@ -18,6 +18,7 @@ import { isStaticTemplate } from "@/design-pad/templating";
 import { findNode, findParent, useEditorStore } from "@/design-pad/store";
 import { createEmptyDocument, normalizeDocument } from "@/design-pad/types";
 import { createTemplate, fetchTemplate, updateTemplate } from "@/lib/api";
+import { PRODUCT } from "@/lib/product-copy";
 import { useSession } from "@/lib/session";
 
 const NUDGE = 8;
@@ -40,7 +41,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const reorderChild = useEditorStore((s) => s.reorderChild);
 
   const [id, setId] = useState(templateId === "new" ? null : templateId);
-  const [name, setName] = useState("Untitled template");
+  const [name, setName] = useState(PRODUCT.untitledDesign);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -75,7 +76,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         setName(template.name);
         setShowTemplatePicker(false);
       } catch (reason) {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : "Failed to load template");
+        if (!cancelled) setError(reason instanceof Error ? reason.message : "Failed to load design");
       } finally {
         if (!cancelled) setBootstrapped(true);
       }
@@ -161,9 +162,9 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         : await createTemplate({ name, document: doc });
       setId(saved.id);
       if (isStaticTemplate(doc)) {
-        setNotice("Saved. This template is static, so its output ignores uploaded document content.");
+        setNotice("Saved. This design is static, so its output ignores uploaded document content.");
       } else {
-        setNotice("Template saved.");
+        setNotice("Design saved.");
       }
       if (!id) window.history.replaceState(null, "", `/templates/${encodeURIComponent(saved.id)}`);
     } catch (reason) {
@@ -182,7 +183,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
           </p>
         ) : null}
         {!bootstrapped || status === "unknown" ? (
-          <p className="px-2 text-sm text-[var(--ink-muted)]">Loading template editor…</p>
+          <p className="px-2 text-sm text-[var(--ink-muted)]">Loading design editor…</p>
         ) : (
           <div className="design-pad min-h-0 flex-1">
             <Toolbar

@@ -751,3 +751,84 @@ def test_render_ai_fill_uses_document_values_not_only_defaults(monkeypatch) -> N
     session.close()
     get_template_store.cache_clear()
     get_document_store.cache_clear()
+
+
+def test_builtin_starters_catalog_and_render_with_variables() -> None:
+    from app.processing.template.starters import clear_starter_cache, list_starter_summaries
+
+    clear_starter_cache()
+    summaries = list_starter_summaries()
+    ids = {item["id"] for item in summaries}
+    assert "family_daily" in ids
+    assert "family_yearly" in ids
+    assert "meeting_agenda" in ids
+    assert "task_list" in ids
+    assert "timesheet" in ids
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    user_id = uuid4()
+    user = SimpleNamespace(id=user_id, plan="basic")
+    principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+    app = FastAPI()
+    app.include_router(router, prefix="/api")
+    app.dependency_overrides[get_principal] = lambda: principal
+    app.dependency_overrides[get_db] = lambda: session
+    client = TestClient(app)
+
+    catalog = client.get("/api/templates/starters")
+    assert catalog.status_code == 200, catalog.text
+    payload = catalog.json()
+    assert len(payload["items"]) >= 16
+    assert any(cat["id"] == "family" for cat in payload["categories"])
+    daily = next(item for item in payload["items"] if item["id"] == "family_daily")
+    assert daily["variable_count"] > 0
+    assert any(var["name"] == "family_daily_blocks" for var in daily["variables"])
+
+    detail = client.get("/api/templates/starters/family_daily")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["document"]["version"] == 2
+    assert detail.json()["document"]["variables"]
+
+    rendered = client.post(
+        "/api/templates/starters/family_daily/render",
+        json={
+            "format": "html",
+            "fill": "none",
+            "variables": {
+                "family_name": "The API Family",
+                "day_name": "Friday",
+                "schedule_date": "March 20, 2026",
+                "family_daily_blocks": [
+                    {"time": "9:00 AM", "activity": "API smoke test"},
+                ],
+                "breakfast": "Toast",
+                "lunch": "Salad",
+                "dinner": "Pasta",
+                "daily_reminders": "Ship starters",
+                "daily_notes": "Rendered via starter params",
+            },
+        },
+    )
+    assert rendered.status_code == 200, rendered.text
+    assert rendered.headers.get("X-Template-Fill") == "none"
+    assert "The API Family" in rendered.text
+    assert "API smoke test" in rendered.text
+    assert "9:00 AM" in rendered.text
+
+    defaults = client.post(
+        "/api/templates/starters/meeting_agenda/render",
+        json={"format": "html", "fill": "defaults"},
+    )
+    assert defaults.status_code == 200, defaults.text
+    assert "Weekly product sync" in defaults.text
+
+    missing = client.get("/api/templates/starters/not_a_real_starter")
+    assert missing.status_code == 404
+
+    session.close()

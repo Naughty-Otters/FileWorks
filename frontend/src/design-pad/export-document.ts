@@ -52,8 +52,16 @@ function nodeStyle(node: DesignNode): string {
     ],
     ["object-fit", node.kind === "image" ? node.objectFit || "cover" : null],
     ["box-sizing", "border-box"],
-    ["overflow", isRoot ? "visible" : "hidden"],
+    // Text must never clip mid-glyph; boxes keep hidden so nested abs
+    // children don't paint outside card chrome.
+    [
+      "overflow",
+      isRoot || node.kind === "paragraph" || node.kind === "heading" ? "visible" : "hidden",
+    ],
     ["white-space", node.kind === "paragraph" || node.kind === "heading" ? "pre-wrap" : null],
+    ["line-height", node.kind === "heading" ? "1.25" : node.kind === "paragraph" ? "1.4" : null],
+    ["margin", node.kind === "paragraph" || node.kind === "heading" ? "0" : null],
+    ["padding", node.kind === "paragraph" || node.kind === "heading" ? "4px 6px" : null],
   ];
   return pairs
     .filter(([, value]) => value != null && value !== "")

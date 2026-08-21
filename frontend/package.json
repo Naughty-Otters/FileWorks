@@ -11,6 +11,7 @@
     "test": "vitest run",
     "icons": "python3 ./scripts/generate-icons.py",
     "test:coverage": "vitest run --coverage",
+    "export:starters": "vitest run src/design-pad/export-starters.test.ts",
     "pages:deploy": "wrangler pages deploy ./out"
   },
   "browserslist": [

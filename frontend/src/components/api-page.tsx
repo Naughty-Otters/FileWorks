@@ -222,7 +222,7 @@ console.log(data.markdown);`,
               url: `${SITE_URL}/docs`,
               name: "Convert API — FileWorks",
               description:
-                "Upload PDF, Word, Excel, PowerPoint, or images to POST /api/v1/convert and receive Markdown or other exports.",
+                "Upload PDF, Word, Excel, PowerPoint, or images to POST /api/v1/convert and receive Markdown or other exports. Render fillable starter Designs via /api/templates/starters.",
               isPartOf: { "@id": `${SITE_URL}/#website` },
             },
           ],
@@ -254,7 +254,9 @@ console.log(data.markdown);`,
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             Inputs: {INPUT_FORMATS.join("; ")}. Targets: {OUTPUT_FORMATS.join(", ")}. Optional{" "}
             <code className="api-inline">use_ai=true</code> for OCR on scans and{" "}
-            <code className="api-inline">target_lang</code> for translation.
+            <code className="api-inline">target_lang</code> for translation. Fillable starter Designs
+            (family schedules, invoices, agendas, and more) are available under{" "}
+            <code className="api-inline">/api/templates/starters</code>.
           </p>
         </div>
 
@@ -370,6 +372,34 @@ console.log(data.markdown);`,
                   <code className="api-inline">s3_key</code>
                 </td>
               </tr>
+              <tr className="border-t border-[var(--line)]">
+                <td className="py-2.5 pr-3 font-medium">GET</td>
+                <td className="py-2.5 pr-3 font-[family-name:var(--font-mono)] text-[13px] text-[var(--accent-strong)]">
+                  /api/templates/starters
+                </td>
+                <td className="py-2.5 text-[var(--ink-muted)]">
+                  Built-in Design starter catalog with categories and variable schemas (JWT or API key)
+                </td>
+              </tr>
+              <tr className="border-t border-[var(--line)]">
+                <td className="py-2.5 pr-3 font-medium">GET</td>
+                <td className="py-2.5 pr-3 font-[family-name:var(--font-mono)] text-[13px] text-[var(--accent-strong)]">
+                  /api/templates/starters/{"{id}"}
+                </td>
+                <td className="py-2.5 text-[var(--ink-muted)]">
+                  Full starter DesignDocument + params (e.g. <code className="api-inline">family_daily</code>)
+                </td>
+              </tr>
+              <tr className="border-t border-[var(--line)]">
+                <td className="py-2.5 pr-3 font-medium">POST</td>
+                <td className="py-2.5 pr-3 font-[family-name:var(--font-mono)] text-[13px] text-[var(--accent-strong)]">
+                  /api/templates/starters/{"{id}"}/render
+                </td>
+                <td className="py-2.5 text-[var(--ink-muted)]">
+                  Fill with <code className="api-inline">variables</code> / <code className="api-inline">context</code>{" "}
+                  (or AI fill from <code className="api-inline">markdown</code>); returns HTML, Markdown, or DOCX
+                </td>
+              </tr>
             </tbody>
           </table>
           <p className="mt-4 text-sm leading-6 text-[var(--ink-muted)]">
@@ -380,6 +410,17 @@ console.log(data.markdown);`,
             <code className="api-inline">download=true</code> to get the file,{" "}
             <code className="api-inline">use_ai=true</code> for scans,{" "}
             <code className="api-inline">target_lang=en</code> to translate. Max upload is 50 MB.
+          </p>
+          <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
+            Design starters include family schedules, invoices, meeting agendas, project plans, task
+            lists, and timesheets. Pass explicit <code className="api-inline">variables</code> with{" "}
+            <code className="api-inline">fill=none</code>, use sample defaults with{" "}
+            <code className="api-inline">fill=defaults</code>, or AI-fill from source markdown with{" "}
+            <code className="api-inline">fill=auto</code>. Browse starters in the{" "}
+            <a href="/templates" className="text-[var(--accent-strong)] underline-offset-2 hover:underline">
+              Design library
+            </a>
+            .
           </p>
         </section>
 

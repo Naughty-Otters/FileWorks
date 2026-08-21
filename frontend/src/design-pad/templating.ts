@@ -1,6 +1,9 @@
 import type { DesignDocument, DesignNode, TemplateVariable } from "./types";
 import { VARIABLE_TOKEN_RE, nextId } from "./types";
 import { effectiveDefault } from "./defaults";
+import { arrange, resolveAutoSize, reflowFreeformStacks } from "./layout/arrange";
+import { enforcePageBounds } from "./layout/page-bounds";
+import { fitTextContent } from "./layout/text-fit";
 
 export type TextSegment = { type: "text"; value: string } | { type: "var"; name: string };
 
@@ -115,33 +118,22 @@ function expandNode(node: DesignNode, data: Record<string, unknown>, locals: Rec
   copy.label = resolve(copy.label, data, locals);
   if (copy.imageSrc) copy.imageSrc = resolve(copy.imageSrc, data, locals);
   copy.children = copy.children.flatMap((child) => expandNode(child, data, locals));
-  relayout(copy);
   return [copy];
 }
 
-function relayout(node: DesignNode) {
-  if (!node.layout || !node.children.length) return;
-  const { direction, gap, padding } = node.layout;
-  let cursor = padding;
-  for (const child of node.children) {
-    if (direction === "column") {
-      child.x = padding;
-      child.y = cursor;
-      if (node.layout.align === "stretch") child.w = Math.max(20, node.w - padding * 2);
-      cursor += child.h + gap;
-    } else {
-      child.x = cursor;
-      child.y = padding;
-      if (node.layout.align === "stretch") child.h = Math.max(20, node.h - padding * 2);
-      cursor += child.w + gap;
-    }
-  }
-  if (direction === "column") node.h = Math.max(node.h, cursor - gap + padding);
-  else node.w = Math.max(node.w, cursor - gap + padding);
-}
-
-/** Full preview expansion including list repeats — uses default values. */
+/** Full preview expansion including list repeats — uses default values.
+ * After substitution: fit text boxes to their copy, run hug + arrange,
+ * reflow freeform stacks, then grow the page so nothing is clipped. */
 export function expandSampleDocument(doc: DesignDocument): DesignDocument {
   const data = defaultData(doc.variables);
-  return { ...structuredClone(doc), root: expandNode(doc.root, data, {})[0] };
+  const expanded: DesignDocument = {
+    ...structuredClone(doc),
+    root: expandNode(doc.root, data, {})[0],
+  };
+  fitTextContent(expanded.root);
+  resolveAutoSize(expanded.root);
+  arrange(expanded.root);
+  reflowFreeformStacks(expanded.root);
+  enforcePageBounds(expanded.root, expanded.pageSize);
+  return expanded;
 }

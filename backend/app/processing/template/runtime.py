@@ -21,12 +21,34 @@ def used_variables(document: DesignDocument) -> set[str]:
     return names
 
 
+def repeat_aliases(document: DesignDocument) -> set[str]:
+    """Local names bound by ``repeat.as`` — not top-level context params."""
+    return {
+        node.repeat.as_
+        for node in document.iter_nodes()
+        if node.repeat is not None and node.repeat.as_
+    }
+
+
+def required_context_roots(document: DesignDocument) -> set[str]:
+    """Top-level variable names the caller must supply (excludes repeat aliases)."""
+    aliases = repeat_aliases(document)
+    roots = set(document.variable_map())
+    roots.update(
+        path.split(".", 1)[0]
+        for path in used_variables(document)
+        if path.split(".", 1)[0] not in aliases
+    )
+    return roots
+
+
 def template_analysis(document: DesignDocument) -> tuple[bool, list[str]]:
     used = used_variables(document)
+    aliases = repeat_aliases(document)
     repeaters = [node for node in document.iter_nodes() if node.repeat is not None]
     warnings: list[str] = []
     declared = set(document.variable_map())
-    undeclared = sorted({name.split(".", 1)[0] for name in used} - declared)
+    undeclared = sorted({name.split(".", 1)[0] for name in used} - declared - aliases)
     if undeclared:
         warnings.append(f"Undeclared variables used: {', '.join(undeclared)}")
     is_static = not declared and not used and not repeaters

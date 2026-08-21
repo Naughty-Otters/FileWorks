@@ -47,6 +47,99 @@ describe("template utilities", () => {
     const expanded = expandSampleDocument(doc);
     expect(expanded.root.children).toHaveLength(2);
     expect(expanded.root.children.map((item) => item.children[0].label)).toEqual(["One", "Two"]);
+    // Freeform root: second repeat instance is pushed below the first.
+    expect(expanded.root.children[1].y).toBeGreaterThanOrEqual(
+      expanded.root.children[0].y + expanded.root.children[0].h,
+    );
+  });
+
+  it("grows auto-layout sections and pushes later freeform siblings down", () => {
+    const doc = createEmptyDocument();
+    doc.variables.push({
+      id: nextId("var"),
+      name: "items",
+      label: "Items",
+      type: "list",
+      sampleValue: '[{"name":"A"},{"name":"B"},{"name":"C"}]',
+    });
+
+    const header = createNode("box");
+    header.label = "Header";
+    header.w = 400;
+    header.h = 40;
+    header.x = 40;
+    header.y = 40;
+    header.layout = {
+      direction: "column",
+      gap: 0,
+      padding: 8,
+      align: "stretch",
+      justify: "start",
+    };
+    const headerText = createNode("paragraph");
+    headerText.label = "Title";
+    headerText.h = 24;
+    header.children.push(headerText);
+
+    const itemRow = createNode("box");
+    itemRow.w = 360;
+    itemRow.h = 28;
+    itemRow.repeat = { over: "items", as: "item" };
+    itemRow.layout = {
+      direction: "row",
+      gap: 8,
+      padding: 0,
+      align: "center",
+      justify: "start",
+    };
+    const itemText = createNode("paragraph");
+    itemText.label = "{{ item.name }}";
+    itemText.w = 200;
+    itemText.h = 20;
+    itemRow.children.push(itemText);
+
+    const list = createNode("box");
+    list.label = "List";
+    list.w = 400;
+    list.h = 60; // authored for one row; sample has three
+    list.x = 40;
+    list.y = 96;
+    list.layout = {
+      direction: "column",
+      gap: 8,
+      padding: 12,
+      align: "stretch",
+      justify: "start",
+    };
+    list.children.push(itemRow);
+
+    const footer = createNode("box");
+    footer.label = "Footer";
+    footer.w = 400;
+    footer.h = 40;
+    footer.x = 40;
+    footer.y = 172;
+    footer.layout = {
+      direction: "column",
+      gap: 0,
+      padding: 8,
+      align: "stretch",
+      justify: "start",
+    };
+    const footerText = createNode("paragraph");
+    footerText.label = "End";
+    footerText.h = 24;
+    footer.children.push(footerText);
+
+    doc.root.children.push(header, list, footer);
+
+    const expanded = expandSampleDocument(doc);
+    const [h, section, foot] = expanded.root.children;
+    expect(section.children).toHaveLength(3);
+    expect(section.h).toBeGreaterThan(60);
+    expect(foot.y).toBeGreaterThanOrEqual(section.y + section.h);
+    expect(expanded.root.h).toBeGreaterThanOrEqual(foot.y + foot.h);
+    expect(h.y).toBe(40);
   });
 
   it("parses token segments and resolves defaults", () => {

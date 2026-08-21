@@ -728,7 +728,7 @@ function normalizeTemplate(payload: unknown): TemplateRecord {
         : 0;
   return {
     id: String(source.id),
-    name: String(source.name || source.title || "Untitled template"),
+    name: String(source.name || source.title || "Untitled design"),
     document: (document || {
       version: 2,
       pageSize: { w: 850, h: 1100 },
@@ -835,6 +835,76 @@ export async function renderTemplate(
       fillMode,
     };
   }
+  if (input.format === "docx" || contentType.includes("wordprocessingml")) {
+    return { html: "", docx: await res.blob(), fillMode };
+  }
+  if (input.format === "markdown" || contentType.includes("text/markdown")) {
+    return { html: "", markdown: await res.text(), fillMode };
+  }
+  return { html: await res.text(), fillMode };
+}
+
+export type StarterVariable = {
+  name: string;
+  label: string;
+  type: string;
+  sampleValue?: unknown;
+  sample_value?: unknown;
+  itemSchema?: Array<Record<string, unknown>>;
+  item_schema?: Array<Record<string, unknown>>;
+};
+
+export type StarterSummary = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  variable_count: number;
+  variables: StarterVariable[];
+  page_size?: { w: number; h: number } | null;
+};
+
+export type StarterListResponse = {
+  categories: Array<{ id: string; label: string; blurb?: string }>;
+  items: StarterSummary[];
+};
+
+/** Built-in starter catalog (variable schemas) for API / workspace clients. */
+export async function fetchStarters(): Promise<StarterListResponse> {
+  const res = await apiFetch("/api/templates/starters", { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Failed to load starters (${res.status})`));
+  return (await res.json()) as StarterListResponse;
+}
+
+export async function fetchStarter(id: string): Promise<StarterSummary & { document: DesignDocument }> {
+  const res = await apiFetch(`/api/templates/starters/${encodeURIComponent(id)}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Failed to load starter (${res.status})`));
+  return (await res.json()) as StarterSummary & { document: DesignDocument };
+}
+
+/** Render a built-in starter by id with explicit ``variables`` (or AI fill). */
+export async function renderStarter(
+  starterId: string,
+  input: {
+    markdown?: string;
+    variables?: Record<string, unknown>;
+    format?: "html" | "docx" | "pdf" | "markdown";
+    fill?: "auto" | "defaults" | "none";
+  } = {},
+): Promise<TemplateRenderResponse> {
+  const res = await apiFetch(`/api/templates/starters/${encodeURIComponent(starterId)}/render`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      markdown: input.markdown ?? "",
+      variables: input.variables ?? {},
+      format: input.format ?? "html",
+      fill: input.fill ?? (input.markdown ? "auto" : "defaults"),
+    }),
+  });
+  if (!res.ok) throw new Error(await readError(res, `Starter render failed (${res.status})`));
+  const contentType = res.headers.get("Content-Type") || "";
+  const fillMode = res.headers.get("X-Template-Fill");
   if (input.format === "docx" || contentType.includes("wordprocessingml")) {
     return { html: "", docx: await res.blob(), fillMode };
   }

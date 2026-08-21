@@ -21,10 +21,16 @@ from app.processing.template.runtime import (
     coalesce_context,
     default_context,
     expand_repeats,
+    required_context_roots,
     template_analysis,
-    used_variables,
 )
 from app.processing.template.schema import DesignDocument
+from app.processing.template.starters import (
+    get_starter_meta,
+    list_categories,
+    list_starter_summaries,
+    load_starter_document,
+)
 from app.storage.templates import get_template_store
 
 router = APIRouter(prefix="/templates", tags=["templates"])
@@ -68,6 +74,12 @@ class TemplateListResponse(BaseModel):
 
 
 class TemplateRenderRequest(BaseModel):
+    """Fill params for a saved or built-in template.
+
+    Pass ``variables`` (alias ``context``) to supply values by variable name.
+    List variables expect arrays of objects matching each field in ``itemSchema``.
+    """
+
     source_markdown: str | None = Field(
         default=None, validation_alias=AliasChoices("source_markdown", "markdown")
     )
@@ -78,9 +90,49 @@ class TemplateRenderRequest(BaseModel):
     fill: Literal["auto", "defaults", "none"] = "auto"
 
 
+class StarterVariable(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str
+    label: str = ""
+    type: str = "text"
+    sample_value: Any = Field(default="", validation_alias=AliasChoices("sample_value", "sampleValue"))
+    item_schema: list[dict[str, Any]] = Field(
+        default_factory=list, validation_alias=AliasChoices("item_schema", "itemSchema")
+    )
+
+
+class StarterSummary(BaseModel):
+    id: str
+    name: str
+    description: str = ""
+    category: str = "general"
+    page_size: dict[str, Any] | None = None
+    variable_count: int = 0
+    variables: list[StarterVariable] = Field(default_factory=list)
+
+
+class StarterListResponse(BaseModel):
+    categories: list[dict[str, Any]] = Field(default_factory=list)
+    items: list[StarterSummary]
+
+
+class StarterDetailResponse(StarterSummary):
+    document: DesignDocument
+
+
 def _workspace(principal: Principal, db: Session | None) -> tuple[str, Session]:
     if principal.user_id is None or principal.via_api_key:
         raise HTTPException(status_code=401, detail="JWT workspace authentication required")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database is not configured")
+    return str(principal.user_id), db
+
+
+def _authenticated_user(principal: Principal, db: Session | None) -> tuple[str, Session]:
+    """JWT or API-key user — used for built-in starter catalog/render."""
+    if principal.user_id is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
     if db is None:
         raise HTTPException(status_code=503, detail="Database is not configured")
     return str(principal.user_id), db
@@ -145,6 +197,202 @@ def _try_load_document(owner_id: str, template_id: str) -> DesignDocument | None
         return DesignDocument.model_validate(payload)
     except ValueError:
         return None
+
+
+def _fill_and_render(
+    *,
+    document: DesignDocument,
+    body: TemplateRenderRequest,
+    principal: Principal,
+    session: Session,
+    title: str,
+    filename_stem: str,
+    document_description: str | None = None,
+) -> Response:
+    """Shared fill (defaults / AI / explicit variables) + render pipeline."""
+    is_static, warnings = template_analysis(document)
+    defaults = default_context(document)
+    overrides = dict(body.context)
+    needed = required_context_roots(document)
+    markdown = (body.source_markdown or "").strip()
+    fill_mode = "static" if is_static else body.fill
+    extracted: dict[str, Any] = {}
+
+    if is_static:
+        context = coalesce_context(defaults, None, overrides)
+        fill_mode = "static"
+    elif body.fill == "none":
+        context = dict(overrides)
+        missing = needed - set(context)
+        if missing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing template context: {', '.join(sorted(missing))}",
+            )
+        fill_mode = "none"
+    elif body.fill == "defaults" or not markdown:
+        context = coalesce_context(defaults, None, overrides)
+        missing = needed - set(context)
+        if missing and body.fill != "defaults":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing template context: {', '.join(sorted(missing))}",
+            )
+        fill_mode = "defaults"
+    else:
+        assert_can_use_ai(
+            session,
+            user_id=principal.user_id,
+            plan=principal.plan,
+            use_ai=True,
+            translate=False,
+        )
+        extracted = extract_template_context(
+            document,
+            markdown,
+            document_name=title,
+            document_description=document_description,
+        )
+        context = coalesce_context(defaults, extracted, overrides)
+        session.add(UsageEvent(user_id=principal.user_id, action=AI_ACTION))
+        fill_mode = "ai"
+
+    expanded = expand_repeats(document, context)
+    laid_out, layout_warnings = auto_layout(expanded)
+    warning_header = " | ".join([*warnings, *layout_warnings])
+    filled_keys = sorted(
+        key
+        for key in extracted
+        if key in context
+        and extracted.get(key) == context.get(key)
+        and extracted.get(key) not in (None, "", [], {})
+    )
+    headers = {"X-Template-Fill": fill_mode}
+    if filled_keys:
+        headers["X-Template-Filled-Keys"] = ",".join(filled_keys)[:1000]
+    if warning_header:
+        headers["X-Template-Warnings"] = warning_header[:1000]
+    if body.format == "docx":
+        data = render_docx(laid_out, title=title)
+        headers["Content-Disposition"] = f'attachment; filename="{filename_stem}.docx"'
+        return Response(
+            content=data,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers=headers,
+        )
+    if body.format == "markdown":
+        text = render_markdown(laid_out)
+        headers["Content-Disposition"] = f'attachment; filename="{filename_stem}.md"'
+        return Response(content=text, media_type="text/markdown; charset=utf-8", headers=headers)
+    html = render_html(laid_out, title=title)
+    if body.format == "pdf":
+        headers["X-FileWorks-PDF-Mode"] = "browser-print"
+    return Response(content=html, media_type="text/html; charset=utf-8", headers=headers)
+
+
+def _starter_summary(raw: dict[str, Any]) -> StarterSummary:
+    variables = []
+    for item in raw.get("variables") or []:
+        variables.append(
+            StarterVariable.model_validate(
+                {
+                    "name": item.get("name"),
+                    "label": item.get("label") or "",
+                    "type": item.get("type") or "text",
+                    "sampleValue": item.get("sampleValue", item.get("sample_value", "")),
+                    "itemSchema": item.get("itemSchema") or item.get("item_schema") or [],
+                }
+            )
+        )
+    page_size = raw.get("page_size") or raw.get("pageSize")
+    return StarterSummary(
+        id=raw["id"],
+        name=raw["name"],
+        description=raw.get("description") or "",
+        category=raw.get("category") or "general",
+        page_size=page_size if isinstance(page_size, dict) else None,
+        variable_count=int(raw.get("variable_count") or len(variables)),
+        variables=variables,
+    )
+
+
+@router.get("/starters", response_model=StarterListResponse)
+def list_starters(principal: PrincipalDep, db: DatabaseDep) -> StarterListResponse:
+    """Catalog of built-in templates and their variable params (JWT or API key)."""
+    _authenticated_user(principal, db)
+    return StarterListResponse(
+        categories=list_categories(),
+        items=[_starter_summary(item) for item in list_starter_summaries()],
+    )
+
+
+@router.get("/starters/{starter_id}", response_model=StarterDetailResponse)
+def get_starter(
+    starter_id: str,
+    principal: PrincipalDep,
+    db: DatabaseDep,
+) -> StarterDetailResponse:
+    """Full built-in starter document + variable schema for API clients."""
+    _authenticated_user(principal, db)
+    meta = get_starter_meta(starter_id)
+    document = load_starter_document(starter_id)
+    summary = _starter_summary(
+        {
+            **meta,
+            "variable_count": len(document.variables),
+            "variables": meta.get("variables")
+            or [
+                {
+                    "name": variable.name,
+                    "label": variable.label,
+                    "type": variable.type,
+                    "sampleValue": variable.sample_value,
+                    "itemSchema": [field.model_dump(by_alias=True) for field in variable.item_schema],
+                }
+                for variable in document.variables
+            ],
+            "pageSize": document.page.model_dump(by_alias=True)
+            if hasattr(document, "page")
+            else meta.get("pageSize"),
+        }
+    )
+    return StarterDetailResponse(**summary.model_dump(), document=document)
+
+
+@router.post("/starters/{starter_id}/render")
+def render_starter(
+    starter_id: str,
+    body: TemplateRenderRequest,
+    principal: PrincipalDep,
+    db: DatabaseDep,
+) -> Response:
+    """Render a built-in starter with ``variables`` / ``context`` (or AI fill from markdown).
+
+    Example::
+
+        POST /api/templates/starters/family_daily/render
+        {
+          "fill": "none",
+          "format": "html",
+          "variables": {
+            "family_name": "The Riveras",
+            "day_name": "Tuesday",
+            "family_daily_blocks": [{"time": "7:00 AM", "activity": "Breakfast"}]
+          }
+        }
+    """
+    _, session = _authenticated_user(principal, db)
+    meta = get_starter_meta(starter_id)
+    document = load_starter_document(starter_id)
+    return _fill_and_render(
+        document=document,
+        body=body,
+        principal=principal,
+        session=session,
+        title=str(meta.get("name") or starter_id),
+        filename_stem=starter_id,
+        document_description=meta.get("description"),
+    )
 
 
 @router.get("", response_model=TemplateListResponse)
@@ -279,83 +527,12 @@ def render_template(
     owner_id, session = _workspace(principal, db)
     row = _owned(session, principal.user_id, template_id)
     document = _load_document(owner_id, template_id)
-    is_static, warnings = template_analysis(document)
-    defaults = default_context(document)
-    overrides = dict(body.context)
-    needed = set(document.variable_map())
-    needed.update(path.split(".", 1)[0] for path in used_variables(document))
-    markdown = (body.source_markdown or "").strip()
-    fill_mode = "static" if is_static else body.fill
-    extracted: dict[str, Any] = {}
-
-    if is_static:
-        context = coalesce_context(defaults, None, overrides)
-        fill_mode = "static"
-    elif body.fill == "none":
-        context = dict(overrides)
-        missing = needed - set(context)
-        if missing:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Missing template context: {', '.join(sorted(missing))}",
-            )
-        fill_mode = "none"
-    elif body.fill == "defaults" or not markdown:
-        context = coalesce_context(defaults, None, overrides)
-        missing = needed - set(context)
-        if missing and body.fill != "defaults":
-            raise HTTPException(
-                status_code=400,
-                detail=f"Missing template context: {', '.join(sorted(missing))}",
-            )
-        fill_mode = "defaults"
-    else:
-        # auto + source markdown: always AI-fill; defaults only coalesce empties.
-        assert_can_use_ai(
-            session,
-            user_id=principal.user_id,
-            plan=principal.plan,
-            use_ai=True,
-            translate=False,
-        )
-        extracted = extract_template_context(
-            document,
-            markdown,
-            document_name=row.name,
-            document_description=row.description,
-        )
-        context = coalesce_context(defaults, extracted, overrides)
-        session.add(UsageEvent(user_id=principal.user_id, action=AI_ACTION))
-        fill_mode = "ai"
-
-    expanded = expand_repeats(document, context)
-    laid_out, layout_warnings = auto_layout(expanded)
-    warning_header = " | ".join([*warnings, *layout_warnings])
-    filled_keys = sorted(
-        key
-        for key in extracted
-        if key in context and extracted.get(key) == context.get(key) and extracted.get(key) not in (None, "", [], {})
+    return _fill_and_render(
+        document=document,
+        body=body,
+        principal=principal,
+        session=session,
+        title=row.name,
+        filename_stem=row.id,
+        document_description=row.description,
     )
-    headers = {
-        "X-Template-Fill": fill_mode,
-    }
-    if filled_keys:
-        headers["X-Template-Filled-Keys"] = ",".join(filled_keys)[:1000]
-    if warning_header:
-        headers["X-Template-Warnings"] = warning_header[:1000]
-    if body.format == "docx":
-        data = render_docx(laid_out, title=row.name)
-        headers["Content-Disposition"] = f'attachment; filename="{row.id}.docx"'
-        return Response(
-            content=data,
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            headers=headers,
-        )
-    if body.format == "markdown":
-        text = render_markdown(laid_out)
-        headers["Content-Disposition"] = f'attachment; filename="{row.id}.md"'
-        return Response(content=text, media_type="text/markdown; charset=utf-8", headers=headers)
-    html = render_html(laid_out, title=row.name)
-    if body.format == "pdf":
-        headers["X-FileWorks-PDF-Mode"] = "browser-print"
-    return Response(content=html, media_type="text/html; charset=utf-8", headers=headers)
