@@ -12,9 +12,16 @@ import {
 type PlanPolicyDialogProps = {
   gate: ConvertGate;
   onClose: () => void;
+  secondaryLabel?: string;
+  onSecondary?: () => void;
 };
 
-export function PlanPolicyDialog({ gate, onClose }: PlanPolicyDialogProps) {
+export function PlanPolicyDialog({
+  gate,
+  onClose,
+  secondaryLabel,
+  onSecondary,
+}: PlanPolicyDialogProps) {
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -88,6 +95,18 @@ export function PlanPolicyDialog({ gate, onClose }: PlanPolicyDialogProps) {
           >
             Close
           </button>
+          {secondaryLabel && onSecondary ? (
+            <button
+              type="button"
+              onClick={() => {
+                onSecondary();
+                onClose();
+              }}
+              className="rounded-full border border-[var(--line)] px-4 py-2 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)] hover:text-[var(--accent-strong)]"
+            >
+              {secondaryLabel}
+            </button>
+          ) : null}
           {needLogin ? (
             <a
               href="/login"

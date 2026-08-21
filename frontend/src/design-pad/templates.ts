@@ -3,12 +3,14 @@ import {
   type DesignNode,
   type LayoutProps,
   type NodeStyle,
+  type VariableSchemaField,
   type VariableType,
   DEFAULT_LAYOUT,
   HEADING_LEVEL_PRESET,
   createEmptyDocument,
   createNode,
   createVariable,
+  nextId,
 } from "./types";
 
 function heading(w: number, label: string, level: 1 | 2 | 3 = 2, align: "left" | "center" | "right" = "left") {
@@ -89,17 +91,33 @@ function placeStacked(doc: DesignDocument, boxes: DesignNode[], startY = 40, x =
   }
 }
 
-/** Declares a template's variables in one shot — used by the templates
- * (pay stub, rental agreement) that lean on `{{ }}` placeholders instead
- * of literal sample copy, so opening them in Preview mode immediately
- * shows something meaningful. */
-function declareVars(
-  doc: DesignDocument,
-  entries: [name: string, label: string, type: VariableType, sampleValue: string][],
-) {
-  doc.variables = entries.map(([name, label, type, sampleValue]) =>
-    createVariable(name, label, type, sampleValue),
-  );
+/** Declares a template's variables in one shot — used by starters that lean
+ * on `{{ }}` placeholders so Preview / Home fill have real fields to bind. */
+type ScalarVarEntry = [name: string, label: string, type: VariableType, sampleValue: string];
+type ListFieldEntry = [name: string, label: string, type: VariableSchemaField["type"]];
+type ListVarEntry = [
+  name: string,
+  label: string,
+  type: "list",
+  sampleValue: string,
+  itemFields: ListFieldEntry[],
+];
+type VarEntry = ScalarVarEntry | ListVarEntry;
+
+function declareVars(doc: DesignDocument, entries: VarEntry[]) {
+  doc.variables = entries.map((entry) => {
+    const [name, label, type, sampleValue] = entry;
+    const variable = createVariable(name, label, type, sampleValue);
+    if (type === "list" && entry.length === 5) {
+      variable.itemSchema = entry[4].map(([fieldName, fieldLabel, fieldType]) => ({
+        id: nextId("field"),
+        name: fieldName,
+        label: fieldLabel,
+        type: fieldType,
+      }));
+    }
+    return variable;
+  });
 }
 
 function invoice(): DesignDocument {
@@ -109,71 +127,121 @@ function invoice(): DesignDocument {
 
   const header = box(
     contentW,
-    100,
+    80,
     "Header",
     [
       box(
-        340,
-        76,
+        300,
+        70,
         "Company",
-        [heading(320, "Your Company", 2), paragraph(320, 40, "123 Main St, City, ST 00000\nhello@yourcompany.com")],
+        [
+          heading(280, "{{ company_name }}", 2),
+          paragraph(280, 36, "{{ company_address }}\n{{ company_email }}"),
+        ],
         { direction: "column", gap: 4, padding: 0 },
         INVISIBLE,
       ),
       box(
-        260,
-        76,
-        "Invoice info",
-        [heading(240, "INVOICE", 1, "right"), paragraph(240, 40, "Invoice #: 0001\nDate: ____________", "right")],
+        220,
+        70,
+        "Invoice meta",
+        [
+          heading(200, "INVOICE", 1, "right"),
+          paragraph(200, 36, "Invoice #: {{ invoice_number }}\nDate: {{ invoice_date }}", "right"),
+        ],
         { direction: "column", gap: 4, padding: 0, align: "end" },
         INVISIBLE,
       ),
     ],
-    { direction: "row", justify: "space-between", align: "start", padding: 24, gap: 24 },
+    { direction: "row", justify: "space-between", padding: 24, gap: 24 },
     INVISIBLE,
   );
 
   const billTo = box(
     contentW,
-    100,
+    90,
     "Bill to",
-    [heading(300, "Bill To", 3), paragraph(300, 50, "Client Name\nClient Address\nCity, ST 00000")],
+    [
+      heading(200, "Bill To", 3),
+      paragraph(360, 54, "{{ client_name }}\n{{ client_address }}\n{{ client_email }}"),
+    ],
     { direction: "column", gap: 6, padding: 20 },
   );
 
-  function lineRow(desc: string, amount: string) {
-    return box(
-      contentW - 40,
-      32,
-      "Row",
-      [paragraph(400, 24, desc), paragraph(120, 24, amount, "right")],
-      { direction: "row", justify: "space-between", align: "center", padding: 0 },
-      INVISIBLE,
-    );
-  }
+  const headerRow = box(
+    contentW - 40,
+    28,
+    "Column headers",
+    [paragraph(360, 20, "Description"), paragraph(120, 20, "Amount", "right")],
+    { direction: "row", justify: "space-between", align: "center", padding: 0 },
+    INVISIBLE,
+  );
+  headerRow.style.bold = true;
+
+  const itemRow = box(
+    contentW - 40,
+    28,
+    "Line item",
+    [
+      paragraph(360, 20, "{{ item.description }}"),
+      paragraph(120, 20, "{{ item.amount }}", "right"),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0 },
+    INVISIBLE,
+  );
+  itemRow.repeat = { over: "line_items", as: "item" };
 
   const lineItems = box(
     contentW,
-    190,
+    160,
     "Line items",
-    [
-      lineRow("Description", "Amount"),
-      lineRow("Service or product description", "$0.00"),
-      lineRow("Service or product description", "$0.00"),
-    ],
-    { direction: "column", gap: 12, padding: 20 },
+    [headerRow, itemRow],
+    { direction: "column", gap: 10, padding: 20 },
   );
 
-  const total = box(
+  const totals = box(
+    contentW,
+    56,
+    "Total",
+    [heading(200, "Total", 3), heading(160, "{{ total }}", 3, "right")],
+    { direction: "row", justify: "space-between", padding: 16 },
+  );
+
+  const notes = box(
     contentW,
     70,
-    "Total",
-    [heading(240, "Total: $0.00", 2, "right")],
-    { direction: "row", justify: "end", padding: 20 },
+    "Notes",
+    [paragraph(contentW - 40, 50, "{{ notes }}")],
+    { direction: "column", padding: 20 },
     INVISIBLE,
   );
 
-  placeStacked(doc, [header, billTo, lineItems, total]);
+  placeStacked(doc, [header, billTo, lineItems, totals, notes]);
+  declareVars(doc, [
+    ["company_name", "Company name", "text", "Acme Studio"],
+    ["company_address", "Company address", "text", "123 Market St, City, ST 00000"],
+    ["company_email", "Company email", "text", "billing@acme.example"],
+    ["invoice_number", "Invoice number", "text", "INV-1042"],
+    ["invoice_date", "Invoice date", "date", "March 1, 2026"],
+    ["client_name", "Client name", "text", "Northwind Trading"],
+    ["client_address", "Client address", "text", "500 Harbor Ave, City, ST 00000"],
+    ["client_email", "Client email", "text", "ap@northwind.example"],
+    [
+      "line_items",
+      "Line items",
+      "list",
+      JSON.stringify([
+        { description: "Design retainer — March", amount: "$2,400.00" },
+        { description: "Print production", amount: "$350.00" },
+      ]),
+      [
+        ["description", "Description", "text"],
+        ["amount", "Amount", "currency"],
+      ],
+    ],
+    ["total", "Total", "currency", "$2,750.00"],
+    ["notes", "Notes", "text", "Payment due within 30 days. Thank you for your business."],
+  ]);
   return doc;
 }
 
@@ -187,50 +255,111 @@ function receipt(): DesignDocument {
     90,
     "Header",
     [
-      heading(pageW - 64, "Your Store", 2, "center"),
-      paragraph(pageW - 64, 40, "123 Main St, City, ST\n(555) 123-4567", "center"),
+      heading(pageW - 64, "{{ store_name }}", 2, "center"),
+      paragraph(pageW - 64, 40, "{{ store_address }}\n{{ store_phone }}", "center"),
     ],
     { direction: "column", gap: 4, padding: 16, align: "center" },
     INVISIBLE,
   );
 
-  function lineRow(desc: string, amount: string) {
-    return box(
-      contentW - 32,
-      24,
-      "Row",
-      [paragraph(160, 20, desc), paragraph(100, 20, amount, "right")],
-      { direction: "row", justify: "space-between", align: "center", padding: 0 },
-      INVISIBLE,
-    );
-  }
+  const meta = box(
+    contentW,
+    40,
+    "Meta",
+    [paragraph(pageW - 64, 28, "Date: {{ receipt_date }}\nReceipt #: {{ receipt_number }}", "center")],
+    { direction: "column", padding: 8, align: "center" },
+    INVISIBLE,
+  );
+
+  const itemRow = box(
+    contentW - 32,
+    24,
+    "Item",
+    [
+      paragraph(160, 20, "{{ item.description }}"),
+      paragraph(100, 20, "{{ item.amount }}", "right"),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0 },
+    INVISIBLE,
+  );
+  itemRow.repeat = { over: "items", as: "item" };
 
   const items = box(
     contentW,
-    140,
+    100,
     "Items",
-    [lineRow("Item 1", "$0.00"), lineRow("Item 2", "$0.00"), lineRow("Item 3", "$0.00")],
+    [itemRow],
     { direction: "column", gap: 10, padding: 16 },
   );
 
-  const total = box(
+  const totals = box(
     contentW,
-    56,
-    "Total",
-    [heading(120, "Total", 3), heading(120, "$0.00", 3, "right")],
-    { direction: "row", justify: "space-between", padding: 16 },
+    90,
+    "Totals",
+    [
+      box(
+        contentW - 32,
+        24,
+        "Subtotal row",
+        [paragraph(120, 20, "Subtotal"), paragraph(100, 20, "{{ subtotal }}", "right")],
+        { direction: "row", justify: "space-between", align: "center", padding: 0 },
+        INVISIBLE,
+      ),
+      box(
+        contentW - 32,
+        24,
+        "Tax row",
+        [paragraph(120, 20, "Tax"), paragraph(100, 20, "{{ tax }}", "right")],
+        { direction: "row", justify: "space-between", align: "center", padding: 0 },
+        INVISIBLE,
+      ),
+      box(
+        contentW - 32,
+        28,
+        "Total row",
+        [heading(120, "Total", 3), heading(100, "{{ total }}", 3, "right")],
+        { direction: "row", justify: "space-between", align: "center", padding: 0 },
+        INVISIBLE,
+      ),
+    ],
+    { direction: "column", gap: 6, padding: 16 },
   );
 
   const footer = box(
     contentW,
     50,
     "Footer",
-    [paragraph(pageW - 64, 30, "Thank you for your purchase!", "center")],
+    [paragraph(pageW - 64, 30, "{{ thank_you_message }}", "center")],
     { direction: "column", padding: 16, align: "center" },
     INVISIBLE,
   );
 
-  placeStacked(doc, [header, items, total, footer], 16, 16);
+  placeStacked(doc, [header, meta, items, totals, footer], 16, 16);
+  declareVars(doc, [
+    ["store_name", "Store name", "text", "Your Store"],
+    ["store_address", "Store address", "text", "123 Main St, City, ST"],
+    ["store_phone", "Store phone", "text", "(555) 123-4567"],
+    ["receipt_date", "Receipt date", "date", "March 15, 2026"],
+    ["receipt_number", "Receipt number", "text", "R-8821"],
+    [
+      "items",
+      "Items",
+      "list",
+      JSON.stringify([
+        { description: "Coffee", amount: "$4.50" },
+        { description: "Pastry", amount: "$3.25" },
+        { description: "Sandwich", amount: "$9.75" },
+      ]),
+      [
+        ["description", "Description", "text"],
+        ["amount", "Amount", "currency"],
+      ],
+    ],
+    ["subtotal", "Subtotal", "currency", "$17.50"],
+    ["tax", "Tax", "currency", "$1.40"],
+    ["total", "Total", "currency", "$18.90"],
+    ["thank_you_message", "Thank you message", "text", "Thank you for your purchase!"],
+  ]);
   return doc;
 }
 
@@ -244,12 +373,22 @@ function bankStatement(): DesignDocument {
     90,
     "Header",
     [
-      box(340, 42, "Bank", [heading(320, "First National Bank", 2)], { direction: "column", padding: 0 }, INVISIBLE),
+      box(
+        340,
+        42,
+        "Bank",
+        [heading(320, "{{ bank_name }}", 2)],
+        { direction: "column", padding: 0 },
+        INVISIBLE,
+      ),
       box(
         300,
         76,
         "Statement info",
-        [heading(280, "Account Statement", 3, "right"), paragraph(280, 30, "Period: 01/01/2026 – 01/31/2026", "right")],
+        [
+          heading(280, "Account Statement", 3, "right"),
+          paragraph(280, 30, "Period: {{ statement_period }}", "right"),
+        ],
         { direction: "column", gap: 4, padding: 0, align: "end" },
         INVISIBLE,
       ),
@@ -274,35 +413,46 @@ function bankStatement(): DesignDocument {
     100,
     "Account summary",
     [
-      summaryItem("Account Number", "**** 4821"),
-      summaryItem("Opening Balance", "$4,210.55"),
-      summaryItem("Closing Balance", "$5,032.10"),
+      summaryItem("Account Number", "{{ account_number }}"),
+      summaryItem("Opening Balance", "{{ opening_balance }}"),
+      summaryItem("Closing Balance", "{{ closing_balance }}"),
     ],
     { direction: "row", justify: "space-between", padding: 20, gap: 10 },
   );
 
-  function txRow(date: string, desc: string, amount: string) {
-    return box(
-      contentW - 40,
-      28,
-      "Row",
-      [paragraph(80, 20, date), paragraph(260, 20, desc), paragraph(100, 20, amount, "right")],
-      { direction: "row", justify: "space-between", align: "center", padding: 0 },
-      INVISIBLE,
-    );
-  }
+  const txHeader = box(
+    contentW - 40,
+    28,
+    "Column headers",
+    [
+      paragraph(80, 20, "Date"),
+      paragraph(260, 20, "Description"),
+      paragraph(100, 20, "Amount", "right"),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0 },
+    INVISIBLE,
+  );
+  txHeader.style.bold = true;
+
+  const txRow = box(
+    contentW - 40,
+    28,
+    "Transaction",
+    [
+      paragraph(80, 20, "{{ tx.date }}"),
+      paragraph(260, 20, "{{ tx.description }}"),
+      paragraph(100, 20, "{{ tx.amount }}", "right"),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0 },
+    INVISIBLE,
+  );
+  txRow.repeat = { over: "transactions", as: "tx" };
 
   const transactions = box(
     contentW,
-    260,
+    200,
     "Transactions",
-    [
-      txRow("Date", "Description", "Amount"),
-      txRow("01/03", "Grocery Store", "-$86.20"),
-      txRow("01/07", "Payroll Deposit", "+$2,400.00"),
-      txRow("01/15", "Electric Utility", "-$120.44"),
-      txRow("01/22", "Online Transfer", "-$300.00"),
-    ],
+    [txHeader, txRow],
     { direction: "column", gap: 12, padding: 20 },
   );
 
@@ -322,6 +472,29 @@ function bankStatement(): DesignDocument {
   );
 
   placeStacked(doc, [header, summary, transactions, footer]);
+  declareVars(doc, [
+    ["bank_name", "Bank name", "text", "First National Bank"],
+    ["statement_period", "Statement period", "text", "01/01/2026 – 01/31/2026"],
+    ["account_number", "Account number", "text", "**** 4821"],
+    ["opening_balance", "Opening balance", "currency", "$4,210.55"],
+    ["closing_balance", "Closing balance", "currency", "$5,032.10"],
+    [
+      "transactions",
+      "Transactions",
+      "list",
+      JSON.stringify([
+        { date: "01/03", description: "Grocery Store", amount: "-$86.20" },
+        { date: "01/07", description: "Payroll Deposit", amount: "+$2,400.00" },
+        { date: "01/15", description: "Electric Utility", amount: "-$120.44" },
+        { date: "01/22", description: "Online Transfer", amount: "-$300.00" },
+      ]),
+      [
+        ["date", "Date", "date"],
+        ["description", "Description", "text"],
+        ["amount", "Amount", "currency"],
+      ],
+    ],
+  ]);
   return doc;
 }
 
@@ -344,33 +517,47 @@ function insuranceCertificate(): DesignDocument {
 
   const policyHolder = box(
     contentW,
-    100,
+    110,
     "Policy holder",
-    [heading(300, "Policy Holder", 3), paragraph(300, 50, "Jane Doe\n123 Main St, City, ST 00000\nPolicy #: INS-000123")],
+    [
+      heading(300, "Policy Holder", 3),
+      paragraph(
+        360,
+        70,
+        "{{ holder_name }}\n{{ holder_address }}\nPolicy #: {{ policy_number }}",
+      ),
+    ],
     { direction: "column", gap: 6, padding: 20 },
   );
 
-  function coverageRow(type: string, limit: string) {
-    return box(
-      contentW - 40,
-      28,
-      "Row",
-      [paragraph(280, 20, type), paragraph(160, 20, limit, "right")],
-      { direction: "row", justify: "space-between", align: "center", padding: 0 },
-      INVISIBLE,
-    );
-  }
+  const covHeader = box(
+    contentW - 40,
+    28,
+    "Column headers",
+    [paragraph(280, 20, "Coverage Type"), paragraph(160, 20, "Limit", "right")],
+    { direction: "row", justify: "space-between", align: "center", padding: 0 },
+    INVISIBLE,
+  );
+  covHeader.style.bold = true;
+
+  const coverageRow = box(
+    contentW - 40,
+    28,
+    "Coverage",
+    [
+      paragraph(280, 20, "{{ coverage.type }}"),
+      paragraph(160, 20, "{{ coverage.limit }}", "right"),
+    ],
+    { direction: "row", justify: "space-between", align: "center", padding: 0 },
+    INVISIBLE,
+  );
+  coverageRow.repeat = { over: "coverages", as: "coverage" };
 
   const coverage = box(
     contentW,
-    220,
+    160,
     "Coverage",
-    [
-      coverageRow("Coverage Type", "Limit"),
-      coverageRow("General Liability", "$1,000,000"),
-      coverageRow("Property Damage", "$500,000"),
-      coverageRow("Personal Injury", "$250,000"),
-    ],
+    [covHeader, coverageRow],
     { direction: "column", gap: 12, padding: 20 },
   );
 
@@ -383,7 +570,7 @@ function insuranceCertificate(): DesignDocument {
         260,
         42,
         "Effective",
-        [paragraph(240, 18, "Effective Date"), heading(240, "01/01/2026", 3)],
+        [paragraph(240, 18, "Effective Date"), heading(240, "{{ effective_date }}", 3)],
         { direction: "column", gap: 4, padding: 0 },
         INVISIBLE,
       ),
@@ -391,7 +578,10 @@ function insuranceCertificate(): DesignDocument {
         260,
         42,
         "Expiration",
-        [paragraph(240, 18, "Expiration Date", "right"), heading(240, "01/01/2027", 3, "right")],
+        [
+          paragraph(240, 18, "Expiration Date", "right"),
+          heading(240, "{{ expiration_date }}", 3, "right"),
+        ],
         { direction: "column", gap: 4, padding: 0, align: "end" },
         INVISIBLE,
       ),
@@ -403,12 +593,40 @@ function insuranceCertificate(): DesignDocument {
     contentW,
     60,
     "Footer",
-    [paragraph(contentW - 40, 40, "Insurer: Acme Mutual Insurance Co.\nAuthorized Signature: ______________________")],
+    [
+      paragraph(
+        contentW - 40,
+        40,
+        "Insurer: {{ insurer_name }}\nAuthorized Signature: ______________________",
+      ),
+    ],
     { direction: "column", padding: 20 },
     INVISIBLE,
   );
 
   placeStacked(doc, [header, policyHolder, coverage, period, footer]);
+  declareVars(doc, [
+    ["holder_name", "Policy holder", "text", "Jane Doe"],
+    ["holder_address", "Holder address", "text", "123 Main St, City, ST 00000"],
+    ["policy_number", "Policy number", "text", "INS-000123"],
+    [
+      "coverages",
+      "Coverages",
+      "list",
+      JSON.stringify([
+        { type: "General Liability", limit: "$1,000,000" },
+        { type: "Property Damage", limit: "$500,000" },
+        { type: "Personal Injury", limit: "$250,000" },
+      ]),
+      [
+        ["type", "Coverage type", "text"],
+        ["limit", "Limit", "currency"],
+      ],
+    ],
+    ["effective_date", "Effective date", "date", "01/01/2026"],
+    ["expiration_date", "Expiration date", "date", "01/01/2027"],
+    ["insurer_name", "Insurer", "text", "Acme Mutual Insurance Co."],
+  ]);
   return doc;
 }
 
@@ -421,16 +639,16 @@ function businessLetter(): DesignDocument {
     contentW,
     70,
     "Sender",
-    [paragraph(contentW, 60, "Your Name\nYour Company\n123 Main St, City, ST 00000")],
+    [paragraph(contentW, 60, "{{ sender_name }}\n{{ sender_company }}\n{{ sender_address }}")],
     { direction: "column", padding: 0 },
     INVISIBLE,
   );
 
   const date = box(
     contentW,
-    24,
+    30,
     "Date",
-    [paragraph(200, 20, "January 1, 2026")],
+    [paragraph(contentW, 24, "{{ letter_date }}")],
     { direction: "column", padding: 0 },
     INVISIBLE,
   );
@@ -439,45 +657,55 @@ function businessLetter(): DesignDocument {
     contentW,
     70,
     "Recipient",
-    [paragraph(contentW, 60, "Recipient Name\nRecipient Company\n456 Market St, City, ST 00000")],
+    [paragraph(contentW, 60, "{{ recipient_name }}\n{{ recipient_company }}\n{{ recipient_address }}")],
     { direction: "column", padding: 0 },
     INVISIBLE,
   );
 
-  const salutation = box(
+  const greeting = box(
     contentW,
-    24,
-    "Salutation",
-    [paragraph(300, 20, "Dear Recipient Name,")],
+    30,
+    "Greeting",
+    [paragraph(contentW, 24, "Dear {{ recipient_name }},")],
     { direction: "column", padding: 0 },
     INVISIBLE,
   );
 
   const body = box(
     contentW,
-    160,
+    220,
     "Body",
-    [
-      paragraph(
-        contentW,
-        150,
-        "I am writing to introduce our services and explore an opportunity to work together. Double-click this paragraph to write your own message — cover the purpose of your letter in the first sentence, then add supporting details in the sentences that follow.",
-      ),
-    ],
+    [paragraph(contentW, 200, "{{ letter_body }}")],
     { direction: "column", padding: 0 },
     INVISIBLE,
   );
 
   const closing = box(
     contentW,
-    70,
+    90,
     "Closing",
-    [paragraph(contentW, 60, "Sincerely,\n\nYour Name")],
+    [paragraph(contentW, 80, "Sincerely,\n\n{{ sender_name }}\n{{ sender_title }}")],
     { direction: "column", padding: 0 },
     INVISIBLE,
   );
 
-  placeStacked(doc, [sender, date, recipient, salutation, body, closing], 60, 80);
+  placeStacked(doc, [sender, date, recipient, greeting, body, closing], 60, 80);
+  declareVars(doc, [
+    ["sender_name", "Sender name", "text", "Alex Rivera"],
+    ["sender_company", "Sender company", "text", "Rivera Consulting"],
+    ["sender_address", "Sender address", "text", "123 Main St, City, ST 00000"],
+    ["sender_title", "Sender title", "text", "Principal"],
+    ["letter_date", "Date", "date", "March 20, 2026"],
+    ["recipient_name", "Recipient name", "text", "Jordan Lee"],
+    ["recipient_company", "Recipient company", "text", "Northwind Trading"],
+    ["recipient_address", "Recipient address", "text", "500 Harbor Ave, City, ST 00000"],
+    [
+      "letter_body",
+      "Letter body",
+      "text",
+      "I am writing to follow up on our recent conversation and outline the next steps we discussed. Please let me know if you have any questions or would like to schedule a call.",
+    ],
+  ]);
   return doc;
 }
 
@@ -673,13 +901,7 @@ function rentalAgreement(): DesignDocument {
     contentW,
     110,
     "Additional terms",
-    [
-      paragraph(
-        contentW - 40,
-        90,
-        "Tenant agrees to pay rent in full on or before the due date each month, keep the property in good condition, and comply with all applicable building and safety codes. Late payments may incur a fee as permitted by local law.",
-      ),
-    ],
+    [paragraph(contentW - 40, 90, "{{ additional_terms }}")],
     { direction: "column", padding: 20 },
   );
 
@@ -720,6 +942,12 @@ function rentalAgreement(): DesignDocument {
     ["monthly_rent", "Monthly rent", "currency", "$1,650.00"],
     ["security_deposit", "Security deposit", "currency", "$1,650.00"],
     ["rent_due_date", "Rent due date", "text", "1st of each month"],
+    [
+      "additional_terms",
+      "Additional terms",
+      "text",
+      "Tenant agrees to pay rent in full on or before the due date each month, keep the property in good condition, and comply with all applicable building and safety codes. Late payments may incur a fee as permitted by local law.",
+    ],
   ]);
 
   return doc;

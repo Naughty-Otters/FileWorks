@@ -258,7 +258,7 @@ describe("ExtractOptionsPanel", () => {
 });
 
 describe("ConvertControls", () => {
-  it("defaults to Standard output layout", async () => {
+  it("defaults target format to Markdown via its own popup", async () => {
     const user = userEvent.setup();
     render(
       <ConvertControls
@@ -271,11 +271,20 @@ describe("ConvertControls", () => {
         quotaBlocked={false}
         onConvert={vi.fn()}
         onStop={vi.fn()}
+        designTargets={[
+          { id: "builtin:invoice", name: "Client invoice", description: "Bill-to and totals" },
+        ]}
       />,
     );
+    expect(screen.queryByLabelText("Output layout")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Options" }));
-    expect(screen.getByLabelText("Output layout")).toHaveValue("standard");
+    expect(screen.queryByLabelText("Output layout")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Return file type")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Target format" }));
+    expect(screen.getByRole("dialog", { name: "Target format" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Markdown/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /Designed template/i })).toBeInTheDocument();
+    expect(screen.getByLabelText("Designed template")).toHaveDisplayValue("Client invoice");
   });
 
   it("converts and opens options", async () => {

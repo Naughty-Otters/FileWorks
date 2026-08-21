@@ -53,7 +53,8 @@ type ResultPanelProps = {
   templateId?: string | null;
   templateName?: string | null;
   templateWarning?: string | null;
-  templateReturnFileType?: "docx" | "pdf";
+  templateReturnFileType?: "markdown" | "docx" | "pdf";
+  onUpdateFilledFromSource?: () => void;
 };
 
 const DOWNLOAD_OPTIONS: Array<{ id: DownloadFormat | "pdf"; label: string }> = [
@@ -110,6 +111,7 @@ export function ResultPanel({
   templateName = null,
   templateWarning = null,
   templateReturnFileType = "docx",
+  onUpdateFilledFromSource,
 }: ResultPanelProps) {
   const [copied, setCopied] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
@@ -224,6 +226,7 @@ export function ResultPanel({
     if (!templateId) return;
     setExporting(true);
     try {
+      const base = templateName || "template-output";
       if (templateReturnFileType === "pdf") {
         const win = window.open("", "_blank");
         if (win) {
@@ -234,12 +237,30 @@ export function ResultPanel({
         }
         return;
       }
-      const rendered = await renderTemplate(templateId, { markdown, variables: { markdown }, format: "docx" });
+      const fill = markdown.trim() ? "auto" : "defaults";
+      if (templateReturnFileType === "markdown") {
+        const rendered = await renderTemplate(templateId, {
+          markdown,
+          format: "markdown",
+          fill,
+        });
+        downloadTextFile(
+          rendered.markdown || "",
+          `${base}.md`,
+          "text/markdown;charset=utf-8",
+        );
+        return;
+      }
+      const rendered = await renderTemplate(templateId, {
+        markdown,
+        format: "docx",
+        fill,
+      });
       if (!rendered.docx) throw new Error("The render endpoint did not return a DOCX file");
       const url = URL.createObjectURL(rendered.docx);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${templateName || "template-output"}.docx`;
+      anchor.download = `${base}.docx`;
       anchor.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -247,16 +268,31 @@ export function ResultPanel({
     }
   }
 
+  const hasFilled = Boolean(renderedHtml && templateId);
   const resultTab =
-    view === "json" ? "json" : markdownMode === "edit" ? "source" : "markdown";
+    view === "json"
+      ? "json"
+      : hasFilled && markdownMode === "preview"
+        ? "filled"
+        : markdownMode === "edit"
+          ? "source"
+          : "markdown";
 
-  function setResultTab(tab: "markdown" | "source" | "json") {
+  function setResultTab(tab: "filled" | "markdown" | "source" | "json") {
     if (tab === "json") {
       onViewChange("json");
       return;
     }
     onViewChange("markdown");
-    onMarkdownModeChange?.(tab === "source" ? "edit" : "preview");
+    if (tab === "filled") {
+      onMarkdownModeChange?.("preview");
+      return;
+    }
+    if (tab === "source") {
+      onMarkdownModeChange?.("edit");
+      return;
+    }
+    onMarkdownModeChange?.("preview");
   }
 
   function handleFormatCommand(command: FormatCommand, extra?: FormatExtra) {
@@ -278,7 +314,12 @@ export function ResultPanel({
     });
   }
 
-  const showToolbar = view === "markdown" && Boolean(markdown) && !loading && !error;
+  const showToolbar =
+    view === "markdown" &&
+    Boolean(markdown) &&
+    !loading &&
+    !error &&
+    resultTab !== "filled";
 
   return (
     <section className="flex h-full min-h-0 flex-col">
@@ -295,9 +336,32 @@ export function ResultPanel({
             </p>
           </div>
           {actions ? <div className="flex shrink-0 items-center">{actions}</div> : null}
-          {renderedHtml && templateId ? (
-            <button type="button" disabled={exporting} onClick={handleTemplateDownload} className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)]">
-              <Download size={12} /> {templateReturnFileType.toUpperCase()}
+          {hasFilled ? (
+            <button
+              type="button"
+              disabled={exporting}
+              title={
+                templateReturnFileType === "pdf"
+                  ? "Print the filled preview as PDF"
+                  : "Export filled document (may use 1 AI credit to refresh fill)"
+              }
+              onClick={handleTemplateDownload}
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)]"
+            >
+              <Download size={12} />
+              {templateReturnFileType === "markdown"
+                ? "MD"
+                : templateReturnFileType.toUpperCase()}
+            </button>
+          ) : null}
+          {hasFilled && onUpdateFilledFromSource ? (
+            <button
+              type="button"
+              disabled={exporting || loading || !markdown.trim()}
+              onClick={onUpdateFilledFromSource}
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)] disabled:opacity-40"
+            >
+              Update from source
             </button>
           ) : null}
           {showToolbar && !toolbarVisible ? (
@@ -305,11 +369,19 @@ export function ResultPanel({
           ) : null}
           <div className="inline-flex rounded-full border border-[var(--line)] bg-[var(--bg)] p-0.5">
             {(
-              [
-                { id: "markdown", label: "Preview", icon: Eye },
-                { id: "source", label: "Source", icon: Pencil },
-                { id: "json", label: "JSON", icon: Code2 },
-              ] as const
+              (
+                hasFilled
+                  ? ([
+                      { id: "filled", label: "Filled", icon: Eye },
+                      { id: "source", label: "Source", icon: Pencil },
+                      { id: "json", label: "JSON", icon: Code2 },
+                    ] as const)
+                  : ([
+                      { id: "markdown", label: "Preview", icon: Eye },
+                      { id: "source", label: "Source", icon: Pencil },
+                      { id: "json", label: "JSON", icon: Code2 },
+                    ] as const)
+              )
             ).map((tab) => (
               <button
                 key={tab.id}
@@ -398,17 +470,21 @@ export function ResultPanel({
             <div className="flex min-h-0 flex-1 items-center justify-center px-8 text-center">
               <p className="max-w-md text-sm text-[var(--danger)]">{error}</p>
             </div>
-          ) : renderedHtml ? (
+          ) : hasFilled && resultTab === "filled" ? (
             <div className="min-h-0 flex-1 overflow-auto bg-white text-slate-900">
-              {templateWarning ? <p className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">{templateWarning}</p> : null}
-              <div className="p-5" dangerouslySetInnerHTML={{ __html: renderedHtml }} />
+              {templateWarning ? (
+                <p className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+                  {templateWarning}
+                </p>
+              ) : null}
+              <div className="p-5" dangerouslySetInnerHTML={{ __html: renderedHtml || "" }} />
             </div>
           ) : empty ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center text-[var(--ink-muted)]">
               <FileOutput size={28} className="opacity-50" />
               <p className="max-w-sm text-sm">Drop a file and convert — editable Markdown lands here.</p>
             </div>
-          ) : view === "markdown" && markdownMode === "preview" ? (
+          ) : view === "markdown" && markdownMode === "preview" && !hasFilled ? (
             <div className="min-h-0 flex-1 overflow-hidden">
               <EditableMarkdownPreview
                 key={`${lineStart}-${lineEnd}`}
@@ -417,16 +493,23 @@ export function ResultPanel({
                 onChange={onMarkdownChange ? applyVisibleMarkdown : undefined}
               />
             </div>
-          ) : view === "markdown" && markdownMode === "edit" ? (
-            <textarea
-              key={`${lineStart}-${lineEnd}`}
-              ref={sourceRef}
-              value={visibleText}
-              onChange={(e) => applyVisibleMarkdown(e.target.value)}
-              spellCheck={false}
-              className="min-h-0 flex-1 w-full resize-none overflow-auto border-0 bg-transparent p-5 font-[family-name:var(--font-mono)] text-[13px] leading-relaxed text-[var(--ink)] outline-none md:p-6"
-              placeholder="Edit Markdown source…"
-            />
+          ) : view === "markdown" && (markdownMode === "edit" || resultTab === "source") ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {templateWarning && !renderedHtml ? (
+                <p className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+                  {templateWarning}
+                </p>
+              ) : null}
+              <textarea
+                key={`${lineStart}-${lineEnd}`}
+                ref={sourceRef}
+                value={visibleText}
+                onChange={(e) => applyVisibleMarkdown(e.target.value)}
+                spellCheck={false}
+                className="min-h-0 flex-1 w-full resize-none overflow-auto border-0 bg-transparent p-5 font-[family-name:var(--font-mono)] text-[13px] leading-relaxed text-[var(--ink)] outline-none md:p-6"
+                placeholder="Edit Markdown source…"
+              />
+            </div>
           ) : (
             <pre
               key={`${lineStart}-${lineEnd}`}
@@ -435,7 +518,7 @@ export function ResultPanel({
               <code className="animate-rise">{visibleText}</code>
             </pre>
           )}
-          {paginated && !loading && !error && !empty ? (
+          {paginated && !loading && !error && !empty && resultTab !== "filled" ? (
             <div className="flex shrink-0 items-center gap-2 border-t border-[var(--line)] px-3 py-2">
               <p className="min-w-0 flex-1 truncate text-[11px] text-[var(--ink-muted)]">
                 Pages {startPage + 1}–{endPage} of {pageCount}

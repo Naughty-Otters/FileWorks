@@ -706,6 +706,10 @@ export type TemplateRecord = {
   id: string;
   name: string;
   document: DesignDocument;
+  description?: string | null;
+  page_label?: string | null;
+  variable_count?: number;
+  is_static?: boolean;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -716,10 +720,36 @@ function normalizeTemplate(payload: unknown): TemplateRecord {
     : payload) as Record<string, unknown>;
   const rawDocument = source.document ?? source.design_document ?? source.content;
   const document = typeof rawDocument === "string" ? JSON.parse(rawDocument) : rawDocument;
+  const variableCount =
+    typeof source.variable_count === "number"
+      ? source.variable_count
+      : Array.isArray((document as DesignDocument | null)?.variables)
+        ? (document as DesignDocument).variables.length
+        : 0;
   return {
     id: String(source.id),
     name: String(source.name || source.title || "Untitled template"),
-    document: document as DesignDocument,
+    document: (document || {
+      version: 2,
+      pageSize: { w: 850, h: 1100 },
+      root: {
+        id: "root",
+        kind: "box",
+        label: "Document",
+        x: 0,
+        y: 0,
+        w: 850,
+        h: 1100,
+        style: {},
+        layout: null,
+        children: [],
+      },
+      variables: [],
+    }) as DesignDocument,
+    description: typeof source.description === "string" ? source.description : null,
+    page_label: typeof source.page_label === "string" ? source.page_label : null,
+    variable_count: variableCount,
+    is_static: typeof source.is_static === "boolean" ? source.is_static : undefined,
     created_at: typeof source.created_at === "string" ? source.created_at : null,
     updated_at: typeof source.updated_at === "string" ? source.updated_at : null,
   };
@@ -733,7 +763,12 @@ export async function fetchTemplates(): Promise<TemplateRecord[]> {
   return items.map(normalizeTemplate);
 }
 
-export async function createTemplate(input: { name: string; document: DesignDocument }): Promise<TemplateRecord> {
+export async function createTemplate(input: {
+  name: string;
+  document: DesignDocument;
+  description?: string | null;
+  page_label?: string | null;
+}): Promise<TemplateRecord> {
   const res = await apiFetch("/api/templates", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -769,13 +804,20 @@ export async function deleteTemplate(id: string): Promise<void> {
 
 export type TemplateRenderResponse = {
   html: string;
+  markdown?: string;
   filename?: string;
   docx?: Blob;
+  fillMode?: string | null;
 };
 
 export async function renderTemplate(
   id: string,
-  input: { markdown: string; variables?: Record<string, unknown>; format?: "html" | "docx" },
+  input: {
+    markdown: string;
+    variables?: Record<string, unknown>;
+    format?: "html" | "docx" | "pdf" | "markdown";
+    fill?: "auto" | "defaults" | "none";
+  },
 ): Promise<TemplateRenderResponse> {
   const res = await apiFetch(`/api/templates/${encodeURIComponent(id)}/render`, {
     method: "POST",
@@ -784,12 +826,20 @@ export async function renderTemplate(
   });
   if (!res.ok) throw new Error(await readError(res, `Template render failed (${res.status})`));
   const contentType = res.headers.get("Content-Type") || "";
+  const fillMode = res.headers.get("X-Template-Fill");
   if (contentType.includes("application/json")) {
     const payload = await res.json();
-    return { html: payload.html ?? payload.rendered_html ?? "", filename: payload.filename };
+    return {
+      html: payload.html ?? payload.rendered_html ?? "",
+      filename: payload.filename,
+      fillMode,
+    };
   }
   if (input.format === "docx" || contentType.includes("wordprocessingml")) {
-    return { html: "", docx: await res.blob() };
+    return { html: "", docx: await res.blob(), fillMode };
   }
-  return { html: await res.text() };
+  if (input.format === "markdown" || contentType.includes("text/markdown")) {
+    return { html: "", markdown: await res.text(), fillMode };
+  }
+  return { html: await res.text(), fillMode };
 }

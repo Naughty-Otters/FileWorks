@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { Clock3, FileImage, WifiOff } from "lucide-react";
 import {
   cancelExtract,
+  createTemplate,
   deleteHistoryItem,
   extractDocument,
   fetchHealth,
@@ -40,11 +41,23 @@ import {
   saveWorkspacePrefs,
   type MarkdownMode,
 } from "@/lib/workspace-session";
+import { BUILT_IN_TEMPLATES, builtInTemplate } from "@/design-pad/templates";
 import { isStaticTemplate } from "@/design-pad/templating";
 
 const HistoryPanel = dynamic(
   () => import("@/components/history-panel").then((mod) => mod.HistoryPanel),
 );
+
+const BUILTIN_PREFIX = "builtin:";
+
+function starterPageLabel(starterId: string) {
+  return `starter:${starterId}`;
+}
+
+function parseBuiltinLayout(layout: string): string | null {
+  if (!layout.startsWith(BUILTIN_PREFIX)) return null;
+  return layout.slice(BUILTIN_PREFIX.length) || null;
+}
 
 export function Workspace() {
   const [file, setFile] = useState<File | null>(null);
@@ -69,9 +82,11 @@ export function Workspace() {
   const [markdownToolbar, setMarkdownToolbar] = useState(true);
   const [templates, setTemplates] = useState<TemplateRecord[]>([]);
   const [outputLayout, setOutputLayout] = useState("standard");
-  const [returnFileType, setReturnFileType] = useState<"docx" | "pdf">("docx");
+  const [returnFileType, setReturnFileType] = useState<"markdown" | "docx" | "pdf">("markdown");
   const [renderedHtml, setRenderedHtml] = useState<string | null>(null);
   const [templateWarning, setTemplateWarning] = useState<string | null>(null);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [activeTemplateName, setActiveTemplateName] = useState<string | null>(null);
   const convertAbortRef = useRef<AbortController | null>(null);
   const convertRunIdRef = useRef<string | null>(null);
   const historySelectGenRef = useRef(0);
@@ -274,8 +289,82 @@ export function Workspace() {
   }, [me]);
 
   const signedIn = Boolean(me?.user);
-  const selectedTemplate = signedIn ? templates.find((template) => template.id === outputLayout) || null : null;
-  const selectedTemplateStatic = selectedTemplate ? isStaticTemplate(selectedTemplate.document) : false;
+  const designTargets = BUILT_IN_TEMPLATES.map((item) => ({
+    id: `${BUILTIN_PREFIX}${item.id}`,
+    name: item.name,
+    description: item.description,
+  }));
+  const fillableTemplates = signedIn
+    ? templates.filter((template) => {
+        const declared = template.variable_count ?? template.document?.variables?.length ?? 0;
+        if (declared <= 0) return false;
+        // Starter copies used for Home fill stay under Design targets, not My templates.
+        if (template.page_label?.startsWith("starter:")) return false;
+        return true;
+      })
+    : [];
+  const builtinStarterId = parseBuiltinLayout(outputLayout);
+  const selectedBuiltIn = builtinStarterId ? builtInTemplate(builtinStarterId) : null;
+  const selectedSaved =
+    signedIn && outputLayout !== "standard" && !builtinStarterId
+      ? fillableTemplates.find((template) => template.id === outputLayout) || null
+      : null;
+  const hasTargetTemplate = Boolean(selectedBuiltIn || selectedSaved);
+  const selectedTemplateStatic = selectedSaved
+    ? isStaticTemplate(selectedSaved.document)
+    : selectedBuiltIn
+      ? false
+      : false;
+
+  useEffect(() => {
+    if (outputLayout === "standard") return;
+    if (builtinStarterId) {
+      if (!builtInTemplate(builtinStarterId)) setOutputLayout("standard");
+      return;
+    }
+    if (!fillableTemplates.some((template) => template.id === outputLayout)) {
+      setOutputLayout("standard");
+    }
+  }, [builtinStarterId, fillableTemplates, outputLayout]);
+
+  async function resolveTargetTemplate(): Promise<{
+    id: string;
+    name: string;
+    isStatic: boolean;
+  } | null> {
+    if (outputLayout === "standard") return null;
+    if (builtinStarterId) {
+      const builtIn = builtInTemplate(builtinStarterId);
+      if (!builtIn) return null;
+      const pageLabel = starterPageLabel(builtinStarterId);
+      const existing = templates.find((template) => template.page_label === pageLabel);
+      if (existing) {
+        return {
+          id: existing.id,
+          name: existing.name,
+          isStatic: isStaticTemplate(existing.document),
+        };
+      }
+      const created = await createTemplate({
+        name: builtIn.name,
+        description: builtIn.description,
+        page_label: pageLabel,
+        document: builtIn.build(),
+      });
+      setTemplates((current) => [created, ...current.filter((item) => item.id !== created.id)]);
+      return {
+        id: created.id,
+        name: created.name,
+        isStatic: isStaticTemplate(created.document),
+      };
+    }
+    if (!selectedSaved) return null;
+    return {
+      id: selectedSaved.id,
+      name: selectedSaved.name,
+      isStatic: isStaticTemplate(selectedSaved.document),
+    };
+  }
   const quotaBlocked =
     signedIn && (me?.quota.remaining_day === 0 || me?.quota.remaining_month === 0);
   // Never cover the workspace with a boot gate. New visitors should see the
@@ -301,7 +390,7 @@ export function Workspace() {
     stopActiveRun();
   }
 
-  async function handleExtract() {
+  async function handleExtract(opts?: { fill?: "auto" | "defaults" }) {
     if (uiLocked || (!file && !selectedTemplateStatic) || !me?.user || !me.permissions["extract"]) return;
     stopActiveRun();
     const controller = new AbortController();
@@ -313,14 +402,17 @@ export function Workspace() {
     setError(null);
     setRenderedHtml(null);
     setTemplateWarning(null);
+    setActiveTemplateId(null);
+    setActiveTemplateName(null);
     try {
+      const target = hasTargetTemplate ? await resolveTargetTemplate() : null;
       const data = file
         ? await extractDocument(file, "both", extractOptions, controller.signal, {
             directUpload: health?.direct_upload === true || health?.storage_backend === "s3",
             runId,
           })
         : {
-            filename: selectedTemplate?.name || "Template output",
+            filename: target?.name || "Template output",
             content_type: "text/html",
             size_bytes: 0,
             engine: "FileWorks",
@@ -337,15 +429,32 @@ export function Workspace() {
       setActiveRegionId(null);
       if (!data.markdown && data.json) setView("json");
       else setView("markdown");
-      if (selectedTemplate) {
-        const rendered = await renderTemplate(selectedTemplate.id, {
-          markdown: data.markdown || "",
-          variables: { markdown: data.markdown || "" },
-          format: "html",
-        });
-        setRenderedHtml(rendered.html);
-        if (selectedTemplateStatic) {
-          setTemplateWarning("This template is static; its output ignores the uploaded document.");
+      if (target) {
+        setActiveTemplateId(target.id);
+        setActiveTemplateName(target.name);
+        const fill =
+          opts?.fill ?? (target.isStatic || !(data.markdown || "").trim() ? "defaults" : "auto");
+        try {
+          const rendered = await renderTemplate(target.id, {
+            markdown: data.markdown || "",
+            format: "html",
+            fill,
+          });
+          setRenderedHtml(rendered.html);
+          setMarkdownMode("preview");
+          if (target.isStatic) {
+            setTemplateWarning("This template is static; its output ignores the uploaded document.");
+          } else if (fill === "defaults") {
+            setTemplateWarning("Showing sample defaults (AI fill skipped).");
+          } else {
+            setTemplateWarning(null);
+          }
+        } catch (renderErr) {
+          setRenderedHtml(null);
+          setMarkdownMode("edit");
+          setTemplateWarning(
+            renderErr instanceof Error ? renderErr.message : "Template fill failed",
+          );
         }
       }
       if (file) {
@@ -367,6 +476,9 @@ export function Workspace() {
       setResult(null);
       setMarkdownDraft("");
       setActiveRegionId(null);
+      setRenderedHtml(null);
+      setActiveTemplateId(null);
+      setActiveTemplateName(null);
       setError(err instanceof Error ? err.message : "Conversion failed");
     } finally {
       if (convertAbortRef.current === controller) {
@@ -375,6 +487,37 @@ export function Workspace() {
       if (convertRunIdRef.current === runId) {
         convertRunIdRef.current = null;
       }
+      setLoading(false);
+    }
+  }
+
+  async function handleUpdateFilledFromSource() {
+    if (!hasTargetTemplate) return;
+    const markdown = markdownDraft || result?.markdown || "";
+    if (!markdown.trim()) {
+      setTemplateWarning("Add source markdown before updating the filled document.");
+      return;
+    }
+    setBusyKind("convert");
+    setLoading(true);
+    try {
+      const target = await resolveTargetTemplate();
+      if (!target || target.isStatic) return;
+      setActiveTemplateId(target.id);
+      setActiveTemplateName(target.name);
+      const rendered = await renderTemplate(target.id, {
+        markdown,
+        format: "html",
+        fill: "auto",
+      });
+      setRenderedHtml(rendered.html);
+      setMarkdownMode("preview");
+      setView("markdown");
+      setTemplateWarning(null);
+      await reloadSession().catch(() => undefined);
+    } catch (err) {
+      setTemplateWarning(err instanceof Error ? err.message : "Template fill failed");
+    } finally {
       setLoading(false);
     }
   }
@@ -388,6 +531,8 @@ export function Workspace() {
     setError(null);
     setRenderedHtml(null);
     setTemplateWarning(null);
+    setActiveTemplateId(null);
+    setActiveTemplateName(null);
     setSelectedId(null);
     setActiveRegionId(null);
   }
@@ -469,14 +614,19 @@ export function Workspace() {
       fileReady={Boolean(file) || selectedTemplateStatic}
       quotaBlocked={Boolean(quotaBlocked)}
       onConvert={handleExtract}
+      onConvertWithDefaults={() => handleExtract({ fill: "defaults" })}
       onStop={handleStopConvert}
       outputLayout={signedIn ? outputLayout : "standard"}
-      templates={signedIn ? templates : []}
+      designTargets={signedIn ? designTargets : []}
+      templates={fillableTemplates.map((template) => ({ id: template.id, name: template.name }))}
+      templateNeedsAi={hasTargetTemplate && !selectedTemplateStatic}
       returnFileType={returnFileType}
       onOutputLayoutChange={(value) => {
         setOutputLayout(value);
         setRenderedHtml(null);
         setTemplateWarning(null);
+        setActiveTemplateId(null);
+        setActiveTemplateName(null);
       }}
       onReturnFileTypeChange={setReturnFileType}
     />
@@ -616,10 +766,13 @@ export function Workspace() {
                 )
               }
               renderedHtml={renderedHtml}
-              templateId={selectedTemplate?.id || null}
-              templateName={selectedTemplate?.name || null}
+              templateId={activeTemplateId}
+              templateName={activeTemplateName}
               templateWarning={templateWarning}
               templateReturnFileType={returnFileType}
+              onUpdateFilledFromSource={
+                hasTargetTemplate && !selectedTemplateStatic ? handleUpdateFilledFromSource : undefined
+              }
             />
           </div>
           {historyOpen ? (

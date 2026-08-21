@@ -18,9 +18,10 @@ from app.core.config import get_settings
 from app.db.models import Base
 from app.db.session import get_db
 from app.processing.template.extract import extract_template_context, extraction_schema
-from app.processing.template.render import render_docx, render_html
+from app.processing.template.render import render_docx, render_html, render_markdown
 from app.processing.template.runtime import (
     auto_layout,
+    coalesce_context,
     default_context,
     expand_repeats,
     interpolate,
@@ -493,3 +494,170 @@ def test_variable_schema_label_fallback() -> None:
         }
     )
     assert default_context(document)["x"] == "x"
+
+
+def test_coalesce_context_prefers_nonempty_layers() -> None:
+    defaults = {"name": "Jane Doe", "total": "$10.00", "items": [{"a": 1}], "note": "sample"}
+    extracted = {"name": "Ada Lovelace", "total": "", "items": [], "note": "  "}
+    overrides = {"note": "explicit"}
+    merged = coalesce_context(defaults, extracted, overrides)
+    assert merged["name"] == "Ada Lovelace"
+    assert merged["total"] == "$10.00"
+    assert merged["items"] == [{"a": 1}]
+    assert merged["note"] == "explicit"
+
+
+def test_render_markdown_linearizes_tree() -> None:
+    document = DesignDocument.model_validate(
+        {
+            "version": 2,
+            "pageSize": {"w": 850, "h": 1100},
+            "root": {
+                "id": "root",
+                "kind": "box",
+                "label": "Document",
+                "x": 0,
+                "y": 0,
+                "w": 850,
+                "h": 1100,
+                "children": [
+                    {
+                        "id": "h",
+                        "kind": "heading",
+                        "level": 1,
+                        "label": "Title",
+                        "x": 0,
+                        "y": 0,
+                        "w": 200,
+                        "h": 40,
+                    },
+                    {
+                        "id": "p",
+                        "kind": "paragraph",
+                        "label": "Body copy",
+                        "x": 0,
+                        "y": 50,
+                        "w": 200,
+                        "h": 40,
+                    },
+                ],
+            },
+            "variables": [],
+        }
+    )
+    md = render_markdown(document)
+    assert "# Title" in md
+    assert "Body copy" in md
+
+
+def test_render_ai_fill_uses_document_values_not_only_defaults(monkeypatch) -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    user_id = uuid4()
+    user = SimpleNamespace(id=user_id, plan="basic")
+    principal = Principal(plan=get_plan("basic"), user=user)  # type: ignore[arg-type]
+    app = FastAPI()
+    app.include_router(router, prefix="/api")
+    app.dependency_overrides[get_principal] = lambda: principal
+    app.dependency_overrides[get_db] = lambda: session
+    get_document_store.cache_clear()
+    get_template_store.cache_clear()
+    settings = get_settings()
+    settings.storage_backend = "local"
+    client = TestClient(app)
+    created = client.post(
+        "/api/templates",
+        json={
+            "name": "Invoice",
+            "document": {
+                "version": 2,
+                "pageSize": {"w": 850, "h": 1100},
+                "root": {
+                    "id": "root",
+                    "kind": "box",
+                    "label": "Document",
+                    "x": 0,
+                    "y": 0,
+                    "w": 850,
+                    "h": 1100,
+                    "children": [
+                        {
+                            "id": "p",
+                            "kind": "paragraph",
+                            "label": "Bill {{ client_name }} total {{ total }}",
+                            "x": 20,
+                            "y": 20,
+                            "w": 400,
+                            "h": 60,
+                        }
+                    ],
+                },
+                "variables": [
+                    {
+                        "id": "v1",
+                        "name": "client_name",
+                        "label": "Client",
+                        "type": "text",
+                        "sampleValue": "Sample Client",
+                    },
+                    {
+                        "id": "v2",
+                        "name": "total",
+                        "label": "Total",
+                        "type": "currency",
+                        "sampleValue": "$0.00",
+                    },
+                ],
+            },
+        },
+    )
+    assert created.status_code == 201, created.text
+    template_id = created.json()["id"]
+
+    def fake_extract(document, markdown, engine=None):
+        assert "Northwind" in markdown
+        return {"client_name": "Northwind Trading", "total": "$2,750.00"}
+
+    monkeypatch.setattr(
+        "app.api.template_routes.extract_template_context",
+        fake_extract,
+    )
+    rendered = client.post(
+        f"/api/templates/{template_id}/render",
+        json={
+            "format": "html",
+            "fill": "auto",
+            "markdown": "Invoice for Northwind Trading totaling $2,750.00",
+        },
+    )
+    assert rendered.status_code == 200, rendered.text
+    assert rendered.headers.get("X-Template-Fill") == "ai"
+    assert "Northwind Trading" in rendered.text
+    assert "$2,750.00" in rendered.text
+    assert "Sample Client" not in rendered.text
+
+    defaults_only = client.post(
+        f"/api/templates/{template_id}/render",
+        json={"format": "html", "fill": "defaults"},
+    )
+    assert defaults_only.status_code == 200
+    assert defaults_only.headers.get("X-Template-Fill") == "defaults"
+    assert "Sample Client" in defaults_only.text
+
+    md = client.post(
+        f"/api/templates/{template_id}/render",
+        json={"format": "markdown", "fill": "defaults"},
+    )
+    assert md.status_code == 200
+    assert "text/markdown" in md.headers.get("content-type", "")
+    assert "Sample Client" in md.text
+
+    assert client.delete(f"/api/templates/{template_id}").status_code == 200
+    session.close()
+    get_template_store.cache_clear()
+    get_document_store.cache_clear()

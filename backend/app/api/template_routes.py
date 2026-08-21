@@ -15,9 +15,10 @@ from app.auth.quota import AI_ACTION, assert_can_use_ai
 from app.db.models import UsageEvent, UserTemplate
 from app.db.session import get_db
 from app.processing.template.extract import extract_template_context
-from app.processing.template.render import render_docx, render_html
+from app.processing.template.render import render_docx, render_html, render_markdown
 from app.processing.template.runtime import (
     auto_layout,
+    coalesce_context,
     default_context,
     expand_repeats,
     template_analysis,
@@ -73,7 +74,8 @@ class TemplateRenderRequest(BaseModel):
     context: dict[str, Any] = Field(
         default_factory=dict, validation_alias=AliasChoices("context", "variables")
     )
-    format: Literal["html", "docx", "pdf"] = "html"
+    format: Literal["html", "docx", "pdf", "markdown"] = "html"
+    fill: Literal["auto", "defaults", "none"] = "auto"
 
 
 def _workspace(principal: Principal, db: Session | None) -> tuple[str, Session]:
@@ -278,13 +280,37 @@ def render_template(
     row = _owned(session, principal.user_id, template_id)
     document = _load_document(owner_id, template_id)
     is_static, warnings = template_analysis(document)
-    # Start from each variable's default value, then layer request context on top.
     defaults = default_context(document)
-    context = {**defaults, **dict(body.context)}
+    overrides = dict(body.context)
     needed = set(document.variable_map())
     needed.update(path.split(".", 1)[0] for path in used_variables(document))
-    missing = needed - set(context)
-    if not is_static and missing and (body.source_markdown or "").strip():
+    markdown = (body.source_markdown or "").strip()
+    fill_mode = "static" if is_static else body.fill
+    extracted: dict[str, Any] = {}
+
+    if is_static:
+        context = coalesce_context(defaults, None, overrides)
+        fill_mode = "static"
+    elif body.fill == "none":
+        context = dict(overrides)
+        missing = needed - set(context)
+        if missing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing template context: {', '.join(sorted(missing))}",
+            )
+        fill_mode = "none"
+    elif body.fill == "defaults" or not markdown:
+        context = coalesce_context(defaults, None, overrides)
+        missing = needed - set(context)
+        if missing and body.fill != "defaults":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing template context: {', '.join(sorted(missing))}",
+            )
+        fill_mode = "defaults"
+    else:
+        # auto + source markdown: always AI-fill; defaults only coalesce empties.
         assert_can_use_ai(
             session,
             user_id=principal.user_id,
@@ -292,19 +318,26 @@ def render_template(
             use_ai=True,
             translate=False,
         )
-        extracted = extract_template_context(document, body.source_markdown or "")
-        # Defaults < AI extract < explicit request context.
-        context = {**defaults, **extracted, **dict(body.context)}
+        extracted = extract_template_context(document, markdown)
+        context = coalesce_context(defaults, extracted, overrides)
         session.add(UsageEvent(user_id=principal.user_id, action=AI_ACTION))
-    elif not is_static and missing:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Missing template context: {', '.join(sorted(missing))}",
-        )
+        fill_mode = "ai"
+
     expanded = expand_repeats(document, context)
     laid_out, layout_warnings = auto_layout(expanded)
     warning_header = " | ".join([*warnings, *layout_warnings])
-    headers = {"X-Template-Warnings": warning_header[:1000]} if warning_header else {}
+    filled_keys = sorted(
+        key
+        for key in extracted
+        if key in context and extracted.get(key) == context.get(key) and extracted.get(key) not in (None, "", [], {})
+    )
+    headers = {
+        "X-Template-Fill": fill_mode,
+    }
+    if filled_keys:
+        headers["X-Template-Filled-Keys"] = ",".join(filled_keys)[:1000]
+    if warning_header:
+        headers["X-Template-Warnings"] = warning_header[:1000]
     if body.format == "docx":
         data = render_docx(laid_out, title=row.name)
         headers["Content-Disposition"] = f'attachment; filename="{row.id}.docx"'
@@ -313,6 +346,10 @@ def render_template(
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers=headers,
         )
+    if body.format == "markdown":
+        text = render_markdown(laid_out)
+        headers["Content-Disposition"] = f'attachment; filename="{row.id}.md"'
+        return Response(content=text, media_type="text/markdown; charset=utf-8", headers=headers)
     html = render_html(laid_out, title=row.name)
     if body.format == "pdf":
         headers["X-FileWorks-PDF-Mode"] = "browser-print"

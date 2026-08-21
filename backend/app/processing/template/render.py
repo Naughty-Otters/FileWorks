@@ -97,3 +97,32 @@ def render_docx(document: DesignDocument, *, title: str = "Document") -> bytes:
     buffer = BytesIO()
     output.save(buffer)
     return buffer.getvalue()
+
+
+def render_markdown(document: DesignDocument) -> str:
+    """Linear Markdown of the expanded design tree (filled content, not design JSON)."""
+    lines: list[str] = []
+
+    def walk(node: DesignNode) -> None:
+        if node.type == "heading":
+            level = max(1, min(int(node.level or 1), 6))
+            text = (node.label or "").strip()
+            if text:
+                lines.append(f"{'#' * level} {text}")
+                lines.append("")
+        elif node.type == "paragraph":
+            text = (node.label or "").strip()
+            if text:
+                lines.append(text)
+                lines.append("")
+        elif node.type == "image":
+            src = (node.image_src or "").strip()
+            alt = (getattr(node, "alt", None) or node.label or "image").strip()
+            if src:
+                lines.append(f"![{alt}]({src})")
+                lines.append("")
+        for child in node.children:
+            walk(child)
+
+    walk(document.root)
+    return "\n".join(lines).strip() + "\n"

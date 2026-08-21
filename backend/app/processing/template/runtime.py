@@ -67,6 +67,44 @@ def default_context(document: DesignDocument) -> dict[str, Any]:
     return {name: _parse_default(variable) for name, variable in document.variable_map().items()}
 
 
+def _is_empty_value(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    if isinstance(value, (list, dict, tuple)):
+        return len(value) == 0
+    return False
+
+
+def coalesce_context(
+    defaults: Mapping[str, Any],
+    extracted: Mapping[str, Any] | None = None,
+    overrides: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Merge layers field-wise: non-empty override > non-empty extracted > default.
+
+    Empty AI / override values fall through so sample defaults still fill gaps.
+    """
+    extracted = extracted or {}
+    overrides = overrides or {}
+    keys = set(defaults) | set(extracted) | set(overrides)
+    merged: dict[str, Any] = {}
+    for key in keys:
+        for layer in (overrides, extracted, defaults):
+            if key in layer and not _is_empty_value(layer[key]):
+                merged[key] = layer[key]
+                break
+        else:
+            if key in overrides:
+                merged[key] = overrides[key]
+            elif key in extracted:
+                merged[key] = extracted[key]
+            else:
+                merged[key] = defaults.get(key)
+    return merged
+
+
 def resolve_path(context: Mapping[str, Any], path: str) -> Any:
     """Resolve a dotted data path without attributes, calls, or expressions."""
     if not TOKEN_RE.fullmatch("{{" + path + "}}"):
