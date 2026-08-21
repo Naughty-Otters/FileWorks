@@ -76,7 +76,9 @@ export function PricingPage() {
       }
       if (params.get("checkout") === "cancel") {
         handledReturn.current = true;
-        setNotice("Checkout canceled. Your current plan is unchanged.");
+        setNotice(
+          "Checkout canceled — no charge. You can keep using Free Basic (5 conversions / day) or pick a paid role when you are ready.",
+        );
         return;
       }
       const subscribe = params.get("subscribe");
@@ -173,8 +175,9 @@ export function PricingPage() {
         <div>
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Workspace</h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            File conversions in the app. Guest and Basic are free. Pro and Premium are monthly
-            subscriptions.
+            File conversions in the app.{" "}
+            <span className="font-medium text-[var(--accent-strong)]">Guest and Basic are Free</span>
+            — no card required. Pro and Premium are monthly subscriptions.
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -192,17 +195,30 @@ export function PricingPage() {
             const actionLabel =
               signedIn && catalogPlan ? planSwitchLabel(me?.plan || "anonymous", catalogPlan) : item.cta.label;
             const usageBlock = me ? usageOverLimitReasons(me.quota, item.id) : [];
+            const isFree = Boolean(item.free) || item.price === "Free";
             return (
               <article
                 key={item.id}
                 className={cn(
                   "panel flex flex-col rounded-3xl px-5 py-5",
-                  item.highlight ? "border-[var(--accent)]" : "",
+                  item.highlight ? "border-[var(--accent)] bg-[var(--accent-soft)]/40" : "",
                 )}
               >
-                <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-                  {priceFor(item.id, item.price)}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p
+                    className={cn(
+                      "text-[11px] uppercase tracking-[0.14em]",
+                      isFree ? "font-semibold text-[var(--accent-strong)]" : "text-[var(--ink-muted)]",
+                    )}
+                  >
+                    {priceFor(item.id, item.price)}
+                  </p>
+                  {isFree ? (
+                    <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white dark:text-[#06281d]">
+                      Free
+                    </span>
+                  ) : null}
+                </div>
                 <p className="mt-2 font-[family-name:var(--font-display)] text-2xl tracking-tight">{item.role}</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">{item.blurb}</p>
                 <ul className="mt-4 flex-1 space-y-1.5 text-sm text-[var(--ink-muted)]">
@@ -281,7 +297,9 @@ export function PricingPage() {
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Convert API</h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
             Separate product. Authenticate with a key from Profile. Credits: 1 per page, 3 per page
-            with AI or translation. Combines with any workspace role.{" "}
+            with AI or translation.{" "}
+            <span className="font-medium text-[var(--accent-strong)]">API Free</span> starts at 100
+            credits / month with no card. Combines with any workspace role.{" "}
             <a href="/docs" className="text-[var(--accent-strong)] hover:underline">
               API docs
             </a>
@@ -293,6 +311,7 @@ export function PricingPage() {
             const signedIn = Boolean(me?.user);
             const current = signedIn && (me?.api_plan || "api_free") === item.id;
             const paidPlan = item.id !== "api_free";
+            const isFree = !paidPlan || item.price === "Free";
             const purchasable = planIsPurchasable(item.id, {
               enabled: catalog?.enabled,
               prices: catalog?.api?.prices,
@@ -303,19 +322,31 @@ export function PricingPage() {
             const actionLabel = signedIn
               ? apiPlanSwitchLabel(me?.api_plan || "api_free", item)
               : item.id === "api_free"
-                ? "Get a key"
+                ? "Get a free key"
                 : `Choose ${item.label}`;
             return (
               <article
                 key={item.id}
                 className={cn(
                   "panel flex flex-col rounded-3xl px-5 py-5",
-                  item.highlight ? "border-[var(--accent)]" : "",
+                  item.highlight ? "border-[var(--accent)] bg-[var(--accent-soft)]/40" : "",
                 )}
               >
-                <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-                  {priceFor(item.id, item.price)}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p
+                    className={cn(
+                      "text-[11px] uppercase tracking-[0.14em]",
+                      isFree ? "font-semibold text-[var(--accent-strong)]" : "text-[var(--ink-muted)]",
+                    )}
+                  >
+                    {priceFor(item.id, item.price)}
+                  </p>
+                  {isFree ? (
+                    <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white dark:text-[#06281d]">
+                      Free
+                    </span>
+                  ) : null}
+                </div>
                 <p className="mt-2 font-[family-name:var(--font-display)] text-2xl tracking-tight">{item.label}</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">{item.blurb}</p>
                 <ul className="mt-4 flex-1 space-y-1.5 text-sm text-[var(--ink-muted)]">
@@ -340,9 +371,9 @@ export function PricingPage() {
                 ) : item.id === "api_free" ? (
                   <a
                     href="/profile"
-                    className="mt-5 inline-flex justify-center rounded-full border border-[var(--line)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--accent-soft)]"
+                    className="mt-5 inline-flex justify-center rounded-full bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white dark:text-[#06281d]"
                   >
-                    Generate a key
+                    Generate a free key
                   </a>
                 ) : stripeReady ? (
                   <button
@@ -388,8 +419,26 @@ export function PricingPage() {
             </thead>
             <tbody>
               {PRICE_ROLES.map((item) => (
-                <tr key={item.id} className="border-t border-[var(--line)]">
-                  <td className="py-2.5 pr-3 text-[var(--ink-muted)]">{priceFor(item.id, item.price)}</td>
+                <tr
+                  key={item.id}
+                  className={cn(
+                    "border-t border-[var(--line)]",
+                    item.free ? "bg-[var(--accent-soft)]/35" : "",
+                  )}
+                >
+                  <td
+                    className={cn(
+                      "py-2.5 pr-3",
+                      item.free ? "font-semibold text-[var(--accent-strong)]" : "text-[var(--ink-muted)]",
+                    )}
+                  >
+                    {priceFor(item.id, item.price)}
+                    {item.free ? (
+                      <span className="ml-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--accent-strong)]">
+                        Free
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="py-2.5 pr-3 font-medium">{item.role}</td>
                   <td className="py-2.5 pr-3 text-[var(--ink-muted)]">{item.quota}</td>
                   <td className="py-2.5 pr-3 text-[var(--ink-muted)]">{item.ai}</td>

@@ -373,8 +373,11 @@ describe("ConvertControls", () => {
     await user.click(convert);
     expect(onConvert).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog", { name: "Sign in to convert" })).toBeInTheDocument();
+    expect(screen.getByText(/Free · Basic/i)).toBeInTheDocument();
+    expect(screen.getByText("5 conversions / day")).toBeInTheDocument();
     expect(screen.getByText("5 files / day")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("link", { name: "Start free with Basic" })).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("link", { name: /See Free Basic/i })).toHaveAttribute("href", "/pricing");
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await user.click(convert);
@@ -627,7 +630,9 @@ describe("LoginScreen", () => {
     render(<LoginScreen />);
     expect(screen.getByText("Sign in")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Continue as guest" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Prices and roles" })).toHaveAttribute("href", "/pricing");
+    expect(screen.getByRole("link", { name: /See Free Basic/i })).toHaveAttribute("href", "/pricing");
+    expect(screen.getByText(/Free · Basic/i)).toBeInTheDocument();
+    expect(screen.getByText(/five conversions a day/i)).toBeInTheDocument();
     await waitFor(() => expect(api.fetchMe).toHaveBeenCalled());
   });
 
@@ -700,6 +705,11 @@ describe("PricingPage", () => {
     render(<PricingPage />);
     expect(await screen.findByText("Prices and roles")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Choose Pro" })).toHaveAttribute("href", "/login?next=%2Fpricing");
+    expect(screen.getByRole("link", { name: "Start free with Basic" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Fpricing",
+    );
+    expect(screen.getAllByText("Free").length).toBeGreaterThan(2);
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login?next=%2Fpricing");
     expect(screen.getByText("Role comparison")).toBeInTheDocument();
     expect(screen.getAllByText("$12 / month").length).toBeGreaterThan(0);
@@ -846,7 +856,7 @@ describe("PricingPage", () => {
     });
     vi.spyOn(api, "startCheckout").mockResolvedValue({ url: null, updated: false, plan: "pro" });
     render(<PricingPage />);
-    expect(await screen.findByText("Checkout canceled. Your current plan is unchanged.")).toBeInTheDocument();
+    expect(await screen.findByText(/Checkout canceled — no charge/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
     expect(await screen.findByText("Stripe did not return a billing URL")).toBeInTheDocument();
     expect(assign).not.toHaveBeenCalled();
@@ -1264,7 +1274,7 @@ describe("ProfilePage", () => {
     vi.spyOn(api, "startCheckout").mockResolvedValue({ url: null, updated: false, plan: "pro" });
     vi.spyOn(api, "openBillingPortal").mockResolvedValue({ url: "https://billing.stripe.test/p" });
     render(<ProfilePage />);
-    expect(await screen.findByText("Checkout canceled. Your current plan is unchanged.")).toBeInTheDocument();
+    expect(await screen.findByText(/Checkout canceled — no charge/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
     expect(await screen.findByText("Stripe did not return a billing URL")).toBeInTheDocument();
     expect(assign).not.toHaveBeenCalled();

@@ -274,7 +274,9 @@ export function ConvertControls({
                 <a href="/login" className="text-[var(--accent-strong)] underline-offset-2 hover:underline">
                   Sign in
                 </a>{" "}
-                to convert files and save history. Basic includes five conversions per day and a small AI allowance.
+                to convert on{" "}
+                <span className="font-medium text-[var(--accent-strong)]">Free Basic</span>{" "}
+                (5 conversions / day, no credit card) and save history.
               </p>
             ) : null}
           </div>

@@ -87,8 +87,21 @@ export function LoginScreen() {
           <p className="font-[family-name:var(--font-display)] text-3xl tracking-tight">Sign in</p>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             Use Google to authenticate to this FileWorks URL. Conversion requires a signed-in account.
-            Basic includes five conversions a day and a small AI allowance. Pro and Premium add monthly volume.
           </p>
+          <div className="mt-5 rounded-2xl border border-[var(--accent)] bg-[var(--accent-soft)]/50 px-4 py-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-strong)]">
+                Free · Basic
+              </p>
+              <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white dark:text-[#06281d]">
+                Free
+              </span>
+            </div>
+            <p className="mt-1.5 text-sm leading-5 text-[var(--ink)]">
+              Sign in and you start on Free Basic — five conversions a day and a small AI allowance. No
+              credit card. Pro and Premium add monthly volume when you need more.
+            </p>
+          </div>
           <div className="mt-8">
             {!sessionReady ? (
               <p className="text-sm text-[var(--ink-muted)]">Checking sign-in…</p>
@@ -115,9 +128,9 @@ export function LoginScreen() {
             </a>
             <a
               href="/pricing"
-              className="text-sm text-[var(--ink-muted)] transition hover:text-[var(--accent-strong)]"
+              className="text-sm font-medium text-[var(--accent-strong)] transition hover:underline"
             >
-              Prices and roles
+              See Free Basic &amp; paid roles
             </a>
           </div>
         </div>
