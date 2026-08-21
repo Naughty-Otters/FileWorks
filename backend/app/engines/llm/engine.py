@@ -176,25 +176,30 @@ class LLMEngine(OCREngine):
     def _convert(self, file_path: Path, suffix: str) -> str:
         return PAGE_SEPARATOR.join(self._convert_pages(file_path, suffix))
 
-    def complete_text(self, prompt: str, *, purpose: str = "text") -> str:
-        """Text-only completion for post-process edits (structure, not vision OCR)."""
+    def _completion_request(self) -> ConvertRequest:
         self.ensure_ready()
         spec = self._spec
         api_key = self._api_key()
         assert spec is not None and api_key
+        return ConvertRequest(
+            spec=spec,
+            file_path=Path("."),
+            suffix=".md",
+            api_key=api_key,
+            model=self._model(),
+            max_tokens=int(self.settings.llm_max_tokens),
+            timeout_s=float(self.settings.llm_timeout_s),
+            target=self._http_target(),
+            max_pages=1,
+            max_image_side=1,
+        )
+
+    def complete_text(self, prompt: str, *, purpose: str = "text") -> str:
+        """Text-only completion for post-process edits (structure, not vision OCR)."""
+        spec = self._spec
+        assert spec is not None
         raw = get_api_provider(spec.id).complete_text(
-            ConvertRequest(
-                spec=spec,
-                file_path=Path("."),
-                suffix=".md",
-                api_key=api_key,
-                model=self._model(),
-                max_tokens=int(self.settings.llm_max_tokens),
-                timeout_s=float(self.settings.llm_timeout_s),
-                target=self._http_target(),
-                max_pages=1,
-                max_image_side=1,
-            ),
+            self._completion_request(),
             prompt,
             purpose=purpose,
         )
@@ -202,6 +207,23 @@ class LLMEngine(OCREngine):
         if not markdown:
             raise LLMClientError(f"{spec.label} returned empty Markdown")
         return markdown
+
+    def complete_structured(
+        self,
+        prompt: str,
+        schema: dict[str, Any],
+        *,
+        purpose: str = "text",
+    ) -> dict[str, Any]:
+        """Text-only completion constrained to a JSON Schema object."""
+        spec = self._spec
+        assert spec is not None
+        return get_api_provider(spec.id).complete_structured(
+            self._completion_request(),
+            prompt,
+            schema,
+            purpose=purpose,
+        )
 
     def describe(self) -> dict[str, Any]:
         spec = self._spec

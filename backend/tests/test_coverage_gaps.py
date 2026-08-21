@@ -692,6 +692,261 @@ class ExtraEngineTests(unittest.TestCase):
             self.assertEqual(text, "out")
             self.assertEqual(Fake().complete_text(request, "hi"), "out")
 
+    def test_provider_complete_structured(self) -> None:
+        from app.core.config import get_settings
+        from app.engines.llm.catalog import get_provider_spec
+        from app.engines.llm.providers.base import (
+            LangChainChatProvider,
+            LLMApiProvider,
+            LLMClientError,
+        )
+        from app.engines.llm.urls import resolve_http_target
+
+        spec = get_provider_spec("openai")
+        request = ConvertRequest(
+            spec=spec,
+            file_path=Path("a.png"),
+            suffix=".png",
+            api_key="k",
+            model="m",
+            max_tokens=8,
+            timeout_s=1,
+            target=resolve_http_target(get_settings(), spec),
+            max_pages=1,
+            max_image_side=32,
+        )
+        schema = {
+            "title": "TemplateContext",
+            "type": "object",
+            "properties": {"name": {"type": "string"}},
+        }
+
+        class Structured(LangChainChatProvider):
+            id = "openai"
+
+            def build_chat_model(self, _request):
+                class Model:
+                    def with_structured_output(self, _schema, include_raw=False):
+                        class Bound:
+                            def invoke(self, _msgs):
+                                raw = SimpleNamespace(
+                                    content='{"name":"Ada"}',
+                                    usage_metadata={
+                                        "input_tokens": 1,
+                                        "output_tokens": 1,
+                                        "total_tokens": 2,
+                                    },
+                                    response_metadata={},
+                                    additional_kwargs={},
+                                )
+                                if include_raw:
+                                    return {
+                                        "raw": raw,
+                                        "parsed": {"name": "Ada"},
+                                        "parsing_error": None,
+                                    }
+                                return {"name": "Ada"}
+
+                        return Bound()
+
+                return Model()
+
+        self.assertEqual(
+            Structured().complete_structured(request, "hi", schema, purpose="template-fill"),
+            {"name": "Ada"},
+        )
+
+        class DumpModel:
+            def model_dump(self):
+                return {"name": "Ada"}
+
+        class FromPydantic(LangChainChatProvider):
+            id = "openai"
+
+            def build_chat_model(self, _request):
+                class Model:
+                    def with_structured_output(self, _schema, include_raw=False):
+                        class Bound:
+                            def invoke(self, _msgs):
+                                return {
+                                    "raw": SimpleNamespace(
+                                        content="{}",
+                                        usage_metadata={},
+                                        response_metadata={},
+                                        additional_kwargs={},
+                                    ),
+                                    "parsed": DumpModel(),
+                                    "parsing_error": None,
+                                }
+
+                        return Bound()
+
+                return Model()
+
+        self.assertEqual(FromPydantic().complete_structured(request, "hi", schema), {"name": "Ada"})
+
+        class ParseRaw(LangChainChatProvider):
+            id = "openai"
+
+            def build_chat_model(self, _request):
+                class Model:
+                    def with_structured_output(self, _schema, include_raw=False):
+                        class Bound:
+                            def invoke(self, _msgs):
+                                return {
+                                    "raw": SimpleNamespace(
+                                        content='{"name":"Ada"}',
+                                        usage_metadata={},
+                                        response_metadata={},
+                                        additional_kwargs={},
+                                    ),
+                                    "parsed": None,
+                                    "parsing_error": ValueError("nope"),
+                                }
+
+                        return Bound()
+
+                return Model()
+
+        self.assertEqual(ParseRaw().complete_structured(request, "hi", schema), {"name": "Ada"})
+
+        class NoIncludeRaw(LangChainChatProvider):
+            id = "openai"
+
+            def build_chat_model(self, _request):
+                class Model:
+                    def with_structured_output(self, _schema):
+                        class Bound:
+                            def invoke(self, _msgs):
+                                return {"name": "Ada"}
+
+                        return Bound()
+
+                return Model()
+
+        self.assertEqual(NoIncludeRaw().complete_structured(request, "hi", schema), {"name": "Ada"})
+
+        class Fallback(LangChainChatProvider):
+            id = "openai"
+
+            def build_chat_model(self, _request):
+                class Model:
+                    def invoke(self, _msgs):
+                        return SimpleNamespace(content='```json\n{"name":"Ada"}\n```')
+
+                return Model()
+
+        self.assertEqual(Fallback().complete_structured(request, "hi", schema), {"name": "Ada"})
+
+        class Boom(LangChainChatProvider):
+            id = "openai"
+
+            def build_chat_model(self, _request):
+                class Model:
+                    def with_structured_output(self, _schema, include_raw=False):
+                        class Bound:
+                            def invoke(self, _msgs):
+                                raise RuntimeError("boom")
+
+                        return Bound()
+
+                return Model()
+
+        with self.assertRaises(LLMClientError):
+            Boom().complete_structured(request, "hi", schema)
+
+        class EmptyParsed(LangChainChatProvider):
+            id = "openai"
+
+            def build_chat_model(self, _request):
+                class Model:
+                    def with_structured_output(self, _schema, include_raw=False):
+                        class Bound:
+                            def invoke(self, _msgs):
+                                return {
+                                    "raw": SimpleNamespace(
+                                        content="not-json",
+                                        usage_metadata={},
+                                        response_metadata={},
+                                        additional_kwargs={},
+                                    ),
+                                    "parsed": None,
+                                    "parsing_error": ValueError("nope"),
+                                }
+
+                        return Bound()
+
+                return Model()
+
+        with self.assertRaises(LLMClientError):
+            EmptyParsed().complete_structured(request, "hi", schema)
+
+        class Bare(LLMApiProvider):
+            id = "openai"
+
+            def convert(self, _request):
+                return ""
+
+        with self.assertRaises(NotImplementedError):
+            Bare().complete_structured(request, "hi", schema)
+
+        class FencedString(LangChainChatProvider):
+            id = "openai"
+
+            def build_chat_model(self, _request):
+                class Model:
+                    def with_structured_output(self, _schema):
+                        class Bound:
+                            def invoke(self, _msgs):
+                                return '```json\n{"name":"Ada"}\n```'
+
+                        return Bound()
+
+                return Model()
+
+        self.assertEqual(
+            FencedString().complete_structured(request, "hi", schema),
+            {"name": "Ada"},
+        )
+
+    def test_parse_json_object_is_robust(self) -> None:
+        from app.engines.llm.providers.base import LLMClientError, parse_json_object
+
+        payload = {"a": 1, "name": "Ada"}
+        self.assertEqual(parse_json_object('{"a": 1, "name": "Ada"}'), payload)
+        self.assertEqual(parse_json_object('```json\n{"a": 1, "name": "Ada"}\n```'), payload)
+        self.assertEqual(parse_json_object('```JSON {"a": 1, "name": "Ada"} ```'), payload)
+        self.assertEqual(
+            parse_json_object('Sure:\n```json\n{"a": 1, "name": "Ada"}\n```\nDone.'),
+            payload,
+        )
+        self.assertEqual(parse_json_object('```json\n{"a": 1, "name": "Ada"}'), payload)
+        self.assertEqual(parse_json_object('Here you go: {"a": 1, "name": "Ada"} thanks'), payload)
+        self.assertEqual(parse_json_object('\ufeff{"a": 1, "name": "Ada"}'), payload)
+        with self.assertRaises(LLMClientError):
+            parse_json_object("nope")
+        with self.assertRaises(LLMClientError):
+            parse_json_object("[1]")
+        with self.assertRaises(LLMClientError):
+            parse_json_object("")
+
+    def test_llm_engine_complete_structured(self) -> None:
+        from app.core.config import Settings
+
+        settings = Settings(
+            _env_file=None,
+            llm_provider="openai",
+            llm_api_key="sk-test",
+            jwt_secret="test-secret-do-not-use-in-prod-please",
+        )
+        engine = LLMEngine(settings)
+        provider = MagicMock()
+        provider.complete_structured.return_value = {"n": "Ada"}
+        with patch("app.engines.llm.engine.get_api_provider", return_value=provider):
+            value = engine.complete_structured("hi", {"type": "object"}, purpose="template-fill")
+        self.assertEqual(value, {"n": "Ada"})
+        provider.complete_structured.assert_called_once()
+
     def test_paddle_predict_kwargs_fallback(self) -> None:
         from app.core.config import get_settings
 

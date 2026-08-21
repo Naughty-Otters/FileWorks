@@ -38,6 +38,14 @@ describe("built-in templates", () => {
       const expanded = expandSampleDocument(doc);
       const html = documentToHtml(expanded);
       expect(html).not.toMatch(/\{\{\s*[a-zA-Z_]/);
+      const lists = doc.variables.filter((variable) => variable.type === "list");
+      for (const variable of lists) {
+        expect(variable.name, `${t.id} list should be named for the template`).toContain(t.id);
+        expect(variable.label.length, `${t.id}.${variable.name} needs an explaining label`).toBeGreaterThan(20);
+        for (const field of variable.itemSchema || []) {
+          expect(field.label.length, `${t.id}.${variable.name}.${field.name} needs a label`).toBeGreaterThan(3);
+        }
+      }
       for (const variable of doc.variables) {
         if (variable.type === "list" || variable.type === "object") continue;
         const sample = variable.sampleValue.trim();

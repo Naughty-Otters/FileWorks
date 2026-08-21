@@ -318,7 +318,12 @@ def render_template(
             use_ai=True,
             translate=False,
         )
-        extracted = extract_template_context(document, markdown)
+        extracted = extract_template_context(
+            document,
+            markdown,
+            document_name=row.name,
+            document_description=row.description,
+        )
         context = coalesce_context(defaults, extracted, overrides)
         session.add(UsageEvent(user_id=principal.user_id, action=AI_ACTION))
         fill_mode = "ai"

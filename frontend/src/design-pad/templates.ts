@@ -189,7 +189,7 @@ function invoice(): DesignDocument {
     { direction: "row", justify: "space-between", align: "center", padding: 0 },
     INVISIBLE,
   );
-  itemRow.repeat = { over: "line_items", as: "item" };
+  itemRow.repeat = { over: "invoice_spending_items", as: "item" };
 
   const lineItems = box(
     contentW,
@@ -203,7 +203,7 @@ function invoice(): DesignDocument {
     contentW,
     56,
     "Total",
-    [heading(200, "Total", 3), heading(160, "{{ total }}", 3, "right")],
+    [heading(200, "Total", 3), heading(160, "{{ invoice_total }}", 3, "right")],
     { direction: "row", justify: "space-between", padding: 16 },
   );
 
@@ -211,36 +211,36 @@ function invoice(): DesignDocument {
     contentW,
     70,
     "Notes",
-    [paragraph(contentW - 40, 50, "{{ notes }}")],
+    [paragraph(contentW - 40, 50, "{{ invoice_notes }}")],
     { direction: "column", padding: 20 },
     INVISIBLE,
   );
 
   placeStacked(doc, [header, billTo, lineItems, totals, notes]);
   declareVars(doc, [
-    ["company_name", "Company name", "text", "Acme Studio"],
-    ["company_address", "Company address", "text", "123 Market St, City, ST 00000"],
-    ["company_email", "Company email", "text", "billing@acme.example"],
-    ["invoice_number", "Invoice number", "text", "INV-1042"],
-    ["invoice_date", "Invoice date", "date", "March 1, 2026"],
-    ["client_name", "Client name", "text", "Northwind Trading"],
-    ["client_address", "Client address", "text", "500 Harbor Ave, City, ST 00000"],
-    ["client_email", "Client email", "text", "ap@northwind.example"],
+    ["company_name", "Issuing company name on the invoice", "text", "Acme Studio"],
+    ["company_address", "Issuing company mailing address", "text", "123 Market St, City, ST 00000"],
+    ["company_email", "Issuing company billing email", "text", "billing@acme.example"],
+    ["invoice_number", "Invoice number or identifier", "text", "INV-1042"],
+    ["invoice_date", "Invoice issue date", "date", "March 1, 2026"],
+    ["client_name", "Bill-to client or customer name", "text", "Northwind Trading"],
+    ["client_address", "Bill-to client address", "text", "500 Harbor Ave, City, ST 00000"],
+    ["client_email", "Bill-to client email", "text", "ap@northwind.example"],
     [
-      "line_items",
-      "Line items",
+      "invoice_spending_items",
+      "Invoice spending items: each billed line from the source (description and amount)",
       "list",
       JSON.stringify([
         { description: "Design retainer — March", amount: "$2,400.00" },
         { description: "Print production", amount: "$350.00" },
       ]),
       [
-        ["description", "Description", "text"],
-        ["amount", "Amount", "currency"],
+        ["description", "What this invoice line billed", "text"],
+        ["amount", "Amount charged on this invoice line", "currency"],
       ],
     ],
-    ["total", "Total", "currency", "$2,750.00"],
-    ["notes", "Notes", "text", "Payment due within 30 days. Thank you for your business."],
+    ["invoice_total", "Invoice grand total due", "currency", "$2,750.00"],
+    ["invoice_notes", "Invoice notes, payment terms, or footer remarks", "text", "Payment due within 30 days. Thank you for your business."],
   ]);
   return doc;
 }
@@ -282,7 +282,7 @@ function receipt(): DesignDocument {
     { direction: "row", justify: "space-between", align: "center", padding: 0 },
     INVISIBLE,
   );
-  itemRow.repeat = { over: "items", as: "item" };
+  itemRow.repeat = { over: "receipt_purchased_items", as: "item" };
 
   const items = box(
     contentW,
@@ -301,7 +301,7 @@ function receipt(): DesignDocument {
         contentW - 32,
         24,
         "Subtotal row",
-        [paragraph(120, 20, "Subtotal"), paragraph(100, 20, "{{ subtotal }}", "right")],
+        [paragraph(120, 20, "Subtotal"), paragraph(100, 20, "{{ receipt_subtotal }}", "right")],
         { direction: "row", justify: "space-between", align: "center", padding: 0 },
         INVISIBLE,
       ),
@@ -309,7 +309,7 @@ function receipt(): DesignDocument {
         contentW - 32,
         24,
         "Tax row",
-        [paragraph(120, 20, "Tax"), paragraph(100, 20, "{{ tax }}", "right")],
+        [paragraph(120, 20, "Tax"), paragraph(100, 20, "{{ receipt_tax }}", "right")],
         { direction: "row", justify: "space-between", align: "center", padding: 0 },
         INVISIBLE,
       ),
@@ -317,7 +317,7 @@ function receipt(): DesignDocument {
         contentW - 32,
         28,
         "Total row",
-        [heading(120, "Total", 3), heading(100, "{{ total }}", 3, "right")],
+        [heading(120, "Total", 3), heading(100, "{{ receipt_total }}", 3, "right")],
         { direction: "row", justify: "space-between", align: "center", padding: 0 },
         INVISIBLE,
       ),
@@ -336,14 +336,14 @@ function receipt(): DesignDocument {
 
   placeStacked(doc, [header, meta, items, totals, footer], 16, 16);
   declareVars(doc, [
-    ["store_name", "Store name", "text", "Your Store"],
-    ["store_address", "Store address", "text", "123 Main St, City, ST"],
-    ["store_phone", "Store phone", "text", "(555) 123-4567"],
-    ["receipt_date", "Receipt date", "date", "March 15, 2026"],
-    ["receipt_number", "Receipt number", "text", "R-8821"],
+    ["store_name", "Store or merchant name on the receipt", "text", "Your Store"],
+    ["store_address", "Store address printed on the receipt", "text", "123 Main St, City, ST"],
+    ["store_phone", "Store phone number", "text", "(555) 123-4567"],
+    ["receipt_date", "Receipt transaction date", "date", "March 15, 2026"],
+    ["receipt_number", "Receipt number or identifier", "text", "R-8821"],
     [
-      "items",
-      "Items",
+      "receipt_purchased_items",
+      "Receipt purchased items: each sold line from the source (description and amount)",
       "list",
       JSON.stringify([
         { description: "Coffee", amount: "$4.50" },
@@ -351,14 +351,14 @@ function receipt(): DesignDocument {
         { description: "Sandwich", amount: "$9.75" },
       ]),
       [
-        ["description", "Description", "text"],
-        ["amount", "Amount", "currency"],
+        ["description", "Purchased item description", "text"],
+        ["amount", "Purchased item amount", "currency"],
       ],
     ],
-    ["subtotal", "Subtotal", "currency", "$17.50"],
-    ["tax", "Tax", "currency", "$1.40"],
-    ["total", "Total", "currency", "$18.90"],
-    ["thank_you_message", "Thank you message", "text", "Thank you for your purchase!"],
+    ["receipt_subtotal", "Receipt subtotal before tax", "currency", "$17.50"],
+    ["receipt_tax", "Receipt tax amount", "currency", "$1.40"],
+    ["receipt_total", "Receipt total charged", "currency", "$18.90"],
+    ["thank_you_message", "Receipt thank-you or footer message", "text", "Thank you for your purchase!"],
   ]);
   return doc;
 }
@@ -446,7 +446,7 @@ function bankStatement(): DesignDocument {
     { direction: "row", justify: "space-between", align: "center", padding: 0 },
     INVISIBLE,
   );
-  txRow.repeat = { over: "transactions", as: "tx" };
+  txRow.repeat = { over: "statement_transactions", as: "tx" };
 
   const transactions = box(
     contentW,
@@ -473,14 +473,14 @@ function bankStatement(): DesignDocument {
 
   placeStacked(doc, [header, summary, transactions, footer]);
   declareVars(doc, [
-    ["bank_name", "Bank name", "text", "First National Bank"],
-    ["statement_period", "Statement period", "text", "01/01/2026 – 01/31/2026"],
-    ["account_number", "Account number", "text", "**** 4821"],
-    ["opening_balance", "Opening balance", "currency", "$4,210.55"],
-    ["closing_balance", "Closing balance", "currency", "$5,032.10"],
+    ["bank_name", "Bank or financial institution name on the statement", "text", "First National Bank"],
+    ["statement_period", "Statement period covered", "text", "01/01/2026 – 01/31/2026"],
+    ["account_number", "Account number shown on the statement", "text", "**** 4821"],
+    ["opening_balance", "Opening balance for the statement period", "currency", "$4,210.55"],
+    ["closing_balance", "Closing balance for the statement period", "currency", "$5,032.10"],
     [
-      "transactions",
-      "Transactions",
+      "statement_transactions",
+      "Account statement transactions for the period (date, description, amount)",
       "list",
       JSON.stringify([
         { date: "01/03", description: "Grocery Store", amount: "-$86.20" },
@@ -489,9 +489,9 @@ function bankStatement(): DesignDocument {
         { date: "01/22", description: "Online Transfer", amount: "-$300.00" },
       ]),
       [
-        ["date", "Date", "date"],
-        ["description", "Description", "text"],
-        ["amount", "Amount", "currency"],
+        ["date", "Transaction date", "date"],
+        ["description", "Transaction description", "text"],
+        ["amount", "Transaction amount (signed)", "currency"],
       ],
     ],
   ]);
@@ -551,7 +551,7 @@ function insuranceCertificate(): DesignDocument {
     { direction: "row", justify: "space-between", align: "center", padding: 0 },
     INVISIBLE,
   );
-  coverageRow.repeat = { over: "coverages", as: "coverage" };
+  coverageRow.repeat = { over: "insurance_coverages", as: "coverage" };
 
   const coverage = box(
     contentW,
@@ -606,12 +606,12 @@ function insuranceCertificate(): DesignDocument {
 
   placeStacked(doc, [header, policyHolder, coverage, period, footer]);
   declareVars(doc, [
-    ["holder_name", "Policy holder", "text", "Jane Doe"],
-    ["holder_address", "Holder address", "text", "123 Main St, City, ST 00000"],
-    ["policy_number", "Policy number", "text", "INS-000123"],
+    ["holder_name", "Insured policy holder name", "text", "Jane Doe"],
+    ["holder_address", "Policy holder address", "text", "123 Main St, City, ST 00000"],
+    ["policy_number", "Insurance policy number", "text", "INS-000123"],
     [
-      "coverages",
-      "Coverages",
+      "insurance_coverages",
+      "Insurance coverages on the certificate (coverage type and limit)",
       "list",
       JSON.stringify([
         { type: "General Liability", limit: "$1,000,000" },
@@ -620,12 +620,12 @@ function insuranceCertificate(): DesignDocument {
       ]),
       [
         ["type", "Coverage type", "text"],
-        ["limit", "Limit", "currency"],
+        ["limit", "Coverage limit", "currency"],
       ],
     ],
-    ["effective_date", "Effective date", "date", "01/01/2026"],
-    ["expiration_date", "Expiration date", "date", "01/01/2027"],
-    ["insurer_name", "Insurer", "text", "Acme Mutual Insurance Co."],
+    ["effective_date", "Policy effective date", "date", "01/01/2026"],
+    ["expiration_date", "Policy expiration date", "date", "01/01/2027"],
+    ["insurer_name", "Insurance company issuing the certificate", "text", "Acme Mutual Insurance Co."],
   ]);
   return doc;
 }
@@ -691,17 +691,17 @@ function businessLetter(): DesignDocument {
 
   placeStacked(doc, [sender, date, recipient, greeting, body, closing], 60, 80);
   declareVars(doc, [
-    ["sender_name", "Sender name", "text", "Alex Rivera"],
-    ["sender_company", "Sender company", "text", "Rivera Consulting"],
-    ["sender_address", "Sender address", "text", "123 Main St, City, ST 00000"],
-    ["sender_title", "Sender title", "text", "Principal"],
-    ["letter_date", "Date", "date", "March 20, 2026"],
-    ["recipient_name", "Recipient name", "text", "Jordan Lee"],
-    ["recipient_company", "Recipient company", "text", "Northwind Trading"],
-    ["recipient_address", "Recipient address", "text", "500 Harbor Ave, City, ST 00000"],
+    ["sender_name", "Letter sender name", "text", "Alex Rivera"],
+    ["sender_company", "Letter sender company", "text", "Rivera Consulting"],
+    ["sender_address", "Letter sender address", "text", "123 Main St, City, ST 00000"],
+    ["sender_title", "Letter sender title", "text", "Principal"],
+    ["letter_date", "Letter date", "date", "March 20, 2026"],
+    ["recipient_name", "Letter recipient name", "text", "Jordan Lee"],
+    ["recipient_company", "Letter recipient company", "text", "Northwind Trading"],
+    ["recipient_address", "Letter recipient address", "text", "500 Harbor Ave, City, ST 00000"],
     [
       "letter_body",
-      "Letter body",
+      "Letter body paragraphs from the source correspondence",
       "text",
       "I am writing to follow up on our recent conversation and outline the next steps we discussed. Please let me know if you have any questions or would like to schedule a call.",
     ],
@@ -723,7 +723,7 @@ function payStub(): DesignDocument {
         340,
         66,
         "Company",
-        [heading(320, "{{ company_name }}", 2), paragraph(320, 30, "{{ company_address }}")],
+        [heading(320, "{{ employer_name }}", 2), paragraph(320, 30, "{{ employer_address }}")],
         { direction: "column", gap: 4, padding: 0 },
         INVISIBLE,
       ),
@@ -821,24 +821,24 @@ function payStub(): DesignDocument {
   placeStacked(doc, [header, employeeInfo, earnings, deductions, netPay]);
 
   declareVars(doc, [
-    ["company_name", "Company name", "text", "Acme Corporation"],
-    ["company_address", "Company address", "text", "123 Main St, City, ST 00000"],
-    ["pay_date", "Pay date", "date", "02/15/2026"],
-    ["employee_name", "Employee name", "text", "Jane Doe"],
-    ["employee_id", "Employee ID", "text", "EMP-00214"],
-    ["pay_period_start", "Pay period start", "date", "02/01/2026"],
-    ["pay_period_end", "Pay period end", "date", "02/15/2026"],
-    ["filing_status", "Filing status", "text", "Single"],
-    ["regular_hours", "Regular hours", "number", "80"],
-    ["hourly_rate", "Hourly rate", "currency", "$32.00"],
-    ["overtime_pay", "Overtime pay", "currency", "$0.00"],
-    ["gross_pay", "Gross pay", "currency", "$2,560.00"],
-    ["federal_tax", "Federal tax", "currency", "$384.00"],
-    ["state_tax", "State tax", "currency", "$128.00"],
-    ["insurance_deduction", "Insurance deduction", "currency", "$60.00"],
-    ["retirement_deduction", "Retirement (401k)", "currency", "$102.40"],
-    ["total_deductions", "Total deductions", "currency", "$674.40"],
-    ["net_pay", "Net pay", "currency", "$1,885.60"],
+    ["employer_name", "Employer company name on the pay stub", "text", "Acme Corporation"],
+    ["employer_address", "Employer address on the pay stub", "text", "123 Main St, City, ST 00000"],
+    ["pay_date", "Pay date printed on the stub", "date", "02/15/2026"],
+    ["employee_name", "Employee name on the pay stub", "text", "Jane Doe"],
+    ["employee_id", "Employee ID on the pay stub", "text", "EMP-00214"],
+    ["pay_period_start", "Pay period start date", "date", "02/01/2026"],
+    ["pay_period_end", "Pay period end date", "date", "02/15/2026"],
+    ["filing_status", "Employee tax filing status", "text", "Single"],
+    ["regular_hours", "Regular hours worked this period", "number", "80"],
+    ["hourly_rate", "Employee hourly rate", "currency", "$32.00"],
+    ["overtime_pay", "Overtime pay this period", "currency", "$0.00"],
+    ["gross_pay", "Gross pay this period", "currency", "$2,560.00"],
+    ["federal_tax", "Federal tax withheld", "currency", "$384.00"],
+    ["state_tax", "State tax withheld", "currency", "$128.00"],
+    ["insurance_deduction", "Insurance deduction this period", "currency", "$60.00"],
+    ["retirement_deduction", "Retirement (401k) deduction this period", "currency", "$102.40"],
+    ["total_deductions", "Total deductions this period", "currency", "$674.40"],
+    ["net_pay", "Net pay on the stub", "currency", "$1,885.60"],
   ]);
 
   return doc;
@@ -933,18 +933,18 @@ function rentalAgreement(): DesignDocument {
   placeStacked(doc, [title, parties, terms, clauses, signatures]);
 
   declareVars(doc, [
-    ["agreement_date", "Agreement date", "date", "01/01/2026"],
-    ["landlord_name", "Landlord name", "text", "Acme Properties LLC"],
-    ["tenant_name", "Tenant name", "text", "John Smith"],
-    ["property_address", "Property address", "text", "456 Oak Avenue, Apt 3B, Springfield, ST 00000"],
+    ["agreement_date", "Lease agreement date", "date", "01/01/2026"],
+    ["landlord_name", "Landlord name on the lease", "text", "Acme Properties LLC"],
+    ["tenant_name", "Tenant name on the lease", "text", "John Smith"],
+    ["property_address", "Leased property address", "text", "456 Oak Avenue, Apt 3B, Springfield, ST 00000"],
     ["lease_start_date", "Lease start date", "date", "02/01/2026"],
     ["lease_end_date", "Lease end date", "date", "01/31/2027"],
-    ["monthly_rent", "Monthly rent", "currency", "$1,650.00"],
-    ["security_deposit", "Security deposit", "currency", "$1,650.00"],
-    ["rent_due_date", "Rent due date", "text", "1st of each month"],
+    ["monthly_rent", "Monthly rent amount", "currency", "$1,650.00"],
+    ["security_deposit", "Security deposit amount", "currency", "$1,650.00"],
+    ["rent_due_date", "Rent due date each month", "text", "1st of each month"],
     [
       "additional_terms",
-      "Additional terms",
+      "Additional lease terms and clauses from the source",
       "text",
       "Tenant agrees to pay rent in full on or before the due date each month, keep the property in good condition, and comply with all applicable building and safety codes. Late payments may incur a fee as permitted by local law.",
     ],
@@ -969,13 +969,13 @@ function documentReport(): DesignDocument {
     contentW,
     760,
     "Body",
-    [paragraph(contentW - 40, 700, "{{ markdown }}")],
+    [paragraph(contentW - 40, 700, "{{ report_body }}")],
     { direction: "column", gap: 8, padding: 20 },
   );
   placeStacked(doc, [header, body]);
   declareVars(doc, [
-    ["report_title", "Report title", "text", "Document report"],
-    ["markdown", "Extracted Markdown", "text", "Preview of extracted content from FileWorks."],
+    ["report_title", "Report title taken from the source document", "text", "Document report"],
+    ["report_body", "Full report body transcribed from the source Markdown", "text", "Preview of extracted content from FileWorks."],
   ]);
   return doc;
 }

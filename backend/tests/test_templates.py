@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from typing import ClassVar
 from uuid import uuid4
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -17,7 +18,11 @@ from app.auth.plans import get_plan
 from app.core.config import get_settings
 from app.db.models import Base
 from app.db.session import get_db
-from app.processing.template.extract import extract_template_context, extraction_schema
+from app.processing.template.extract import (
+    build_extraction_prompt,
+    extract_template_context,
+    extraction_schema,
+)
 from app.processing.template.render import render_docx, render_html, render_markdown
 from app.processing.template.runtime import (
     auto_layout,
@@ -102,17 +107,102 @@ def test_llm_extraction_includes_undeclared_used_variables() -> None:
             "nodes": [{"id": "p", "type": "paragraph", "label": "{{account.name}}"}],
         }
     )
-    assert "account" in extraction_schema(document)["properties"]
+    schema = extraction_schema(document, document_name="Account summary")
+    assert schema["title"] == "AccountSummaryContext"
+    assert "account" in schema["properties"]
+    assert "item" not in schema["properties"]
 
     class Engine:
-        def complete_text(self, prompt: str, *, purpose: str) -> str:
-            assert '"account"' in prompt
+        def complete_structured(self, prompt: str, schema: dict, *, purpose: str) -> dict:
             assert purpose == "template-fill"
-            return '```json\n{"account": "Acme"}\n```'
+            assert "account" in schema["properties"]
+            assert "Target document:" in prompt
+            assert "Name: Account summary" in prompt
+            assert "Variable context:" in prompt
+            assert "`account`" in prompt
+            assert "JSON schema:" in prompt
+            assert "Source markdown:" in prompt
+            assert "Account: Acme" in prompt
+            return {"account": "Acme"}
 
-    assert extract_template_context(document, "Account: Acme", engine=Engine()) == {
-        "account": "Acme"
-    }
+    assert extract_template_context(
+        document,
+        "Account: Acme",
+        engine=Engine(),
+        document_name="Account summary",
+        document_description="Summarize the billed account",
+    ) == {"account": "Acme"}
+
+
+def test_extraction_prompt_includes_template_and_variable_context() -> None:
+    document = DesignDocument.model_validate(
+        {
+            "version": 2,
+            "variables": [
+                {
+                    "name": "invoice_spending_items",
+                    "label": "Invoice spending items: each billed line from the source",
+                    "type": "list",
+                    "itemSchema": [
+                        {"name": "description", "label": "What this invoice line billed", "type": "text"},
+                        {"name": "amount", "label": "Amount charged on this invoice line", "type": "currency"},
+                    ],
+                }
+            ],
+            "nodes": [
+                {
+                    "id": "rows",
+                    "type": "box",
+                    "repeat": {"over": "invoice_spending_items", "as": "item"},
+                    "children": [
+                        {"id": "p", "type": "paragraph", "label": "{{ item.description }} {{ item.amount }}"}
+                    ],
+                }
+            ],
+        }
+    )
+    schema = extraction_schema(
+        document,
+        document_name="Client invoice",
+        document_description="Bill-to, spending items, and total",
+    )
+    assert "item" not in schema["properties"]
+    items = schema["properties"]["invoice_spending_items"]
+    assert "spending items" in items["description"].lower()
+    assert items["items"]["properties"]["description"]["description"] == "What this invoice line billed"
+
+    prompt = build_extraction_prompt(
+        document,
+        "Widget $12",
+        document_name="Client invoice",
+        document_description="Bill-to, spending items, and total",
+        schema=schema,
+    )
+    assert "Name: Client invoice" in prompt
+    assert "Purpose: Bill-to, spending items, and total" in prompt
+    assert "iterates `invoice_spending_items` as `item`" in prompt
+    assert "`invoice_spending_items` (list)" in prompt
+    assert "What this invoice line billed" in prompt
+    assert '"invoice_spending_items"' in prompt
+    assert "Source markdown:\nWidget $12" in prompt
+
+
+def test_llm_extraction_validates_structured_types() -> None:
+    document = DesignDocument.model_validate(
+        {
+            "version": 2,
+            "variables": {"count": {"type": "number", "required": True}},
+            "nodes": [{"id": "p", "type": "paragraph", "label": "{{count}}"}],
+        }
+    )
+
+    class Engine:
+        def complete_structured(self, prompt: str, schema: dict, *, purpose: str) -> dict:
+            assert "count" in schema["required"]
+            return {"count": "nope"}
+
+    with pytest.raises(ValueError, match="must be number"):
+        extract_template_context(document, "Count: 1", engine=Engine())
 
 
 def test_local_template_blob_store_is_separate(tmp_path) -> None:
@@ -619,7 +709,7 @@ def test_render_ai_fill_uses_document_values_not_only_defaults(monkeypatch) -> N
     assert created.status_code == 201, created.text
     template_id = created.json()["id"]
 
-    def fake_extract(document, markdown, engine=None):
+    def fake_extract(document, markdown, engine=None, **_kwargs):
         assert "Northwind" in markdown
         return {"client_name": "Northwind Trading", "total": "$2,750.00"}
 
