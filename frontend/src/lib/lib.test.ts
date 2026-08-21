@@ -29,6 +29,7 @@ import { formatFileProviders, getApiBase, isAbortError, downloadTextFile } from 
 import * as api from "@/lib/api";
 import { renderMarkdownToHtml } from "@/lib/markdown-to-html";
 import { markdownToHtml } from "@/lib/markdown-runtime";
+import { previewHtmlToMarkdown } from "@/lib/html-to-markdown";
 import {
   loadGoogleIdentity,
   resetGoogleIdentityLoaderForTests,
@@ -393,6 +394,39 @@ describe("markdown html", () => {
     const left = await renderMarkdownToHtml('![logo](https://example.com/a.png "80 left")');
     expect(left).toContain("fw-img-left");
     expect(await renderMarkdownToHtml("   ")).toBe("");
+  });
+
+  it("renders inline and display LaTeX with KaTeX", async () => {
+    const inline = await renderMarkdownToHtml("Energy $E=mc^2$ holds.");
+    expect(inline).toContain("katex");
+    expect(inline).toContain('data-latex="E=mc^2"');
+    expect(inline).toContain("math-inline");
+    expect(inline).toContain('contenteditable="false"');
+
+    const display = await renderMarkdownToHtml("$$\n\\frac{a}{b}\n$$");
+    expect(display).toContain("katex");
+    expect(display).toContain("math-display");
+    expect(display).toContain('data-latex="\\frac{a}{b}"');
+
+    const oneLine = await renderMarkdownToHtml("$$E=mc^2$$");
+    expect(oneLine).toContain("math-display");
+    expect(oneLine).not.toContain("math-inline");
+
+    const escaped = await renderMarkdownToHtml("Lift \\(C_L\\) and the term $v^2$.");
+    expect(escaped).toContain("katex");
+  });
+
+  it("does not treat fenced code as math", async () => {
+    const html = await renderMarkdownToHtml("```\n$E=mc^2$\n```");
+    expect(html).not.toContain("math-inline");
+    expect(html).toContain("<pre");
+  });
+
+  it("round-trips KaTeX HTML back to markdown math", async () => {
+    const html = await renderMarkdownToHtml("See $E=mc^2$ and\n\n$$\\frac{a}{b}$$\n");
+    const md = previewHtmlToMarkdown(html);
+    expect(md).toContain("$E=mc^2$");
+    expect(md).toMatch(/\$\$\s*\\frac\{a\}\{b\}\s*\$\$/);
   });
 });
 

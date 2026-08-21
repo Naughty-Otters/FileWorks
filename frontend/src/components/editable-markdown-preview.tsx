@@ -1,38 +1,11 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import TurndownService from "turndown";
-import { gfm } from "turndown-plugin-gfm";
+import "katex/dist/katex.min.css";
+import { previewHtmlToMarkdown } from "@/lib/html-to-markdown";
 import { markdownToHtml } from "@/lib/markdown-runtime";
 import { cn } from "@/lib/utils";
 import type { FormatCommand, FormatExtra } from "@/lib/markdown-format";
-
-const turndown = new TurndownService({
-  headingStyle: "atx",
-  codeBlockStyle: "fenced",
-  bulletListMarker: "-",
-  emDelimiter: "*",
-  strongDelimiter: "**",
-});
-turndown.use(gfm);
-turndown.addRule("keepDataImages", {
-  filter: (node) =>
-    node.nodeName === "IMG" &&
-    typeof (node as HTMLImageElement).getAttribute("src") === "string" &&
-    Boolean((node as HTMLImageElement).getAttribute("src")?.startsWith("data:")),
-  replacement: (_content, node) => {
-    const img = node as HTMLImageElement;
-    const src = img.getAttribute("src") || "";
-    const alt = img.getAttribute("alt") || "";
-    const cls = img.getAttribute("class") || "";
-    const style = img.getAttribute("style") || "";
-    const width =
-      /(?:^|;)\s*width:\s*(\d+)px/i.exec(style)?.[1] || img.getAttribute("width") || "";
-    const align = /\bfw-img-right\b/.test(cls) ? "right" : /\bfw-img-left\b/.test(cls) ? "left" : "";
-    const title = [width, align].filter(Boolean).join(" ");
-    return title ? `![${alt}](${src} "${title}")` : `![${alt}](${src})`;
-  },
-});
 
 type EditableMarkdownPreviewProps = {
   markdown: string;
@@ -91,7 +64,7 @@ export const EditableMarkdownPreview = forwardRef<MarkdownPreviewHandle, Editabl
         onChange("");
         return;
       }
-      const next = turndown.turndown(html).replace(/\n{3,}/g, "\n\n").trimEnd();
+      const next = previewHtmlToMarkdown(html);
       if (next !== markdown) onChange(next);
     }
 
