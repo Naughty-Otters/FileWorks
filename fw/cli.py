@@ -13,7 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from fw import __version__, console
-from fw.actions import cloud, compose, db, local
+from fw.actions import cloud, compose, db, integration, local
 from fw.aws import session as session_mod
 from fw.context import (
     DEFAULT_REGION,
@@ -57,6 +57,12 @@ CATEGORIES: tuple[Category, ...] = (
     Category("stack", "Stack", "Docker Compose (API + UI + Postgres)", frozenset({LOCAL_SCOPE})),
     Category("native", "Native", "uv + Next.js without Docker", frozenset({LOCAL_SCOPE})),
     Category("database", "Database", "Alembic migrations", frozenset({LOCAL_SCOPE, CLOUD_SCOPE})),
+    Category(
+        "test",
+        "Test",
+        "Post-deploy Playwright UI + Convert API",
+        frozenset({LOCAL_SCOPE, CLOUD_SCOPE}),
+    ),
     Category("infra", "Infra", "IAM, Terraform, Lambda, ECR", frozenset({CLOUD_SCOPE})),
     Category("frontend", "Frontend", "Cloudflare Pages", frozenset({CLOUD_SCOPE})),
     Category("secrets", "Secrets", "Seed from backend/.env + .env.<env>", frozenset({CLOUD_SCOPE})),
@@ -111,6 +117,60 @@ def _actions() -> tuple[MenuAction, ...]:
         MenuAction("db-history", "History", "", db.history, False, "database", frozenset({LOCAL_SCOPE, CLOUD_SCOPE})),
         MenuAction("db-revision", "New revision", "autogenerate", db.revision, False, "database", frozenset({LOCAL_SCOPE, CLOUD_SCOPE})),
         MenuAction("db-downgrade", "Downgrade", "", db.downgrade, False, "database", frozenset({LOCAL_SCOPE, CLOUD_SCOPE})),
+        MenuAction(
+            "test",
+            "Run integration tests",
+            "Prompts for mode (all / smoke / api / ui / convert)",
+            integration.run_tests,
+            False,
+            "test",
+            frozenset({LOCAL_SCOPE, CLOUD_SCOPE}),
+        ),
+        MenuAction(
+            "test-all",
+            "All tests",
+            "Smoke + UI + API together (convert needs FW_API_KEY)",
+            integration.all_tests,
+            False,
+            "test",
+            frozenset({LOCAL_SCOPE, CLOUD_SCOPE}),
+        ),
+        MenuAction(
+            "test-smoke",
+            "Smoke (@smoke)",
+            "Pages + health + catalog",
+            integration.smoke,
+            False,
+            "test",
+            frozenset({LOCAL_SCOPE, CLOUD_SCOPE}),
+        ),
+        MenuAction(
+            "test-api",
+            "API suite",
+            "Convert API project (POST needs FW_API_KEY)",
+            integration.api,
+            False,
+            "test",
+            frozenset({LOCAL_SCOPE, CLOUD_SCOPE}),
+        ),
+        MenuAction(
+            "test-ui",
+            "UI suite",
+            "Browser page loads + workspace options",
+            integration.ui,
+            False,
+            "test",
+            frozenset({LOCAL_SCOPE, CLOUD_SCOPE}),
+        ),
+        MenuAction(
+            "test-convert",
+            "Convert matrix (@convert)",
+            "Real conversions — needs FW_API_KEY",
+            integration.convert,
+            False,
+            "test",
+            frozenset({LOCAL_SCOPE, CLOUD_SCOPE}),
+        ),
         MenuAction("check", "Check AWS permissions", "", cloud.check, True, "infra", frozenset({CLOUD_SCOPE})),
         MenuAction("attach-policy", "Attach deploy IAM policy", "", cloud.attach_policy, True, "infra", frozenset({CLOUD_SCOPE})),
         MenuAction(
@@ -379,6 +439,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--profile", help="AWS profile (skips the account prompt).")
     parser.add_argument("--env", help="Environment: local, dev, staging, or prod.")
+    parser.add_argument(
+        "--mode",
+        choices=list(integration.TEST_MODES),
+        help="With test: all|smoke|api|ui|convert (default: prompt, or all with --yes).",
+    )
     parser.add_argument("--region", help=f"AWS region (default: {DEFAULT_REGION}).")
     parser.add_argument("--yes", action="store_true", help="Skip apply confirmation.")
     parser.add_argument(
@@ -459,6 +524,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     if args.function:
         ctx.extras["function"] = args.function
+    if getattr(args, "mode", None):
+        ctx.extras["test_mode"] = args.mode
     if args.since:
         ctx.extras["since"] = args.since
     if getattr(args, "period", None):

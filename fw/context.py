@@ -19,6 +19,7 @@ BACKEND_DIR = ROOT_DIR / "backend"
 UV_IMAGE_SYNC_FLAGS = ("--all-extras",)
 BACKEND_ENV = BACKEND_DIR / ".env"
 FRONTEND_DIR = ROOT_DIR / "frontend"
+INTEGRATION_DIR = ROOT_DIR / "integration"
 
 DEFAULT_REGION = "us-east-1"
 DEFAULT_DATABASE_URL = "postgresql+psycopg://fileworks:fileworks@127.0.0.1:5432/fileworks"

@@ -115,9 +115,13 @@ export function ConvertControls({
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") setOpen(false);
     }
-    document.addEventListener("mousedown", onPointer);
+    // Defer so the opening click cannot race the dismiss listener (Playwright / Strict Mode).
+    const timer = window.setTimeout(() => {
+      document.addEventListener("mousedown", onPointer);
+    }, 0);
     document.addEventListener("keydown", onKey);
     return () => {
+      window.clearTimeout(timer);
       document.removeEventListener("mousedown", onPointer);
       document.removeEventListener("keydown", onKey);
     };
@@ -374,14 +378,18 @@ function TargetFormatDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-[color-mix(in_oklab,var(--ink)_28%,transparent)] p-4"
-      onClick={onClose}
+      onPointerDown={(event) => {
+        // Only dismiss when the backdrop itself is pressed — avoids closing on the
+        // same gesture that opened the dialog (Playwright / rapid clicks).
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="target-format-title"
         className="panel w-full max-w-md rounded-3xl px-6 py-5"
-        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
           <div>
