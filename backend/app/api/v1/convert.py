@@ -314,6 +314,8 @@ async def convert_file(
                     request=request,
                     run_id=str(run_id or "").strip() or None,
                     owner=owner,
+                    # One API key may issue concurrent POSTs; do not cancel peers.
+                    preempt_owner=False,
                 )
         except HTTPException:
             raise

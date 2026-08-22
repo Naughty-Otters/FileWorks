@@ -43,6 +43,10 @@ export default defineConfig({
     {
       name: "api",
       testMatch: "api/**/*.spec.ts",
+      // Convert API shares one key + convert_max_concurrent=1 locally; keep API
+      // tests sequential so the queue stays predictable under load.
+      fullyParallel: false,
+      workers: 1,
       use: {
         // API project does not need a browser; Playwright still boots chromium
         // for request fixtures unless we leave baseURL for relative calls.
