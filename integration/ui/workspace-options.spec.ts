@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { fixtures, UI_OPTION_LABELS } from "../helpers/fixtures";
 import { getEnv } from "../helpers/env";
 import {
+  openProduceAs,
   openWorkspaceOptions,
   uploadWorkspaceFile,
   waitForWorkspaceReady,
@@ -41,20 +42,14 @@ test.describe("Workspace UI — upload and options", () => {
     await expect(prefer).toHaveJSProperty("checked", !before);
   });
 
-  test("Produce as / target layout control opens when present", async ({ page }) => {
+  test("Produce as dialog opens with Markdown default", async ({ page }) => {
     const produce = page.getByRole("button", { name: /Produce as/i });
     test.skip((await produce.count()) === 0, "Produce-as control not on this build");
-    await expect(produce).toBeEnabled();
 
-    await expect(async () => {
-      if ((await produce.getAttribute("aria-expanded")) !== "true") {
-        await produce.click();
-      }
-      await expect(produce).toHaveAttribute("aria-expanded", "true", { timeout: 1_500 });
-      await expect(page.getByRole("dialog")).toBeVisible({ timeout: 1_500 });
-    }).toPass({ timeout: 15_000, intervals: [300, 600, 1_000] });
-
-    await expect(page.getByRole("dialog").getByText(/Produce as|Markdown/i).first()).toBeVisible();
+    await openProduceAs(page);
+    const dialog = page.getByRole("dialog", { name: /Produce as/i });
+    await expect(dialog.getByRole("radio", { name: /Markdown/i })).toBeChecked();
+    await expect(dialog.getByRole("radio", { name: /My design/i })).toBeVisible();
   });
 
   test("guest Convert is gated (sign-in prompt)", async ({ page }) => {
@@ -71,5 +66,47 @@ test.describe("Workspace UI — upload and options", () => {
     await convert.click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(/Sign in to convert|Sign in|Free Basic/i).first()).toBeVisible();
+  });
+});
+
+test.describe("Workspace UI — Produce as starter picker", () => {
+  test.beforeEach(async ({ page }) => {
+    const env = getEnv();
+    test.skip(
+      !env.storageState,
+      "Starter designs require a signed-in session (FW_STORAGE_STATE)",
+    );
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await waitForWorkspaceReady(page);
+  });
+
+  test("starter design listbox supports category chips and search", async ({ page }) => {
+    await openProduceAs(page);
+    const dialog = page.getByRole("dialog", { name: /Produce as/i });
+
+    await expect(dialog.getByRole("radio", { name: /Starter design/i })).toBeVisible();
+    const list = dialog.getByRole("listbox", { name: /Starter design/i });
+    await expect(list).toBeVisible();
+    await expect(list.getByRole("option").first()).toBeVisible();
+
+    await expect(dialog.getByRole("button", { name: "All" })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Family" })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Business" })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "General" })).toBeVisible();
+
+    await dialog.getByRole("button", { name: "Family" }).click();
+    await expect(list.getByRole("option", { name: /family schedule|family planner|family calendar/i }).first()).toBeVisible();
+    await expect(list.getByRole("option", { name: /Client invoice/i })).toHaveCount(0);
+
+    await dialog.getByRole("button", { name: "All" }).click();
+    const search = dialog.getByPlaceholder("Search designs…");
+    await search.fill("invoice");
+    await expect(list.getByRole("option", { name: /Client invoice/i })).toBeVisible();
+    await expect(list.getByRole("option", { name: /Daily family schedule/i })).toHaveCount(0);
+
+    await list.getByRole("option", { name: /Client invoice/i }).click();
+    await expect(dialog.getByRole("radio", { name: /Starter design/i })).toBeChecked();
+    await dialog.getByRole("button", { name: "Done" }).click();
+    await expect(page.getByRole("button", { name: /Produce as/i })).toContainText(/Client invoice|invoice/i);
   });
 });

@@ -44,6 +44,22 @@ export async function uploadWorkspaceFile(page: Page, filePath: string) {
   });
 }
 
+/** Open Produce as and wait for the dialog. */
+export async function openProduceAs(page: Page) {
+  const produce = page.getByRole("button", { name: /Produce as/i });
+  await expect(produce).toBeVisible();
+  await expect(async () => {
+    if ((await produce.getAttribute("aria-expanded")) !== "true") {
+      await produce.click();
+    }
+    await expect(produce).toHaveAttribute("aria-expanded", "true", { timeout: 1_500 });
+    await expect(page.getByRole("dialog", { name: /Produce as/i })).toBeVisible({
+      timeout: 1_500,
+    });
+  }).toPass({ timeout: 15_000, intervals: [300, 600, 1_000] });
+  return produce;
+}
+
 /** Open the workspace Options popover and wait until parse toggles render. */
 export async function openWorkspaceOptions(page: Page) {
   const btn = page.getByRole("button", { name: "Options" });

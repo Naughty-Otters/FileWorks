@@ -1,5 +1,5 @@
 import { createRef } from "react";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HistoryPanel } from "@/components/history-panel";
 import { MarkdownToolbar, ShowMarkdownToolbarButton } from "@/components/markdown-toolbar";
@@ -272,7 +272,12 @@ describe("ConvertControls", () => {
         onConvert={vi.fn()}
         onStop={vi.fn()}
         designTargets={[
-          { id: "builtin:invoice", name: "Client invoice", description: "Bill-to and totals" },
+          {
+            id: "builtin:invoice",
+            name: "Client invoice",
+            description: "Bill-to and totals",
+            category: "business",
+          },
         ]}
       />,
     );
@@ -284,7 +289,140 @@ describe("ConvertControls", () => {
     expect(screen.getByRole("dialog", { name: "Produce as" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Markdown/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /Starter design/i })).toBeInTheDocument();
-    expect(screen.getByLabelText("Starter design")).toHaveDisplayValue("Client invoice");
+    const starterList = screen.getByRole("listbox", { name: "Starter design" });
+    expect(starterList).toBeInTheDocument();
+    expect(within(starterList).getByRole("option", { name: /Client invoice/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("filters starter designs by category chip and search", async () => {
+    const user = userEvent.setup();
+    const onOutputLayoutChange = vi.fn();
+    render(
+      <ConvertControls
+        options={DEFAULT_EXTRACT_OPTIONS}
+        onChange={vi.fn()}
+        me={guestMe}
+        health={null}
+        loading={false}
+        canExtract={false}
+        quotaBlocked={false}
+        onConvert={vi.fn()}
+        onStop={vi.fn()}
+        outputLayout="standard"
+        onOutputLayoutChange={onOutputLayoutChange}
+        designTargets={[
+          {
+            id: "builtin:invoice",
+            name: "Client invoice",
+            description: "Bill-to and totals",
+            category: "business",
+          },
+          {
+            id: "builtin:family_daily",
+            name: "Daily family schedule",
+            description: "Fridge-ready day card",
+            category: "family",
+          },
+          {
+            id: "builtin:report",
+            name: "Markdown report",
+            description: "Page layout for extracted Markdown",
+            category: "general",
+          },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Produce as" }));
+
+    const list = screen.getByRole("listbox", { name: "Starter design" });
+    expect(within(list).getByText("Bill-to and totals")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "All" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Family" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Business" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "General" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Family" }));
+    expect(within(list).getByRole("option", { name: /Daily family schedule/i })).toBeInTheDocument();
+    expect(within(list).queryByRole("option", { name: /Client invoice/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Business" }));
+    expect(within(list).getByRole("option", { name: /Client invoice/i })).toBeInTheDocument();
+    expect(within(list).queryByRole("option", { name: /Daily family schedule/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "All" }));
+    await user.type(screen.getByPlaceholderText("Search designs…"), "invoice");
+    expect(within(list).getByRole("option", { name: /Client invoice/i })).toBeInTheDocument();
+    expect(within(list).queryByRole("option", { name: /Daily family schedule/i })).not.toBeInTheDocument();
+
+    await user.clear(screen.getByPlaceholderText("Search designs…"));
+    await user.type(screen.getByPlaceholderText("Search designs…"), "zzzz-no-match");
+    expect(within(list).getByText("No designs match.")).toBeInTheDocument();
+
+    await user.clear(screen.getByPlaceholderText("Search designs…"));
+    await user.type(screen.getByPlaceholderText("Search designs…"), "invoice");
+    await user.click(within(list).getByRole("option", { name: /Client invoice/i }));
+    expect(onOutputLayoutChange).toHaveBeenCalledWith("builtin:invoice");
+  });
+
+  it("shows the selected starter name on the Produce as control", async () => {
+    const user = userEvent.setup();
+    const onOutputLayoutChange = vi.fn();
+    const { rerender } = render(
+      <ConvertControls
+        options={DEFAULT_EXTRACT_OPTIONS}
+        onChange={vi.fn()}
+        me={guestMe}
+        health={null}
+        loading={false}
+        canExtract={false}
+        quotaBlocked={false}
+        onConvert={vi.fn()}
+        onStop={vi.fn()}
+        outputLayout="standard"
+        onOutputLayoutChange={onOutputLayoutChange}
+        designTargets={[
+          {
+            id: "builtin:timesheet",
+            name: "Timesheet",
+            description: "Employee hours by project",
+            category: "business",
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Produce as" })).toHaveTextContent("Markdown");
+
+    await user.click(screen.getByRole("button", { name: "Produce as" }));
+    await user.click(screen.getByRole("option", { name: /Timesheet/i }));
+    expect(onOutputLayoutChange).toHaveBeenCalledWith("builtin:timesheet");
+
+    rerender(
+      <ConvertControls
+        options={DEFAULT_EXTRACT_OPTIONS}
+        onChange={vi.fn()}
+        me={guestMe}
+        health={null}
+        loading={false}
+        canExtract={false}
+        quotaBlocked={false}
+        onConvert={vi.fn()}
+        onStop={vi.fn()}
+        outputLayout="builtin:timesheet"
+        onOutputLayoutChange={onOutputLayoutChange}
+        designTargets={[
+          {
+            id: "builtin:timesheet",
+            name: "Timesheet",
+            description: "Employee hours by project",
+            category: "business",
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Produce as" })).toHaveTextContent("Timesheet");
   });
 
   it("converts and opens options", async () => {

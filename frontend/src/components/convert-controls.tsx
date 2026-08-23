@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Bot, FileOutput, Languages, Settings2, Sparkles, Square, X } from "lucide-react";
+import { Bot, FileOutput, Languages, Search, Settings2, Sparkles, Square, X } from "lucide-react";
 import {
   DEFAULT_EXTRACT_OPTIONS,
   type ExtractOptions,
@@ -13,6 +13,7 @@ import type { MeResponse } from "@/lib/auth";
 import { aiQuotaLeft, convertGate, convertGateTitle } from "@/lib/plans";
 import { PlanPolicyDialog } from "@/components/plan-policy-dialog";
 import { PRODUCT } from "@/lib/product-copy";
+import { TEMPLATE_CATEGORIES } from "@/design-pad/templates";
 import { cn } from "@/lib/utils";
 
 const ExtractOptionsPanel = dynamic(
@@ -23,6 +24,8 @@ export type TargetTemplateOption = {
   id: string;
   name: string;
   description?: string;
+  /** Starter taxonomy: family | business | general (from TEMPLATE_CATEGORIES). */
+  category?: string;
 };
 
 type ConvertControlsProps = {
@@ -388,7 +391,7 @@ function TargetFormatDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="target-format-title"
-        className="panel w-full max-w-md rounded-3xl px-6 py-5"
+        className="panel w-full max-w-lg rounded-3xl px-6 py-5"
         onPointerDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -466,21 +469,14 @@ function TargetFormatDialog({
                   </span>
                 </span>
               </label>
-              <select
-                aria-label={PRODUCT.starterDesign}
-                value={selectedDesignId}
-                onChange={(event) => onOutputLayoutChange?.(event.target.value)}
-                onFocus={() => {
+              <StarterDesignPicker
+                options={designTargets}
+                selectedId={selectedDesignId}
+                onSelect={(id) => onOutputLayoutChange?.(id)}
+                onActivate={() => {
                   if (!designSelected && defaultDesignId) onOutputLayoutChange?.(defaultDesignId);
                 }}
-                className="mt-3 w-full rounded-xl border border-[var(--line)] bg-[var(--bg-panel)] px-3 py-2 text-sm text-[var(--ink)] outline-none"
-              >
-                {designTargets.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
           ) : null}
 
@@ -577,6 +573,123 @@ function TargetFormatDialog({
             Done
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function StarterDesignPicker({
+  options,
+  selectedId,
+  onSelect,
+  onActivate,
+}: {
+  options: TargetTemplateOption[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  onActivate: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return options.filter((option) => {
+      if (categoryFilter !== "all" && option.category !== categoryFilter) return false;
+      if (!q) return true;
+      const hay = `${option.name} ${option.description || ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [options, query, categoryFilter]);
+
+  return (
+    <div className="mt-3 space-y-2">
+      <label className="relative block">
+        <span className="sr-only">Search designs</span>
+        <Search
+          size={14}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)]"
+        />
+        <input
+          type="search"
+          value={query}
+          placeholder="Search designs…"
+          onFocus={onActivate}
+          onChange={(event) => setQuery(event.target.value)}
+          className="w-full rounded-xl border border-[var(--line)] bg-[var(--bg-panel)] py-2 pl-8 pr-3 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)] focus:border-[var(--accent)]"
+        />
+      </label>
+
+      <div className="flex flex-wrap gap-1.5" role="toolbar" aria-label="Design category">
+        <button
+          type="button"
+          onClick={() => {
+            onActivate();
+            setCategoryFilter("all");
+          }}
+          className={cn(
+            "rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
+            categoryFilter === "all"
+              ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+              : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)]",
+          )}
+        >
+          All
+        </button>
+        {TEMPLATE_CATEGORIES.map((cat) => (
+          <button
+            type="button"
+            key={cat.id}
+            onClick={() => {
+              onActivate();
+              setCategoryFilter(cat.id);
+            }}
+            className={cn(
+              "rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
+              categoryFilter === cat.id
+                ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+                : "border-[var(--line)] text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)]",
+            )}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      <div
+        role="listbox"
+        aria-label={PRODUCT.starterDesign}
+        className="max-h-52 overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--bg-panel)]"
+      >
+        {filtered.length === 0 ? (
+          <p className="px-3 py-4 text-center text-xs text-[var(--ink-muted)]">No designs match.</p>
+        ) : (
+          filtered.map((option) => {
+            const selected = option.id === selectedId;
+            return (
+              <button
+                type="button"
+                key={option.id}
+                role="option"
+                aria-selected={selected}
+                onClick={() => onSelect(option.id)}
+                className={cn(
+                  "flex w-full flex-col gap-0.5 border-b border-[var(--line)] px-3 py-2.5 text-left transition last:border-b-0",
+                  selected
+                    ? "bg-[var(--accent-soft)]"
+                    : "hover:bg-[color-mix(in_oklab,var(--accent-soft)_55%,transparent)]",
+                )}
+              >
+                <span className="text-sm font-medium text-[var(--ink)]">{option.name}</span>
+                {option.description ? (
+                  <span className="line-clamp-2 text-xs leading-relaxed text-[var(--ink-muted)]">
+                    {option.description}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })
+        )}
       </div>
     </div>
   );

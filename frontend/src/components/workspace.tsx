@@ -289,6 +289,7 @@ export function Workspace() {
     id: `${BUILTIN_PREFIX}${item.id}`,
     name: item.name,
     description: item.description,
+    category: item.category,
   }));
   const fillableTemplates = signedIn
     ? templates.filter((template) => {
