@@ -224,6 +224,25 @@ describe("UploadPanel", () => {
     expect(onFileSelect).toHaveBeenCalledWith(null);
   });
 
+  it("empty source invites file and Produce as", async () => {
+    const user = userEvent.setup();
+    const onChooseIntent = vi.fn();
+    render(
+      <UploadPanel
+        file={null}
+        previewUrl={null}
+        onFileSelect={vi.fn()}
+        onCollapse={vi.fn()}
+        onChooseIntent={onChooseIntent}
+      />,
+    );
+    expect(screen.getAllByText(/Drop a file\. Choose what to produce/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Source is your file/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Produce as" }));
+    expect(onChooseIntent).toHaveBeenCalled();
+  });
+
   it("previews a markdown file and accepts txt/md in the picker", async () => {
     const file = new File(["# Hello notes"], "note.md", { type: "text/markdown" });
     render(<UploadPanel file={file} previewUrl={null} onFileSelect={vi.fn()} />);
@@ -393,9 +412,9 @@ describe("ConvertControls", () => {
         ]}
       />,
     );
-    expect(screen.getByRole("button", { name: "Produce as" })).toHaveTextContent("Markdown");
+    expect(screen.getByRole("button", { name: /Produce as/i })).toHaveTextContent("Markdown");
 
-    await user.click(screen.getByRole("button", { name: "Produce as" }));
+    await user.click(screen.getByRole("button", { name: /Produce as/i }));
     await user.click(screen.getByRole("option", { name: /Timesheet/i }));
     expect(onOutputLayoutChange).toHaveBeenCalledWith("builtin:timesheet");
 
@@ -422,7 +441,38 @@ describe("ConvertControls", () => {
         ]}
       />,
     );
-    expect(screen.getByRole("button", { name: "Produce as" })).toHaveTextContent("Timesheet");
+    expect(screen.getByRole("button", { name: /Produce as/i })).toHaveTextContent("Timesheet");
+  });
+
+  it("uses Fill label when a starter Intent is selected", async () => {
+    const user = userEvent.setup();
+    render(
+      <ConvertControls
+        options={DEFAULT_EXTRACT_OPTIONS}
+        onChange={vi.fn()}
+        me={guestMe}
+        health={null}
+        loading={false}
+        canExtract={false}
+        fileReady
+        quotaBlocked={false}
+        onConvert={vi.fn()}
+        onStop={vi.fn()}
+        outputLayout="builtin:invoice"
+        designTargets={[
+          {
+            id: "builtin:invoice",
+            name: "Client invoice",
+            description: "Bill-to and totals",
+            category: "business",
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Fill Client invoice" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Fill Client invoice" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("Sign in to convert")).toBeInTheDocument();
   });
 
   it("converts and opens options", async () => {
@@ -1120,7 +1170,8 @@ describe("ApiPage", () => {
     });
     vi.spyOn(api, "fetchMe").mockResolvedValue(guestMe);
     render(<ApiPage />);
-    expect(screen.getByRole("heading", { name: "PDF and Office to Markdown API" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Source + Intent" })).toBeInTheDocument();
+    expect(screen.getByText(/Same sentence as the workspace/i)).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "API" })[0]).toHaveAttribute("href", "/docs");
     expect(await screen.findByText("Reachable")).toBeInTheDocument();
     const samples = document.querySelectorAll(".api-code");
@@ -1553,7 +1604,21 @@ describe("ResultPanel", () => {
     const { rerender } = render(
       <ResultPanel result={null} loading={false} error={null} view="markdown" onViewChange={vi.fn()} />,
     );
-    expect(screen.getByText(/Drop a file and convert/)).toBeInTheDocument();
+    expect(screen.getByText(/You’ll get Markdown/i)).toBeInTheDocument();
+    expect(screen.getByText(/Drop a source file, then Convert/i)).toBeInTheDocument();
+    rerender(
+      <ResultPanel
+        result={null}
+        loading={false}
+        error={null}
+        view="markdown"
+        onViewChange={vi.fn()}
+        intentName="Client invoice"
+        onChooseIntent={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/You’ll get Client invoice/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Change what to produce/i })).toBeInTheDocument();
     rerender(<ResultPanel result={null} loading={false} error="boom" view="markdown" onViewChange={vi.fn()} />);
     expect(screen.getByText("boom")).toBeInTheDocument();
     rerender(<ResultPanel result={null} loading error={null} view="markdown" onViewChange={vi.fn()} />);

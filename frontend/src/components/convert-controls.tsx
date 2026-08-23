@@ -12,7 +12,7 @@ import {
 import type { MeResponse } from "@/lib/auth";
 import { aiQuotaLeft, convertGate, convertGateTitle } from "@/lib/plans";
 import { PlanPolicyDialog } from "@/components/plan-policy-dialog";
-import { PRODUCT } from "@/lib/product-copy";
+import { PRODUCT, produceActionLabel } from "@/lib/product-copy";
 import { TEMPLATE_CATEGORIES } from "@/design-pad/templates";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +52,9 @@ type ConvertControlsProps = {
   returnFileType?: "markdown" | "docx" | "pdf";
   onOutputLayoutChange?: (value: string) => void;
   onReturnFileTypeChange?: (value: "markdown" | "docx" | "pdf") => void;
+  /** Controlled Produce as dialog (Source meets Intent empty-state CTA). */
+  produceAsOpen?: boolean;
+  onProduceAsOpenChange?: (open: boolean) => void;
 };
 
 export function ConvertControls({
@@ -75,9 +78,17 @@ export function ConvertControls({
   returnFileType = "markdown",
   onOutputLayoutChange,
   onReturnFileTypeChange,
+  produceAsOpen,
+  onProduceAsOpenChange,
 }: ConvertControlsProps) {
   const [open, setOpen] = useState(false);
-  const [targetOpen, setTargetOpen] = useState(false);
+  const [targetOpenUncontrolled, setTargetOpenUncontrolled] = useState(false);
+  const targetOpen = produceAsOpen ?? targetOpenUncontrolled;
+  const setTargetOpen = (next: boolean | ((prev: boolean) => boolean)) => {
+    const value = typeof next === "function" ? next(targetOpen) : next;
+    onProduceAsOpenChange?.(value);
+    if (produceAsOpen === undefined) setTargetOpenUncontrolled(value);
+  };
   const [policyOpen, setPolicyOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const wantsAi = Boolean(options.use_ai || options.target_lang || templateNeedsAi);
@@ -107,6 +118,10 @@ export function ConvertControls({
       PRODUCT.design
     : null;
   const targetLabel = selectedTemplateName || "Markdown";
+  const actionLabel = produceActionLabel({
+    intentName: selectedTemplateName,
+    useAi: options.use_ai,
+  });
   const showDefaultsEscape =
     templateNeedsAi && (gate === "quota_ai_day" || gate === "quota_ai_month") && Boolean(onConvertWithDefaults);
 
@@ -153,14 +168,21 @@ export function ConvertControls({
         disabled={loading}
         onClick={() => setTargetOpen(true)}
         className={cn(
-          "inline-flex h-8 max-w-[10rem] items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition",
+          "inline-flex h-8 max-w-[14rem] items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition",
           layoutCustom
             ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
             : "border-[var(--line)] bg-[var(--bg-panel)] text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)]",
         )}
       >
         <FileOutput size={14} className="shrink-0" />
-        <span className="truncate">{targetLabel}</span>
+        <span className="truncate">
+          {layoutCustom ? targetLabel : PRODUCT.produceAs}
+        </span>
+        {!layoutCustom ? (
+          <span className="hidden truncate text-[10px] font-normal opacity-70 sm:inline">
+            · {targetLabel}
+          </span>
+        ) : null}
       </button>
       <div className="relative">
         <button
@@ -304,12 +326,12 @@ export function ConvertControls({
           disabled={!fileReady}
           title={
             !fileReady
-              ? "Choose a file to convert"
+              ? selectedTemplateName
+                ? `Drop a file to fill ${selectedTemplateName}`
+                : "Choose a file to convert"
               : gate !== "ready"
                 ? convertGateTitle(gate)
-                : options.use_ai
-                  ? "Convert with AI"
-                  : "Convert"
+                : actionLabel
           }
           onClick={() => {
             if (gate !== "ready") {
@@ -318,10 +340,10 @@ export function ConvertControls({
             }
             onConvert();
           }}
-          className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--accent)] px-3 text-sm font-medium text-white transition enabled:hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-45 dark:text-[#06281d]"
+          className="inline-flex h-8 max-w-[12rem] items-center gap-1.5 rounded-full bg-[var(--accent)] px-3 text-sm font-medium text-white transition enabled:hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-45 dark:text-[#06281d]"
         >
-          <Sparkles size={14} />
-          {options.use_ai ? "AI Convert" : "Convert"}
+          <Sparkles size={14} className="shrink-0" />
+          <span className="truncate">{actionLabel}</span>
         </button>
       )}
       {targetOpen ? (
@@ -403,8 +425,9 @@ function TargetFormatDialog({
               {PRODUCT.produceAs}
             </p>
             <p className="mt-1 text-sm leading-6 text-[var(--ink-muted)]">
-              Markdown is the default. Choose a starter design (family schedules, invoices, agendas,
-              plans) or one of your saved designs to AI-fill from the converted document.
+              {PRODUCT.homeLine} Markdown is the default. Choose a starter design (family schedules,
+              invoices, agendas, plans) or one of your saved designs to fill from the converted
+              document.
             </p>
           </div>
           <button

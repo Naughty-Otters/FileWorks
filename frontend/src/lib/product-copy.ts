@@ -34,7 +34,24 @@ export const PRODUCT = {
   fillableDesigns: "Fillable document designs",
   /** Field declarations in the editor */
   placeholders: "Placeholders",
+  /** Home / workspace promise — Source + Intent */
+  homeLine: "Drop a file. Choose what to produce.",
+  /** CTA from Designs library into workspace with Intent set */
+  produceFromFile: "Produce from file",
+  /** Edit starter in studio */
+  editInStudio: "Edit in studio",
   /** One-liner for marketing */
   oneLiner:
-    "Convert any file into Markdown, then produce a finished Design — invoices, family schedules, agendas, and more — filled from that content.",
+    "From any file → Markdown or a finished Design — invoices, family schedules, agendas, and more — filled from that content.",
 } as const;
+
+/** Primary action label: Convert (Markdown) or Fill {Design}. */
+export function produceActionLabel(args: {
+  intentName: string | null;
+  useAi?: boolean;
+}): string {
+  if (args.intentName) {
+    return args.useAi ? `AI Fill ${args.intentName}` : `Fill ${args.intentName}`;
+  }
+  return args.useAi ? "AI Convert" : "Convert";
+}

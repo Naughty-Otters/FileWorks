@@ -125,6 +125,7 @@ vi.mock("@/lib/prefetch", () => ({
 describe("Workspace", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    window.history.replaceState({}, "", "/");
     historyCache.clear();
     historyState.items = [{ ...pastItem }];
     vi.mocked(api.fetchHistoryDetail).mockClear();
@@ -147,8 +148,10 @@ describe("Workspace", () => {
     expect(screen.getAllByRole("link", { name: "Designs" })[0]).toHaveAttribute("href", "/templates");
     expect(screen.getAllByRole("link", { name: "API" })[0]).toHaveAttribute("href", "/docs");
     expect(screen.getByRole("link", { name: "About" })).toHaveAttribute("href", "/about");
-    expect(screen.getByText("Drop a file here")).toBeInTheDocument();
-    expect(screen.getByText(/Drop a file and convert/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Drop a file\. Choose what to produce/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Source is your file/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument();
+    expect(screen.getByText(/You’ll get Markdown/i)).toBeInTheDocument();
     expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
     expect(document.getElementById("history-panel")?.className).toContain("[grid-area:history]");
@@ -181,7 +184,7 @@ describe("Workspace", () => {
         }),
     );
     render(<Workspace />);
-    await waitFor(() => expect(screen.getByText("Drop a file here")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument());
     expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument();
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     expect(fileInput).not.toBeDisabled();
@@ -199,12 +202,42 @@ describe("Workspace", () => {
     render(<Workspace />);
     expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument();
     expect(screen.queryByText("Loading history…")).not.toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText("Drop a file here")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument());
     expect(screen.getAllByRole("link", { name: "Sign in" })[0]).toHaveAttribute("href", "/login");
     expect(screen.getByText(/to save conversions and see history/i)).toBeInTheDocument();
+    expect(screen.getByText(/You’ll get Markdown/i)).toBeInTheDocument();
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     expect(fileInput).not.toBeDisabled();
     expect(api.fetchHistory).not.toHaveBeenCalled();
+  });
+
+  it("applies ?produce= Intent from the Designs library deep link", async () => {
+    window.history.replaceState({}, "", "/?produce=invoice");
+    render(<Workspace />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Fill Client invoice/i })).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/You’ll get Client invoice/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload document" })).toHaveTextContent(
+      /Drop file for Client invoice/i,
+    );
+    expect(screen.getByText(/Intent: Client invoice/i)).toBeInTheDocument();
+  });
+
+  it("opens Produce as from the empty Source CTA", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.fetchMe).mockResolvedValue({
+      ...guestMe,
+      user: null,
+      plan: "anonymous",
+      permissions: {},
+    });
+    render(<Workspace />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument());
+    const sourceCtas = screen.getAllByRole("button", { name: "Produce as" });
+    await user.click(sourceCtas[sourceCtas.length - 1]);
+    expect(screen.getByRole("dialog", { name: "Produce as" })).toBeInTheDocument();
+    expect(screen.getByRole("listbox", { name: "Starter design" })).toBeInTheDocument();
   });
 
   it("reuses cached detail and file on a second click", async () => {

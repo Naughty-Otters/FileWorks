@@ -71,9 +71,9 @@ export const INPUT_FORMATS = [
 export const OUTPUT_FORMATS = ["Markdown", "TXT", "HTML", "JSON", "Word (.docx)", "print PDF"] as const;
 
 export const SITE_DESCRIPTION =
-  "Convert PDF, Word, Excel, PowerPoint, images, and scanned documents into editable Markdown online. Optional AI reading for OCR on scans, translation into 19 languages, and fillable Designs (family schedules, invoices, agendas, and more) filled from the converted text. Workspace plans from free Basic; Convert API from free with page credits.";
+  "From any file → Markdown or a finished Design. Convert PDF, Word, Excel, PowerPoint, images, and scans online; optionally AI-read and translate; fill invoices, family schedules, agendas, and more from that content. Workspace from free Basic; Convert API from free with page credits.";
 
-export const SITE_TAGLINE = "PDF & Office → Markdown, Designs, AI reading & translation";
+export const SITE_TAGLINE = "Drop a file. Choose what to produce.";
 
 export type FaqItem = { question: string; answer: string };
 

@@ -43,6 +43,7 @@ import {
 } from "@/lib/workspace-session";
 import { BUILT_IN_TEMPLATES, builtInTemplate } from "@/design-pad/templates";
 import { isStaticTemplate } from "@/design-pad/templating";
+import { PRODUCT } from "@/lib/product-copy";
 
 const HistoryPanel = dynamic(
   () => import("@/components/history-panel").then((mod) => mod.HistoryPanel),
@@ -53,6 +54,21 @@ const BUILTIN_PREFIX = "builtin:";
 function parseBuiltinLayout(layout: string): string | null {
   if (!layout.startsWith(BUILTIN_PREFIX)) return null;
   return layout.slice(BUILTIN_PREFIX.length) || null;
+}
+
+/** Resolve ?produce= / ?design= into an outputLayout id. */
+function layoutFromProduceParam(raw: string | null): string | null {
+  if (!raw) return null;
+  const value = raw.trim();
+  if (!value || value === "standard" || value === "markdown") return "standard";
+  if (value.startsWith(BUILTIN_PREFIX)) {
+    const id = value.slice(BUILTIN_PREFIX.length);
+    return builtInTemplate(id) ? value : null;
+  }
+  if (builtInTemplate(value)) return `${BUILTIN_PREFIX}${value}`;
+  // Saved design ids are UUIDs / opaque strings — accept as-is for deep links.
+  if (/^[a-zA-Z0-9_-]{8,}$/.test(value)) return value;
+  return null;
 }
 
 export function Workspace() {
@@ -79,6 +95,7 @@ export function Workspace() {
   const [templates, setTemplates] = useState<TemplateRecord[]>([]);
   const [outputLayout, setOutputLayout] = useState("standard");
   const [returnFileType, setReturnFileType] = useState<"markdown" | "docx" | "pdf">("markdown");
+  const [produceAsOpen, setProduceAsOpen] = useState(false);
   const [renderedHtml, setRenderedHtml] = useState<string | null>(null);
   const [templateWarning, setTemplateWarning] = useState<string | null>(null);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
@@ -220,6 +237,20 @@ export function Workspace() {
     setMarkdownMode(prefs.markdownMode);
     setMarkdownToolbar(prefs.markdownToolbar !== false);
     void saveSessionFile(null).catch(() => undefined);
+
+    // Design → workspace bridge: /?produce=invoice or /?design=builtin:invoice
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = layoutFromProduceParam(params.get("produce") || params.get("design"));
+      if (fromQuery) {
+        setOutputLayout(fromQuery);
+        params.delete("produce");
+        params.delete("design");
+        const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash}`;
+        window.history.replaceState({}, "", next);
+      }
+    }
+
     setSessionReady(true);
   }, []);
 
@@ -601,6 +632,10 @@ export function Workspace() {
     }
   }
 
+  const intentDisplayName = hasTargetTemplate
+    ? selectedBuiltIn?.name || selectedSaved?.name || PRODUCT.design
+    : null;
+
   const convertControls = (
     <ConvertControls
       compact
@@ -616,8 +651,8 @@ export function Workspace() {
       onConvert={handleExtract}
       onConvertWithDefaults={() => handleExtract({ fill: "defaults" })}
       onStop={handleStopConvert}
-      outputLayout={signedIn ? outputLayout : "standard"}
-      designTargets={signedIn ? designTargets : []}
+      outputLayout={outputLayout}
+      designTargets={designTargets}
       templates={fillableTemplates.map((template) => ({ id: template.id, name: template.name }))}
       templateNeedsAi={hasTargetTemplate && !selectedTemplateStatic}
       returnFileType={returnFileType}
@@ -629,6 +664,8 @@ export function Workspace() {
         setActiveTemplateName(null);
       }}
       onReturnFileTypeChange={setReturnFileType}
+      produceAsOpen={produceAsOpen}
+      onProduceAsOpenChange={setProduceAsOpen}
     />
   );
 
@@ -640,7 +677,7 @@ export function Workspace() {
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
           <BrandLockup asHeading />
           <p className="hidden min-w-0 truncate text-xs text-[var(--ink-muted)] sm:block lg:max-w-[28rem]">
-            PDF & Office → Markdown · AI reading & translation
+            {PRODUCT.homeLine}
           </p>
           <div className="ml-auto flex items-center gap-1.5">
             <a
@@ -707,6 +744,8 @@ export function Workspace() {
                 onFileSelect={handleFileSelect}
                 onCollapse={() => setPreviewOpen(false)}
                 actions={convertControls}
+                intentName={intentDisplayName}
+                onChooseIntent={() => setProduceAsOpen(true)}
                 leadingToggle={
                   historyOpen ? undefined : (
                     <PaneIcon
@@ -770,6 +809,8 @@ export function Workspace() {
               templateName={activeTemplateName}
               templateWarning={templateWarning}
               templateReturnFileType={returnFileType}
+              intentName={intentDisplayName}
+              onChooseIntent={() => setProduceAsOpen(true)}
               onUpdateFilledFromSource={
                 hasTargetTemplate && !selectedTemplateStatic ? handleUpdateFilledFromSource : undefined
               }

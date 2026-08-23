@@ -224,7 +224,7 @@ console.log(data.markdown);`,
               url: `${SITE_URL}/docs`,
               name: "Convert API — FileWorks",
               description:
-                "Upload PDF, Word, Excel, PowerPoint, or images to POST /api/v1/convert and receive Markdown or a filled Design via design=.",
+                "Source + Intent: upload PDF, Word, Excel, PowerPoint, or images to POST /api/v1/convert and receive Markdown or a filled Design via design=.",
               isPartOf: { "@id": `${SITE_URL}/#website` },
             },
           ],
@@ -243,12 +243,13 @@ console.log(data.markdown);`,
         <div>
           <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Convert API</p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl tracking-tight">
-            PDF and Office to Markdown API
+            Source + Intent
           </h1>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            One endpoint: upload a file, get Markdown (or a filled Design). Auth with a{" "}
-            <code className="api-inline">fw_live_</code> API key from Profile. Accepts PDF, Word,
-            Excel, PowerPoint, images, and text (up to 50 MB).
+            Same sentence as the workspace: upload a{" "}
+            <span className="font-medium text-[var(--ink)]">file</span> (Source), choose Markdown or
+            a Design (Intent). Auth with a <code className="api-inline">fw_live_</code> API key from
+            Profile. Accepts PDF, Word, Excel, PowerPoint, images, and text (up to 50 MB).
           </p>
         </div>
 
@@ -305,16 +306,23 @@ console.log(data.markdown);`,
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Convert</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             <code className="api-inline">POST /api/v1/convert</code> — multipart{" "}
-            <code className="api-inline">file</code> plus options. JSON returns extracted{" "}
-            <code className="api-inline">markdown</code> and exported{" "}
+            <code className="api-inline">file</code> (Source) plus Intent:{" "}
+            <code className="api-inline">target</code> and/or <code className="api-inline">design</code>.
+            JSON returns extracted <code className="api-inline">markdown</code> and exported{" "}
             <code className="api-inline">content</code>. Use{" "}
             <code className="api-inline">download=true</code> to receive the file body instead.
           </p>
           <dl className="mt-4 space-y-3 text-sm">
             <div>
+              <dt className="font-medium text-[var(--ink)]">file</dt>
+              <dd className="mt-0.5 text-[var(--ink-muted)]">
+                Source document (required). PDF, Office, images, Markdown, TXT, CSV — up to 50 MB.
+              </dd>
+            </div>
+            <div>
               <dt className="font-medium text-[var(--ink)]">target</dt>
               <dd className="mt-0.5 text-[var(--ink-muted)]">
-                Output format: <code className="api-inline">markdown</code> (default),{" "}
+                Intent output format: <code className="api-inline">markdown</code> (default),{" "}
                 <code className="api-inline">txt</code>, <code className="api-inline">html</code>,{" "}
                 <code className="api-inline">json</code>, or <code className="api-inline">docx</code>.
               </dd>
@@ -337,9 +345,9 @@ console.log(data.markdown);`,
             <div>
               <dt className="font-medium text-[var(--ink)]">design</dt>
               <dd className="mt-0.5 text-[var(--ink-muted)]">
-                Optional starter id (<code className="api-inline">invoice</code>,{" "}
+                Intent Design starter id (<code className="api-inline">invoice</code>,{" "}
                 <code className="api-inline">family_daily</code>, …). Fills that Design from the
-                extracted Markdown. List ids on{" "}
+                extracted Markdown — the API twin of Produce as. List ids on{" "}
                 <code className="api-inline">GET /api/v1/convert</code> →{" "}
                 <code className="api-inline">designs</code>.
               </dd>
@@ -357,18 +365,20 @@ console.log(data.markdown);`,
           </dl>
           <p className="mt-4 text-sm leading-6 text-[var(--ink-muted)]">
             <code className="api-inline">GET /api/v1/convert</code> returns the live catalog
-            (inputs, targets, languages, Design starters, and which options are available now).
+            (inputs, targets, languages, Design starters as produce targets, and which options are
+            available now).
           </p>
         </section>
 
         <section className="panel rounded-3xl px-5 py-5">
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Examples</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Replace YOUR_API_KEY with a key from Profile.
+            Replace YOUR_API_KEY with a key from Profile. Markdown Intent first; Design Intent
+            second — same endpoint.
           </p>
-          <CodeBlock lang="bash" label="Markdown file" code={examples.curlFile} />
-          <CodeBlock lang="bash" label="Print Markdown" code={examples.curlJson} />
-          <CodeBlock lang="bash" label="Filled Design (invoice)" code={examples.curlDesign} />
+          <CodeBlock lang="bash" label="Source → Markdown" code={examples.curlFile} />
+          <CodeBlock lang="bash" label="Source → Markdown (JSON)" code={examples.curlJson} />
+          <CodeBlock lang="bash" label="Source → Design (invoice)" code={examples.curlDesign} />
           <CodeBlock lang="python" code={examples.python} />
           <CodeBlock lang="javascript" code={examples.js} />
         </section>

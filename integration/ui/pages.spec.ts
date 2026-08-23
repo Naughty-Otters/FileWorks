@@ -50,6 +50,32 @@ test.describe("Public page loads @smoke", () => {
   });
 });
 
+test.describe("Designs library @smoke", () => {
+  test("starter cards offer Produce from file into the workspace", async ({ page }) => {
+    const response = await page.goto("/templates", { waitUntil: "domcontentloaded" });
+    expect(response).toBeTruthy();
+    if (response!.status() === 404) {
+      test.skip(true, "/templates not deployed on this environment");
+    }
+    expect(response!.status()).toBeLessThan(500);
+    const produce = page.getByRole("link", { name: /Produce from file/i }).first();
+    await expect(produce).toBeVisible({ timeout: 20_000 });
+    await expect(produce).toHaveAttribute("href", /\/\?produce=/);
+  });
+});
+
+test.describe("API docs @smoke", () => {
+  test("docs frame Convert as Source + Intent", async ({ page }) => {
+    const response = await page.goto("/docs", { waitUntil: "domcontentloaded" });
+    expect(response).toBeTruthy();
+    expect(response!.status()).toBeLessThan(500);
+    await expect(page.getByRole("heading", { name: /Source \+ Intent/i })).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(page.getByText(/Same sentence as the workspace/i)).toBeVisible();
+  });
+});
+
 test.describe("Primary navigation @smoke", () => {
   test("header links reach Pricing, API, Legal", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });

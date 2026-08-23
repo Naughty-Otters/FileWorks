@@ -44,9 +44,14 @@ export async function uploadWorkspaceFile(page: Page, filePath: string) {
   });
 }
 
+/** Toolbar Produce as control (aria-labelled; distinct from empty-state CTA). */
+export function produceAsToolbarButton(page: Page) {
+  return page.locator('button[aria-haspopup="dialog"][aria-label="Produce as"]');
+}
+
 /** Open Produce as and wait for the dialog. */
 export async function openProduceAs(page: Page) {
-  const produce = page.getByRole("button", { name: /Produce as/i });
+  const produce = produceAsToolbarButton(page);
   await expect(produce).toBeVisible();
   await expect(async () => {
     if ((await produce.getAttribute("aria-expanded")) !== "true") {

@@ -4,6 +4,7 @@ import { getEnv } from "../helpers/env";
 import {
   openProduceAs,
   openWorkspaceOptions,
+  produceAsToolbarButton,
   uploadWorkspaceFile,
   waitForWorkspaceReady,
 } from "../helpers/workspace";
@@ -12,6 +13,15 @@ test.describe("Workspace UI — upload and options", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await waitForWorkspaceReady(page);
+  });
+
+  test("empty workspace shows Source meets Intent composition", async ({ page }) => {
+    await expect(page.getByText(/Drop a file\. Choose what to produce/i).first()).toBeVisible();
+    await expect(page.getByText(/Source is your file/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Upload document" })).toBeVisible();
+    await expect(page.getByText(/You’ll get Markdown/i)).toBeVisible();
+    await expect(produceAsToolbarButton(page)).toBeVisible();
+    await expect(produceAsToolbarButton(page)).toContainText(/Produce as|Markdown/i);
   });
 
   test("dropzone accepts a text fixture", async ({ page }) => {
@@ -42,14 +52,27 @@ test.describe("Workspace UI — upload and options", () => {
     await expect(prefer).toHaveJSProperty("checked", !before);
   });
 
-  test("Produce as dialog opens with Markdown default", async ({ page }) => {
-    const produce = page.getByRole("button", { name: /Produce as/i });
+  test("Produce as dialog opens with Markdown default and starter Intent", async ({ page }) => {
+    const produce = produceAsToolbarButton(page);
     test.skip((await produce.count()) === 0, "Produce-as control not on this build");
 
     await openProduceAs(page);
     const dialog = page.getByRole("dialog", { name: /Produce as/i });
     await expect(dialog.getByRole("radio", { name: /Markdown/i })).toBeChecked();
+    await expect(dialog.getByRole("radio", { name: /Starter design/i })).toBeVisible();
+    await expect(dialog.getByRole("listbox", { name: /Starter design/i })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Family" })).toBeVisible();
     await expect(dialog.getByRole("radio", { name: /My design/i })).toBeVisible();
+  });
+
+  test("empty Source Produce as CTA opens the Intent dialog", async ({ page }) => {
+    const cta = page
+      .getByRole("button", { name: "Upload document" })
+      .locator("xpath=following-sibling::button[normalize-space()='Produce as']");
+    test.skip((await cta.count()) === 0, "Empty-state Produce as CTA not on this build");
+    await cta.click();
+    await expect(page.getByRole("dialog", { name: /Produce as/i })).toBeVisible();
+    await expect(page.getByRole("listbox", { name: /Starter design/i })).toBeVisible();
   });
 
   test("guest Convert is gated (sign-in prompt)", async ({ page }) => {
@@ -71,11 +94,6 @@ test.describe("Workspace UI — upload and options", () => {
 
 test.describe("Workspace UI — Produce as starter picker", () => {
   test.beforeEach(async ({ page }) => {
-    const env = getEnv();
-    test.skip(
-      !env.storageState,
-      "Starter designs require a signed-in session (FW_STORAGE_STATE)",
-    );
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await waitForWorkspaceReady(page);
   });
@@ -95,7 +113,9 @@ test.describe("Workspace UI — Produce as starter picker", () => {
     await expect(dialog.getByRole("button", { name: "General" })).toBeVisible();
 
     await dialog.getByRole("button", { name: "Family" }).click();
-    await expect(list.getByRole("option", { name: /family schedule|family planner|family calendar/i }).first()).toBeVisible();
+    await expect(
+      list.getByRole("option", { name: /family schedule|family planner|family calendar/i }).first(),
+    ).toBeVisible();
     await expect(list.getByRole("option", { name: /Client invoice/i })).toHaveCount(0);
 
     await dialog.getByRole("button", { name: "All" }).click();
@@ -107,6 +127,18 @@ test.describe("Workspace UI — Produce as starter picker", () => {
     await list.getByRole("option", { name: /Client invoice/i }).click();
     await expect(dialog.getByRole("radio", { name: /Starter design/i })).toBeChecked();
     await dialog.getByRole("button", { name: "Done" }).click();
-    await expect(page.getByRole("button", { name: /Produce as/i })).toContainText(/Client invoice|invoice/i);
+    await expect(produceAsToolbarButton(page)).toContainText(/Client invoice|invoice/i);
+    await expect(page.getByRole("button", { name: /Fill Client invoice/i })).toBeVisible();
+    await expect(page.getByText(/You’ll get Client invoice/i)).toBeVisible();
+  });
+
+  test("?produce= deep link preselects starter Intent", async ({ page }) => {
+    await page.goto("/?produce=invoice", { waitUntil: "domcontentloaded" });
+    await waitForWorkspaceReady(page);
+    await expect(page.getByRole("button", { name: /Fill Client invoice/i })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText(/You’ll get Client invoice/i)).toBeVisible();
+    await expect(produceAsToolbarButton(page)).toContainText(/Client invoice|invoice/i);
   });
 });

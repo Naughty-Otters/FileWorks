@@ -42,6 +42,17 @@ test.describe("Convert API catalog @smoke", () => {
     }
   });
 
+  test("catalog lists Design starters and upload limit", async ({ request }) => {
+    const res = await getConvertCatalog(request);
+    const body = await res.json();
+    expect(Number(body.max_upload_mb || 0)).toBeGreaterThanOrEqual(25);
+    const designs = body.designs || [];
+    expect(Array.isArray(designs)).toBeTruthy();
+    expect(designs.length).toBeGreaterThan(0);
+    const ids = designs.map((d: { id?: string }) => d.id);
+    expect(ids).toContain("invoice");
+  });
+
   test("authenticated catalog includes credits when API key set", async ({ request }) => {
     const env = getEnv();
     test.skip(!env.apiKey, "FW_API_KEY not set");

@@ -114,7 +114,7 @@ export function TemplateLibrary() {
           <h2 className="text-lg font-semibold">{PRODUCT.starterDesigns}</h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
             Ready-to-fill layouts by category — Family planners, Business documents, and General
-            reports. Copy a starter, then refine layout and defaults.
+            reports. Produce from a file on Home, or copy a starter into the studio to refine.
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <a
@@ -139,14 +139,9 @@ export function TemplateLibrary() {
                 <p className="mt-1 text-sm text-[var(--ink-muted)]">{cat.blurb}</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {categoryItems.map((item) => (
-                    <a
+                    <article
                       key={item.id}
-                      href={
-                        signedIn
-                          ? `/templates/new?starter=${item.id}`
-                          : `/login?next=${encodeURIComponent(`/templates/new?starter=${item.id}`)}`
-                      }
-                      className="panel flex flex-col rounded-2xl p-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]"
+                      className="panel flex flex-col rounded-2xl p-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--accent)]"
                     >
                       <div className="flex h-[70px] flex-col justify-center gap-1.5 rounded-lg bg-[color-mix(in_oklab,var(--bg)_70%,#94a3b8_30%)] px-3 py-2">
                         <div className="h-2.5 w-[70%] rounded-sm bg-[color-mix(in_oklab,var(--ink-muted)_55%,transparent)]" />
@@ -156,7 +151,25 @@ export function TemplateLibrary() {
                       </div>
                       <h3 className="mt-3 font-semibold">{item.name}</h3>
                       <p className="mt-1 min-h-10 text-sm text-[var(--ink-muted)]">{item.description}</p>
-                    </a>
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <a
+                          href={`/?produce=${encodeURIComponent(item.id)}`}
+                          className="rounded-full bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white dark:text-[#06281d]"
+                        >
+                          {PRODUCT.produceFromFile}
+                        </a>
+                        <a
+                          href={
+                            signedIn
+                              ? `/templates/new?starter=${item.id}`
+                              : `/login?next=${encodeURIComponent(`/templates/new?starter=${item.id}`)}`
+                          }
+                          className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--accent-strong)]"
+                        >
+                          {PRODUCT.editInStudio}
+                        </a>
+                      </div>
+                    </article>
                   ))}
                 </div>
               </div>

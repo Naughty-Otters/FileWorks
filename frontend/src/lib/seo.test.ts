@@ -69,7 +69,7 @@ describe("seo helpers", () => {
 
   it("documents Design-related SEO copy and FAQs", () => {
     expect(SITE_DESCRIPTION.toLowerCase()).toContain("design");
-    expect(SITE_TAGLINE.toLowerCase()).toContain("design");
+    expect(SITE_TAGLINE.toLowerCase()).toMatch(/produce|file/);
     expect(PRIMARY_KEYWORDS.some((k) => /design/i.test(k))).toBe(true);
     expect(PRIMARY_KEYWORDS.some((k) => /template/i.test(k))).toBe(true); // search alias
     expect(TEMPLATE_KEYWORDS.some((k) => /design/i.test(k))).toBe(true);

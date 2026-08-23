@@ -55,6 +55,9 @@ type ResultPanelProps = {
   templateWarning?: string | null;
   templateReturnFileType?: "markdown" | "docx" | "pdf";
   onUpdateFilledFromSource?: () => void;
+  /** Empty-state Intent name (Markdown when null). */
+  intentName?: string | null;
+  onChooseIntent?: () => void;
 };
 
 const DOWNLOAD_OPTIONS: Array<{ id: DownloadFormat | "pdf"; label: string }> = [
@@ -112,6 +115,8 @@ export function ResultPanel({
   templateWarning = null,
   templateReturnFileType = "docx",
   onUpdateFilledFromSource,
+  intentName = null,
+  onChooseIntent,
 }: ResultPanelProps) {
   const [copied, setCopied] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
@@ -480,9 +485,27 @@ export function ResultPanel({
               <div className="p-5" dangerouslySetInnerHTML={{ __html: renderedHtml || "" }} />
             </div>
           ) : empty ? (
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center text-[var(--ink-muted)]">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 px-6 text-center text-[var(--ink-muted)]">
               <FileOutput size={28} className="opacity-50" />
-              <p className="max-w-sm text-sm">Drop a file and convert — editable Markdown lands here.</p>
+              <div className="max-w-sm space-y-1">
+                <p className="text-sm font-medium text-[var(--ink)]">
+                  {intentName ? `You’ll get ${intentName}` : "You’ll get Markdown"}
+                </p>
+                <p className="text-sm">
+                  {intentName
+                    ? "Drop a source file, then Fill — the finished Design lands here."
+                    : "Drop a source file, then Convert — editable Markdown lands here. Or change Intent with Produce as."}
+                </p>
+              </div>
+              {onChooseIntent ? (
+                <button
+                  type="button"
+                  onClick={onChooseIntent}
+                  className="rounded-full border border-[var(--line)] bg-[var(--bg-panel)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:border-[var(--accent)] hover:text-[var(--accent-strong)]"
+                >
+                  {intentName ? "Change what to produce" : "Choose what to produce"}
+                </button>
+              ) : null}
             </div>
           ) : view === "markdown" && markdownMode === "preview" && !hasFilled ? (
             <div className="min-h-0 flex-1 overflow-hidden">

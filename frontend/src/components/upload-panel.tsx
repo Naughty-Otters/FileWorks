@@ -1,8 +1,9 @@
 "use client";
 
-import { FileImage, FileText, PanelLeftClose, Replace, Upload, X } from "lucide-react";
+import { FileImage, FileOutput, FileText, PanelLeftClose, Replace, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import type { ImageSize, RegionBox } from "@/lib/api";
+import { PRODUCT } from "@/lib/product-copy";
 import { cn, formatBytes } from "@/lib/utils";
 import { AnnotatedImage } from "@/components/region-overlay";
 
@@ -18,6 +19,10 @@ type UploadPanelProps = {
   onCollapse?: () => void;
   actions?: ReactNode;
   leadingToggle?: ReactNode;
+  /** When set, empty dropzone invites filling this Design (Source meets Intent). */
+  intentName?: string | null;
+  /** Opens Produce as — second half of the empty-state sentence. */
+  onChooseIntent?: () => void;
 };
 
 const ACCEPT = [
@@ -57,6 +62,8 @@ export function UploadPanel({
   onCollapse,
   actions,
   leadingToggle,
+  intentName = null,
+  onChooseIntent,
 }: UploadPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -156,7 +163,9 @@ export function UploadPanel({
                   ? "Drop to replace"
                   : file
                     ? `${formatBytes(file.size)}${regions.length > 0 ? ` · ${regions.length} regions` : ""}`
-                    : "Drop a file or browse"}
+                    : intentName
+                      ? `Drop a file to fill ${intentName}`
+                      : "Drop a file. Choose what to produce."}
               </p>
             </div>
           </div>
@@ -203,29 +212,55 @@ export function UploadPanel({
 
         {!file ? (
           <div
-            role="button"
-            tabIndex={0}
-            aria-label="Upload document"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") openPicker();
-            }}
-            onClick={openPicker}
-            {...dropHandlers}
             className={cn(
-              "flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center gap-3 px-6 py-10 text-center transition",
-              dragging ? "bg-[var(--accent-soft)]" : "hover:bg-[color-mix(in_oklab,var(--accent-soft)_35%,transparent)]",
+              "flex min-h-0 flex-1 flex-col items-center justify-center gap-5 px-6 py-10 text-center transition",
+              dragging ? "bg-[var(--accent-soft)]" : "",
               disabled && "pointer-events-none opacity-60",
             )}
+            {...dropHandlers}
           >
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-strong)]">
-              <Upload size={22} />
-            </span>
             <div>
-              <p className="text-sm font-medium">Drop a file here</p>
-              <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                Word, Excel, PowerPoint, PDF, Markdown, TXT, CSV, images · up to 50MB
+              <p className="font-[family-name:var(--font-display)] text-xl tracking-tight text-[var(--ink)]">
+                {PRODUCT.homeLine}
+              </p>
+              <p className="mt-2 text-xs text-[var(--ink-muted)]">
+                {intentName
+                  ? `Intent: ${intentName}. Drop the source file to continue.`
+                  : "Source is your file. Intent is Markdown or a Design."}
               </p>
             </div>
+
+            <div className="flex w-full max-w-sm flex-col gap-2 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                aria-label="Upload document"
+                onClick={openPicker}
+                className={cn(
+                  "inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition",
+                  "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)] hover:bg-[color-mix(in_oklab,var(--accent-soft)_80%,var(--accent)_12%)]",
+                )}
+              >
+                <Upload size={16} />
+                {intentName ? `Drop file for ${intentName}` : "Drop or choose a file"}
+              </button>
+              {onChooseIntent ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onChooseIntent();
+                  }}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[var(--line)] bg-[var(--bg-panel)] px-4 py-3 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)] hover:text-[var(--accent-strong)]"
+                >
+                  <FileOutput size={16} />
+                  {intentName ? `Change Intent` : PRODUCT.produceAs}
+                </button>
+              ) : null}
+            </div>
+
+            <p className="max-w-sm text-[11px] leading-relaxed text-[var(--ink-muted)]">
+              Word, Excel, PowerPoint, PDF, Markdown, TXT, CSV, images · up to 50MB
+            </p>
           </div>
         ) : (
           <div className="relative min-h-0 flex-1 overflow-hidden bg-[color-mix(in_oklab,var(--bg)_80%,black_4%)] p-3">
