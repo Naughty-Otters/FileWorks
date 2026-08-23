@@ -1,2 +1,6 @@
+# Design editor: unknown ids share the static /templates/new shell.
+# The client reads the real path from window.location / usePathname.
+/templates/:id  /templates/new  200
+
 # SPA fallback for the Next static export (static files still win).
 /*    /index.html   200

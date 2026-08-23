@@ -9,6 +9,11 @@ export const metadata: Metadata = buildPageMetadata({
   noIndex: true,
 });
 
+/** Static export requires params; other ids are served via Pages `_redirects`. */
+export function generateStaticParams() {
+  return [{ id: "new" }];
+}
+
 export default async function TemplateEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return <TemplateEditor templateId={id} />;

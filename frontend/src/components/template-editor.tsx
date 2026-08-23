@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { TemplateShell } from "./template-shell";
 import "@/design-pad/design-pad.css";
 import Toolbar from "@/design-pad/components/Toolbar";
@@ -26,6 +26,13 @@ const NUDGE_LARGE = 32;
 
 export function TemplateEditor({ templateId }: { templateId: string }) {
   const router = useRouter();
+  const pathname = usePathname();
+  // Cloudflare Pages rewrites /templates/:id → /templates/new HTML for static
+  // export; prefer the live URL so hard-refreshes still load the right design.
+  const routeId = useMemo(() => {
+    const segment = pathname?.match(/^\/templates\/([^/]+)/)?.[1];
+    return segment ? decodeURIComponent(segment) : templateId;
+  }, [pathname, templateId]);
   const { me, status } = useSession();
   const doc = useEditorStore((s) => s.doc);
   const selectedId = useEditorStore((s) => s.selectedId);
@@ -40,8 +47,8 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const moveNode = useEditorStore((s) => s.moveNode);
   const reorderChild = useEditorStore((s) => s.reorderChild);
 
-  const [id, setId] = useState(templateId === "new" ? null : templateId);
-  const [name, setName] = useState(PRODUCT.untitledDesign);
+  const [id, setId] = useState(routeId === "new" ? null : routeId);
+  const [name, setName] = useState<string>(PRODUCT.untitledDesign);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -53,7 +60,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     let cancelled = false;
     async function boot() {
       setError(null);
-      if (templateId === "new") {
+      if (routeId === "new") {
         const starter = new URLSearchParams(window.location.search).get("starter");
         const builtIn = starter ? builtInTemplate(starter) : null;
         if (builtIn) {
@@ -70,7 +77,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         return;
       }
       try {
-        const template = await fetchTemplate(templateId);
+        const template = await fetchTemplate(routeId);
         if (cancelled) return;
         loadDocument(normalizeDocument(template.document));
         setName(template.name);
@@ -85,7 +92,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [loadDocument, setShowTemplatePicker, templateId]);
+  }, [loadDocument, setShowTemplatePicker, routeId]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {

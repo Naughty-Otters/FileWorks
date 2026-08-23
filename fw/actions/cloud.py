@@ -39,6 +39,7 @@ from fw.tools import (
     aws_json,
     bootstrap_state,
     detach_app_bucket_from_state,
+    ensure_frontend_deps,
     require_cmd,
     run,
     terraform_cmd,
@@ -1368,6 +1369,8 @@ def frontend(ctx: Context) -> None:
     }
     if google_client_id:
         frontend_env["NEXT_PUBLIC_GOOGLE_CLIENT_ID"] = google_client_id
+    # Sync deps before build — wrangler alone can leave node_modules stale.
+    ensure_frontend_deps()
     run(
         ["npm", "run", "build"],
         cwd=FRONTEND_DIR,
