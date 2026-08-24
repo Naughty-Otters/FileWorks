@@ -4,14 +4,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { FilePlus2, Trash2 } from "lucide-react";
 import { TemplateShell } from "./template-shell";
 import { SeoFaq } from "@/components/seo-faq";
-import { BUILT_IN_TEMPLATES, TEMPLATE_CATEGORIES } from "@/design-pad/templates";
+import { BUILT_IN_TEMPLATES, TEMPLATE_CATEGORIES, type TemplateCategory } from "@/design-pad/templates";
 import { deleteTemplate, fetchTemplates, type TemplateRecord } from "@/lib/api";
 import { PRODUCT } from "@/lib/product-copy";
 import { useSession } from "@/lib/session";
 import { TEMPLATE_FAQS } from "@/lib/seo";
 
-function categoryAnchorId(categoryId: string) {
+function categoryAnchorId(categoryId: TemplateCategory) {
   return `design-cat-${categoryId}`;
+}
+
+function asTemplateCategory(value: string | null | undefined): TemplateCategory | null {
+  if (!value) return null;
+  return TEMPLATE_CATEGORIES.some((cat) => cat.id === value) ? (value as TemplateCategory) : null;
 }
 
 export function TemplateLibrary() {
@@ -27,7 +32,9 @@ export function TemplateLibrary() {
       ),
     [],
   );
-  const [activeCategory, setActiveCategory] = useState(populatedCategories[0]?.id ?? "");
+  const [activeCategory, setActiveCategory] = useState<TemplateCategory | "">(
+    populatedCategories[0]?.id ?? "",
+  );
   const clickingRef = useRef(false);
 
   useEffect(() => {
@@ -49,7 +56,7 @@ export function TemplateLibrary() {
         const visible = entries
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        const top = visible[0]?.target.getAttribute("data-category-id");
+        const top = asTemplateCategory(visible[0]?.target.getAttribute("data-category-id"));
         if (top) setActiveCategory(top);
       },
       {
@@ -62,7 +69,7 @@ export function TemplateLibrary() {
     return () => observer.disconnect();
   }, [populatedCategories]);
 
-  function scrollToCategory(categoryId: string) {
+  function scrollToCategory(categoryId: TemplateCategory) {
     const target = document.getElementById(categoryAnchorId(categoryId));
     if (!target) return;
     clickingRef.current = true;

@@ -2,13 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useEditorStore } from "../store";
-import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "../templates";
+import { TEMPLATES, TEMPLATE_CATEGORIES, type Template, type TemplateCategory } from "../templates";
 import { PAGE_SIZE_PRESETS, createEmptyDocument, type PageSize } from "../types";
 import { IconFile } from "../icons";
 import { PRODUCT } from "@/lib/product-copy";
 
-function categoryAnchorId(categoryId: string) {
+function categoryAnchorId(categoryId: TemplateCategory) {
   return `picker-cat-${categoryId}`;
+}
+
+function asTemplateCategory(value: string | null | undefined): TemplateCategory | null {
+  if (!value) return null;
+  return TEMPLATE_CATEGORIES.some((cat) => cat.id === value) ? (value as TemplateCategory) : null;
 }
 
 export default function TemplatePicker({ onPicked }: { onPicked?: (name: string) => void }) {
@@ -24,7 +29,9 @@ export default function TemplatePicker({ onPicked }: { onPicked?: (name: string)
     () => TEMPLATE_CATEGORIES.filter((cat) => TEMPLATES.some((t) => t.category === cat.id)),
     [],
   );
-  const [activeCategory, setActiveCategory] = useState(populatedCategories[0]?.id ?? "");
+  const [activeCategory, setActiveCategory] = useState<TemplateCategory | "">(
+    populatedCategories[0]?.id ?? "",
+  );
 
   useEffect(() => {
     if (step !== "grid") return;
@@ -41,7 +48,7 @@ export default function TemplatePicker({ onPicked }: { onPicked?: (name: string)
         const visible = entries
           .filter((entry) => entry.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        const top = visible[0]?.target.getAttribute("data-category-id");
+        const top = asTemplateCategory(visible[0]?.target.getAttribute("data-category-id"));
         if (top) setActiveCategory(top);
       },
       {
@@ -54,7 +61,7 @@ export default function TemplatePicker({ onPicked }: { onPicked?: (name: string)
     return () => observer.disconnect();
   }, [populatedCategories, step]);
 
-  function scrollToCategory(categoryId: string) {
+  function scrollToCategory(categoryId: TemplateCategory) {
     const root = modalRef.current;
     const target = root?.querySelector(`#${CSS.escape(categoryAnchorId(categoryId))}`);
     if (!(target instanceof HTMLElement) || !root) return;
