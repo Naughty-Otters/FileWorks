@@ -1,0 +1,806 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 24,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt38o2r0_377",
+        "kind": "box",
+        "label": "Header",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 96,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 24,
+          "padding": 0,
+          "align": "start",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "box_mt38o2r0_373",
+            "kind": "box",
+            "label": "Company",
+            "x": 0,
+            "y": 0,
+            "w": 423,
+            "h": 96,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2r0_371",
+                "kind": "heading",
+                "label": "{{ company_name }}",
+                "level": 2,
+                "x": 0,
+                "y": 0,
+                "w": 423,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 23,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r0_372",
+                "kind": "paragraph",
+                "label": "{{ company_address }}\n{{ company_email }}",
+                "x": 0,
+                "y": 48,
+                "w": 423,
+                "h": 48,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#334155",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2r0_376",
+            "kind": "box",
+            "label": "Invoice meta",
+            "x": 478,
+            "y": 0,
+            "w": 292,
+            "h": 96,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "end",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2r0_374",
+                "kind": "heading",
+                "label": "INVOICE",
+                "level": 1,
+                "x": 8,
+                "y": 0,
+                "w": 284,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 28,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r0_375",
+                "kind": "paragraph",
+                "label": "Invoice #: {{ invoice_number }}\nDate: {{ invoice_date }}",
+                "x": 8,
+                "y": 48,
+                "w": 284,
+                "h": 48,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#334155",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r0_380",
+        "kind": "box",
+        "label": "Bill to",
+        "x": 40,
+        "y": 160,
+        "w": 770,
+        "h": 145,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r0_378",
+            "kind": "heading",
+            "label": "Bill To",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt38o2r0_379",
+            "kind": "paragraph",
+            "label": "{{ client_name }}\n{{ client_address }}\n{{ client_email }}",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 67,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r0_388",
+        "kind": "box",
+        "label": "Line items",
+        "x": 40,
+        "y": 329,
+        "w": 770,
+        "h": 156,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r0_387",
+            "kind": "heading",
+            "label": "Line items",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt38o2r0_383",
+            "kind": "box",
+            "label": "Column headers",
+            "x": 20,
+            "y": 60,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2r0_381",
+                "kind": "paragraph",
+                "label": "Description",
+                "x": 0,
+                "y": 2,
+                "w": 525,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r0_382",
+                "kind": "paragraph",
+                "label": "Amount",
+                "x": 525,
+                "y": 2,
+                "w": 205,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2r0_386",
+            "kind": "box",
+            "label": "Line item",
+            "x": 20,
+            "y": 104,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2r0_384",
+                "kind": "paragraph",
+                "label": "{{ item.description }}",
+                "x": 0,
+                "y": 2,
+                "w": 525,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r0_385",
+                "kind": "paragraph",
+                "label": "{{ item.amount }}",
+                "x": 525,
+                "y": 2,
+                "w": 205,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ],
+            "repeat": {
+              "over": "invoice_spending_items",
+              "as": "item"
+            }
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r0_391",
+        "kind": "box",
+        "label": "Total",
+        "x": 40,
+        "y": 509,
+        "w": 770,
+        "h": 92,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 12,
+          "padding": 18,
+          "align": "center",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r0_389",
+            "kind": "heading",
+            "label": "Total",
+            "level": 3,
+            "x": 18,
+            "y": 24,
+            "w": 200,
+            "h": 44,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 19,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "heading_mt38o2r0_390",
+            "kind": "heading",
+            "label": "{{ invoice_total }}",
+            "level": 3,
+            "x": 592,
+            "y": 18,
+            "w": 160,
+            "h": 56,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 19,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "right",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r0_394",
+        "kind": "box",
+        "label": "Notes",
+        "x": 40,
+        "y": 625,
+        "w": 770,
+        "h": 118,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 8,
+          "padding": 16,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r0_392",
+            "kind": "heading",
+            "label": "Notes",
+            "level": 3,
+            "x": 16,
+            "y": 16,
+            "w": 738,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt38o2r0_393",
+            "kind": "paragraph",
+            "label": "{{ invoice_notes }}",
+            "x": 16,
+            "y": 52,
+            "w": 738,
+            "h": 50,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt38o2r0_395",
+      "name": "company_name",
+      "label": "Issuing company name on the invoice",
+      "type": "text",
+      "sampleValue": "Acme Studio"
+    },
+    {
+      "id": "var_mt38o2r0_396",
+      "name": "company_address",
+      "label": "Issuing company mailing address",
+      "type": "text",
+      "sampleValue": "123 Market St, City, ST 00000"
+    },
+    {
+      "id": "var_mt38o2r0_397",
+      "name": "company_email",
+      "label": "Issuing company billing email",
+      "type": "text",
+      "sampleValue": "billing@acme.example"
+    },
+    {
+      "id": "var_mt38o2r0_398",
+      "name": "invoice_number",
+      "label": "Invoice number or identifier",
+      "type": "text",
+      "sampleValue": "INV-1042"
+    },
+    {
+      "id": "var_mt38o2r0_399",
+      "name": "invoice_date",
+      "label": "Invoice issue date",
+      "type": "date",
+      "sampleValue": "March 1, 2026"
+    },
+    {
+      "id": "var_mt38o2r0_400",
+      "name": "client_name",
+      "label": "Bill-to client or customer name",
+      "type": "text",
+      "sampleValue": "Northwind Trading"
+    },
+    {
+      "id": "var_mt38o2r0_401",
+      "name": "client_address",
+      "label": "Bill-to client address",
+      "type": "text",
+      "sampleValue": "500 Harbor Ave, City, ST 00000"
+    },
+    {
+      "id": "var_mt38o2r0_402",
+      "name": "client_email",
+      "label": "Bill-to client email",
+      "type": "text",
+      "sampleValue": "ap@northwind.example"
+    },
+    {
+      "id": "var_mt38o2r0_403",
+      "name": "invoice_spending_items",
+      "label": "Invoice spending items: each billed line from the source (description and amount)",
+      "type": "list",
+      "sampleValue": "[{\"description\":\"Design retainer — March\",\"amount\":\"$2,400.00\"},{\"description\":\"Print production\",\"amount\":\"$350.00\"}]",
+      "itemSchema": [
+        {
+          "id": "field_mt38o2r0_404",
+          "name": "description",
+          "label": "What this invoice line billed",
+          "type": "text"
+        },
+        {
+          "id": "field_mt38o2r0_405",
+          "name": "amount",
+          "label": "Amount charged on this invoice line",
+          "type": "currency"
+        }
+      ]
+    },
+    {
+      "id": "var_mt38o2r0_406",
+      "name": "invoice_total",
+      "label": "Invoice grand total due",
+      "type": "currency",
+      "sampleValue": "$2,750.00"
+    },
+    {
+      "id": "var_mt38o2r0_407",
+      "name": "invoice_notes",
+      "label": "Invoice notes, payment terms, or footer remarks",
+      "type": "text",
+      "sampleValue": "Payment due within 30 days. Thank you for your business."
+    }
+  ]
+}

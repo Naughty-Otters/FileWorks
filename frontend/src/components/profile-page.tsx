@@ -54,7 +54,11 @@ export function ProfilePage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const checkout = params.get("checkout");
-    if (checkout === "cancel") setNotice("Checkout canceled. Your current plan is unchanged.");
+    if (checkout === "cancel") {
+      setNotice(
+        "Checkout canceled — no charge. You can keep using Free Basic (5 conversions / day) or pick a paid role when you are ready.",
+      );
+    }
     const fromPortal = params.get("billing") === "return";
     void (fromPortal ? syncBilling() : reloadSession())
       .then(async (session) => {

@@ -1,20 +1,29 @@
+import path from "node:path";
+import type { NextConfig } from "next";
+
 const staticExport = process.env.FILEWORKS_STATIC_EXPORT === "1";
-const emptyPolyfill = "./src/lib/empty-polyfill.ts";
 
-// Next always `require("../build/polyfills/polyfill-module")` from app-globals.
-// Package-path aliases do not match that relative request, so Lighthouse still
-// sees Array.prototype.at / Object.hasOwn / etc. in the client bundle.
-const polyfillAliases = {
-  "../build/polyfills/polyfill-module": emptyPolyfill,
-  "../build/polyfills/polyfill-nomodule": emptyPolyfill,
-  "next/dist/build/polyfills/polyfill-module": emptyPolyfill,
-  "next/dist/esm/build/polyfills/polyfill-module": emptyPolyfill,
-  "next/dist/build/polyfills/polyfill-nomodule": emptyPolyfill,
-  "next/dist/esm/build/polyfills/polyfill-nomodule": emptyPolyfill,
-};
+// Turbopack treats absolute `/...` alias targets as server-relative imports
+// ("server relative imports are not implemented yet" / `./Users/...`).
+// Always use a project-relative target for turbopack; webpack is fine with abs paths.
+const emptyPolyfillRelative = "./src/lib/empty-polyfill.ts";
+const emptyPolyfillAbsolute = path.join(__dirname, "src/lib/empty-polyfill.ts");
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+// Next always pulls polyfill-module from app-globals. Package-path aliases do
+// not always match that relative request (especially under webpack), so we
+// map both the public package paths and rewrite relative polyfill requires.
+const polyfillKeys = [
+  "next/dist/build/polyfills/polyfill-module",
+  "next/dist/esm/build/polyfills/polyfill-module",
+  "next/dist/build/polyfills/polyfill-nomodule",
+  "next/dist/esm/build/polyfills/polyfill-nomodule",
+] as const;
+
+function aliasMap(target: string): Record<string, string> {
+  return Object.fromEntries(polyfillKeys.map((key) => [key, target]));
+}
+
+const nextConfig: NextConfig = {
   ...(staticExport
     ? {
         output: "export" as const,
@@ -33,13 +42,25 @@ const nextConfig = {
   // Keep tooling rooted at the frontend package (nested git / monorepo safety).
   turbopack: {
     root: __dirname,
-    resolveAlias: polyfillAliases,
+    resolveAlias: {
+      "../build/polyfills/polyfill-module": emptyPolyfillRelative,
+      "../build/polyfills/polyfill-nomodule": emptyPolyfillRelative,
+      ...aliasMap(emptyPolyfillRelative),
+    },
   },
-  webpack(config: { resolve: { alias?: Record<string, string> } }) {
+  webpack(config, { webpack }) {
+    config.resolve = config.resolve || {};
     config.resolve.alias = {
-      ...config.resolve.alias,
-      ...polyfillAliases,
+      ...(config.resolve.alias as Record<string, string | false | string[]>),
+      ...aliasMap(emptyPolyfillAbsolute),
     };
+    config.plugins = config.plugins || [];
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /[\\/]next[\\/]dist[\\/](?:esm[\\/])?build[\\/]polyfills[\\/]polyfill-(?:no)?module(?:\.js)?$/,
+        emptyPolyfillAbsolute,
+      ),
+    );
     return config;
   },
   // Omitted entirely for `output: export`, which warns about any rewrites key.

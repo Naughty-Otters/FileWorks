@@ -22,6 +22,35 @@ export const PRIMARY_KEYWORDS = [
   "document translation to Markdown",
   "translate PDF to Markdown",
   "multilingual document converter",
+  "fillable document designs",
+  "document designs from PDF",
+  "family schedule design",
+  "meeting agenda design",
+  // Search aliases — people still query “template”
+  "fillable document templates",
+  "PDF to invoice template",
+  "family schedule template",
+  "meeting agenda template",
+] as const;
+
+export const TEMPLATE_KEYWORDS = [
+  "document designs",
+  "fillable document designs",
+  "invoice design from PDF",
+  "family daily schedule design",
+  "weekly family planner",
+  "yearly family calendar",
+  "meeting agenda design",
+  "project plan design",
+  "task list design",
+  "timesheet design",
+  "AI fill document design",
+  "design render API",
+  // Search aliases
+  "document templates",
+  "fillable PDF templates",
+  "AI fill document template",
+  "template render API",
 ] as const;
 
 export const INPUT_FORMATS = [
@@ -42,9 +71,9 @@ export const INPUT_FORMATS = [
 export const OUTPUT_FORMATS = ["Markdown", "TXT", "HTML", "JSON", "Word (.docx)", "print PDF"] as const;
 
 export const SITE_DESCRIPTION =
-  "Convert PDF, Word, Excel, PowerPoint, images, and scanned documents into editable Markdown online. Optional AI reading for OCR on scans, plus translation into 19 languages in the same pass. Workspace plans from free Basic; Convert API from free with page credits.";
+  "From any file → Markdown or a finished Design. Convert PDF, Word, Excel, PowerPoint, images, and scans online; optionally AI-read and translate; fill invoices, family schedules, agendas, and more from that content. Workspace from free Basic; Convert API from free with page credits.";
 
-export const SITE_TAGLINE = "PDF & Office → Markdown, with AI reading & translation";
+export const SITE_TAGLINE = "Drop a file. Choose what to produce.";
 
 export type FaqItem = { question: string; answer: string };
 
@@ -70,9 +99,32 @@ export const HOME_FAQS: FaqItem[] = [
       "Yes. Optionally translate into 19 languages in the same conversion pass as PDF or office extraction. Translation shares the AI / translation allowance on workspace plans and uses enhanced page credits on the Convert API.",
   },
   {
+    question: "Can I turn converted Markdown into invoices, schedules, or agendas?",
+    answer:
+      "Yes. Choose a Design in the workspace (family daily/weekly/monthly/yearly schedules, invoices, receipts, meeting agendas, project plans, task lists, timesheets, and more). FileWorks AI-fills the Design placeholders from the extracted Markdown. Via Convert API, pass design=invoice (or another starter id) on POST /api/v1/convert.",
+  },
+  {
     question: "How much does FileWorks cost?",
     answer:
       "Workspace Basic is free (5 conversions/day). Pro is $12/month (150 files) and Premium is $29/month (600 files). Convert API Free is free (100 credits/month); Builder $19, Scale $49, and Business $99. You can hold a workspace role and an API plan together.",
+  },
+];
+
+export const TEMPLATE_FAQS: FaqItem[] = [
+  {
+    question: "What built-in document designs does FileWorks include?",
+    answer:
+      "Starter designs are grouped into Family (daily, weekly, monthly, and yearly schedules), Business (invoice, receipt, statement, pay stub, insurance, rental, letter, meeting agenda, project plan, task list, timesheet), and General (markdown report). Each declares placeholders and list fields you can fill from converted Markdown or the API. (Search engines may still call these templates.)",
+  },
+  {
+    question: "How do I fill a Design from a PDF or Word file?",
+    answer:
+      "In the workspace, convert the file to Markdown, then pick Produce as a starter design. With AI fill enabled, FileWorks maps extracted content into the Design placeholders and list rows, then renders HTML, DOCX, or print PDF.",
+  },
+  {
+    question: "Is there an API for built-in Design starters?",
+    answer:
+      "Yes. POST /api/v1/convert with design=<starter_id> (invoice, family_daily, …) fills that Design from the extracted Markdown. GET /api/v1/convert lists available designs. Creating or editing custom Designs remains in the signed-in Design studio, not the Convert API.",
   },
 ];
 
@@ -374,6 +426,8 @@ export function softwareApplicationJsonLd() {
       "AI reading (OCR) for scanned PDFs and images",
       "Document translation into 19 languages",
       "AI + translation in the same conversion pass",
+      "Fillable Designs (family schedules, invoices, agendas, plans)",
+      "Built-in Design starters API with variable params",
       "Convert API with long-lived keys",
       "Export Markdown, HTML, TXT, JSON, DOCX, and print PDF",
     ],
@@ -493,6 +547,7 @@ export const INDEXABLE_ROUTES: Array<{ path: string; changeFrequency: "weekly" |
   { path: "/", changeFrequency: "weekly", priority: 1 },
   { path: "/pricing", changeFrequency: "weekly", priority: 0.9 },
   { path: "/docs", changeFrequency: "weekly", priority: 0.9 },
+  { path: "/templates", changeFrequency: "weekly", priority: 0.85 },
   { path: "/about", changeFrequency: "monthly", priority: 0.8 },
   { path: "/legal", changeFrequency: "monthly", priority: 0.5 },
   ...CONVERT_GUIDES.map((guide) => ({

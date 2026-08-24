@@ -13,6 +13,7 @@ from app.api.routes import router
 from app.api.auth_routes import router as auth_router
 from app.api.billing_routes import router as billing_router
 from app.api.key_routes import router as key_router
+from app.api.template_routes import router as template_router
 from app.api.v1 import router as v1_router
 from app.core.config import get_settings
 from app.core.logsetup import configure_app_logging
@@ -110,6 +111,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router, prefix=settings.api_prefix)
     app.include_router(billing_router, prefix=settings.api_prefix)
     app.include_router(key_router, prefix=settings.api_prefix)
+    app.include_router(template_router, prefix=settings.api_prefix)
     app.include_router(v1_router, prefix=settings.api_prefix)
     return app
 

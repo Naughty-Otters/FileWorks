@@ -312,6 +312,20 @@ body {
   background: color-mix(in oklab, var(--bg) 55%, transparent);
 }
 
+.prose-result .md-layout-flex,
+.prose-result .md-layout-grid,
+.prose-result .md-layout-columns {
+  margin: 1em 0;
+}
+
+.prose-result .md-layout-item > :first-child {
+  margin-top: 0;
+}
+
+.prose-result .md-layout-item > :last-child {
+  margin-bottom: 0;
+}
+
 .prose-result::after {
   content: "";
   display: table;

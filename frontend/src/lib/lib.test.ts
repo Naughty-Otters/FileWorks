@@ -641,7 +641,7 @@ describe("plan policy", () => {
     expect(convertGateTitle("quota_ai_month")).toMatch(/AI/);
     expect(convertGateTitle("plan")).toMatch(/cannot convert/);
     expect(convertGateTitle("ready")).toMatch(/Plan rules/);
-    expect(convertGateBody("login")).toMatch(/signed-in/);
+    expect(convertGateBody("login")).toMatch(/Free Basic/);
     expect(convertGateBody("quota_day")).toMatch(/five conversions/);
     expect(convertGateBody("quota_month")).toMatch(/monthly/);
     expect(convertGateBody("quota_ai_day")).toMatch(/without AI/);

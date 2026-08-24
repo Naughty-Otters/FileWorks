@@ -1,0 +1,1791 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 24,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt38o2r1_520",
+        "kind": "box",
+        "label": "Header",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 90,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 20,
+          "padding": 0,
+          "align": "start",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "box_mt38o2r1_516",
+            "kind": "box",
+            "label": "Company",
+            "x": 0,
+            "y": 0,
+            "w": 423,
+            "h": 78,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2r1_514",
+                "kind": "heading",
+                "label": "{{ employer_name }}",
+                "level": 2,
+                "x": 0,
+                "y": 0,
+                "w": 423,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 23,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r1_515",
+                "kind": "paragraph",
+                "label": "{{ employer_address }}",
+                "x": 0,
+                "y": 48,
+                "w": 423,
+                "h": 30,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#334155",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2r1_519",
+            "kind": "box",
+            "label": "Stub info",
+            "x": 478,
+            "y": 0,
+            "w": 292,
+            "h": 78,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "end",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2r1_517",
+                "kind": "heading",
+                "label": "PAY STUB",
+                "level": 2,
+                "x": 8,
+                "y": 0,
+                "w": 284,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 23,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2r1_518",
+                "kind": "paragraph",
+                "label": "Pay date: {{ pay_date }}",
+                "x": 8,
+                "y": 48,
+                "w": 284,
+                "h": 30,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#334155",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_537",
+        "kind": "box",
+        "label": "Employee info",
+        "x": 40,
+        "y": 154,
+        "w": 770,
+        "h": 169,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 14,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r1_521",
+            "kind": "heading",
+            "label": "Employee",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt38o2r1_536",
+            "kind": "box",
+            "label": "Employee columns",
+            "x": 20,
+            "y": 62,
+            "w": 730,
+            "h": 87,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 20,
+              "padding": 0,
+              "align": "start",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "box_mt38o2r1_528",
+                "kind": "box",
+                "label": "Identity",
+                "x": 0,
+                "y": 0,
+                "w": 355,
+                "h": 74,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "column",
+                  "gap": 10,
+                  "padding": 0,
+                  "align": "stretch",
+                  "justify": "start"
+                },
+                "children": [
+                  {
+                    "id": "box_mt38o2r1_524",
+                    "kind": "box",
+                    "label": "Row",
+                    "x": 0,
+                    "y": 0,
+                    "w": 355,
+                    "h": 32,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 14,
+                      "color": "#1e293b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "#e2e8f0",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": {
+                      "direction": "row",
+                      "gap": 0,
+                      "padding": 0,
+                      "align": "center",
+                      "justify": "space-between"
+                    },
+                    "children": [
+                      {
+                        "id": "paragraph_mt38o2r1_522",
+                        "kind": "paragraph",
+                        "label": "Employee",
+                        "x": 0,
+                        "y": 2,
+                        "w": 142,
+                        "h": 28,
+                        "style": {
+                          "fontFamily": "Arial, Helvetica, sans-serif",
+                          "fontSize": 13,
+                          "color": "#64748b",
+                          "bold": false,
+                          "italic": false,
+                          "underline": false,
+                          "align": "left",
+                          "link": "",
+                          "backgroundColor": "transparent",
+                          "borderColor": "transparent",
+                          "borderWidth": 0,
+                          "borderStyle": "none"
+                        },
+                        "layout": null,
+                        "children": []
+                      },
+                      {
+                        "id": "paragraph_mt38o2r1_523",
+                        "kind": "paragraph",
+                        "label": "{{ employee_name }}",
+                        "x": 142,
+                        "y": 2,
+                        "w": 213,
+                        "h": 28,
+                        "style": {
+                          "fontFamily": "Arial, Helvetica, sans-serif",
+                          "fontSize": 13,
+                          "color": "#0f172a",
+                          "bold": false,
+                          "italic": false,
+                          "underline": false,
+                          "align": "right",
+                          "link": "",
+                          "backgroundColor": "transparent",
+                          "borderColor": "transparent",
+                          "borderWidth": 0,
+                          "borderStyle": "none"
+                        },
+                        "layout": null,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "box_mt38o2r1_527",
+                    "kind": "box",
+                    "label": "Row",
+                    "x": 0,
+                    "y": 42,
+                    "w": 355,
+                    "h": 32,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 14,
+                      "color": "#1e293b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "#e2e8f0",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": {
+                      "direction": "row",
+                      "gap": 0,
+                      "padding": 0,
+                      "align": "center",
+                      "justify": "space-between"
+                    },
+                    "children": [
+                      {
+                        "id": "paragraph_mt38o2r1_525",
+                        "kind": "paragraph",
+                        "label": "Employee ID",
+                        "x": 0,
+                        "y": 2,
+                        "w": 142,
+                        "h": 28,
+                        "style": {
+                          "fontFamily": "Arial, Helvetica, sans-serif",
+                          "fontSize": 13,
+                          "color": "#64748b",
+                          "bold": false,
+                          "italic": false,
+                          "underline": false,
+                          "align": "left",
+                          "link": "",
+                          "backgroundColor": "transparent",
+                          "borderColor": "transparent",
+                          "borderWidth": 0,
+                          "borderStyle": "none"
+                        },
+                        "layout": null,
+                        "children": []
+                      },
+                      {
+                        "id": "paragraph_mt38o2r1_526",
+                        "kind": "paragraph",
+                        "label": "{{ employee_id }}",
+                        "x": 142,
+                        "y": 2,
+                        "w": 213,
+                        "h": 28,
+                        "style": {
+                          "fontFamily": "Arial, Helvetica, sans-serif",
+                          "fontSize": 13,
+                          "color": "#0f172a",
+                          "bold": false,
+                          "italic": false,
+                          "underline": false,
+                          "align": "right",
+                          "link": "",
+                          "backgroundColor": "transparent",
+                          "borderColor": "transparent",
+                          "borderWidth": 0,
+                          "borderStyle": "none"
+                        },
+                        "layout": null,
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2r1_535",
+                "kind": "box",
+                "label": "Period",
+                "x": 375,
+                "y": 0,
+                "w": 355,
+                "h": 87,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "column",
+                  "gap": 10,
+                  "padding": 0,
+                  "align": "stretch",
+                  "justify": "start"
+                },
+                "children": [
+                  {
+                    "id": "box_mt38o2r1_531",
+                    "kind": "box",
+                    "label": "Row",
+                    "x": 0,
+                    "y": 0,
+                    "w": 355,
+                    "h": 45,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 14,
+                      "color": "#1e293b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "#e2e8f0",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": {
+                      "direction": "row",
+                      "gap": 0,
+                      "padding": 0,
+                      "align": "center",
+                      "justify": "space-between"
+                    },
+                    "children": [
+                      {
+                        "id": "paragraph_mt38o2r1_529",
+                        "kind": "paragraph",
+                        "label": "Pay period",
+                        "x": 0,
+                        "y": 8.5,
+                        "w": 142,
+                        "h": 28,
+                        "style": {
+                          "fontFamily": "Arial, Helvetica, sans-serif",
+                          "fontSize": 13,
+                          "color": "#64748b",
+                          "bold": false,
+                          "italic": false,
+                          "underline": false,
+                          "align": "left",
+                          "link": "",
+                          "backgroundColor": "transparent",
+                          "borderColor": "transparent",
+                          "borderWidth": 0,
+                          "borderStyle": "none"
+                        },
+                        "layout": null,
+                        "children": []
+                      },
+                      {
+                        "id": "paragraph_mt38o2r1_530",
+                        "kind": "paragraph",
+                        "label": "{{ pay_period_start }} – {{ pay_period_end }}",
+                        "x": 142,
+                        "y": 0,
+                        "w": 213,
+                        "h": 45,
+                        "style": {
+                          "fontFamily": "Arial, Helvetica, sans-serif",
+                          "fontSize": 13,
+                          "color": "#0f172a",
+                          "bold": false,
+                          "italic": false,
+                          "underline": false,
+                          "align": "right",
+                          "link": "",
+                          "backgroundColor": "transparent",
+                          "borderColor": "transparent",
+                          "borderWidth": 0,
+                          "borderStyle": "none"
+                        },
+                        "layout": null,
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "box_mt38o2r1_534",
+                    "kind": "box",
+                    "label": "Row",
+                    "x": 0,
+                    "y": 55,
+                    "w": 355,
+                    "h": 32,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 14,
+                      "color": "#1e293b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "#e2e8f0",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": {
+                      "direction": "row",
+                      "gap": 0,
+                      "padding": 0,
+                      "align": "center",
+                      "justify": "space-between"
+                    },
+                    "children": [
+                      {
+                        "id": "paragraph_mt38o2r1_532",
+                        "kind": "paragraph",
+                        "label": "Filing status",
+                        "x": 0,
+                        "y": 2,
+                        "w": 142,
+                        "h": 28,
+                        "style": {
+                          "fontFamily": "Arial, Helvetica, sans-serif",
+                          "fontSize": 13,
+                          "color": "#64748b",
+                          "bold": false,
+                          "italic": false,
+                          "underline": false,
+                          "align": "left",
+                          "link": "",
+                          "backgroundColor": "transparent",
+                          "borderColor": "transparent",
+                          "borderWidth": 0,
+                          "borderStyle": "none"
+                        },
+                        "layout": null,
+                        "children": []
+                      },
+                      {
+                        "id": "paragraph_mt38o2r1_533",
+                        "kind": "paragraph",
+                        "label": "{{ filing_status }}",
+                        "x": 142,
+                        "y": 2,
+                        "w": 213,
+                        "h": 28,
+                        "style": {
+                          "fontFamily": "Arial, Helvetica, sans-serif",
+                          "fontSize": 13,
+                          "color": "#0f172a",
+                          "bold": false,
+                          "italic": false,
+                          "underline": false,
+                          "align": "right",
+                          "link": "",
+                          "backgroundColor": "transparent",
+                          "borderColor": "transparent",
+                          "borderWidth": 0,
+                          "borderStyle": "none"
+                        },
+                        "layout": null,
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_569",
+        "kind": "box",
+        "label": "Pay details",
+        "x": 40,
+        "y": 347,
+        "w": 770,
+        "h": 270,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 16,
+          "padding": 0,
+          "align": "start",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "box_mt38o2r1_551",
+            "kind": "box",
+            "label": "Earnings",
+            "x": 0,
+            "y": 0,
+            "w": 377,
+            "h": 228,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 1,
+              "borderStyle": "solid"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 10,
+              "padding": 16,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2r1_538",
+                "kind": "heading",
+                "label": "Earnings",
+                "level": 3,
+                "x": 16,
+                "y": 16,
+                "w": 345,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 15,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "box_mt38o2r1_541",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 54,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r1_539",
+                    "kind": "paragraph",
+                    "label": "Regular hours",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2r1_540",
+                    "kind": "paragraph",
+                    "label": "{{ regular_hours }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2r1_544",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 96,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r1_542",
+                    "kind": "paragraph",
+                    "label": "Hourly rate",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2r1_543",
+                    "kind": "paragraph",
+                    "label": "{{ hourly_rate }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2r1_547",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 138,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r1_545",
+                    "kind": "paragraph",
+                    "label": "Overtime pay",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2r1_546",
+                    "kind": "paragraph",
+                    "label": "{{ overtime_pay }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2r1_550",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 180,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r1_548",
+                    "kind": "paragraph",
+                    "label": "Gross pay",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2r1_549",
+                    "kind": "paragraph",
+                    "label": "{{ gross_pay }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2r1_568",
+            "kind": "box",
+            "label": "Deductions",
+            "x": 393,
+            "y": 0,
+            "w": 377,
+            "h": 270,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 1,
+              "borderStyle": "solid"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 10,
+              "padding": 16,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2r1_552",
+                "kind": "heading",
+                "label": "Deductions",
+                "level": 3,
+                "x": 16,
+                "y": 16,
+                "w": 345,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 15,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "box_mt38o2r1_555",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 54,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r1_553",
+                    "kind": "paragraph",
+                    "label": "Federal tax",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2r1_554",
+                    "kind": "paragraph",
+                    "label": "{{ federal_tax }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2r1_558",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 96,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r1_556",
+                    "kind": "paragraph",
+                    "label": "State tax",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2r1_557",
+                    "kind": "paragraph",
+                    "label": "{{ state_tax }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2r1_561",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 138,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r1_559",
+                    "kind": "paragraph",
+                    "label": "Insurance",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2r1_560",
+                    "kind": "paragraph",
+                    "label": "{{ insurance_deduction }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2r1_564",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 180,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r1_562",
+                    "kind": "paragraph",
+                    "label": "Retirement (401k)",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2r1_563",
+                    "kind": "paragraph",
+                    "label": "{{ retirement_deduction }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2r1_567",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 222,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2r1_565",
+                    "kind": "paragraph",
+                    "label": "Total deductions",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2r1_566",
+                    "kind": "paragraph",
+                    "label": "{{ total_deductions }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2r1_571",
+        "kind": "box",
+        "label": "Net pay",
+        "x": 40,
+        "y": 641,
+        "w": 770,
+        "h": 80,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#f0fdf4",
+          "borderColor": "#bbf7d0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 12,
+          "padding": 18,
+          "align": "center",
+          "justify": "end"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2r1_570",
+            "kind": "heading",
+            "label": "Net Pay: {{ net_pay }}",
+            "level": 2,
+            "x": 22,
+            "y": 18,
+            "w": 730,
+            "h": 44,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 23,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "right",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt38o2r1_572",
+      "name": "employer_name",
+      "label": "Employer company name on the pay stub",
+      "type": "text",
+      "sampleValue": "Acme Corporation"
+    },
+    {
+      "id": "var_mt38o2r1_573",
+      "name": "employer_address",
+      "label": "Employer address on the pay stub",
+      "type": "text",
+      "sampleValue": "123 Main St, City, ST 00000"
+    },
+    {
+      "id": "var_mt38o2r1_574",
+      "name": "pay_date",
+      "label": "Pay date printed on the stub",
+      "type": "date",
+      "sampleValue": "02/15/2026"
+    },
+    {
+      "id": "var_mt38o2r1_575",
+      "name": "employee_name",
+      "label": "Employee name on the pay stub",
+      "type": "text",
+      "sampleValue": "Jane Doe"
+    },
+    {
+      "id": "var_mt38o2r1_576",
+      "name": "employee_id",
+      "label": "Employee ID on the pay stub",
+      "type": "text",
+      "sampleValue": "EMP-00214"
+    },
+    {
+      "id": "var_mt38o2r1_577",
+      "name": "pay_period_start",
+      "label": "Pay period start date",
+      "type": "date",
+      "sampleValue": "02/01/2026"
+    },
+    {
+      "id": "var_mt38o2r1_578",
+      "name": "pay_period_end",
+      "label": "Pay period end date",
+      "type": "date",
+      "sampleValue": "02/15/2026"
+    },
+    {
+      "id": "var_mt38o2r1_579",
+      "name": "filing_status",
+      "label": "Employee tax filing status",
+      "type": "text",
+      "sampleValue": "Single"
+    },
+    {
+      "id": "var_mt38o2r1_580",
+      "name": "regular_hours",
+      "label": "Regular hours worked this period",
+      "type": "number",
+      "sampleValue": "80"
+    },
+    {
+      "id": "var_mt38o2r1_581",
+      "name": "hourly_rate",
+      "label": "Employee hourly rate",
+      "type": "currency",
+      "sampleValue": "$32.00"
+    },
+    {
+      "id": "var_mt38o2r1_582",
+      "name": "overtime_pay",
+      "label": "Overtime pay this period",
+      "type": "currency",
+      "sampleValue": "$0.00"
+    },
+    {
+      "id": "var_mt38o2r1_583",
+      "name": "gross_pay",
+      "label": "Gross pay this period",
+      "type": "currency",
+      "sampleValue": "$2,560.00"
+    },
+    {
+      "id": "var_mt38o2r1_584",
+      "name": "federal_tax",
+      "label": "Federal tax withheld",
+      "type": "currency",
+      "sampleValue": "$384.00"
+    },
+    {
+      "id": "var_mt38o2r1_585",
+      "name": "state_tax",
+      "label": "State tax withheld",
+      "type": "currency",
+      "sampleValue": "$128.00"
+    },
+    {
+      "id": "var_mt38o2r1_586",
+      "name": "insurance_deduction",
+      "label": "Insurance deduction this period",
+      "type": "currency",
+      "sampleValue": "$60.00"
+    },
+    {
+      "id": "var_mt38o2r1_587",
+      "name": "retirement_deduction",
+      "label": "Retirement (401k) deduction this period",
+      "type": "currency",
+      "sampleValue": "$102.40"
+    },
+    {
+      "id": "var_mt38o2r1_588",
+      "name": "total_deductions",
+      "label": "Total deductions this period",
+      "type": "currency",
+      "sampleValue": "$674.40"
+    },
+    {
+      "id": "var_mt38o2r1_589",
+      "name": "net_pay",
+      "label": "Net pay on the stub",
+      "type": "currency",
+      "sampleValue": "$1,885.60"
+    }
+  ]
+}

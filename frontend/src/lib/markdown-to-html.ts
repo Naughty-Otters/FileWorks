@@ -1,3 +1,4 @@
+import { expandMarkdownLayoutDirectivesAsync } from "@/lib/markdown-layout";
 import katex, { type KatexOptions } from "katex";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
@@ -249,9 +250,19 @@ const processor = unified()
   .use(rehypeLockMath)
   .use(rehypeStringify);
 
-/** Markdown → sanitized HTML. Safe to run in a worker (no DOM). */
-export async function renderMarkdownToHtml(markdown: string): Promise<string> {
+/** Inner pass without layout expansion (used for bodies inside :::item). */
+async function renderMarkdownFragment(markdown: string): Promise<string> {
   if (!markdown.trim()) return "";
   const file = await processor.process(markdown);
   return String(file);
+}
+
+/** Markdown → sanitized HTML. Safe to run in a worker (no DOM). */
+export async function renderMarkdownToHtml(markdown: string): Promise<string> {
+  if (!markdown.trim()) return "";
+  if (!markdown.includes(":::")) {
+    return renderMarkdownFragment(markdown);
+  }
+  // Layout expand renders nested markdown fragments (already sanitized).
+  return expandMarkdownLayoutDirectivesAsync(markdown, renderMarkdownFragment);
 }

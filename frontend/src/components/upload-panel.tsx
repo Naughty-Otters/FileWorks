@@ -1,8 +1,9 @@
 "use client";
 
-import { FileImage, FileText, PanelLeftClose, Replace, Upload, X } from "lucide-react";
+import { FileImage, FilePlus, FileText, PanelLeftClose, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import type { ImageSize, RegionBox } from "@/lib/api";
+import { PRODUCT } from "@/lib/product-copy";
 import { cn, formatBytes } from "@/lib/utils";
 import { AnnotatedImage } from "@/components/region-overlay";
 
@@ -16,8 +17,11 @@ type UploadPanelProps = {
   onActiveRegionChange?: (id: string | null) => void;
   onFileSelect: (file: File | null) => void;
   onCollapse?: () => void;
+  /** Pipeline actions (Produce as · Options · Convert) — lives in the single Source chrome. */
   actions?: ReactNode;
   leadingToggle?: ReactNode;
+  /** When set, empty dropzone invites filling this Design. */
+  intentName?: string | null;
 };
 
 const ACCEPT = [
@@ -45,6 +49,10 @@ const ACCEPT = [
   ".markdown",
 ].join(",");
 
+function ToolbarDivider() {
+  return <span className="mx-0.5 hidden h-4 w-px shrink-0 bg-[var(--line)] sm:block" aria-hidden />;
+}
+
 export function UploadPanel({
   file,
   previewUrl,
@@ -57,6 +65,7 @@ export function UploadPanel({
   onCollapse,
   actions,
   leadingToggle,
+  intentName = null,
 }: UploadPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -116,6 +125,14 @@ export function UploadPanel({
     },
   };
 
+  const meta = dragging && file
+    ? "Drop to replace"
+    : file
+      ? `${formatBytes(file.size)}${regions.length > 0 ? ` · ${regions.length} regions` : ""}`
+      : intentName
+        ? `Ready to fill ${intentName}`
+        : "Drop a file to begin";
+
   return (
     <section className="flex h-full min-h-0 flex-col">
       <input
@@ -137,88 +154,106 @@ export function UploadPanel({
           file && dragging && "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]",
         )}
       >
-        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-t-2xl border-b border-[var(--line)] px-3 py-2">
+        {/* One Source chrome: identity · source tools · pipeline · panel */}
+        <header className="flex h-11 shrink-0 items-center gap-1.5 border-b border-[var(--line)] px-2.5">
           {leadingToggle}
-          {file ? (
-            isPdf || isText ? (
-              <FileText size={15} className="shrink-0 text-[var(--accent)]" />
+
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            {file ? (
+              isPdf || isText ? (
+                <FileText size={15} className="shrink-0 text-[var(--accent)]" aria-hidden />
+              ) : (
+                <FileImage size={15} className="shrink-0 text-[var(--accent)]" aria-hidden />
+              )
             ) : (
-              <FileImage size={15} className="shrink-0 text-[var(--accent)]" />
-            )
-          ) : (
-            <Upload size={15} className="shrink-0 text-[var(--accent)]" />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{file ? file.name : "Source"}</p>
-            <p className="text-[11px] text-[var(--ink-muted)]">
-              {file
-                ? `${formatBytes(file.size)}${regions.length > 0 ? ` · ${regions.length} regions` : ""}`
-                : "Drop a file or browse"}
-            </p>
+              <Upload size={15} className="shrink-0 text-[var(--accent)]" aria-hidden />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium leading-tight text-[var(--ink)]">
+                {file ? file.name : "Source"}
+              </p>
+              <p className="truncate text-[11px] leading-tight text-[var(--ink-muted)]">{meta}</p>
+            </div>
           </div>
-          {dragging && file ? (
-            <span className="text-xs text-[var(--accent-strong)]">Drop to replace</span>
-          ) : null}
-          {file ? (
-            <>
+
+          <div className="flex shrink-0 items-center gap-0.5">
+            {file ? (
               <button
                 type="button"
                 disabled={disabled}
-                onClick={openPicker}
-                className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] disabled:opacity-50"
-              >
-                <Replace size={13} />
-                Replace
-              </button>
-              <button
-                type="button"
-                disabled={disabled}
-                aria-label="Clear file"
+                aria-label="New source"
+                title="Clear and start with a new source"
                 onClick={() => onFileSelect(null)}
-                className="rounded-full p-1.5 text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--danger)] disabled:opacity-50"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:opacity-50"
               >
-                <X size={14} />
+                <FilePlus size={14} aria-hidden />
               </button>
-            </>
-          ) : null}
-          {onCollapse ? (
-            <button
-              type="button"
-              aria-label="Hide source"
-              onClick={onCollapse}
-              className="rounded-full p-1.5 text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
-            >
-              <PanelLeftClose size={14} />
-            </button>
-          ) : null}
-          {actions ? <div className="ml-auto flex shrink-0 items-center">{actions}</div> : null}
-        </div>
+            ) : null}
+
+            {actions ? (
+              <>
+                {file ? <ToolbarDivider /> : null}
+                {actions}
+              </>
+            ) : null}
+
+            {onCollapse ? (
+              <>
+                <ToolbarDivider />
+                <button
+                  type="button"
+                  aria-label="Hide source"
+                  aria-expanded={true}
+                  aria-controls="source-preview-panel"
+                  title="Hide source panel"
+                  onClick={onCollapse}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                >
+                  <PanelLeftClose size={14} aria-hidden />
+                </button>
+              </>
+            ) : null}
+          </div>
+        </header>
 
         {!file ? (
           <div
-            role="button"
-            tabIndex={0}
-            aria-label="Upload document"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") openPicker();
-            }}
-            onClick={openPicker}
-            {...dropHandlers}
             className={cn(
-              "flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center gap-3 px-6 py-10 text-center transition",
-              dragging ? "bg-[var(--accent-soft)]" : "hover:bg-[color-mix(in_oklab,var(--accent-soft)_35%,transparent)]",
+              "flex min-h-0 flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-5 py-8 text-center transition sm:px-8",
+              dragging ? "bg-[var(--accent-soft)]" : "",
               disabled && "pointer-events-none opacity-60",
             )}
+            {...dropHandlers}
           >
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-strong)]">
-              <Upload size={22} />
-            </span>
-            <div>
-              <p className="text-sm font-medium">Drop a file here</p>
-              <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                Word, Excel, PowerPoint, PDF, Markdown, TXT, CSV, images · up to 50MB
+            <div className="min-w-0 w-full max-w-sm space-y-2">
+              <p className="font-[family-name:var(--font-display)] text-xl tracking-tight text-[var(--ink)]">
+                {PRODUCT.homeLine}
+              </p>
+              <p className="text-xs leading-relaxed text-[var(--ink-muted)]">
+                {intentName
+                  ? `Then fill ${intentName} from this file.`
+                  : "Choose what to produce on the right, then convert this file."}
               </p>
             </div>
+
+            <button
+              type="button"
+              aria-label="Upload document"
+              onClick={openPicker}
+              className={cn(
+                "inline-flex w-full max-w-sm min-w-0 items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition",
+                "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)] hover:bg-[color-mix(in_oklab,var(--accent-soft)_80%,var(--accent)_12%)]",
+              )}
+            >
+              <Upload size={16} className="shrink-0" aria-hidden />
+              <span className="min-w-0 truncate">
+                {intentName ? `Choose file for ${intentName}` : "Drop or choose a file"}
+              </span>
+            </button>
+
+            <p className="max-w-sm text-[11px] leading-relaxed text-[var(--ink-muted)]">
+              Word, Excel, PowerPoint, PDF, Markdown, TXT, CSV, images · up to 50MB
+            </p>
           </div>
         ) : (
           <div className="relative min-h-0 flex-1 overflow-hidden bg-[color-mix(in_oklab,var(--bg)_80%,black_4%)] p-3">
@@ -244,8 +279,8 @@ export function UploadPanel({
                 />
               </div>
             ) : (
-              <div className="flex h-full min-h-0 items-center justify-center text-sm text-[var(--ink-muted)]">
-                Preview not available for this file type — convert to see Markdown on the right.
+              <div className="flex h-full min-h-0 items-center justify-center px-4 text-center text-sm text-[var(--ink-muted)]">
+                Preview not available for this file type — convert to see the result on the right.
               </div>
             )}
           </div>

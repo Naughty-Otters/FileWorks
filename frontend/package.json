@@ -4,13 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node ./scripts/clean-next-dev-types.mjs",
+    "prebuild": "node ./scripts/assert-frontend-deps.mjs && node ./scripts/clean-next-dev-types.mjs",
     "build": "next build && node ./scripts/strip-legacy-polyfills.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "icons": "python3 ./scripts/generate-icons.py",
     "test:coverage": "vitest run --coverage",
+    "export:starters": "vitest run src/design-pad/export-starters.test.ts",
     "pages:deploy": "wrangler pages deploy ./out"
   },
   "browserslist": [
@@ -37,7 +38,8 @@
     "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2",
     "unified": "^11.0.5",
-    "unist-util-visit": "^5.1.0"
+    "unist-util-visit": "^5.1.0",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

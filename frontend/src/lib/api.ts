@@ -7,6 +7,7 @@ import {
   setSession,
   type MeResponse,
 } from "@/lib/auth";
+import type { DesignDocument } from "@/design-pad/types";
 
 export type { MeResponse };
 
@@ -74,6 +75,12 @@ export type ExtractResponse = {
   regions?: RegionBox[];
   image_size?: ImageSize | null;
   structure?: Record<string, unknown> | null;
+  design_template_id?: string | null;
+  design_template_name?: string | null;
+  design_html?: string | null;
+  design_markdown?: string | null;
+  design_context?: Record<string, unknown> | null;
+  design_return_format?: "markdown" | "docx" | "pdf" | null;
 };
 
 export type LLMFileProvider = {
@@ -130,6 +137,9 @@ export type HistoryItem = {
   storage_backend: string;
   has_markdown: boolean;
   has_json: boolean;
+  has_design?: boolean;
+  design_template_id?: string | null;
+  design_template_name?: string | null;
 };
 
 export type HistoryListResponse = {
@@ -621,6 +631,28 @@ export async function fetchHistoryDetail(id: string): Promise<HistoryDetail> {
   return res.json();
 }
 
+export async function patchHistoryDesign(
+  id: string,
+  input: {
+    design_template_id: string;
+    design_template_name?: string | null;
+    design_html: string;
+    design_markdown?: string | null;
+    design_context?: Record<string, unknown> | null;
+    design_return_format?: "markdown" | "docx" | "pdf" | null;
+  },
+): Promise<HistoryDetail> {
+  const res = await apiFetch(`/api/history/${encodeURIComponent(id)}/design`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new Error(await readError(res, `Failed to save design output (${res.status})`));
+  }
+  return res.json();
+}
+
 export async function fetchHistoryFile(
   id: string,
   filename: string,
@@ -691,6 +723,10 @@ export async function exportMarkdownFile(
 /** Client-side fallback exporters (no round-trip) for offline-friendly downloads. */
 export function downloadTextFile(content: string, filename: string, mime: string) {
   const blob = new Blob([content], { type: mime });
+  downloadBlob(blob, filename);
+}
+
+export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -699,4 +735,229 @@ export function downloadTextFile(content: string, filename: string, mime: string
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
+}
+
+export type TemplateRecord = {
+  id: string;
+  name: string;
+  document: DesignDocument;
+  description?: string | null;
+  page_label?: string | null;
+  variable_count?: number;
+  is_static?: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+function normalizeTemplate(payload: unknown): TemplateRecord {
+  const source = (payload && typeof payload === "object" && "template" in payload
+    ? (payload as { template: unknown }).template
+    : payload) as Record<string, unknown>;
+  const rawDocument = source.document ?? source.design_document ?? source.content;
+  const document = typeof rawDocument === "string" ? JSON.parse(rawDocument) : rawDocument;
+  const variableCount =
+    typeof source.variable_count === "number"
+      ? source.variable_count
+      : Array.isArray((document as DesignDocument | null)?.variables)
+        ? (document as DesignDocument).variables.length
+        : 0;
+  return {
+    id: String(source.id),
+    name: String(source.name || source.title || "Untitled design"),
+    document: (document || {
+      version: 2,
+      pageSize: { w: 850, h: 1100 },
+      root: {
+        id: "root",
+        kind: "box",
+        label: "Document",
+        x: 0,
+        y: 0,
+        w: 850,
+        h: 1100,
+        style: {},
+        layout: null,
+        children: [],
+      },
+      variables: [],
+    }) as DesignDocument,
+    description: typeof source.description === "string" ? source.description : null,
+    page_label: typeof source.page_label === "string" ? source.page_label : null,
+    variable_count: variableCount,
+    is_static: typeof source.is_static === "boolean" ? source.is_static : undefined,
+    created_at: typeof source.created_at === "string" ? source.created_at : null,
+    updated_at: typeof source.updated_at === "string" ? source.updated_at : null,
+  };
+}
+
+export async function fetchTemplates(): Promise<TemplateRecord[]> {
+  const res = await apiFetch("/api/templates", { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Failed to load templates (${res.status})`));
+  const payload = await res.json();
+  const items = Array.isArray(payload) ? payload : payload?.items ?? payload?.templates ?? [];
+  return items.map(normalizeTemplate);
+}
+
+export async function createTemplate(input: {
+  name: string;
+  document: DesignDocument;
+  description?: string | null;
+  page_label?: string | null;
+}): Promise<TemplateRecord> {
+  const res = await apiFetch("/api/templates", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(await readError(res, `Failed to create template (${res.status})`));
+  return normalizeTemplate(await res.json());
+}
+
+export async function fetchTemplate(id: string): Promise<TemplateRecord> {
+  const res = await apiFetch(`/api/templates/${encodeURIComponent(id)}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Failed to load template (${res.status})`));
+  return normalizeTemplate(await res.json());
+}
+
+export async function updateTemplate(
+  id: string,
+  input: { name: string; document: DesignDocument },
+): Promise<TemplateRecord> {
+  const res = await apiFetch(`/api/templates/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(await readError(res, `Failed to save template (${res.status})`));
+  return normalizeTemplate(await res.json());
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  const res = await apiFetch(`/api/templates/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await readError(res, `Failed to delete template (${res.status})`));
+}
+
+export type TemplateRenderResponse = {
+  html: string;
+  markdown?: string;
+  filename?: string;
+  docx?: Blob;
+  pdf?: Blob;
+  context?: Record<string, unknown>;
+  fillMode?: string | null;
+  warnings?: string[];
+};
+
+async function parseTemplateRenderResponse(
+  res: Response,
+  format: "html" | "docx" | "pdf" | "markdown" | undefined,
+): Promise<TemplateRenderResponse> {
+  const contentType = res.headers.get("Content-Type") || "";
+  const fillMode = res.headers.get("X-Template-Fill");
+  if (contentType.includes("application/json")) {
+    const payload = await res.json();
+    return {
+      html: payload.html ?? payload.rendered_html ?? "",
+      markdown: payload.markdown,
+      filename: payload.filename,
+      context: payload.context,
+      fillMode: payload.fill_mode ?? fillMode,
+      warnings: payload.warnings,
+    };
+  }
+  if (format === "docx" || contentType.includes("wordprocessingml")) {
+    return { html: "", docx: await res.blob(), fillMode };
+  }
+  if (format === "pdf" || contentType.includes("application/pdf")) {
+    return { html: "", pdf: await res.blob(), fillMode };
+  }
+  if (format === "markdown" || contentType.includes("text/markdown")) {
+    return { html: "", markdown: await res.text(), fillMode };
+  }
+  return { html: await res.text(), fillMode };
+}
+
+export async function renderTemplate(
+  id: string,
+  input: {
+    markdown: string;
+    variables?: Record<string, unknown>;
+    format?: "html" | "docx" | "pdf" | "markdown";
+    fill?: "auto" | "defaults" | "none";
+    envelope?: boolean;
+  },
+): Promise<TemplateRenderResponse> {
+  const envelope = input.envelope ?? (input.format === "html" || !input.format);
+  const res = await apiFetch(`/api/templates/${encodeURIComponent(id)}/render`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...input, envelope }),
+  });
+  if (!res.ok) throw new Error(await readError(res, `Template render failed (${res.status})`));
+  return parseTemplateRenderResponse(res, input.format);
+}
+
+export type StarterVariable = {
+  name: string;
+  label: string;
+  type: string;
+  sampleValue?: unknown;
+  sample_value?: unknown;
+  itemSchema?: Array<Record<string, unknown>>;
+  item_schema?: Array<Record<string, unknown>>;
+};
+
+export type StarterSummary = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  variable_count: number;
+  variables: StarterVariable[];
+  page_size?: { w: number; h: number } | null;
+};
+
+export type StarterListResponse = {
+  categories: Array<{ id: string; label: string; blurb?: string }>;
+  items: StarterSummary[];
+};
+
+/** Built-in starter catalog (variable schemas) for API / workspace clients. */
+export async function fetchStarters(): Promise<StarterListResponse> {
+  const res = await apiFetch("/api/templates/starters", { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Failed to load starters (${res.status})`));
+  return (await res.json()) as StarterListResponse;
+}
+
+export async function fetchStarter(id: string): Promise<StarterSummary & { document: DesignDocument }> {
+  const res = await apiFetch(`/api/templates/starters/${encodeURIComponent(id)}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Failed to load starter (${res.status})`));
+  return (await res.json()) as StarterSummary & { document: DesignDocument };
+}
+
+/** Render a built-in starter by id with explicit ``variables`` (or AI fill). */
+export async function renderStarter(
+  starterId: string,
+  input: {
+    markdown?: string;
+    variables?: Record<string, unknown>;
+    format?: "html" | "docx" | "pdf" | "markdown";
+    fill?: "auto" | "defaults" | "none";
+    envelope?: boolean;
+  } = {},
+): Promise<TemplateRenderResponse> {
+  const envelope = input.envelope ?? (input.format === "html" || !input.format);
+  const res = await apiFetch(`/api/templates/starters/${encodeURIComponent(starterId)}/render`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      markdown: input.markdown ?? "",
+      variables: input.variables ?? {},
+      format: input.format ?? "html",
+      fill: input.fill ?? (input.markdown ? "auto" : "defaults"),
+      envelope,
+    }),
+  });
+  if (!res.ok) throw new Error(await readError(res, `Starter render failed (${res.status})`));
+  return parseTemplateRenderResponse(res, input.format);
 }

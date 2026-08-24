@@ -134,7 +134,9 @@ class V1ConvertTests(unittest.TestCase):
             files={"file": ("note.txt", b"hello", "text/plain")},
         )
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()["detail"]["code"], "unsupported_target")
+        detail = res.json()["detail"]
+        self.assertEqual(detail["code"], "unsupported_target")
+        self.assertIn("PDF", detail["message"])
 
     def test_rejects_use_ai_when_unavailable(self) -> None:
         principal = _api_principal()
@@ -210,3 +212,50 @@ class V1ConvertTests(unittest.TestCase):
         self.assertTrue(docx.content.startswith(b"PK"))
         self.assertIn("attachment", docx.headers["content-disposition"])
         self.assertEqual(png.status_code, 400)
+
+
+    def test_catalog_lists_design_starters(self) -> None:
+        principal = _api_principal()
+        client = TestClient(_app(principal))
+        res = client.get("/api/v1/convert")
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertIn("designs", body)
+        ids = [item["id"] for item in body["designs"]]
+        self.assertIn("invoice", ids)
+        option_names = [item["name"] for item in body["options"]]
+        self.assertIn("design", option_names)
+        self.assertIn("design_fill", option_names)
+
+    def test_convert_with_design_target_returns_filled_html(self) -> None:
+        principal = _api_principal()
+        client = TestClient(_app(principal))
+        with patch(
+            "app.api.v1.convert.run_conversion",
+            new=AsyncMock(
+                return_value={
+                    "markdown": "# Invoice\nClient: Acme\nTotal: $10",
+                    "engine": "text",
+                    "page_count": 1,
+                }
+            ),
+        ), patch("app.api.v1.convert.record_api_credits"), patch(
+            "app.api.v1.convert.assert_api_credits"
+        ):
+            res = client.post(
+                "/api/v1/convert",
+                data={
+                    "target": "html",
+                    "design": "invoice",
+                    "design_fill": "defaults",
+                },
+                files={"file": ("note.txt", b"hello", "text/plain")},
+            )
+        self.assertEqual(res.status_code, 200, res.text)
+        body = res.json()
+        self.assertEqual(body["design"], "invoice")
+        self.assertEqual(body["design_fill"], "defaults")
+        self.assertTrue(body["target"].startswith("design:invoice:"))
+        self.assertIn("<html", body["content"].lower())
+        self.assertEqual(body["markdown"], "# Invoice\nClient: Acme\nTotal: $10")
+        self.assertEqual(body["credits_used"], 1)

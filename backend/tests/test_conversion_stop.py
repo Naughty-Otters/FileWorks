@@ -221,6 +221,48 @@ class PreemptionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(stale.killed_with, "superseded by a newer run")
         self.assertEqual(registry.snapshot(), [])
 
+    async def test_preempt_owner_false_queues_instead_of_cancelling(self) -> None:
+        gate = ConversionGate(limit=1, queue_timeout_s=10)
+        registry = RunRegistry()
+        first_worker = FakeWorker(duration=0.2)
+        second_worker = FakeWorker(duration=0.05)
+        pool = FakePool(first_worker, second_worker)
+
+        settings = type("S", (), {"convert_in_subprocess": True})()
+
+        with patch("app.services.runtime.get_worker_pool", return_value=pool), patch(
+            "app.services.runtime.get_conversion_gate", return_value=gate
+        ), patch("app.services.runtime.get_run_registry", return_value=registry), patch(
+            "app.services.runtime.get_settings", return_value=settings
+        ):
+            from pathlib import Path
+
+            first = asyncio.ensure_future(
+                run_conversion(
+                    Path("/tmp/a.pdf"),
+                    filename="a.pdf",
+                    run_id="run-1",
+                    owner="user:alice",
+                    preempt_owner=False,
+                )
+            )
+            await asyncio.to_thread(first_worker.started.wait, 5)
+
+            second = asyncio.ensure_future(
+                run_conversion(
+                    Path("/tmp/b.pdf"),
+                    filename="b.pdf",
+                    run_id="run-2",
+                    owner="user:alice",
+                    preempt_owner=False,
+                )
+            )
+            first_result, second_result = await asyncio.gather(first, second)
+
+        self.assertEqual(first_result["markdown"], "done")
+        self.assertEqual(second_result["markdown"], "done")
+        self.assertIsNone(first_worker.killed_with)
+
     async def test_a_different_owner_is_not_preempted(self) -> None:
         registry = RunRegistry()
         alice = RunHandle(run_id="a", owner="user:alice", label="a.pdf")

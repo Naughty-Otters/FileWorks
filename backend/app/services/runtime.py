@@ -16,8 +16,10 @@ Stopping is deliberately not left to transport-level disconnect detection.
 Behind a proxy or container port forward, ``http.disconnect`` may arrive late or
 never, and then a "stopped" run keeps holding the only slot while the next one
 queues behind it. Instead every run gets an id in a registry, so a Stop is an
-explicit request that kills a named run, and starting a new run preempts the
-same owner's earlier one. Disconnect watching stays as a backup.
+explicit request that kills a named run. Workspace extract also preempts the
+same owner's earlier run when a new one starts (abandoned tabs). Convert API
+requests skip that preemption so parallel calls with one API key can queue.
+Disconnect watching stays as a backup.
 """
 
 from __future__ import annotations
@@ -409,8 +411,14 @@ async def run_conversion(
     request: Any | None = None,
     run_id: str | None = None,
     owner: str | None = None,
+    preempt_owner: bool = True,
 ) -> dict[str, Any]:
-    """Convert one document off the event loop, cancellable by ``run_id``."""
+    """Convert one document off the event loop, cancellable by ``run_id``.
+
+    ``preempt_owner`` (default True) cancels the same owner's in-flight runs so a
+    workspace re-submit does not queue behind an abandoned extract. Set False for
+    Convert API so concurrent requests with one key queue instead of 499.
+    """
     gate = get_conversion_gate()
     label = filename or path.name
     resolved = options or ExtractOptions()
@@ -447,17 +455,20 @@ async def run_conversion(
         "run_id": handle.run_id,
     }
 
-    # A Stop that never reached us (dropped disconnect, closed tab) must not make
-    # this run queue behind a dead one. Starting a new run supersedes the old.
-    superseded = registry.cancel_owner(
-        handle.owner,
-        except_run_id=handle.run_id,
-        reason="superseded by a newer run",
-    )
-    if superseded:
-        logger.warning(
-            "Superseded %s earlier run(s) for this client before starting %s", superseded, label
+    # Workspace: a Stop that never reached us must not leave the next extract
+    # queued behind a dead run. API callers skip this and share the queue.
+    if preempt_owner:
+        superseded = registry.cancel_owner(
+            handle.owner,
+            except_run_id=handle.run_id,
+            reason="superseded by a newer run",
         )
+        if superseded:
+            logger.warning(
+                "Superseded %s earlier run(s) for this client before starting %s",
+                superseded,
+                label,
+            )
 
     registry.add(handle)
     try:

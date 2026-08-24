@@ -1,0 +1,1183 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 18,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt38o2qz_256",
+        "kind": "box",
+        "label": "Header",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 119,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#f8fafc",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 16,
+          "padding": 22,
+          "align": "start",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "box_mt38o2qz_252",
+            "kind": "box",
+            "label": "Title",
+            "x": 22,
+            "y": 22,
+            "w": 477,
+            "h": 72,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2qz_250",
+                "kind": "paragraph",
+                "label": "PROJECT PLAN",
+                "x": 0,
+                "y": 0,
+                "w": 477,
+                "h": 24,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 11,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "heading_mt38o2qz_251",
+                "kind": "heading",
+                "label": "{{ project_name }}",
+                "level": 2,
+                "x": 0,
+                "y": 28,
+                "w": 477,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 23,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2qz_255",
+            "kind": "box",
+            "label": "Status",
+            "x": 515,
+            "y": 22,
+            "w": 233,
+            "h": 75,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "end",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2qz_253",
+                "kind": "paragraph",
+                "label": "Status",
+                "x": 8,
+                "y": 0,
+                "w": 225,
+                "h": 27,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#64748b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "heading_mt38o2qz_254",
+                "kind": "heading",
+                "label": "{{ project_status }}",
+                "level": 3,
+                "x": 8,
+                "y": 31,
+                "w": 225,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 19,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2qz_259",
+        "kind": "box",
+        "label": "Overview",
+        "x": 40,
+        "y": 177,
+        "w": 770,
+        "h": 136,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 8,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2qz_257",
+            "kind": "heading",
+            "label": "Overview",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt38o2qz_258",
+            "kind": "paragraph",
+            "label": "{{ project_summary }}",
+            "x": 20,
+            "y": 56,
+            "w": 730,
+            "h": 60,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2qz_274",
+        "kind": "box",
+        "label": "Mid",
+        "x": 40,
+        "y": 331,
+        "w": 770,
+        "h": 180,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 16,
+          "padding": 0,
+          "align": "start",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "box_mt38o2qz_270",
+            "kind": "box",
+            "label": "Details",
+            "x": 0,
+            "y": 0,
+            "w": 377,
+            "h": 180,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 1,
+              "borderStyle": "solid"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 8,
+              "padding": 16,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2qz_260",
+                "kind": "heading",
+                "label": "Details",
+                "level": 3,
+                "x": 16,
+                "y": 16,
+                "w": 345,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 15,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "box_mt38o2qz_263",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 52,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2qz_261",
+                    "kind": "paragraph",
+                    "label": "Owner",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2qz_262",
+                    "kind": "paragraph",
+                    "label": "{{ project_owner }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2qz_266",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 92,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2qz_264",
+                    "kind": "paragraph",
+                    "label": "Start",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2qz_265",
+                    "kind": "paragraph",
+                    "label": "{{ project_start }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "box_mt38o2qz_269",
+                "kind": "box",
+                "label": "Row",
+                "x": 16,
+                "y": 132,
+                "w": 345,
+                "h": 32,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#1e293b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "#e2e8f0",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": {
+                  "direction": "row",
+                  "gap": 0,
+                  "padding": 0,
+                  "align": "center",
+                  "justify": "space-between"
+                },
+                "children": [
+                  {
+                    "id": "paragraph_mt38o2qz_267",
+                    "kind": "paragraph",
+                    "label": "Target",
+                    "x": 0,
+                    "y": 2,
+                    "w": 138,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#64748b",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "left",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  },
+                  {
+                    "id": "paragraph_mt38o2qz_268",
+                    "kind": "paragraph",
+                    "label": "{{ project_target }}",
+                    "x": 138,
+                    "y": 2,
+                    "w": 207,
+                    "h": 28,
+                    "style": {
+                      "fontFamily": "Arial, Helvetica, sans-serif",
+                      "fontSize": 13,
+                      "color": "#0f172a",
+                      "bold": false,
+                      "italic": false,
+                      "underline": false,
+                      "align": "right",
+                      "link": "",
+                      "backgroundColor": "transparent",
+                      "borderColor": "transparent",
+                      "borderWidth": 0,
+                      "borderStyle": "none"
+                    },
+                    "layout": null,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2qz_273",
+            "kind": "box",
+            "label": "Success",
+            "x": 393,
+            "y": 0,
+            "w": 377,
+            "h": 138,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "#ffffff",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 1,
+              "borderStyle": "solid"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 8,
+              "padding": 16,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt38o2qz_271",
+                "kind": "heading",
+                "label": "Success criteria",
+                "level": 3,
+                "x": 16,
+                "y": 16,
+                "w": 345,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 15,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qz_272",
+                "kind": "paragraph",
+                "label": "{{ success_criteria }}",
+                "x": 16,
+                "y": 52,
+                "w": 345,
+                "h": 70,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#334155",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2qz_284",
+        "kind": "box",
+        "label": "Milestones",
+        "x": 40,
+        "y": 529,
+        "w": 770,
+        "h": 169,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2qz_283",
+            "kind": "heading",
+            "label": "Milestones",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt38o2qz_278",
+            "kind": "box",
+            "label": "Column headers",
+            "x": 20,
+            "y": 60,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2qz_275",
+                "kind": "paragraph",
+                "label": "Date",
+                "x": 0,
+                "y": 2,
+                "w": 100,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qz_276",
+                "kind": "paragraph",
+                "label": "Milestone",
+                "x": 100,
+                "y": 2,
+                "w": 328,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qz_277",
+                "kind": "paragraph",
+                "label": "Owner",
+                "x": 428,
+                "y": 2,
+                "w": 302,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt38o2qz_282",
+            "kind": "box",
+            "label": "Milestone",
+            "x": 20,
+            "y": 104,
+            "w": 730,
+            "h": 45,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt38o2qz_279",
+                "kind": "paragraph",
+                "label": "{{ mile.date }}",
+                "x": 0,
+                "y": 0,
+                "w": 100,
+                "h": 45,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qz_280",
+                "kind": "paragraph",
+                "label": "{{ mile.title }}",
+                "x": 100,
+                "y": 8.5,
+                "w": 328,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt38o2qz_281",
+                "kind": "paragraph",
+                "label": "{{ mile.owner }}",
+                "x": 428,
+                "y": 8.5,
+                "w": 302,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#64748b",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ],
+            "repeat": {
+              "over": "project_plan_milestones",
+              "as": "mile"
+            }
+          }
+        ]
+      },
+      {
+        "id": "box_mt38o2qz_287",
+        "kind": "box",
+        "label": "Risks",
+        "x": 40,
+        "y": 716,
+        "w": 770,
+        "h": 116,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 8,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt38o2qz_285",
+            "kind": "heading",
+            "label": "Risks and open questions",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt38o2qz_286",
+            "kind": "paragraph",
+            "label": "{{ project_risks }}",
+            "x": 20,
+            "y": 56,
+            "w": 730,
+            "h": 40,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt38o2qz_288",
+      "name": "project_name",
+      "label": "Project name on the plan",
+      "type": "text",
+      "sampleValue": "Website redesign launch"
+    },
+    {
+      "id": "var_mt38o2qz_289",
+      "name": "project_status",
+      "label": "Current project status label",
+      "type": "text",
+      "sampleValue": "On track"
+    },
+    {
+      "id": "var_mt38o2qz_290",
+      "name": "project_summary",
+      "label": "Short project summary or objective",
+      "type": "text",
+      "sampleValue": "Ship the new marketing site with updated brand, pricing page, and template gallery by April 2."
+    },
+    {
+      "id": "var_mt38o2qz_291",
+      "name": "project_owner",
+      "label": "Project owner or lead",
+      "type": "text",
+      "sampleValue": "Alex Rivera"
+    },
+    {
+      "id": "var_mt38o2qz_292",
+      "name": "project_start",
+      "label": "Project start date",
+      "type": "date",
+      "sampleValue": "Feb 10, 2026"
+    },
+    {
+      "id": "var_mt38o2qz_293",
+      "name": "project_target",
+      "label": "Project target ship date",
+      "type": "date",
+      "sampleValue": "Apr 2, 2026"
+    },
+    {
+      "id": "var_mt38o2qz_294",
+      "name": "success_criteria",
+      "label": "How success will be measured for this project",
+      "type": "text",
+      "sampleValue": "Lighthouse perf > 90 on homepage\nAll starters render in preview\nZero severity-1 bugs at launch"
+    },
+    {
+      "id": "var_mt38o2qz_295",
+      "name": "project_plan_milestones",
+      "label": "Project milestones with date, title, and owner",
+      "type": "list",
+      "sampleValue": "[{\"date\":\"Feb 28\",\"title\":\"Design system freeze\",\"owner\":\"Sam\"},{\"date\":\"Mar 14\",\"title\":\"Content migration complete\",\"owner\":\"Priya\"},{\"date\":\"Mar 21\",\"title\":\"QA + accessibility pass\",\"owner\":\"Jordan\"},{\"date\":\"Apr 2\",\"title\":\"Public launch\",\"owner\":\"Alex\"}]",
+      "itemSchema": [
+        {
+          "id": "field_mt38o2qz_296",
+          "name": "date",
+          "label": "Milestone target date",
+          "type": "date"
+        },
+        {
+          "id": "field_mt38o2qz_297",
+          "name": "title",
+          "label": "Milestone title",
+          "type": "text"
+        },
+        {
+          "id": "field_mt38o2qz_298",
+          "name": "owner",
+          "label": "Milestone owner",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "var_mt38o2qz_299",
+      "name": "project_risks",
+      "label": "Risks, dependencies, or open questions for the project",
+      "type": "text",
+      "sampleValue": "CMS migration may slip if redirects are incomplete.\nNeed legal review on pricing copy before launch."
+    }
+  ]
+}

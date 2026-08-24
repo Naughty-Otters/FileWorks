@@ -4,13 +4,15 @@ export type PlanRule = {
   convert: string;
   quota: string;
   extras: string;
+  price?: string;
+  free?: boolean;
 };
 
 export const PLAN_RULES: PlanRule[] = [
-  { id: "anonymous", label: "Guest", convert: "Sign in required", quota: "—", extras: "No history" },
-  { id: "basic", label: "Basic", convert: "Yes", quota: "5 files / day", extras: "3 AI or translation / month" },
-  { id: "pro", label: "Pro", convert: "Yes", quota: "150 / month", extras: "40 with AI or translation" },
-  { id: "premium", label: "Premium", convert: "Yes", quota: "600 / month", extras: "150 with AI or translation" },
+  { id: "anonymous", label: "Guest", convert: "Sign in required", quota: "—", extras: "No history", price: "Free", free: true },
+  { id: "basic", label: "Basic", convert: "Yes", quota: "5 files / day", extras: "3 AI or translation / month", price: "Free", free: true },
+  { id: "pro", label: "Pro", convert: "Yes", quota: "150 / month", extras: "40 with AI or translation", price: "$12 / month" },
+  { id: "premium", label: "Premium", convert: "Yes", quota: "600 / month", extras: "150 with AI or translation", price: "$29 / month" },
 ];
 
 export const PLAN_ORDER = ["anonymous", "basic", "pro", "premium"] as const;
@@ -47,6 +49,7 @@ export const API_PLAN_CATALOG: ApiCatalogPlan[] = [
       "2 API keys that do not expire",
       "Combine with Basic, Pro, or Premium",
     ],
+    highlight: true,
   },
   {
     id: "api_builder",
@@ -73,7 +76,6 @@ export const API_PLAN_CATALOG: ApiCatalogPlan[] = [
       "10 API keys that do not expire",
       "Billed separately from workspace Pro / Premium",
     ],
-    highlight: true,
   },
   {
     id: "api_business",
@@ -155,6 +157,8 @@ export type PriceRole = {
   features: string[];
   cta: { href: string; label: string };
   highlight?: boolean;
+  /** Call out Free / no-card plans so they read first. */
+  free?: boolean;
 };
 
 export const PRICE_ROLES: PriceRole[] = [
@@ -168,6 +172,7 @@ export const PRICE_ROLES: PriceRole[] = [
     blurb: "Look around the workspace. Conversion needs a signed-in role.",
     features: ["Browse the app", "No file conversion", "No saved history"],
     cta: { href: "/", label: "Continue as guest" },
+    free: true,
   },
   {
     id: "basic",
@@ -176,9 +181,11 @@ export const PRICE_ROLES: PriceRole[] = [
     quota: "5 files / day",
     ai: "3 / month",
     history: "Unlimited downloads",
-    blurb: "Signed-in starter role. Five conversions a day, with a small AI allowance.",
+    blurb: "Signed-in starter role. Five conversions a day, with a small AI allowance — no credit card.",
     features: PLAN_CATALOG[0].features,
-    cta: { href: "/profile", label: "Get Basic" },
+    cta: { href: "/login?next=%2Fpricing", label: "Start free with Basic" },
+    free: true,
+    highlight: true,
   },
   {
     id: "pro",
@@ -190,7 +197,6 @@ export const PRICE_ROLES: PriceRole[] = [
     blurb: "Paid grade. Stripe assigns the Pro role after checkout.",
     features: PLAN_CATALOG[1].features,
     cta: { href: "/profile", label: "Choose Pro" },
-    highlight: true,
   },
   {
     id: "premium",
@@ -390,7 +396,7 @@ export function convertGateTitle(gate: ConvertGate): string {
 export function convertGateBody(gate: ConvertGate): string {
   switch (gate) {
     case "login":
-      return "Conversion needs a signed-in FileWorks account. Guest browsing is fine; converting a file is not.";
+      return "Sign in once and you start on Free Basic — five conversions a day and a small AI allowance. No credit card. Guest browsing is fine; converting a file needs an account.";
     case "quota_day":
       return "Basic includes five conversions per day. Come back tomorrow, or upgrade for a monthly allowance.";
     case "quota_month":

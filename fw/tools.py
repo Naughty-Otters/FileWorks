@@ -394,9 +394,35 @@ def detach_app_bucket_from_state(ctx: Context) -> None:
 
 
 def ensure_frontend_deps() -> None:
-    wrangler = FRONTEND_DIR / "node_modules" / "wrangler"
-    if not wrangler.exists():
-        require_cmd("npm")
+    """Install frontend packages when missing or behind package-lock.json.
+
+    Pages deploys and wrangler both call this. A stale node_modules (e.g. after
+    adding zustand to package.json without reinstalling) otherwise fails
+    ``next build`` with module-not-found while polyfill alias errors look similar.
+    """
+    require_cmd("npm")
+    lock = FRONTEND_DIR / "package-lock.json"
+    installed_lock = FRONTEND_DIR / "node_modules" / ".package-lock.json"
+    next_pkg = FRONTEND_DIR / "node_modules" / "next"
+    stale = (
+        not next_pkg.is_dir()
+        or not installed_lock.is_file()
+        or (lock.is_file() and installed_lock.stat().st_mtime < lock.stat().st_mtime)
+    )
+    if not stale:
+        # Catch packages added to the lock but never extracted (mtime edge cases).
+        pkg = json.loads((FRONTEND_DIR / "package.json").read_text())
+        for name in pkg.get("dependencies", {}):
+            # Scoped: @scope/name → node_modules/@scope/name
+            parts = name.split("/")
+            candidate = FRONTEND_DIR / "node_modules" / parts[0]
+            if name.startswith("@") and len(parts) > 1:
+                candidate = FRONTEND_DIR / "node_modules" / parts[0] / parts[1]
+            if not candidate.exists():
+                stale = True
+                break
+    if stale:
+        console.info("frontend/node_modules out of date — running npm install…")
         run(["npm", "install"], cwd=FRONTEND_DIR)
 
 

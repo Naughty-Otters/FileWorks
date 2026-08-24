@@ -32,7 +32,7 @@ PRESIGN_PUT_EXPIRES = 600
 PRESIGN_GET_EXPIRES = 3600
 USER_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{8,64}$")
 UNSAFE_FILENAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
-_MEDIA_NAME_RE = re.compile(r"^[0-9]+\.(jpe?g|png|gif|webp)$", re.I)
+_MEDIA_NAME_RE = re.compile(r"^[0-9]+\.(jpe?g|png|gif|webp)$", re.IGNORECASE)
 
 
 def sanitize_user_id(user_id: str) -> str:
@@ -107,7 +107,7 @@ class S3DocumentStore:
         target = bucket or self.bucket
         try:
             resp = self._require_client().get_object(Bucket=target, Key=key)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             code = getattr(exc, "response", {}).get("Error", {}).get("Code", "")
             if code in {"NoSuchKey", "404", "NotFound"}:
                 return None
@@ -127,6 +127,22 @@ class S3DocumentStore:
     def object_key(self, logical: str) -> str:
         return self._key(logical)
 
+    def put_json_object(self, logical: str, payload: dict[str, Any]) -> None:
+        """Store a JSON sidecar under this store's application prefix."""
+        self._put_json(self._key(logical), payload)
+
+    def get_json_object(self, logical: str) -> dict[str, Any] | None:
+        """Load a JSON sidecar under this store's application prefix."""
+        return self._get_json(self._key(logical))
+
+    def delete_object(self, logical: str) -> bool:
+        """Delete one prefixed object, returning whether it existed."""
+        key = self._key(logical)
+        if self._get_bytes(key) is None:
+            return False
+        self._require_client().delete_object(Bucket=self.bucket, Key=key)
+        return True
+
     def _object_bucket(self, key: str) -> str:
         return self.upload_bucket if self.is_upload_key(key) else self.bucket
 
@@ -144,7 +160,7 @@ class S3DocumentStore:
             return False
         upload_root = f"{self.upload_prefix}/"
         inbox_root = self._key("inbox") + "/"
-        return key.startswith(upload_root) or key.startswith(inbox_root)
+        return key.startswith((upload_root, inbox_root))
 
     def is_inbox_key(self, key: str) -> bool:
         return self.is_upload_key(key)
@@ -256,8 +272,57 @@ class S3DocumentStore:
                 "engine": engine,
                 "page_count": page_count,
                 "format": output_format,
+                "design_template_id": None,
+                "design_template_name": None,
+                "design_html": None,
+                "design_markdown": None,
+                "design_context": None,
+                "design_return_format": None,
             },
         )
+        return record
+
+    def update_design(
+        self,
+        document_id: str,
+        *,
+        design_template_id: str | None,
+        design_template_name: str | None,
+        design_html: str | None,
+        design_markdown: str | None = None,
+        design_context: dict[str, Any] | None = None,
+        design_return_format: str | None = None,
+    ) -> DocumentRecord | None:
+        record = self.get_document(document_id)
+        if record is None:
+            return None
+        record.design_template_id = design_template_id
+        record.design_template_name = design_template_name
+        record.design_html = design_html
+        record.design_markdown = design_markdown
+        record.design_context = design_context
+        record.design_return_format = design_return_format
+        self._put_json(self._key("docs", document_id, "meta.json"), record.to_dict())
+        result_payload: dict[str, Any] = {
+            "markdown": record.markdown,
+            "json": record.json_data,
+            "pages": record.pages,
+            "structure": record.structure,
+            "engine": record.engine,
+            "page_count": record.page_count,
+            "format": record.output_format,
+            "design_template_id": record.design_template_id,
+            "design_template_name": record.design_template_name,
+            "design_html": record.design_html,
+            "design_markdown": record.design_markdown,
+            "design_context": record.design_context,
+            "design_return_format": record.design_return_format,
+        }
+        existing = self._get_json(self._key(record.result_key))
+        if isinstance(existing, dict):
+            existing.update(result_payload)
+            result_payload = existing
+        self._put_json(self._key(record.result_key), result_payload)
         return record
 
     def list_document_ids(self) -> list[str]:

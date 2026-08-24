@@ -1,1 +1,1 @@
-FileWorks — PDF & Office to Markdown with AI reading and translation
+FileWorks — Drop a file. Choose what to produce.

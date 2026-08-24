@@ -65,6 +65,7 @@ class ConvertCatalogResponse(BaseModel):
     capabilities: ConvertCapabilities
     credits: ConvertCredits | None = None
     pipeline: dict[str, Any] | None = None
+    designs: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ConvertSource(BaseModel):
@@ -102,6 +103,8 @@ class ConvertResponse(BaseModel):
     engine: str
     page_count: int
     credits_used: int = 0
+    design: str | None = None
+    design_fill: str | None = None
 
     @field_serializer("engine")
     def _public_engine(self, _value: str) -> str:

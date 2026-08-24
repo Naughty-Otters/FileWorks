@@ -1,0 +1,10 @@
+node_modules/
+test-results/
+playwright-report/
+blob-report/
+.auth/
+.env
+.env.local
+.env.staging
+.env.prod
+*.log

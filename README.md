@@ -6,8 +6,9 @@ Turn office docs, PDFs, images, spreadsheets, and more into editable Markdown �
 
 ```
 fileworks/
-├── backend/    FastAPI conversion API (uv)
-└── frontend/   Next.js split-pane workspace (light/dark)
+├── backend/       FastAPI conversion API (uv)
+├── frontend/      Next.js split-pane workspace (light/dark)
+└── integration/   Post-deploy Playwright UI + Convert API suite
 ```
 
 ## Features
@@ -15,7 +16,7 @@ fileworks/
 - Drag-and-drop upload for images, PDFs, Markdown, TXT, and office docs (Word / Excel / PowerPoint / ODT / CSV / …)
 - **AnyDoc** conversion to clean Markdown (via `firecrawl-anydoc`)
 - Automatic fallback for scans and images (layout + text recognition when a file has no text layer)
-- Editable Markdown preview on the right; download as Markdown / TXT / HTML / JSON / PDF (print)
+- Editable Markdown preview on the right; download as Markdown / TXT / HTML / JSON / PDF
 - Light / dark theme toggle
 - Google sign-in with plans: **Guest** (browse only), **Basic** (5 files/day, 3 AI or translation/month), **Pro** (150/month, 40 with AI or translation), **Premium** (600/month, 150 with AI or translation)
 - Stripe subscriptions (optional): each pay grade maps to the matching role after Checkout / webhook confirmation
@@ -44,6 +45,29 @@ cd backend && PYTHONPATH=. uv run pytest --cov=app --cov-fail-under=80
 cd frontend && npm run test:coverage
 ```
 
+### Post-deploy integration (staging / local / prod)
+
+Separate Playwright suite under [`integration/`](integration/). Prefer the operator CLI so the selected `--env` drives URLs:
+
+```bash
+./scripts/fw --env staging test-smoke
+./scripts/fw --env staging test-all
+./scripts/fw --env staging test --mode api
+./scripts/fw --env local test-ui
+# or: interactive → environment → Test layer
+./scripts/fw
+```
+
+Direct (without fw):
+
+```bash
+cd integration && cp .env.example .env   # set FW_API_KEY=fw_live_…
+./scripts/run.sh staging smoke
+./scripts/run.sh staging
+```
+
+See [`integration/README.md`](integration/README.md) for env vars, tags (`@smoke` / `@convert`), and signed-in UI setup.
+
 ## Operator CLI
 
 Rich TUI (same pattern as OpenFDEServer `python -m deploy`):
@@ -54,6 +78,9 @@ Rich TUI (same pattern as OpenFDEServer `python -m deploy`):
 ./scripts/fw compose-rebuild         # only when Dockerfile / lockfiles change
 ./scripts/fw db-upgrade              # Alembic against local Postgres
 ./scripts/fw --env staging push-image  # staging/prod: RDS migrates on Lambda boot
+./scripts/fw --env staging test-smoke  # post-deploy Playwright gate
+./scripts/fw --env staging test-all    # smoke + UI + API together
+./scripts/fw --env staging test --mode convert  # needs FW_API_KEY
 ./scripts/fw --env dev full          # AWS Lambda + Cloudflare Pages
 ```
 

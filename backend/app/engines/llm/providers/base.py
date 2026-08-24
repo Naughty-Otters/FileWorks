@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import base64
+import json
 import logging
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
-from pydantic.dataclasses import dataclass
-
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from pydantic.dataclasses import dataclass
 
 from app.engines.llm.catalog import LLMProviderSpec
 from app.engines.llm.media import IMAGE_SUFFIXES, encode_image_file, render_pdf_pages
@@ -70,6 +70,18 @@ class LLMApiProvider(ABC):
         part: str | None = None,
     ) -> str:
         """Text-only completion (translation and other post-process steps)."""
+        raise NotImplementedError
+
+    def complete_structured(
+        self,
+        request: ConvertRequest,
+        prompt: str,
+        schema: dict[str, Any],
+        *,
+        purpose: str = "text",
+        part: str | None = None,
+    ) -> dict[str, Any]:
+        """Text-only completion constrained to ``schema`` (JSON Schema object)."""
         raise NotImplementedError
 
 
@@ -153,6 +165,69 @@ class LangChainChatProvider(LLMApiProvider):
             purpose=purpose,
             part=part,
         )
+
+    def complete_structured(
+        self,
+        request: ConvertRequest,
+        prompt: str,
+        schema: dict[str, Any],
+        *,
+        purpose: str = "text",
+        part: str | None = None,
+    ) -> dict[str, Any]:
+        model = self.build_chat_model(request)
+        logger.info(
+            "LLM structured invoke provider=%s package=%s model=%s base_url=%s",
+            request.spec.id,
+            request.spec.package,
+            request.model,
+            request.target.openai_base_url(),
+        )
+        message = HumanMessage(content=[{"type": "text", "text": prompt}])
+        try:
+            bound, include_raw = _bind_structured_output(model, schema)
+        except NotImplementedError:
+            logger.warning(
+                "LLM provider=%s does not support structured output; falling back to JSON parse",
+                request.spec.id,
+            )
+            return _structured_json_fallback(
+                model,
+                prompt,
+                schema,
+                request=request,
+                purpose=purpose,
+                part=part,
+            )
+        try:
+            result = bound.invoke([message])
+        except Exception as exc:
+            raise LLMClientError(str(exc)) from exc
+        parsed: Any
+        raw_message: Any = None
+        if include_raw:
+            parsed = result.get("parsed") if isinstance(result, dict) else None
+            raw_message = result.get("raw") if isinstance(result, dict) else None
+            if raw_message is not None:
+                log_llm_tokens(
+                    raw_message,
+                    request=request,
+                    chat_model=model,
+                    purpose=purpose,
+                    part=part,
+                    out_chars=len(_message_text(raw_message).strip()),
+                )
+        else:
+            parsed = result
+        value = _structured_as_dict(parsed)
+        if value is None and raw_message is not None:
+            try:
+                value = parse_json_object(_message_text(raw_message))
+            except LLMClientError:
+                value = None
+        if value is None:
+            raise LLMClientError("LangChain structured output returned no JSON object")
+        return value
 
     @abstractmethod
     def build_chat_model(self, request: ConvertRequest) -> BaseChatModel:
@@ -424,6 +499,141 @@ def _as_int(value: object) -> int | None:
 
 def _fmt_count(value: int | None) -> str:
     return "-" if value is None else str(value)
+
+
+_JSON_FENCE_RE = re.compile(
+    r"```(?:json|javascript|js)?\s*(.*?)```",
+    flags=re.IGNORECASE | re.DOTALL,
+)
+_JSON_OPEN_FENCE_RE = re.compile(
+    r"```(?:json|javascript|js)?\s*(.*)$",
+    flags=re.IGNORECASE | re.DOTALL,
+)
+
+
+def parse_json_object(raw: str) -> dict[str, Any]:
+    """Parse a JSON object from model text, including markdown fences and chatter."""
+    last_error: Exception | None = None
+    for candidate in _json_payload_candidates(raw):
+        try:
+            value = json.loads(candidate)
+        except json.JSONDecodeError as exc:
+            last_error = exc
+            continue
+        if isinstance(value, dict):
+            return value
+        last_error = TypeError("Template extraction must return a JSON object")
+    raise LLMClientError("Template extraction returned invalid JSON") from last_error
+
+
+def _json_payload_candidates(raw: str) -> list[str]:
+    text = (raw or "").strip().lstrip("\ufeff")
+    if not text:
+        return []
+    candidates = [text]
+    for match in _JSON_FENCE_RE.finditer(text):
+        body = match.group(1).strip()
+        if body:
+            candidates.append(body)
+    if "```" in text and not _JSON_FENCE_RE.search(text):
+        opened = _JSON_OPEN_FENCE_RE.search(text)
+        if opened:
+            body = opened.group(1).strip()
+            if body:
+                candidates.append(body)
+    sliced = _first_json_object(text)
+    if sliced:
+        candidates.append(sliced)
+    unique: list[str] = []
+    seen: set[str] = set()
+    for item in candidates:
+        if item not in seen:
+            seen.add(item)
+            unique.append(item)
+    return unique
+
+
+def _first_json_object(text: str) -> str | None:
+    start = text.find("{")
+    if start < 0:
+        return None
+    depth = 0
+    in_string = False
+    escape = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : index + 1]
+    return None
+
+
+def _bind_structured_output(model: BaseChatModel, schema: dict[str, Any]) -> tuple[Any, bool]:
+    """Bind ``schema`` via LangChain ``with_structured_output``. Prefer include_raw."""
+    bind = getattr(model, "with_structured_output", None)
+    if not callable(bind):
+        raise NotImplementedError("chat model has no with_structured_output")
+    try:
+        return bind(schema, include_raw=True), True
+    except TypeError:
+        return bind(schema), False
+
+
+def _structured_as_dict(value: Any) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    dump = getattr(value, "model_dump", None)
+    if callable(dump):
+        dumped = dump()
+        return dumped if isinstance(dumped, dict) else None
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            return parse_json_object(value)
+        except LLMClientError:
+            return None
+    return None
+
+
+def _structured_json_fallback(
+    model: BaseChatModel,
+    prompt: str,
+    schema: dict[str, Any],
+    *,
+    request: ConvertRequest | None,
+    purpose: str,
+    part: str | None,
+) -> dict[str, Any]:
+    raw = invoke_markdown(
+        model,
+        [
+            {
+                "type": "text",
+                "text": (
+                    f"{prompt}\n\nReturn JSON only, with no markdown fence, matching this schema:\n"
+                    f"{json.dumps(schema, ensure_ascii=False)}"
+                ),
+            }
+        ],
+        request=request,
+        purpose=purpose,
+        part=part,
+    )
+    return parse_json_object(raw)
 
 
 def invoke_markdown(

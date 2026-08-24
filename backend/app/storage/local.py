@@ -127,6 +127,12 @@ class LocalDocumentStore:
                     "engine": engine,
                     "page_count": page_count,
                     "format": output_format,
+                    "design_template_id": None,
+                    "design_template_name": None,
+                    "design_html": None,
+                    "design_markdown": None,
+                    "design_context": None,
+                    "design_return_format": None,
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -135,6 +141,56 @@ class LocalDocumentStore:
         )
 
         self._prepend_index(document_id)
+        return record
+
+    def update_design(
+        self,
+        document_id: str,
+        *,
+        design_template_id: str | None,
+        design_template_name: str | None,
+        design_html: str | None,
+        design_markdown: str | None = None,
+        design_context: dict[str, Any] | None = None,
+        design_return_format: str | None = None,
+    ) -> DocumentRecord | None:
+        record = self.get_document(document_id)
+        if record is None:
+            return None
+        record.design_template_id = design_template_id
+        record.design_template_name = design_template_name
+        record.design_html = design_html
+        record.design_markdown = design_markdown
+        record.design_context = design_context
+        record.design_return_format = design_return_format
+        doc_dir = self._doc_dir(document_id)
+        meta_path = doc_dir / "meta.json"
+        result_path = doc_dir / "result.json"
+        meta_path.write_text(json.dumps(record.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
+        result_payload: dict[str, Any] = {
+            "markdown": record.markdown,
+            "json": record.json_data,
+            "pages": record.pages,
+            "structure": record.structure,
+            "engine": record.engine,
+            "page_count": record.page_count,
+            "format": record.output_format,
+            "design_template_id": record.design_template_id,
+            "design_template_name": record.design_template_name,
+            "design_html": record.design_html,
+            "design_markdown": record.design_markdown,
+            "design_context": record.design_context,
+            "design_return_format": record.design_return_format,
+        }
+        if result_path.exists():
+            try:
+                existing = json.loads(result_path.read_text(encoding="utf-8"))
+                if isinstance(existing, dict):
+                    existing.update(result_payload)
+                    result_payload = existing
+            except (OSError, json.JSONDecodeError):
+                pass
+        result_path.write_text(json.dumps(result_payload, ensure_ascii=False, indent=2), encoding="utf-8")
         return record
 
     def list_document_ids(self) -> list[str]:

@@ -15,6 +15,7 @@ export type HistorySummaryFingerprint = {
   engine: string | null;
   has_markdown: boolean;
   has_json: boolean;
+  has_design: boolean;
 };
 
 export type HistoryCacheEntry = {
@@ -34,6 +35,7 @@ function fingerprintFromSummary(item: HistoryItem): HistorySummaryFingerprint {
     engine: item.engine,
     has_markdown: item.has_markdown,
     has_json: item.has_json,
+    has_design: Boolean(item.has_design),
   };
 }
 
@@ -45,6 +47,7 @@ function fingerprintFromDetail(detail: HistoryDetail | ExtractResponse): History
     engine: detail.engine || null,
     has_markdown: Boolean(detail.markdown),
     has_json: detail.json != null,
+    has_design: Boolean(detail.design_html && detail.design_template_id),
   };
 }
 
@@ -55,7 +58,8 @@ function fingerprintsEqual(a: HistorySummaryFingerprint, b: HistorySummaryFinger
     a.page_count === b.page_count &&
     a.engine === b.engine &&
     a.has_markdown === b.has_markdown &&
-    a.has_json === b.has_json
+    a.has_json === b.has_json &&
+    a.has_design === b.has_design
   );
 }
 
@@ -81,6 +85,12 @@ function toHistoryDetail(data: HistoryDetail | ExtractResponse, id: string): His
     image_size: data.image_size || null,
     structure: data.structure ?? null,
     options: data.options ?? null,
+    design_template_id: data.design_template_id ?? null,
+    design_template_name: data.design_template_name ?? null,
+    design_html: data.design_html ?? null,
+    design_markdown: data.design_markdown ?? null,
+    design_context: data.design_context ?? null,
+    design_return_format: data.design_return_format ?? null,
   };
 }
 

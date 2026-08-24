@@ -1,0 +1,4 @@
+FileWorks integration fixture
+
+Hello from sample.txt.
+Line three.

@@ -20,12 +20,18 @@ from app.api.v1.catalog import (
     resolve_language,
     resolve_target,
 )
+from app.api.v1.design_fill import (
+    fill_starter_design,
+    parse_design_variables,
+    resolve_design_output_format,
+)
 from app.api.v1.schemas import (
     ConvertAppliedOptions,
     ConvertCatalogResponse,
     ConvertResponse,
     ConvertSource,
 )
+from app.processing.template.starters import get_starter_meta
 from app.auth.api_plans import convert_credits, get_api_plan
 from app.auth.deps import Principal, get_principal
 from app.auth.quota import api_quota_snapshot, assert_api_credits, record_api_credits
@@ -124,6 +130,7 @@ async def get_convert_options(
     summary="Convert a file in one request",
     description=(
         "Upload `file` plus optional `target` and parse options. "
+        "Optional `design` fills a built-in Design starter from the extracted Markdown. "
         "Returns JSON with `markdown` and exported `content`, or the file if `download=true`. "
         "Do not send s3_key. See GET /api/v1/convert for the live option catalog."
     ),
@@ -133,11 +140,23 @@ async def convert_file(
     file: UploadFile = File(..., description="Source file bytes. Do not send an S3 key."),
     target: str = Form(
         default="markdown",
-        description="Output format: markdown, txt, html, json, or docx. Default markdown.",
+        description="Output format: markdown, txt, html, json, or docx. With design set: html, docx, or markdown.",
     ),
     download: bool | str = Form(
         default=False,
         description="If true, return the converted file instead of JSON.",
+    ),
+    design: str = Form(
+        default="",
+        description="Built-in Design starter id (invoice, family_daily, …). Fills from extracted Markdown.",
+    ),
+    design_fill: str = Form(
+        default="auto",
+        description="Design fill: auto (AI from Markdown), defaults, or none (needs design_variables).",
+    ),
+    design_variables: str = Form(
+        default="",
+        description="Optional JSON object of Design placeholder overrides.",
     ),
     use_ai: bool | str = Form(
         default=False,
@@ -206,6 +225,21 @@ async def convert_file(
         )
     api_plan = principal.api_plan or get_api_plan(getattr(principal.user, "api_plan", None))
     assert_api_credits(db, user_id=principal.user_id, plan=api_plan)
+    design_id = (design or "").strip()
+    fill_raw = (design_fill or "auto").strip().lower() or "auto"
+    if fill_raw not in {"auto", "defaults", "none"}:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "unsupported_design_fill",
+                "field": "design_fill",
+                "message": "design_fill must be auto, defaults, or none",
+                "available": ["auto", "defaults", "none"],
+            },
+        )
+    design_overrides = parse_design_variables(design_variables)
+    if design_id:
+        get_starter_meta(design_id)  # 404 early for unknown starters
     target_info = resolve_target(target)
     lang = resolve_language(target_lang)
     options = ExtractOptions.from_form(
@@ -223,7 +257,9 @@ async def convert_file(
         target_lang=lang,
     )
     assert_options_available(use_ai=options.use_ai, target_lang=options.normalized_target_lang())
-    enhanced = options.use_ai or bool(options.normalized_target_lang())
+    # Design AI fill (auto) bills like AI reading / translation.
+    design_ai = bool(design_id) and fill_raw == "auto"
+    enhanced = options.use_ai or bool(options.normalized_target_lang()) or design_ai
 
     data = await file.read()
     original_name, suffix = _validate_file(file, data)
@@ -278,6 +314,8 @@ async def convert_file(
                     request=request,
                     run_id=str(run_id or "").strip() or None,
                     owner=owner,
+                    # One API key may issue concurrent POSTs; do not cancel peers.
+                    preempt_owner=False,
                 )
         except HTTPException:
             raise
@@ -297,16 +335,42 @@ async def convert_file(
         page_count = int(result.get("page_count", 0))
         credits_used = convert_credits(page_count=page_count, enhanced=enhanced)
         title = Path(original_name).stem or "document"
-        try:
-            exported, media_type, ext = export_markdown(
-                markdown,
-                fmt=str(target_info["id"]),
-                title=title,
-                source_bytes=data,
-                source_suffix=suffix,
+        design_fill_used: str | None = None
+        response_target = str(target_info["id"])
+
+        if design_id:
+            design_format = resolve_design_output_format(str(target_info["id"]))
+            # AI fill needs an LLM; fall back to defaults when AI reading is not configured.
+            from app.api.v1.catalog import _ai_ready
+
+            ai_ready, _reason = _ai_ready()
+            allow_ai = design_ai and ai_ready
+            exported_body, media_type, ext, design_fill_used = fill_starter_design(
+                starter_id=design_id,
+                markdown=markdown,
+                fill=fill_raw,  # type: ignore[arg-type]
+                overrides=design_overrides,
+                output_format=design_format,
+                allow_ai_fill=allow_ai,
             )
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+            if isinstance(exported_body, str):
+                exported = exported_body.encode("utf-8")
+            else:
+                exported = exported_body
+            response_target = f"design:{design_id}:{design_format}"
+            out_name = f"{title}-{design_id}.{ext}"
+        else:
+            try:
+                exported, media_type, ext = export_markdown(
+                    markdown,
+                    fmt=str(target_info["id"]),
+                    title=title,
+                    source_bytes=data,
+                    source_suffix=suffix,
+                )
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            out_name = f"{title}.{ext}"
 
         record_api_credits(
             db,
@@ -314,16 +378,20 @@ async def convert_file(
             credits=credits_used,
         )
 
-        out_name = f"{title}.{ext}"
         if _form_bool(download):
+            headers = {"Content-Disposition": _content_disposition(out_name)}
+            if design_id:
+                headers["X-FileWorks-Design"] = design_id
+                if design_fill_used:
+                    headers["X-Template-Fill"] = design_fill_used
             return Response(
                 content=exported,
                 media_type=media_type,
-                headers={"Content-Disposition": _content_disposition(out_name)},
+                headers=headers,
             )
 
         encoding = "utf-8"
-        if media_type.startswith("text/") or "json" in media_type:
+        if media_type.startswith("text/") or "json" in media_type or "markdown" in media_type:
             content = exported.decode("utf-8", errors="replace")
         else:
             content = base64.b64encode(exported).decode("ascii")
@@ -337,7 +405,7 @@ async def convert_file(
                 content_type=mime_type,
                 size_bytes=len(data),
             ),
-            target=str(target_info["id"]),
+            target=response_target,
             filename=out_name,
             media_type=media_type,
             markdown=markdown,
@@ -347,6 +415,8 @@ async def convert_file(
             engine=str(result.get("engine") or "unknown"),
             page_count=page_count,
             credits_used=credits_used,
+            design=design_id or None,
+            design_fill=design_fill_used,
         )
     finally:
         if temp_path.exists():

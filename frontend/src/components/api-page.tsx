@@ -10,7 +10,7 @@ import { fetchHealth, listApiKeys, type HealthResponse } from "@/lib/api";
 import { resolveApiBase } from "@/lib/runtime-config";
 import { reloadSession, useSession } from "@/lib/session";
 import { SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
-import { INPUT_FORMATS, OUTPUT_FORMATS, organizationJsonLd, softwareApplicationJsonLd } from "@/lib/seo";
+import { organizationJsonLd, softwareApplicationJsonLd } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 
 type CodeLang = "bash" | "python" | "javascript";
@@ -168,14 +168,23 @@ export function ApiPage() {
   -F target=markdown \\
   ${apiBase}/api/v1/convert \\
   | jq -r .markdown`,
+      curlDesign: `curl -s -H "Authorization: Bearer ${auth}" \\
+  -F file=@invoice-scan.pdf \\
+  -F target=html \\
+  -F design=invoice \\
+  -F design_fill=defaults \\
+  -F download=true \\
+  -o invoice.html \\
+  ${apiBase}/api/v1/convert`,
       python: `import requests
 from pathlib import Path
 
 base = "${apiBase}"
 headers = {"Authorization": "Bearer ${auth}"}
 
+# Optional: list inputs, targets, and Design starter ids
 catalog = requests.get(f"{base}/api/v1/convert", headers=headers).json()
-print(catalog["inputs"], catalog["capabilities"])
+print(catalog["capabilities"], [d["id"] for d in catalog.get("designs", [])])
 
 with open("report.pdf", "rb") as fh:
     res = requests.post(
@@ -185,20 +194,13 @@ with open("report.pdf", "rb") as fh:
         data={"target": "markdown", "use_ai": "false", "target_lang": "original"},
     )
 res.raise_for_status()
-markdown = res.json()["markdown"]
-Path("report.md").write_text(markdown, encoding="utf-8")
-print(markdown)`,
+Path("report.md").write_text(res.json()["markdown"], encoding="utf-8")`,
       js: `const base = "${apiBase}";
 const headers = { Authorization: "Bearer ${auth}" };
-
-const catalog = await fetch(\`\${base}/api/v1/convert\`, { headers }).then((r) => r.json());
-console.log(catalog.inputs, catalog.capabilities);
 
 const body = new FormData();
 body.append("file", fileInput.files[0]);
 body.append("target", "markdown");
-body.append("use_ai", "false");
-body.append("target_lang", "original");
 
 const res = await fetch(\`\${base}/api/v1/convert\`, { method: "POST", headers, body });
 const data = await res.json();
@@ -222,7 +224,7 @@ console.log(data.markdown);`,
               url: `${SITE_URL}/docs`,
               name: "Convert API — FileWorks",
               description:
-                "Upload PDF, Word, Excel, PowerPoint, or images to POST /api/v1/convert and receive Markdown or other exports.",
+                "Source + Intent: upload PDF, Word, Excel, PowerPoint, or images to POST /api/v1/convert and receive Markdown or a filled Design via design=.",
               isPartOf: { "@id": `${SITE_URL}/#website` },
             },
           ],
@@ -241,20 +243,13 @@ console.log(data.markdown);`,
         <div>
           <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">Convert API</p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl tracking-tight">
-            PDF and Office to Markdown API
+            Source + Intent
           </h1>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Upload a PDF, Word, Excel, PowerPoint, image, or text file to{" "}
-            <code className="api-inline">POST /api/v1/convert</code>. JSON includes{" "}
-            <code className="api-inline">markdown</code> and exported{" "}
-            <code className="api-inline">content</code>. Pass{" "}
-            <code className="api-inline">download=true</code> to write the converted file
-            instead. Create an API key on Profile. Workspace access tokens are not accepted here.
-          </p>
-          <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Inputs: {INPUT_FORMATS.join("; ")}. Targets: {OUTPUT_FORMATS.join(", ")}. Optional{" "}
-            <code className="api-inline">use_ai=true</code> for OCR on scans and{" "}
-            <code className="api-inline">target_lang</code> for translation.
+            Same sentence as the workspace: upload a{" "}
+            <span className="font-medium text-[var(--ink)]">file</span> (Source), choose Markdown or
+            a Design (Intent). Auth with a <code className="api-inline">fw_live_</code> API key from
+            Profile. Accepts PDF, Word, Excel, PowerPoint, images, and text (up to 50 MB).
           </p>
         </div>
 
@@ -275,27 +270,15 @@ console.log(data.markdown);`,
                 {health ? (apiUp ? "Reachable" : "Unreachable") : "Checking…"}
               </dd>
             </div>
-            <div className="flex flex-wrap justify-between gap-2">
-              <dt className="text-[var(--ink-muted)]">OpenAPI</dt>
-              <dd>
-                <a href={`${dedicatedBase}/docs`} className="api-link">
-                  {dedicatedBase}/docs
-                </a>
-              </dd>
-            </div>
           </dl>
         </section>
 
         <section className="panel rounded-3xl px-5 py-5">
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Auth</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Send <code className="api-inline">Authorization: Bearer fw_live_…</code>. A raw
-            key in <code className="api-inline">Authorization</code> or{" "}
-            <code className="api-inline">X-Api-Key</code> also works — do not omit the key, and
-            do not send a workspace Google token. Keys start with{" "}
-            <code className="api-inline">fw_live_</code> and do not expire. GET catalog works
-            without a key. POST convert bills page credits on your API plan, separate from the
-            workspace role.
+            Send <code className="api-inline">Authorization: Bearer fw_live_…</code> (or{" "}
+            <code className="api-inline">X-Api-Key</code>). Workspace sign-in tokens are not accepted.
+            GET convert catalog works without a key; POST convert bills API page credits.
           </p>
           {me?.user ? (
             <div className="mt-4">
@@ -306,8 +289,8 @@ console.log(data.markdown);`,
                 Manage API keys
               </a>
               <p className="mt-2 text-xs text-[var(--ink-muted)]">
-                Signed in as {me.user.email} · workspace {me.plan} · API {me.api_plan || "api_free"}
-                {keyHint !== "YOUR_API_KEY" ? ` · ${keyHint}` : ""}. Treat keys like passwords.
+                Signed in as {me.user.email} · API {me.api_plan || "api_free"}
+                {keyHint !== "YOUR_API_KEY" ? ` · ${keyHint}` : ""}.
               </p>
             </div>
           ) : (
@@ -320,76 +303,92 @@ console.log(data.markdown);`,
         </section>
 
         <section className="panel rounded-3xl px-5 py-5">
-          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Examples</h2>
+          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Convert</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Replace YOUR_API_KEY, then POST a real file. Default JSON embeds Markdown in{" "}
-            <code className="api-inline">markdown</code> (and the export in{" "}
-            <code className="api-inline">content</code>). Use{" "}
-            <code className="api-inline">download=true</code> to save the file, or pipe JSON
-            through <code className="api-inline">jq</code>.
+            <code className="api-inline">POST /api/v1/convert</code> — multipart{" "}
+            <code className="api-inline">file</code> (Source) plus Intent:{" "}
+            <code className="api-inline">target</code> and/or <code className="api-inline">design</code>.
+            JSON returns extracted <code className="api-inline">markdown</code> and exported{" "}
+            <code className="api-inline">content</code>. Use{" "}
+            <code className="api-inline">download=true</code> to receive the file body instead.
           </p>
-          <CodeBlock lang="bash" label="save file" code={examples.curlFile} />
-          <CodeBlock lang="bash" label="print markdown" code={examples.curlJson} />
-          <CodeBlock lang="python" code={examples.python} />
-          <CodeBlock lang="javascript" code={examples.js} />
+          <dl className="mt-4 space-y-3 text-sm">
+            <div>
+              <dt className="font-medium text-[var(--ink)]">file</dt>
+              <dd className="mt-0.5 text-[var(--ink-muted)]">
+                Source document (required). PDF, Office, images, Markdown, TXT, CSV — up to 50 MB.
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-[var(--ink)]">target</dt>
+              <dd className="mt-0.5 text-[var(--ink-muted)]">
+                Intent output format: <code className="api-inline">markdown</code> (default),{" "}
+                <code className="api-inline">txt</code>, <code className="api-inline">html</code>,{" "}
+                <code className="api-inline">json</code>, or <code className="api-inline">docx</code>.
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-[var(--ink)]">use_ai</dt>
+              <dd className="mt-0.5 text-[var(--ink-muted)]">
+                <code className="api-inline">true</code> for OCR on scans and images (3 credits /
+                page).
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-[var(--ink)]">target_lang</dt>
+              <dd className="mt-0.5 text-[var(--ink-muted)]">
+                Translate after reading (e.g. <code className="api-inline">en</code>,{" "}
+                <code className="api-inline">zh</code>). Omit or use{" "}
+                <code className="api-inline">original</code> to skip.
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-[var(--ink)]">design</dt>
+              <dd className="mt-0.5 text-[var(--ink-muted)]">
+                Intent Design starter id (<code className="api-inline">invoice</code>,{" "}
+                <code className="api-inline">family_daily</code>, …). Fills that Design from the
+                extracted Markdown — the API twin of Produce as. List ids on{" "}
+                <code className="api-inline">GET /api/v1/convert</code> →{" "}
+                <code className="api-inline">designs</code>.
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-[var(--ink)]">design_fill</dt>
+              <dd className="mt-0.5 text-[var(--ink-muted)]">
+                With <code className="api-inline">design</code>:{" "}
+                <code className="api-inline">defaults</code> (samples),{" "}
+                <code className="api-inline">auto</code> (AI-fill, enhanced credits), or{" "}
+                <code className="api-inline">none</code> plus{" "}
+                <code className="api-inline">design_variables</code> JSON.
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-4 text-sm leading-6 text-[var(--ink-muted)]">
+            <code className="api-inline">GET /api/v1/convert</code> returns the live catalog
+            (inputs, targets, languages, Design starters as produce targets, and which options are
+            available now).
+          </p>
         </section>
 
-        <section className="panel overflow-x-auto rounded-3xl px-5 py-5">
-          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Endpoints</h2>
-          <table className="mt-4 w-full min-w-[520px] border-collapse text-left text-sm">
-            <caption className="sr-only">Convert API endpoints</caption>
-            <thead>
-              <tr className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-                <th className="pb-2 pr-3 font-medium">Method</th>
-                <th className="pb-2 pr-3 font-medium">Path</th>
-                <th className="pb-2 font-medium">What it does</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-t border-[var(--line)]">
-                <td className="py-2.5 pr-3 font-medium">GET</td>
-                <td className="py-2.5 pr-3 font-[family-name:var(--font-mono)] text-[13px] text-[var(--accent-strong)]">
-                  /api/health
-                </td>
-                <td className="py-2.5 text-[var(--ink-muted)]">Liveness and engine status</td>
-              </tr>
-              <tr className="border-t border-[var(--line)]">
-                <td className="py-2.5 pr-3 font-medium">GET</td>
-                <td className="py-2.5 pr-3 font-[family-name:var(--font-mono)] text-[13px] text-[var(--accent-strong)]">
-                  /api/v1/convert
-                </td>
-                <td className="py-2.5 text-[var(--ink-muted)]">Inputs, targets, options, capabilities</td>
-              </tr>
-              <tr className="border-t border-[var(--line)]">
-                <td className="py-2.5 pr-3 font-medium">POST</td>
-                <td className="py-2.5 pr-3 font-[family-name:var(--font-mono)] text-[13px] text-[var(--accent-strong)]">
-                  /api/v1/convert
-                </td>
-                <td className="py-2.5 text-[var(--ink-muted)]">
-                  Multipart <code className="api-inline">file</code> + options. No{" "}
-                  <code className="api-inline">s3_key</code>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <p className="mt-4 text-sm leading-6 text-[var(--ink-muted)]">
-            Useful form fields: <code className="api-inline">target</code> (
-            <code className="api-inline">markdown</code>, <code className="api-inline">txt</code>,{" "}
-            <code className="api-inline">html</code>, <code className="api-inline">json</code>,{" "}
-            <code className="api-inline">docx</code>),{" "}
-            <code className="api-inline">download=true</code> to get the file,{" "}
-            <code className="api-inline">use_ai=true</code> for scans,{" "}
-            <code className="api-inline">target_lang=en</code> to translate. Max upload is 50 MB.
+        <section className="panel rounded-3xl px-5 py-5">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Examples</h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+            Replace YOUR_API_KEY with a key from Profile. Markdown Intent first; Design Intent
+            second — same endpoint.
           </p>
+          <CodeBlock lang="bash" label="Source → Markdown" code={examples.curlFile} />
+          <CodeBlock lang="bash" label="Source → Markdown (JSON)" code={examples.curlJson} />
+          <CodeBlock lang="bash" label="Source → Design (invoice)" code={examples.curlDesign} />
+          <CodeBlock lang="python" code={examples.python} />
+          <CodeBlock lang="javascript" code={examples.js} />
         </section>
 
         <section className="panel rounded-3xl px-5 py-5">
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Quota</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Convert API uses page credits on a separate API plan. Standard convert is 1 credit per
-            page. AI reading or translation is 3 credits per page. API Free includes 100 credits /
-            month. Paid API plans start at $19 / month for 2,000 credits and can be combined with
-            workspace Pro or Premium. Workspace file quotas do not apply here.{" "}
+            Standard convert is 1 credit per page. AI reading, translation, or Design{" "}
+            <code className="api-inline">design_fill=auto</code> is 3 credits per page. API Free
+            includes 100 credits / month. See{" "}
             <a href="/pricing" className="text-[var(--accent-strong)] underline-offset-2 hover:underline">
               Pricing
             </a>
