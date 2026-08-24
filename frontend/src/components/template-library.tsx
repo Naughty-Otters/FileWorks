@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FilePlus2, Trash2 } from "lucide-react";
 import { TemplateShell } from "./template-shell";
 import { SeoFaq } from "@/components/seo-faq";
@@ -10,11 +10,25 @@ import { PRODUCT } from "@/lib/product-copy";
 import { useSession } from "@/lib/session";
 import { TEMPLATE_FAQS } from "@/lib/seo";
 
+function categoryAnchorId(categoryId: string) {
+  return `design-cat-${categoryId}`;
+}
+
 export function TemplateLibrary() {
   const { me, status } = useSession();
   const [items, setItems] = useState<TemplateRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const signedIn = Boolean(me?.user);
+
+  const populatedCategories = useMemo(
+    () =>
+      TEMPLATE_CATEGORIES.filter((cat) =>
+        BUILT_IN_TEMPLATES.some((item) => item.category === cat.id),
+      ),
+    [],
+  );
+  const [activeCategory, setActiveCategory] = useState(populatedCategories[0]?.id ?? "");
+  const clickingRef = useRef(false);
 
   useEffect(() => {
     if (!signedIn) return;
@@ -22,6 +36,42 @@ export function TemplateLibrary() {
       .then(setItems)
       .catch((reason) => setError(reason instanceof Error ? reason.message : "Failed to load designs"));
   }, [signedIn]);
+
+  useEffect(() => {
+    const nodes = populatedCategories
+      .map((cat) => document.getElementById(categoryAnchorId(cat.id)))
+      .filter((node): node is HTMLElement => Boolean(node));
+    if (!nodes.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (clickingRef.current) return;
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        const top = visible[0]?.target.getAttribute("data-category-id");
+        if (top) setActiveCategory(top);
+      },
+      {
+        // Account for sticky site header + category index.
+        rootMargin: "-120px 0px -55% 0px",
+        threshold: [0.1, 0.25, 0.5],
+      },
+    );
+    for (const node of nodes) observer.observe(node);
+    return () => observer.disconnect();
+  }, [populatedCategories]);
+
+  function scrollToCategory(categoryId: string) {
+    const target = document.getElementById(categoryAnchorId(categoryId));
+    if (!target) return;
+    clickingRef.current = true;
+    setActiveCategory(categoryId);
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.setTimeout(() => {
+      clickingRef.current = false;
+    }, 700);
+  }
 
   async function remove(item: TemplateRecord) {
     if (!window.confirm(`Delete “${item.name}”?`)) return;
@@ -113,10 +163,37 @@ export function TemplateLibrary() {
         <section className="mt-10">
           <h2 className="text-lg font-semibold">{PRODUCT.starterDesigns}</h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            Ready-to-fill layouts by category — Family planners, Business documents, and General
-            reports. Produce from a file on Home, or copy a starter into the studio to refine.
+            Ready-to-fill layouts by document type — agreements, plans, policies, forms, and more.
+            Produce from a file on Home, or copy a starter into the studio to refine.
           </p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+          <nav
+            aria-label="Design categories"
+            className="sticky top-0 z-20 -mx-1 mt-5 border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--bg)_92%,transparent)] px-1 py-3 backdrop-blur-md"
+          >
+            <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:thin]">
+              {populatedCategories.map((cat) => {
+                const active = activeCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => scrollToCategory(cat.id)}
+                    aria-current={active ? "true" : undefined}
+                    className={
+                      active
+                        ? "shrink-0 rounded-full border border-[var(--accent)] bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--accent-strong)]"
+                        : "shrink-0 rounded-full border border-[var(--line)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent-strong)]"
+                    }
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <a
               href={signedIn ? "/templates/new" : "/login?next=%2Ftemplates%2Fnew"}
               className="panel flex flex-col rounded-2xl p-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]"
@@ -128,11 +205,15 @@ export function TemplateLibrary() {
               <p className="mt-1 min-h-10 text-sm text-[var(--ink-muted)]">Choose a page size and build from scratch</p>
             </a>
           </div>
-          {TEMPLATE_CATEGORIES.map((cat) => {
+          {populatedCategories.map((cat) => {
             const categoryItems = BUILT_IN_TEMPLATES.filter((item) => item.category === cat.id);
-            if (!categoryItems.length) return null;
             return (
-              <div key={cat.id} className="mt-8">
+              <div
+                key={cat.id}
+                id={categoryAnchorId(cat.id)}
+                data-category-id={cat.id}
+                className="mt-8 scroll-mt-28"
+              >
                 <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--ink-muted)]">
                   {cat.label}
                 </h3>

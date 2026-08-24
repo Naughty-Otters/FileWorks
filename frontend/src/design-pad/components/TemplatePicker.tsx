@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useEditorStore } from "../store";
 import { TEMPLATES, TEMPLATE_CATEGORIES, type Template } from "../templates";
 import { PAGE_SIZE_PRESETS, createEmptyDocument, type PageSize } from "../types";
 import { IconFile } from "../icons";
 import { PRODUCT } from "@/lib/product-copy";
+
+function categoryAnchorId(categoryId: string) {
+  return `picker-cat-${categoryId}`;
+}
 
 export default function TemplatePicker({ onPicked }: { onPicked?: (name: string) => void }) {
   const loadDocument = useEditorStore((s) => s.loadDocument);
@@ -13,6 +17,55 @@ export default function TemplatePicker({ onPicked }: { onPicked?: (name: string)
   const [step, setStep] = useState<"grid" | "size">("grid");
   const [customW, setCustomW] = useState(850);
   const [customH, setCustomH] = useState(1100);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const clickingRef = useRef(false);
+
+  const populatedCategories = useMemo(
+    () => TEMPLATE_CATEGORIES.filter((cat) => TEMPLATES.some((t) => t.category === cat.id)),
+    [],
+  );
+  const [activeCategory, setActiveCategory] = useState(populatedCategories[0]?.id ?? "");
+
+  useEffect(() => {
+    if (step !== "grid") return;
+    const root = modalRef.current;
+    if (!root) return;
+    const nodes = populatedCategories
+      .map((cat) => root.querySelector(`#${CSS.escape(categoryAnchorId(cat.id))}`))
+      .filter((node): node is HTMLElement => node instanceof HTMLElement);
+    if (!nodes.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (clickingRef.current) return;
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        const top = visible[0]?.target.getAttribute("data-category-id");
+        if (top) setActiveCategory(top);
+      },
+      {
+        root,
+        rootMargin: "-72px 0px -55% 0px",
+        threshold: [0.1, 0.25, 0.5],
+      },
+    );
+    for (const node of nodes) observer.observe(node);
+    return () => observer.disconnect();
+  }, [populatedCategories, step]);
+
+  function scrollToCategory(categoryId: string) {
+    const root = modalRef.current;
+    const target = root?.querySelector(`#${CSS.escape(categoryAnchorId(categoryId))}`);
+    if (!(target instanceof HTMLElement) || !root) return;
+    clickingRef.current = true;
+    setActiveCategory(categoryId);
+    const top = target.offsetTop - 64;
+    root.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    window.setTimeout(() => {
+      clickingRef.current = false;
+    }, 700);
+  }
 
   function startBlank(size: PageSize) {
     loadDocument(createEmptyDocument(size));
@@ -28,11 +81,7 @@ export default function TemplatePicker({ onPicked }: { onPicked?: (name: string)
 
   function TemplateCard({ t }: { t: Template }) {
     return (
-      <button
-        type="button"
-        className="template-card"
-        onClick={() => pickTemplate(t.label, t.build)}
-      >
+      <button type="button" className="template-card" onClick={() => pickTemplate(t.label, t.build)}>
         <div className={`template-thumb thumb-${t.id}`}>
           <div className="thumb-line thumb-title" />
           <div className="thumb-line" />
@@ -104,12 +153,31 @@ export default function TemplatePicker({ onPicked }: { onPicked?: (name: string)
 
   return (
     <div className="template-overlay" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div className="template-modal template-modal-wide">
+      <div ref={modalRef} className="template-modal template-modal-wide">
         <button type="button" className="template-close" title="Cancel" onClick={close}>
           ×
         </button>
         <h2>{PRODUCT.whatToCreate}</h2>
         <p>Pick a starter design to produce, then refine it. Or start blank.</p>
+
+        <nav className="template-category-index" aria-label="Design categories">
+          <div className="template-category-index-row">
+            {populatedCategories.map((cat) => {
+              const active = activeCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  className={active ? "template-cat-chip is-active" : "template-cat-chip"}
+                  aria-current={active ? "true" : undefined}
+                  onClick={() => scrollToCategory(cat.id)}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
         <button type="button" className="template-card template-card-blank" onClick={() => setStep("size")}>
           <div className="template-thumb blank">
@@ -119,11 +187,15 @@ export default function TemplatePicker({ onPicked }: { onPicked?: (name: string)
           <span className="template-desc">Choose a page size to start with</span>
         </button>
 
-        {TEMPLATE_CATEGORIES.map((cat) => {
+        {populatedCategories.map((cat) => {
           const items = TEMPLATES.filter((t) => t.category === cat.id);
-          if (!items.length) return null;
           return (
-            <section key={cat.id} className="template-category">
+            <section
+              key={cat.id}
+              id={categoryAnchorId(cat.id)}
+              data-category-id={cat.id}
+              className="template-category"
+            >
               <div className="template-category-head">
                 <h3>{cat.label}</h3>
                 <p>{cat.blurb}</p>

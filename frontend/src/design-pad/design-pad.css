@@ -1651,6 +1651,48 @@
   max-height: min(90vh, 900px);
 }
 
+.template-category-index {
+  position: sticky;
+  top: -28px;
+  z-index: 5;
+  margin: 0 -8px 16px;
+  padding: 10px 8px 12px;
+  background: color-mix(in oklab, #fff 92%, transparent);
+  border-bottom: 1px solid var(--line, #e2e8f0);
+  backdrop-filter: blur(8px);
+}
+
+.template-category-index-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.template-cat-chip {
+  flex-shrink: 0;
+  border: 1px solid var(--line, #e2e8f0);
+  background: transparent;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  cursor: pointer;
+}
+
+.template-cat-chip:hover {
+  border-color: var(--accent, #0f6e56);
+  color: var(--accent-strong, #0f6e56);
+}
+
+.template-cat-chip.is-active {
+  border-color: var(--accent, #0f6e56);
+  background: var(--accent-soft, #e8f5f0);
+  color: var(--accent-strong, #0f6e56);
+}
+
 .template-card-blank {
   width: 100%;
   max-width: 220px;
@@ -1659,6 +1701,7 @@
 
 .template-category {
   margin-top: 22px;
+  scroll-margin-top: 72px;
 }
 
 .template-category-head {
@@ -1975,6 +2018,10 @@
   background: var(--bg-elevated);
   color: var(--ink);
   box-shadow: var(--shadow);
+}
+.dark .design-pad .template-category-index {
+  background: color-mix(in oklab, var(--bg-elevated) 92%, transparent);
+  border-bottom-color: var(--line);
 }
 .dark .design-pad .template-card {
   background: var(--bg-panel);
