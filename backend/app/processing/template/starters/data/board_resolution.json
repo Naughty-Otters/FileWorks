@@ -1,0 +1,642 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 18,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt7qypjy_803",
+        "kind": "box",
+        "label": "Header",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 72,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 16,
+          "padding": 0,
+          "align": "start",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypjy_801",
+            "kind": "heading",
+            "label": "BOARD RESOLUTION",
+            "level": 1,
+            "x": 0,
+            "y": 0,
+            "w": 477,
+            "h": 44,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 28,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypjy_802",
+            "kind": "paragraph",
+            "label": "{{ company_name }}\nDate: {{ resolution_date }}",
+            "x": 501,
+            "y": 0,
+            "w": 269,
+            "h": 48,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 13,
+              "color": "#64748b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "right",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypjy_806",
+        "kind": "box",
+        "label": "Resolution",
+        "x": 40,
+        "y": 130,
+        "w": 770,
+        "h": 168,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypjy_804",
+            "kind": "heading",
+            "label": "Resolution",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypjy_805",
+            "kind": "paragraph",
+            "label": "Resolved, that the Board of Directors of {{ company_name }} hereby {{ resolution_action }}.\n\nBackground: {{ background }}",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 90,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypjy_816",
+        "kind": "box",
+        "label": "Votes",
+        "x": 40,
+        "y": 316,
+        "w": 770,
+        "h": 152,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypjy_811",
+            "kind": "heading",
+            "label": "Directors voting",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt7qypjy_815",
+            "kind": "box",
+            "label": "Row",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt7qypjy_812",
+                "kind": "paragraph",
+                "label": "Director",
+                "x": 0,
+                "y": 2,
+                "w": 328,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypjy_813",
+                "kind": "paragraph",
+                "label": "Role",
+                "x": 328,
+                "y": 2,
+                "w": 219,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypjy_814",
+                "kind": "paragraph",
+                "label": "Vote",
+                "x": 547,
+                "y": 2,
+                "w": 183,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt7qypjy_810",
+            "kind": "box",
+            "label": "Row",
+            "x": 20,
+            "y": 100,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt7qypjy_807",
+                "kind": "paragraph",
+                "label": "{{ item.director }}",
+                "x": 0,
+                "y": 2,
+                "w": 328,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypjy_808",
+                "kind": "paragraph",
+                "label": "{{ item.role }}",
+                "x": 328,
+                "y": 2,
+                "w": 219,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypjy_809",
+                "kind": "paragraph",
+                "label": "{{ item.vote }}",
+                "x": 547,
+                "y": 2,
+                "w": 183,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ],
+            "repeat": {
+              "over": "board_resolution_votes",
+              "as": "item"
+            }
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypjy_819",
+        "kind": "box",
+        "label": "Certification",
+        "x": 40,
+        "y": 486,
+        "w": 770,
+        "h": 128,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypjy_817",
+            "kind": "heading",
+            "label": "Certification",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypjy_818",
+            "kind": "paragraph",
+            "label": "Certified by {{ secretary_name }}, Corporate Secretary. Quorum present: {{ quorum_note }}. Resolution number: {{ resolution_number }}.",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 50,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt7qypjy_820",
+      "name": "company_name",
+      "label": "Legal company name for the resolution",
+      "type": "text",
+      "sampleValue": "Acme Studio LLC"
+    },
+    {
+      "id": "var_mt7qypjy_821",
+      "name": "resolution_date",
+      "label": "Date the board adopted the resolution",
+      "type": "date",
+      "sampleValue": "March 20, 2026"
+    },
+    {
+      "id": "var_mt7qypjy_822",
+      "name": "resolution_action",
+      "label": "Action the board resolves to take",
+      "type": "text",
+      "sampleValue": "authorizes opening a corporate operating account at First National Bank"
+    },
+    {
+      "id": "var_mt7qypjy_823",
+      "name": "background",
+      "label": "Brief background for the resolution",
+      "type": "text",
+      "sampleValue": "Treasury requested a dedicated operating account for customer receipts."
+    },
+    {
+      "id": "var_mt7qypjy_824",
+      "name": "board_resolution_votes",
+      "label": "Board directors with role and vote on the resolution",
+      "type": "list",
+      "sampleValue": "[{\"director\":\"Sam Chen\",\"role\":\"Chair\",\"vote\":\"Aye\"},{\"director\":\"Priya Nair\",\"role\":\"Director\",\"vote\":\"Aye\"},{\"director\":\"Morgan Blake\",\"role\":\"Director\",\"vote\":\"Aye\"}]",
+      "itemSchema": [
+        {
+          "id": "field_mt7qypjy_825",
+          "name": "director",
+          "label": "Director full name",
+          "type": "text"
+        },
+        {
+          "id": "field_mt7qypjy_826",
+          "name": "role",
+          "label": "Board role or title",
+          "type": "text"
+        },
+        {
+          "id": "field_mt7qypjy_827",
+          "name": "vote",
+          "label": "Vote cast (Aye / Nay / Abstain)",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "var_mt7qypjy_828",
+      "name": "secretary_name",
+      "label": "Name of the corporate secretary certifying",
+      "type": "text",
+      "sampleValue": "Riley Ortiz"
+    },
+    {
+      "id": "var_mt7qypjy_829",
+      "name": "quorum_note",
+      "label": "Whether a quorum was present",
+      "type": "text",
+      "sampleValue": "Yes — 3 of 3 directors"
+    },
+    {
+      "id": "var_mt7qypjy_830",
+      "name": "resolution_number",
+      "label": "Board resolution number",
+      "type": "text",
+      "sampleValue": "BR-2026-09"
+    }
+  ]
+}

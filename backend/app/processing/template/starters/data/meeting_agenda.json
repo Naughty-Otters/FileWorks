@@ -35,7 +35,7 @@
     },
     "children": [
       {
-        "id": "box_mt38o2qy_210",
+        "id": "box_mt7qypju_210",
         "kind": "box",
         "label": "Header",
         "x": 40,
@@ -65,7 +65,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qy_206",
+            "id": "box_mt7qypju_206",
             "kind": "box",
             "label": "Title",
             "x": 22,
@@ -95,7 +95,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qy_204",
+                "id": "paragraph_mt7qypju_204",
                 "kind": "paragraph",
                 "label": "MEETING AGENDA",
                 "x": 0,
@@ -120,7 +120,7 @@
                 "children": []
               },
               {
-                "id": "heading_mt38o2qy_205",
+                "id": "heading_mt7qypju_205",
                 "kind": "heading",
                 "label": "{{ meeting_title }}",
                 "level": 2,
@@ -148,7 +148,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qy_209",
+            "id": "box_mt7qypju_209",
             "kind": "box",
             "label": "When",
             "x": 515,
@@ -178,7 +178,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qy_207",
+                "id": "paragraph_mt7qypju_207",
                 "kind": "paragraph",
                 "label": "{{ meeting_date }}",
                 "x": 8,
@@ -203,7 +203,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_208",
+                "id": "paragraph_mt7qypju_208",
                 "kind": "paragraph",
                 "label": "{{ meeting_time }}",
                 "x": 8,
@@ -232,7 +232,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qy_220",
+        "id": "box_mt7qypju_220",
         "kind": "box",
         "label": "Meta",
         "x": 40,
@@ -262,7 +262,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qy_213",
+            "id": "box_mt7qypju_213",
             "kind": "box",
             "label": "Row",
             "x": 20,
@@ -292,7 +292,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qy_211",
+                "id": "paragraph_mt7qypju_211",
                 "kind": "paragraph",
                 "label": "Facilitator",
                 "x": 0,
@@ -317,7 +317,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_212",
+                "id": "paragraph_mt7qypju_212",
                 "kind": "paragraph",
                 "label": "{{ facilitator }}",
                 "x": 150,
@@ -344,7 +344,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qy_216",
+            "id": "box_mt7qypju_216",
             "kind": "box",
             "label": "Row",
             "x": 20,
@@ -374,7 +374,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qy_214",
+                "id": "paragraph_mt7qypju_214",
                 "kind": "paragraph",
                 "label": "Attendees",
                 "x": 0,
@@ -399,7 +399,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_215",
+                "id": "paragraph_mt7qypju_215",
                 "kind": "paragraph",
                 "label": "{{ attendees }}",
                 "x": 150,
@@ -426,7 +426,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qy_219",
+            "id": "box_mt7qypju_219",
             "kind": "box",
             "label": "Row",
             "x": 20,
@@ -456,7 +456,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qy_217",
+                "id": "paragraph_mt7qypju_217",
                 "kind": "paragraph",
                 "label": "Location",
                 "x": 0,
@@ -481,7 +481,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_218",
+                "id": "paragraph_mt7qypju_218",
                 "kind": "paragraph",
                 "label": "{{ meeting_location }}",
                 "x": 150,
@@ -510,7 +510,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qy_230",
+        "id": "box_mt7qypju_230",
         "kind": "box",
         "label": "Agenda",
         "x": 40,
@@ -540,7 +540,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2qy_229",
+            "id": "heading_mt7qypju_229",
             "kind": "heading",
             "label": "Agenda",
             "level": 3,
@@ -566,7 +566,7 @@
             "children": []
           },
           {
-            "id": "box_mt38o2qy_224",
+            "id": "box_mt7qypju_224",
             "kind": "box",
             "label": "Column headers",
             "x": 20,
@@ -596,7 +596,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qy_221",
+                "id": "paragraph_mt7qypju_221",
                 "kind": "paragraph",
                 "label": "Time",
                 "x": 0,
@@ -621,7 +621,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_222",
+                "id": "paragraph_mt7qypju_222",
                 "kind": "paragraph",
                 "label": "Topic",
                 "x": 220,
@@ -646,7 +646,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_223",
+                "id": "paragraph_mt7qypju_223",
                 "kind": "paragraph",
                 "label": "Owner",
                 "x": 570,
@@ -673,7 +673,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qy_228",
+            "id": "box_mt7qypju_228",
             "kind": "box",
             "label": "Agenda item",
             "x": 20,
@@ -703,7 +703,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qy_225",
+                "id": "paragraph_mt7qypju_225",
                 "kind": "paragraph",
                 "label": "{{ item.time }}",
                 "x": 0,
@@ -728,7 +728,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_226",
+                "id": "paragraph_mt7qypju_226",
                 "kind": "paragraph",
                 "label": "{{ item.topic }}",
                 "x": 220,
@@ -753,7 +753,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_227",
+                "id": "paragraph_mt7qypju_227",
                 "kind": "paragraph",
                 "label": "{{ item.owner }}",
                 "x": 570,
@@ -786,7 +786,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qy_237",
+        "id": "box_mt7qypju_237",
         "kind": "box",
         "label": "Bottom",
         "x": 40,
@@ -816,7 +816,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qy_233",
+            "id": "box_mt7qypju_233",
             "kind": "box",
             "label": "Notes",
             "x": 0,
@@ -846,7 +846,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2qy_231",
+                "id": "heading_mt7qypju_231",
                 "kind": "heading",
                 "label": "Discussion notes",
                 "level": 3,
@@ -872,7 +872,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_232",
+                "id": "paragraph_mt7qypju_232",
                 "kind": "paragraph",
                 "label": "{{ meeting_notes }}",
                 "x": 16,
@@ -899,7 +899,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qy_236",
+            "id": "box_mt7qypju_236",
             "kind": "box",
             "label": "Actions",
             "x": 393,
@@ -929,7 +929,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2qy_234",
+                "id": "heading_mt7qypju_234",
                 "kind": "heading",
                 "label": "Action items",
                 "level": 3,
@@ -955,7 +955,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_235",
+                "id": "paragraph_mt7qypju_235",
                 "kind": "paragraph",
                 "label": "{{ action_items }}",
                 "x": 16,
@@ -987,68 +987,68 @@
   },
   "variables": [
     {
-      "id": "var_mt38o2qy_238",
+      "id": "var_mt7qypju_238",
       "name": "meeting_title",
       "label": "Meeting title on the agenda",
       "type": "text",
       "sampleValue": "Weekly product sync"
     },
     {
-      "id": "var_mt38o2qy_239",
+      "id": "var_mt7qypju_239",
       "name": "meeting_date",
       "label": "Meeting date",
       "type": "date",
       "sampleValue": "March 18, 2026"
     },
     {
-      "id": "var_mt38o2qy_240",
+      "id": "var_mt7qypju_240",
       "name": "meeting_time",
       "label": "Meeting start time and duration",
       "type": "text",
       "sampleValue": "10:00–10:45 AM"
     },
     {
-      "id": "var_mt38o2qy_241",
+      "id": "var_mt7qypju_241",
       "name": "facilitator",
       "label": "Person running the meeting",
       "type": "text",
       "sampleValue": "Alex Rivera"
     },
     {
-      "id": "var_mt38o2qy_242",
+      "id": "var_mt7qypju_242",
       "name": "attendees",
       "label": "People invited or present at the meeting",
       "type": "text",
       "sampleValue": "Alex, Jordan, Sam, Priya"
     },
     {
-      "id": "var_mt38o2qy_243",
+      "id": "var_mt7qypju_243",
       "name": "meeting_location",
       "label": "Meeting room or video link",
       "type": "text",
       "sampleValue": "Zoom · Product room"
     },
     {
-      "id": "var_mt38o2qy_244",
+      "id": "var_mt7qypju_244",
       "name": "meeting_agenda_items",
       "label": "Agenda topics with time box, topic title, and owner",
       "type": "list",
       "sampleValue": "[{\"time\":\"5 min\",\"topic\":\"Wins since last week\",\"owner\":\"All\"},{\"time\":\"15 min\",\"topic\":\"Sprint goals and blockers\",\"owner\":\"Jordan\"},{\"time\":\"15 min\",\"topic\":\"Launch checklist review\",\"owner\":\"Priya\"},{\"time\":\"10 min\",\"topic\":\"Decisions and next steps\",\"owner\":\"Alex\"}]",
       "itemSchema": [
         {
-          "id": "field_mt38o2qy_245",
+          "id": "field_mt7qypju_245",
           "name": "time",
           "label": "Time box for this agenda topic",
           "type": "text"
         },
         {
-          "id": "field_mt38o2qy_246",
+          "id": "field_mt7qypju_246",
           "name": "topic",
           "label": "Agenda topic title",
           "type": "text"
         },
         {
-          "id": "field_mt38o2qy_247",
+          "id": "field_mt7qypju_247",
           "name": "owner",
           "label": "Person leading this topic",
           "type": "text"
@@ -1056,14 +1056,14 @@
       ]
     },
     {
-      "id": "var_mt38o2qy_248",
+      "id": "var_mt7qypju_248",
       "name": "meeting_notes",
       "label": "Discussion notes captured during the meeting",
       "type": "text",
       "sampleValue": "Launch date confirmed for Apr 2.\nNeed design QA sign-off by Friday."
     },
     {
-      "id": "var_mt38o2qy_249",
+      "id": "var_mt7qypju_249",
       "name": "action_items",
       "label": "Follow-up actions with owners and due dates",
       "type": "text",

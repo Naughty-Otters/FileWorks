@@ -335,7 +335,7 @@ describe("ConvertControls", () => {
             id: "builtin:report",
             name: "Markdown report",
             description: "Page layout for extracted Markdown",
-            category: "general",
+            category: "reports",
           },
         ]}
         templates={[]}
@@ -351,7 +351,7 @@ describe("ConvertControls", () => {
     expect(screen.getByRole("button", { name: "All" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Family" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Business" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "General" })).toBeInTheDocument();
+    // Only categories present in the passed options are shown as chips.
 
     await user.click(screen.getByRole("button", { name: "Family" }));
     expect(within(list).getByRole("option", { name: /Daily family schedule/i })).toBeInTheDocument();

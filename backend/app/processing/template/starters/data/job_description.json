@@ -1,0 +1,669 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 16,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt7qypk0_1055",
+        "kind": "box",
+        "label": "Header",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 72,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 16,
+          "padding": 0,
+          "align": "start",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypk0_1053",
+            "kind": "heading",
+            "label": "{{ job_title }}",
+            "level": 1,
+            "x": 0,
+            "y": 0,
+            "w": 477,
+            "h": 44,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 28,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypk0_1054",
+            "kind": "paragraph",
+            "label": "{{ company_name }}\n{{ location }} · {{ employment_type }}",
+            "x": 501,
+            "y": 0,
+            "w": 269,
+            "h": 48,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 13,
+              "color": "#64748b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "right",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypk0_1058",
+        "kind": "box",
+        "label": "About the role",
+        "x": 40,
+        "y": 128,
+        "w": 770,
+        "h": 128,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypk0_1056",
+            "kind": "heading",
+            "label": "About the role",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypk0_1057",
+            "kind": "paragraph",
+            "label": "{{ role_summary }}",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 50,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypk0_1066",
+        "kind": "box",
+        "label": "Responsibilities",
+        "x": 40,
+        "y": 272,
+        "w": 770,
+        "h": 152,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypk0_1062",
+            "kind": "heading",
+            "label": "Responsibilities",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt7qypk0_1065",
+            "kind": "box",
+            "label": "hdr",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt7qypk0_1063",
+                "kind": "paragraph",
+                "label": "Area",
+                "x": 0,
+                "y": 2,
+                "w": 233,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypk0_1064",
+                "kind": "paragraph",
+                "label": "Detail",
+                "x": 233,
+                "y": 2,
+                "w": 497,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt7qypk0_1061",
+            "kind": "box",
+            "label": "Resp",
+            "x": 20,
+            "y": 100,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt7qypk0_1059",
+                "kind": "paragraph",
+                "label": "{{ item.area }}",
+                "x": 0,
+                "y": 2,
+                "w": 233,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypk0_1060",
+                "kind": "paragraph",
+                "label": "{{ item.detail }}",
+                "x": 233,
+                "y": 2,
+                "w": 497,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ],
+            "repeat": {
+              "over": "job_description_responsibilities",
+              "as": "item"
+            }
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypk0_1069",
+        "kind": "box",
+        "label": "Requirements",
+        "x": 40,
+        "y": 440,
+        "w": 770,
+        "h": 138,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypk0_1067",
+            "kind": "heading",
+            "label": "Requirements",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypk0_1068",
+            "kind": "paragraph",
+            "label": "{{ requirements }}",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 60,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypk0_1072",
+        "kind": "box",
+        "label": "What we offer",
+        "x": 40,
+        "y": 594,
+        "w": 770,
+        "h": 118,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypk0_1070",
+            "kind": "heading",
+            "label": "What we offer",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypk0_1071",
+            "kind": "paragraph",
+            "label": "{{ offer_summary }}",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 40,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt7qypk0_1073",
+      "name": "job_title",
+      "label": "Job title for the description",
+      "type": "text",
+      "sampleValue": "Senior Product Designer"
+    },
+    {
+      "id": "var_mt7qypk0_1074",
+      "name": "company_name",
+      "label": "Hiring company name",
+      "type": "text",
+      "sampleValue": "Acme Studio"
+    },
+    {
+      "id": "var_mt7qypk0_1075",
+      "name": "location",
+      "label": "Job location or remote label",
+      "type": "text",
+      "sampleValue": "San Francisco / Hybrid"
+    },
+    {
+      "id": "var_mt7qypk0_1076",
+      "name": "employment_type",
+      "label": "Full-time, contract, etc.",
+      "type": "text",
+      "sampleValue": "Full-time"
+    },
+    {
+      "id": "var_mt7qypk0_1077",
+      "name": "role_summary",
+      "label": "Short summary of the role",
+      "type": "text",
+      "sampleValue": "Own end-to-end product design for conversion workflows and template studio experiences."
+    },
+    {
+      "id": "var_mt7qypk0_1078",
+      "name": "job_description_responsibilities",
+      "label": "Responsibility areas and details for the job description",
+      "type": "list",
+      "sampleValue": "[{\"area\":\"Product\",\"detail\":\"Design flows from upload through produce and export\"},{\"area\":\"Systems\",\"detail\":\"Maintain design system and template layout patterns\"},{\"area\":\"Collaboration\",\"detail\":\"Partner with eng and GTM on experiments\"}]",
+      "itemSchema": [
+        {
+          "id": "field_mt7qypk0_1079",
+          "name": "area",
+          "label": "Responsibility area label",
+          "type": "text"
+        },
+        {
+          "id": "field_mt7qypk0_1080",
+          "name": "detail",
+          "label": "Responsibility detail",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "var_mt7qypk0_1081",
+      "name": "requirements",
+      "label": "Must-have requirements for candidates",
+      "type": "text",
+      "sampleValue": "5+ years product design; strong systems thinking; portfolio with complex B2B tools; comfort with AI-assisted workflows."
+    },
+    {
+      "id": "var_mt7qypk0_1082",
+      "name": "offer_summary",
+      "label": "Compensation and benefits summary",
+      "type": "text",
+      "sampleValue": "Competitive salary + equity, health benefits, learning stipend, flexible PTO."
+    }
+  ]
+}

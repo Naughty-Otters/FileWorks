@@ -1,0 +1,628 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 16,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt7qypjz_957",
+        "kind": "box",
+        "label": "Header",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 72,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 16,
+          "padding": 0,
+          "align": "start",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypjz_955",
+            "kind": "heading",
+            "label": "LEAVE & ABSENCE POLICY",
+            "level": 1,
+            "x": 0,
+            "y": 0,
+            "w": 477,
+            "h": 44,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 28,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypjz_956",
+            "kind": "paragraph",
+            "label": "{{ company_name }}\nEffective {{ effective_date }}",
+            "x": 501,
+            "y": 0,
+            "w": 269,
+            "h": 48,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 13,
+              "color": "#64748b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "right",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypjz_960",
+        "kind": "box",
+        "label": "Purpose",
+        "x": 40,
+        "y": 128,
+        "w": 770,
+        "h": 118,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypjz_958",
+            "kind": "heading",
+            "label": "Purpose",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypjz_959",
+            "kind": "paragraph",
+            "label": "{{ policy_purpose }}",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 40,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypjz_970",
+        "kind": "box",
+        "label": "Types",
+        "x": 40,
+        "y": 262,
+        "w": 770,
+        "h": 152,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypjz_965",
+            "kind": "heading",
+            "label": "Leave types",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt7qypjz_969",
+            "kind": "box",
+            "label": "Row",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt7qypjz_966",
+                "kind": "paragraph",
+                "label": "Type",
+                "x": 0,
+                "y": 2,
+                "w": 204,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypjz_967",
+                "kind": "paragraph",
+                "label": "Accrual / allotment",
+                "x": 204,
+                "y": 2,
+                "w": 306,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypjz_968",
+                "kind": "paragraph",
+                "label": "Approval",
+                "x": 510,
+                "y": 2,
+                "w": 220,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt7qypjz_964",
+            "kind": "box",
+            "label": "Row",
+            "x": 20,
+            "y": 100,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt7qypjz_961",
+                "kind": "paragraph",
+                "label": "{{ item.leave_type }}",
+                "x": 0,
+                "y": 2,
+                "w": 328,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypjz_962",
+                "kind": "paragraph",
+                "label": "{{ item.accrual }}",
+                "x": 328,
+                "y": 2,
+                "w": 219,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypjz_963",
+                "kind": "paragraph",
+                "label": "{{ item.approval }}",
+                "x": 547,
+                "y": 2,
+                "w": 183,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ],
+            "repeat": {
+              "over": "leave_policy_types",
+              "as": "item"
+            }
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypjz_973",
+        "kind": "box",
+        "label": "Request process",
+        "x": 40,
+        "y": 430,
+        "w": 770,
+        "h": 148,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypjz_971",
+            "kind": "heading",
+            "label": "Request process",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypjz_972",
+            "kind": "paragraph",
+            "label": "{{ request_process }}\n\nContact: {{ hr_contact }}",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 70,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt7qypjz_974",
+      "name": "company_name",
+      "label": "Company issuing the leave policy",
+      "type": "text",
+      "sampleValue": "Acme Studio"
+    },
+    {
+      "id": "var_mt7qypjz_975",
+      "name": "effective_date",
+      "label": "Policy effective date",
+      "type": "date",
+      "sampleValue": "January 1, 2026"
+    },
+    {
+      "id": "var_mt7qypjz_976",
+      "name": "policy_purpose",
+      "label": "Purpose statement for the leave policy",
+      "type": "text",
+      "sampleValue": "This policy explains paid and unpaid leave so employees can plan time away and managers can schedule coverage."
+    },
+    {
+      "id": "var_mt7qypjz_977",
+      "name": "leave_policy_types",
+      "label": "Leave types with accrual rules and approval requirements",
+      "type": "list",
+      "sampleValue": "[{\"leave_type\":\"PTO\",\"accrual\":\"20 days / year\",\"approval\":\"Manager, 5 days notice\"},{\"leave_type\":\"Sick\",\"accrual\":\"10 days / year\",\"approval\":\"Manager (same day OK)\"},{\"leave_type\":\"Parental\",\"accrual\":\"12 weeks\",\"approval\":\"HR + manager\"}]",
+      "itemSchema": [
+        {
+          "id": "field_mt7qypjz_978",
+          "name": "leave_type",
+          "label": "Name of the leave type",
+          "type": "text"
+        },
+        {
+          "id": "field_mt7qypjz_979",
+          "name": "accrual",
+          "label": "Accrual or allotment rule",
+          "type": "text"
+        },
+        {
+          "id": "field_mt7qypjz_980",
+          "name": "approval",
+          "label": "Who must approve the leave",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "var_mt7qypjz_981",
+      "name": "request_process",
+      "label": "How employees request leave",
+      "type": "text",
+      "sampleValue": "Submit a leave request in HRIS. Managers respond within 2 business days. Extended leave requires HR coordination."
+    },
+    {
+      "id": "var_mt7qypjz_982",
+      "name": "hr_contact",
+      "label": "HR contact for leave questions",
+      "type": "text",
+      "sampleValue": "people@acme.example"
+    }
+  ]
+}

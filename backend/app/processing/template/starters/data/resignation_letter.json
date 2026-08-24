@@ -1,0 +1,172 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 16,
+      "padding": 48,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "paragraph_mt7qypk0_1173",
+        "kind": "paragraph",
+        "label": "{{ letter_date }}\n\n{{ manager_name }}\n{{ company_name }}\n{{ company_address }}",
+        "x": 48,
+        "y": 48,
+        "w": 754,
+        "h": 106,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#334155",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      },
+      {
+        "id": "paragraph_mt7qypk0_1174",
+        "kind": "paragraph",
+        "label": "Dear {{ manager_name }},",
+        "x": 48,
+        "y": 170,
+        "w": 754,
+        "h": 28,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#334155",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      },
+      {
+        "id": "paragraph_mt7qypk0_1175",
+        "kind": "paragraph",
+        "label": "Please accept this letter as formal notice of my resignation from the position of {{ job_title }} at {{ company_name }}. My last day of employment will be {{ last_day }}.\n\n{{ transition_note }}\n\nThank you for the opportunity to work with the team.\n\nSincerely,\n{{ employee_name }}",
+        "x": 48,
+        "y": 214,
+        "w": 754,
+        "h": 185,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#334155",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt7qypk0_1176",
+      "name": "letter_date",
+      "label": "Resignation letter date",
+      "type": "date",
+      "sampleValue": "March 10, 2026"
+    },
+    {
+      "id": "var_mt7qypk0_1177",
+      "name": "manager_name",
+      "label": "Manager receiving the resignation",
+      "type": "text",
+      "sampleValue": "Alex Rivera"
+    },
+    {
+      "id": "var_mt7qypk0_1178",
+      "name": "company_name",
+      "label": "Employer company name",
+      "type": "text",
+      "sampleValue": "Acme Studio"
+    },
+    {
+      "id": "var_mt7qypk0_1179",
+      "name": "company_address",
+      "label": "Company address block",
+      "type": "text",
+      "sampleValue": "123 Market St, City, ST 00000"
+    },
+    {
+      "id": "var_mt7qypk0_1180",
+      "name": "job_title",
+      "label": "Current job title being resigned",
+      "type": "text",
+      "sampleValue": "Product Designer"
+    },
+    {
+      "id": "var_mt7qypk0_1181",
+      "name": "last_day",
+      "label": "Employee's last day of work",
+      "type": "date",
+      "sampleValue": "March 24, 2026"
+    },
+    {
+      "id": "var_mt7qypk0_1182",
+      "name": "transition_note",
+      "label": "Transition or thanks note",
+      "type": "text",
+      "sampleValue": "I will document open projects and am available to help with a smooth handover."
+    },
+    {
+      "id": "var_mt7qypk0_1183",
+      "name": "employee_name",
+      "label": "Resigning employee name",
+      "type": "text",
+      "sampleValue": "Jordan Lee"
+    }
+  ]
+}

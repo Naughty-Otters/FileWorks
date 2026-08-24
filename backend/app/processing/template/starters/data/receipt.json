@@ -35,7 +35,7 @@
     },
     "children": [
       {
-        "id": "box_mt38o2r0_410",
+        "id": "box_mt7qypjw_410",
         "kind": "box",
         "label": "Header",
         "x": 16,
@@ -65,7 +65,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2r0_408",
+            "id": "heading_mt7qypjw_408",
             "kind": "heading",
             "label": "{{ store_name }}",
             "level": 2,
@@ -91,7 +91,7 @@
             "children": []
           },
           {
-            "id": "paragraph_mt38o2r0_409",
+            "id": "paragraph_mt7qypjw_409",
             "kind": "paragraph",
             "label": "{{ store_address }}\n{{ store_phone }}",
             "x": 12,
@@ -118,7 +118,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r0_412",
+        "id": "box_mt7qypjw_412",
         "kind": "box",
         "label": "Meta",
         "x": 16,
@@ -148,7 +148,7 @@
         },
         "children": [
           {
-            "id": "paragraph_mt38o2r0_411",
+            "id": "paragraph_mt7qypjw_411",
             "kind": "paragraph",
             "label": "Date: {{ receipt_date }}\nReceipt #: {{ receipt_number }}",
             "x": 12,
@@ -175,7 +175,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r0_416",
+        "id": "box_mt7qypjw_416",
         "kind": "box",
         "label": "Items",
         "x": 16,
@@ -205,7 +205,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2r0_415",
+            "id": "box_mt7qypjw_415",
             "kind": "box",
             "label": "Item",
             "x": 12,
@@ -235,7 +235,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r0_413",
+                "id": "paragraph_mt7qypjw_413",
                 "kind": "paragraph",
                 "label": "{{ item.description }}",
                 "x": 0,
@@ -260,7 +260,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r0_414",
+                "id": "paragraph_mt7qypjw_414",
                 "kind": "paragraph",
                 "label": "{{ item.amount }}",
                 "x": 184,
@@ -293,7 +293,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r0_426",
+        "id": "box_mt7qypjw_426",
         "kind": "box",
         "label": "Totals",
         "x": 16,
@@ -323,7 +323,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2r0_419",
+            "id": "box_mt7qypjw_419",
             "kind": "box",
             "label": "Subtotal row",
             "x": 12,
@@ -353,7 +353,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r0_417",
+                "id": "paragraph_mt7qypjw_417",
                 "kind": "paragraph",
                 "label": "Subtotal",
                 "x": 0,
@@ -378,7 +378,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r0_418",
+                "id": "paragraph_mt7qypjw_418",
                 "kind": "paragraph",
                 "label": "{{ receipt_subtotal }}",
                 "x": 156,
@@ -405,7 +405,7 @@
             ]
           },
           {
-            "id": "box_mt38o2r0_422",
+            "id": "box_mt7qypjw_422",
             "kind": "box",
             "label": "Tax row",
             "x": 12,
@@ -435,7 +435,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r0_420",
+                "id": "paragraph_mt7qypjw_420",
                 "kind": "paragraph",
                 "label": "Tax",
                 "x": 0,
@@ -460,7 +460,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r0_421",
+                "id": "paragraph_mt7qypjw_421",
                 "kind": "paragraph",
                 "label": "{{ receipt_tax }}",
                 "x": 156,
@@ -487,7 +487,7 @@
             ]
           },
           {
-            "id": "box_mt38o2r0_425",
+            "id": "box_mt7qypjw_425",
             "kind": "box",
             "label": "Total row",
             "x": 12,
@@ -517,7 +517,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2r0_423",
+                "id": "heading_mt7qypjw_423",
                 "kind": "heading",
                 "label": "Total",
                 "level": 3,
@@ -543,7 +543,7 @@
                 "children": []
               },
               {
-                "id": "heading_mt38o2r0_424",
+                "id": "heading_mt7qypjw_424",
                 "kind": "heading",
                 "label": "{{ receipt_total }}",
                 "level": 3,
@@ -573,7 +573,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r0_428",
+        "id": "box_mt7qypjw_428",
         "kind": "box",
         "label": "Footer",
         "x": 16,
@@ -603,7 +603,7 @@
         },
         "children": [
           {
-            "id": "paragraph_mt38o2r0_427",
+            "id": "paragraph_mt7qypjw_427",
             "kind": "paragraph",
             "label": "{{ thank_you_message }}",
             "x": 12,
@@ -633,55 +633,55 @@
   },
   "variables": [
     {
-      "id": "var_mt38o2r0_429",
+      "id": "var_mt7qypjw_429",
       "name": "store_name",
       "label": "Store or merchant name on the receipt",
       "type": "text",
       "sampleValue": "Your Store"
     },
     {
-      "id": "var_mt38o2r0_430",
+      "id": "var_mt7qypjw_430",
       "name": "store_address",
       "label": "Store address printed on the receipt",
       "type": "text",
       "sampleValue": "123 Main St, City, ST"
     },
     {
-      "id": "var_mt38o2r0_431",
+      "id": "var_mt7qypjw_431",
       "name": "store_phone",
       "label": "Store phone number",
       "type": "text",
       "sampleValue": "(555) 123-4567"
     },
     {
-      "id": "var_mt38o2r0_432",
+      "id": "var_mt7qypjw_432",
       "name": "receipt_date",
       "label": "Receipt transaction date",
       "type": "date",
       "sampleValue": "March 15, 2026"
     },
     {
-      "id": "var_mt38o2r0_433",
+      "id": "var_mt7qypjw_433",
       "name": "receipt_number",
       "label": "Receipt number or identifier",
       "type": "text",
       "sampleValue": "R-8821"
     },
     {
-      "id": "var_mt38o2r0_434",
+      "id": "var_mt7qypjw_434",
       "name": "receipt_purchased_items",
       "label": "Receipt purchased items: each sold line from the source (description and amount)",
       "type": "list",
       "sampleValue": "[{\"description\":\"Coffee\",\"amount\":\"$4.50\"},{\"description\":\"Pastry\",\"amount\":\"$3.25\"},{\"description\":\"Sandwich\",\"amount\":\"$9.75\"}]",
       "itemSchema": [
         {
-          "id": "field_mt38o2r0_435",
+          "id": "field_mt7qypjw_435",
           "name": "description",
           "label": "Purchased item description",
           "type": "text"
         },
         {
-          "id": "field_mt38o2r0_436",
+          "id": "field_mt7qypjw_436",
           "name": "amount",
           "label": "Purchased item amount",
           "type": "currency"
@@ -689,28 +689,28 @@
       ]
     },
     {
-      "id": "var_mt38o2r0_437",
+      "id": "var_mt7qypjw_437",
       "name": "receipt_subtotal",
       "label": "Receipt subtotal before tax",
       "type": "currency",
       "sampleValue": "$17.50"
     },
     {
-      "id": "var_mt38o2r0_438",
+      "id": "var_mt7qypjw_438",
       "name": "receipt_tax",
       "label": "Receipt tax amount",
       "type": "currency",
       "sampleValue": "$1.40"
     },
     {
-      "id": "var_mt38o2r0_439",
+      "id": "var_mt7qypjw_439",
       "name": "receipt_total",
       "label": "Receipt total charged",
       "type": "currency",
       "sampleValue": "$18.90"
     },
     {
-      "id": "var_mt38o2r0_440",
+      "id": "var_mt7qypjw_440",
       "name": "thank_you_message",
       "label": "Receipt thank-you or footer message",
       "type": "text",

@@ -35,7 +35,7 @@
     },
     "children": [
       {
-        "id": "box_mt38o2r1_591",
+        "id": "box_mt7qypjx_591",
         "kind": "box",
         "label": "Title",
         "x": 40,
@@ -65,7 +65,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2r1_590",
+            "id": "heading_mt7qypjx_590",
             "kind": "heading",
             "label": "Residential Lease Agreement",
             "level": 1,
@@ -93,7 +93,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_593",
+        "id": "box_mt7qypjx_593",
         "kind": "box",
         "label": "Parties",
         "x": 40,
@@ -123,7 +123,7 @@
         },
         "children": [
           {
-            "id": "paragraph_mt38o2r1_592",
+            "id": "paragraph_mt7qypjx_592",
             "kind": "paragraph",
             "label": "This Lease Agreement (\"Agreement\") is made on {{ agreement_date }} between {{ landlord_name }} (\"Landlord\") and {{ tenant_name }} (\"Tenant\") for the residential property located at {{ property_address }}.",
             "x": 20,
@@ -150,7 +150,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_610",
+        "id": "box_mt7qypjx_610",
         "kind": "box",
         "label": "Lease terms",
         "x": 40,
@@ -180,7 +180,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2r1_594",
+            "id": "heading_mt7qypjx_594",
             "kind": "heading",
             "label": "Lease terms",
             "level": 3,
@@ -206,7 +206,7 @@
             "children": []
           },
           {
-            "id": "box_mt38o2r1_597",
+            "id": "box_mt7qypjx_597",
             "kind": "box",
             "label": "Row",
             "x": 20,
@@ -236,7 +236,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r1_595",
+                "id": "paragraph_mt7qypjx_595",
                 "kind": "paragraph",
                 "label": "Lease start date",
                 "x": 0,
@@ -261,7 +261,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r1_596",
+                "id": "paragraph_mt7qypjx_596",
                 "kind": "paragraph",
                 "label": "{{ lease_start_date }}",
                 "x": 150,
@@ -288,7 +288,7 @@
             ]
           },
           {
-            "id": "box_mt38o2r1_600",
+            "id": "box_mt7qypjx_600",
             "kind": "box",
             "label": "Row",
             "x": 20,
@@ -318,7 +318,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r1_598",
+                "id": "paragraph_mt7qypjx_598",
                 "kind": "paragraph",
                 "label": "Lease end date",
                 "x": 0,
@@ -343,7 +343,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r1_599",
+                "id": "paragraph_mt7qypjx_599",
                 "kind": "paragraph",
                 "label": "{{ lease_end_date }}",
                 "x": 150,
@@ -370,7 +370,7 @@
             ]
           },
           {
-            "id": "box_mt38o2r1_603",
+            "id": "box_mt7qypjx_603",
             "kind": "box",
             "label": "Row",
             "x": 20,
@@ -400,7 +400,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r1_601",
+                "id": "paragraph_mt7qypjx_601",
                 "kind": "paragraph",
                 "label": "Monthly rent",
                 "x": 0,
@@ -425,7 +425,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r1_602",
+                "id": "paragraph_mt7qypjx_602",
                 "kind": "paragraph",
                 "label": "{{ monthly_rent }}",
                 "x": 150,
@@ -452,7 +452,7 @@
             ]
           },
           {
-            "id": "box_mt38o2r1_606",
+            "id": "box_mt7qypjx_606",
             "kind": "box",
             "label": "Row",
             "x": 20,
@@ -482,7 +482,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r1_604",
+                "id": "paragraph_mt7qypjx_604",
                 "kind": "paragraph",
                 "label": "Security deposit",
                 "x": 0,
@@ -507,7 +507,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r1_605",
+                "id": "paragraph_mt7qypjx_605",
                 "kind": "paragraph",
                 "label": "{{ security_deposit }}",
                 "x": 150,
@@ -534,7 +534,7 @@
             ]
           },
           {
-            "id": "box_mt38o2r1_609",
+            "id": "box_mt7qypjx_609",
             "kind": "box",
             "label": "Row",
             "x": 20,
@@ -564,7 +564,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r1_607",
+                "id": "paragraph_mt7qypjx_607",
                 "kind": "paragraph",
                 "label": "Rent due date",
                 "x": 0,
@@ -589,7 +589,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r1_608",
+                "id": "paragraph_mt7qypjx_608",
                 "kind": "paragraph",
                 "label": "{{ rent_due_date }}",
                 "x": 150,
@@ -618,7 +618,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_613",
+        "id": "box_mt7qypjx_613",
         "kind": "box",
         "label": "Additional terms",
         "x": 40,
@@ -648,7 +648,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2r1_611",
+            "id": "heading_mt7qypjx_611",
             "kind": "heading",
             "label": "Additional terms",
             "level": 3,
@@ -674,7 +674,7 @@
             "children": []
           },
           {
-            "id": "paragraph_mt38o2r1_612",
+            "id": "paragraph_mt7qypjx_612",
             "kind": "paragraph",
             "label": "{{ additional_terms }}",
             "x": 20,
@@ -701,7 +701,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_618",
+        "id": "box_mt7qypjx_618",
         "kind": "box",
         "label": "Signatures",
         "x": 40,
@@ -731,7 +731,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2r1_615",
+            "id": "box_mt7qypjx_615",
             "kind": "box",
             "label": "Landlord",
             "x": 20,
@@ -761,7 +761,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r1_614",
+                "id": "paragraph_mt7qypjx_614",
                 "kind": "paragraph",
                 "label": "Landlord signature: ______________________\nDate: ______________",
                 "x": 0,
@@ -788,7 +788,7 @@
             ]
           },
           {
-            "id": "box_mt38o2r1_617",
+            "id": "box_mt7qypjx_617",
             "kind": "box",
             "label": "Tenant",
             "x": 401,
@@ -818,7 +818,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r1_616",
+                "id": "paragraph_mt7qypjx_616",
                 "kind": "paragraph",
                 "label": "Tenant signature: ______________________\nDate: ______________",
                 "x": 0,
@@ -850,70 +850,70 @@
   },
   "variables": [
     {
-      "id": "var_mt38o2r1_619",
+      "id": "var_mt7qypjx_619",
       "name": "agreement_date",
       "label": "Lease agreement date",
       "type": "date",
       "sampleValue": "01/01/2026"
     },
     {
-      "id": "var_mt38o2r1_620",
+      "id": "var_mt7qypjx_620",
       "name": "landlord_name",
       "label": "Landlord name on the lease",
       "type": "text",
       "sampleValue": "Acme Properties LLC"
     },
     {
-      "id": "var_mt38o2r1_621",
+      "id": "var_mt7qypjx_621",
       "name": "tenant_name",
       "label": "Tenant name on the lease",
       "type": "text",
       "sampleValue": "John Smith"
     },
     {
-      "id": "var_mt38o2r1_622",
+      "id": "var_mt7qypjx_622",
       "name": "property_address",
       "label": "Leased property address",
       "type": "text",
       "sampleValue": "456 Oak Avenue, Apt 3B, Springfield, ST 00000"
     },
     {
-      "id": "var_mt38o2r1_623",
+      "id": "var_mt7qypjx_623",
       "name": "lease_start_date",
       "label": "Lease start date",
       "type": "date",
       "sampleValue": "02/01/2026"
     },
     {
-      "id": "var_mt38o2r1_624",
+      "id": "var_mt7qypjx_624",
       "name": "lease_end_date",
       "label": "Lease end date",
       "type": "date",
       "sampleValue": "01/31/2027"
     },
     {
-      "id": "var_mt38o2r1_625",
+      "id": "var_mt7qypjx_625",
       "name": "monthly_rent",
       "label": "Monthly rent amount",
       "type": "currency",
       "sampleValue": "$1,650.00"
     },
     {
-      "id": "var_mt38o2r1_626",
+      "id": "var_mt7qypjx_626",
       "name": "security_deposit",
       "label": "Security deposit amount",
       "type": "currency",
       "sampleValue": "$1,650.00"
     },
     {
-      "id": "var_mt38o2r1_627",
+      "id": "var_mt7qypjx_627",
       "name": "rent_due_date",
       "label": "Rent due date each month",
       "type": "text",
       "sampleValue": "1st of each month"
     },
     {
-      "id": "var_mt38o2r1_628",
+      "id": "var_mt7qypjx_628",
       "name": "additional_terms",
       "label": "Additional lease terms and clauses from the source",
       "type": "text",

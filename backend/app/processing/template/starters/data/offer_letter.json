@@ -1,0 +1,311 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 16,
+      "padding": 48,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt7qypk0_1153",
+        "kind": "box",
+        "label": "Letterhead",
+        "x": 48,
+        "y": 48,
+        "w": 754,
+        "h": 76,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 4,
+          "padding": 0,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypk0_1151",
+            "kind": "heading",
+            "label": "{{ company_name }}",
+            "level": 2,
+            "x": 0,
+            "y": 0,
+            "w": 754,
+            "h": 44,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 23,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypk0_1152",
+            "kind": "paragraph",
+            "label": "{{ company_address }} · {{ company_email }}",
+            "x": 0,
+            "y": 48,
+            "w": 754,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 13,
+              "color": "#64748b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "paragraph_mt7qypk0_1154",
+        "kind": "paragraph",
+        "label": "{{ letter_date }}\n\n{{ candidate_name }}\n{{ candidate_address }}",
+        "x": 48,
+        "y": 140,
+        "w": 754,
+        "h": 87,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#334155",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      },
+      {
+        "id": "paragraph_mt7qypk0_1155",
+        "kind": "paragraph",
+        "label": "Dear {{ candidate_name }},",
+        "x": 48,
+        "y": 243,
+        "w": 754,
+        "h": 28,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#334155",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      },
+      {
+        "id": "paragraph_mt7qypk0_1156",
+        "kind": "paragraph",
+        "label": "We are pleased to offer you the position of {{ job_title }} reporting to {{ manager_name }}. Your start date will be {{ start_date }}. Your base salary will be {{ base_salary }}, paid {{ pay_frequency }}. {{ equity_bonus }}\n\nThis offer is contingent on {{ contingencies }}. Please sign and return by {{ reply_by }}.\n\nSincerely,\n{{ signer_name }}\n{{ signer_title }}",
+        "x": 48,
+        "y": 287,
+        "w": 754,
+        "h": 185,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#334155",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt7qypk0_1157",
+      "name": "company_name",
+      "label": "Hiring company name on the offer letter",
+      "type": "text",
+      "sampleValue": "Acme Studio"
+    },
+    {
+      "id": "var_mt7qypk0_1158",
+      "name": "company_address",
+      "label": "Company address on the letterhead",
+      "type": "text",
+      "sampleValue": "123 Market St, City, ST 00000"
+    },
+    {
+      "id": "var_mt7qypk0_1159",
+      "name": "company_email",
+      "label": "Company HR or recruiting email",
+      "type": "text",
+      "sampleValue": "careers@acme.example"
+    },
+    {
+      "id": "var_mt7qypk0_1160",
+      "name": "letter_date",
+      "label": "Offer letter date",
+      "type": "date",
+      "sampleValue": "March 22, 2026"
+    },
+    {
+      "id": "var_mt7qypk0_1161",
+      "name": "candidate_name",
+      "label": "Candidate full name",
+      "type": "text",
+      "sampleValue": "Jordan Lee"
+    },
+    {
+      "id": "var_mt7qypk0_1162",
+      "name": "candidate_address",
+      "label": "Candidate mailing address",
+      "type": "text",
+      "sampleValue": "45 Oak Ave, City, ST 00000"
+    },
+    {
+      "id": "var_mt7qypk0_1163",
+      "name": "job_title",
+      "label": "Offered job title",
+      "type": "text",
+      "sampleValue": "Senior Product Designer"
+    },
+    {
+      "id": "var_mt7qypk0_1164",
+      "name": "manager_name",
+      "label": "Hiring manager name",
+      "type": "text",
+      "sampleValue": "Alex Rivera"
+    },
+    {
+      "id": "var_mt7qypk0_1165",
+      "name": "start_date",
+      "label": "Proposed start date",
+      "type": "date",
+      "sampleValue": "May 4, 2026"
+    },
+    {
+      "id": "var_mt7qypk0_1166",
+      "name": "base_salary",
+      "label": "Offered base salary",
+      "type": "currency",
+      "sampleValue": "$145,000 per year"
+    },
+    {
+      "id": "var_mt7qypk0_1167",
+      "name": "pay_frequency",
+      "label": "Pay frequency for the role",
+      "type": "text",
+      "sampleValue": "bi-weekly"
+    },
+    {
+      "id": "var_mt7qypk0_1168",
+      "name": "equity_bonus",
+      "label": "Equity or bonus language in the offer",
+      "type": "text",
+      "sampleValue": "You will also be recommended for an equity grant representing 0.15% of the company on a fully diluted basis."
+    },
+    {
+      "id": "var_mt7qypk0_1169",
+      "name": "contingencies",
+      "label": "Offer contingencies",
+      "type": "text",
+      "sampleValue": "successful background check and signed confidentiality agreement"
+    },
+    {
+      "id": "var_mt7qypk0_1170",
+      "name": "reply_by",
+      "label": "Date by which the candidate should reply",
+      "type": "date",
+      "sampleValue": "March 29, 2026"
+    },
+    {
+      "id": "var_mt7qypk0_1171",
+      "name": "signer_name",
+      "label": "Name of the person signing the offer",
+      "type": "text",
+      "sampleValue": "Alex Rivera"
+    },
+    {
+      "id": "var_mt7qypk0_1172",
+      "name": "signer_title",
+      "label": "Title of the person signing the offer",
+      "type": "text",
+      "sampleValue": "Head of Product"
+    }
+  ]
+}

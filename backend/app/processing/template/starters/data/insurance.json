@@ -35,7 +35,7 @@
     },
     "children": [
       {
-        "id": "box_mt38o2r1_482",
+        "id": "box_mt7qypjw_482",
         "kind": "box",
         "label": "Header",
         "x": 40,
@@ -65,7 +65,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2r1_480",
+            "id": "heading_mt7qypjw_480",
             "kind": "heading",
             "label": "Certificate of Insurance",
             "level": 1,
@@ -91,7 +91,7 @@
             "children": []
           },
           {
-            "id": "paragraph_mt38o2r1_481",
+            "id": "paragraph_mt7qypjw_481",
             "kind": "paragraph",
             "label": "This certifies that the policy described below is in effect.",
             "x": 8,
@@ -118,7 +118,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_485",
+        "id": "box_mt7qypjw_485",
         "kind": "box",
         "label": "Policy holder",
         "x": 40,
@@ -148,7 +148,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2r1_483",
+            "id": "heading_mt7qypjw_483",
             "kind": "heading",
             "label": "Policy holder",
             "level": 3,
@@ -174,7 +174,7 @@
             "children": []
           },
           {
-            "id": "paragraph_mt38o2r1_484",
+            "id": "paragraph_mt7qypjw_484",
             "kind": "paragraph",
             "label": "{{ holder_name }}\n{{ holder_address }}\nPolicy #: {{ policy_number }}",
             "x": 20,
@@ -201,7 +201,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_493",
+        "id": "box_mt7qypjw_493",
         "kind": "box",
         "label": "Coverage",
         "x": 40,
@@ -231,7 +231,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2r1_492",
+            "id": "heading_mt7qypjw_492",
             "kind": "heading",
             "label": "Coverage",
             "level": 3,
@@ -257,7 +257,7 @@
             "children": []
           },
           {
-            "id": "box_mt38o2r1_488",
+            "id": "box_mt7qypjw_488",
             "kind": "box",
             "label": "Column headers",
             "x": 20,
@@ -287,7 +287,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r1_486",
+                "id": "paragraph_mt7qypjw_486",
                 "kind": "paragraph",
                 "label": "Coverage Type",
                 "x": 0,
@@ -312,7 +312,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r1_487",
+                "id": "paragraph_mt7qypjw_487",
                 "kind": "paragraph",
                 "label": "Limit",
                 "x": 496,
@@ -339,7 +339,7 @@
             ]
           },
           {
-            "id": "box_mt38o2r1_491",
+            "id": "box_mt7qypjw_491",
             "kind": "box",
             "label": "Coverage",
             "x": 20,
@@ -369,7 +369,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2r1_489",
+                "id": "paragraph_mt7qypjw_489",
                 "kind": "paragraph",
                 "label": "{{ coverage.type }}",
                 "x": 0,
@@ -394,7 +394,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r1_490",
+                "id": "paragraph_mt7qypjw_490",
                 "kind": "paragraph",
                 "label": "{{ coverage.limit }}",
                 "x": 496,
@@ -427,7 +427,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_502",
+        "id": "box_mt7qypjw_502",
         "kind": "box",
         "label": "Policy period",
         "x": 40,
@@ -457,7 +457,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2r1_494",
+            "id": "heading_mt7qypjw_494",
             "kind": "heading",
             "label": "Policy period",
             "level": 3,
@@ -483,7 +483,7 @@
             "children": []
           },
           {
-            "id": "box_mt38o2r1_501",
+            "id": "box_mt7qypjw_501",
             "kind": "box",
             "label": "Period columns",
             "x": 20,
@@ -513,7 +513,7 @@
             },
             "children": [
               {
-                "id": "box_mt38o2r1_497",
+                "id": "box_mt7qypjw_497",
                 "kind": "box",
                 "label": "Effective",
                 "x": 0,
@@ -543,7 +543,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2r1_495",
+                    "id": "paragraph_mt7qypjw_495",
                     "kind": "paragraph",
                     "label": "Effective Date",
                     "x": 0,
@@ -568,7 +568,7 @@
                     "children": []
                   },
                   {
-                    "id": "heading_mt38o2r1_496",
+                    "id": "heading_mt7qypjw_496",
                     "kind": "heading",
                     "label": "{{ effective_date }}",
                     "level": 3,
@@ -596,7 +596,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2r1_500",
+                "id": "box_mt7qypjw_500",
                 "kind": "box",
                 "label": "Expiration",
                 "x": 377,
@@ -626,7 +626,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2r1_498",
+                    "id": "paragraph_mt7qypjw_498",
                     "kind": "paragraph",
                     "label": "Expiration Date",
                     "x": 4,
@@ -651,7 +651,7 @@
                     "children": []
                   },
                   {
-                    "id": "heading_mt38o2r1_499",
+                    "id": "heading_mt7qypjw_499",
                     "kind": "heading",
                     "label": "{{ expiration_date }}",
                     "level": 3,
@@ -683,7 +683,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_504",
+        "id": "box_mt7qypjw_504",
         "kind": "box",
         "label": "Footer",
         "x": 40,
@@ -713,7 +713,7 @@
         },
         "children": [
           {
-            "id": "paragraph_mt38o2r1_503",
+            "id": "paragraph_mt7qypjw_503",
             "kind": "paragraph",
             "label": "Insurer: {{ insurer_name }}\nAuthorized Signature: ______________________",
             "x": 16,
@@ -743,41 +743,41 @@
   },
   "variables": [
     {
-      "id": "var_mt38o2r1_505",
+      "id": "var_mt7qypjw_505",
       "name": "holder_name",
       "label": "Insured policy holder name",
       "type": "text",
       "sampleValue": "Jane Doe"
     },
     {
-      "id": "var_mt38o2r1_506",
+      "id": "var_mt7qypjw_506",
       "name": "holder_address",
       "label": "Policy holder address",
       "type": "text",
       "sampleValue": "123 Main St, City, ST 00000"
     },
     {
-      "id": "var_mt38o2r1_507",
+      "id": "var_mt7qypjw_507",
       "name": "policy_number",
       "label": "Insurance policy number",
       "type": "text",
       "sampleValue": "INS-000123"
     },
     {
-      "id": "var_mt38o2r1_508",
+      "id": "var_mt7qypjw_508",
       "name": "insurance_coverages",
       "label": "Insurance coverages on the certificate (coverage type and limit)",
       "type": "list",
       "sampleValue": "[{\"type\":\"General Liability\",\"limit\":\"$1,000,000\"},{\"type\":\"Property Damage\",\"limit\":\"$500,000\"},{\"type\":\"Personal Injury\",\"limit\":\"$250,000\"}]",
       "itemSchema": [
         {
-          "id": "field_mt38o2r1_509",
+          "id": "field_mt7qypjw_509",
           "name": "type",
           "label": "Coverage type",
           "type": "text"
         },
         {
-          "id": "field_mt38o2r1_510",
+          "id": "field_mt7qypjw_510",
           "name": "limit",
           "label": "Coverage limit",
           "type": "currency"
@@ -785,21 +785,21 @@
       ]
     },
     {
-      "id": "var_mt38o2r1_511",
+      "id": "var_mt7qypjw_511",
       "name": "effective_date",
       "label": "Policy effective date",
       "type": "date",
       "sampleValue": "01/01/2026"
     },
     {
-      "id": "var_mt38o2r1_512",
+      "id": "var_mt7qypjw_512",
       "name": "expiration_date",
       "label": "Policy expiration date",
       "type": "date",
       "sampleValue": "01/01/2027"
     },
     {
-      "id": "var_mt38o2r1_513",
+      "id": "var_mt7qypjw_513",
       "name": "insurer_name",
       "label": "Insurance company issuing the certificate",
       "type": "text",

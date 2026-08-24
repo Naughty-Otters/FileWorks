@@ -35,7 +35,7 @@
     },
     "children": [
       {
-        "id": "box_mt38o2r1_520",
+        "id": "box_mt7qypjx_520",
         "kind": "box",
         "label": "Header",
         "x": 40,
@@ -65,7 +65,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2r1_516",
+            "id": "box_mt7qypjx_516",
             "kind": "box",
             "label": "Company",
             "x": 0,
@@ -95,7 +95,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2r1_514",
+                "id": "heading_mt7qypjx_514",
                 "kind": "heading",
                 "label": "{{ employer_name }}",
                 "level": 2,
@@ -121,7 +121,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r1_515",
+                "id": "paragraph_mt7qypjx_515",
                 "kind": "paragraph",
                 "label": "{{ employer_address }}",
                 "x": 0,
@@ -148,7 +148,7 @@
             ]
           },
           {
-            "id": "box_mt38o2r1_519",
+            "id": "box_mt7qypjx_519",
             "kind": "box",
             "label": "Stub info",
             "x": 478,
@@ -178,7 +178,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2r1_517",
+                "id": "heading_mt7qypjx_517",
                 "kind": "heading",
                 "label": "PAY STUB",
                 "level": 2,
@@ -204,7 +204,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2r1_518",
+                "id": "paragraph_mt7qypjx_518",
                 "kind": "paragraph",
                 "label": "Pay date: {{ pay_date }}",
                 "x": 8,
@@ -233,7 +233,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_537",
+        "id": "box_mt7qypjx_537",
         "kind": "box",
         "label": "Employee info",
         "x": 40,
@@ -263,7 +263,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2r1_521",
+            "id": "heading_mt7qypjx_521",
             "kind": "heading",
             "label": "Employee",
             "level": 3,
@@ -289,7 +289,7 @@
             "children": []
           },
           {
-            "id": "box_mt38o2r1_536",
+            "id": "box_mt7qypjx_536",
             "kind": "box",
             "label": "Employee columns",
             "x": 20,
@@ -319,7 +319,7 @@
             },
             "children": [
               {
-                "id": "box_mt38o2r1_528",
+                "id": "box_mt7qypjx_528",
                 "kind": "box",
                 "label": "Identity",
                 "x": 0,
@@ -349,7 +349,7 @@
                 },
                 "children": [
                   {
-                    "id": "box_mt38o2r1_524",
+                    "id": "box_mt7qypjx_524",
                     "kind": "box",
                     "label": "Row",
                     "x": 0,
@@ -379,7 +379,7 @@
                     },
                     "children": [
                       {
-                        "id": "paragraph_mt38o2r1_522",
+                        "id": "paragraph_mt7qypjx_522",
                         "kind": "paragraph",
                         "label": "Employee",
                         "x": 0,
@@ -404,7 +404,7 @@
                         "children": []
                       },
                       {
-                        "id": "paragraph_mt38o2r1_523",
+                        "id": "paragraph_mt7qypjx_523",
                         "kind": "paragraph",
                         "label": "{{ employee_name }}",
                         "x": 142,
@@ -431,7 +431,7 @@
                     ]
                   },
                   {
-                    "id": "box_mt38o2r1_527",
+                    "id": "box_mt7qypjx_527",
                     "kind": "box",
                     "label": "Row",
                     "x": 0,
@@ -461,7 +461,7 @@
                     },
                     "children": [
                       {
-                        "id": "paragraph_mt38o2r1_525",
+                        "id": "paragraph_mt7qypjx_525",
                         "kind": "paragraph",
                         "label": "Employee ID",
                         "x": 0,
@@ -486,7 +486,7 @@
                         "children": []
                       },
                       {
-                        "id": "paragraph_mt38o2r1_526",
+                        "id": "paragraph_mt7qypjx_526",
                         "kind": "paragraph",
                         "label": "{{ employee_id }}",
                         "x": 142,
@@ -515,7 +515,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2r1_535",
+                "id": "box_mt7qypjx_535",
                 "kind": "box",
                 "label": "Period",
                 "x": 375,
@@ -545,7 +545,7 @@
                 },
                 "children": [
                   {
-                    "id": "box_mt38o2r1_531",
+                    "id": "box_mt7qypjx_531",
                     "kind": "box",
                     "label": "Row",
                     "x": 0,
@@ -575,7 +575,7 @@
                     },
                     "children": [
                       {
-                        "id": "paragraph_mt38o2r1_529",
+                        "id": "paragraph_mt7qypjx_529",
                         "kind": "paragraph",
                         "label": "Pay period",
                         "x": 0,
@@ -600,7 +600,7 @@
                         "children": []
                       },
                       {
-                        "id": "paragraph_mt38o2r1_530",
+                        "id": "paragraph_mt7qypjx_530",
                         "kind": "paragraph",
                         "label": "{{ pay_period_start }} – {{ pay_period_end }}",
                         "x": 142,
@@ -627,7 +627,7 @@
                     ]
                   },
                   {
-                    "id": "box_mt38o2r1_534",
+                    "id": "box_mt7qypjx_534",
                     "kind": "box",
                     "label": "Row",
                     "x": 0,
@@ -657,7 +657,7 @@
                     },
                     "children": [
                       {
-                        "id": "paragraph_mt38o2r1_532",
+                        "id": "paragraph_mt7qypjx_532",
                         "kind": "paragraph",
                         "label": "Filing status",
                         "x": 0,
@@ -682,7 +682,7 @@
                         "children": []
                       },
                       {
-                        "id": "paragraph_mt38o2r1_533",
+                        "id": "paragraph_mt7qypjx_533",
                         "kind": "paragraph",
                         "label": "{{ filing_status }}",
                         "x": 142,
@@ -715,7 +715,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_569",
+        "id": "box_mt7qypjx_569",
         "kind": "box",
         "label": "Pay details",
         "x": 40,
@@ -745,7 +745,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2r1_551",
+            "id": "box_mt7qypjx_551",
             "kind": "box",
             "label": "Earnings",
             "x": 0,
@@ -775,7 +775,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2r1_538",
+                "id": "heading_mt7qypjx_538",
                 "kind": "heading",
                 "label": "Earnings",
                 "level": 3,
@@ -801,7 +801,7 @@
                 "children": []
               },
               {
-                "id": "box_mt38o2r1_541",
+                "id": "box_mt7qypjx_541",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -831,7 +831,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2r1_539",
+                    "id": "paragraph_mt7qypjx_539",
                     "kind": "paragraph",
                     "label": "Regular hours",
                     "x": 0,
@@ -856,7 +856,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2r1_540",
+                    "id": "paragraph_mt7qypjx_540",
                     "kind": "paragraph",
                     "label": "{{ regular_hours }}",
                     "x": 138,
@@ -883,7 +883,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2r1_544",
+                "id": "box_mt7qypjx_544",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -913,7 +913,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2r1_542",
+                    "id": "paragraph_mt7qypjx_542",
                     "kind": "paragraph",
                     "label": "Hourly rate",
                     "x": 0,
@@ -938,7 +938,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2r1_543",
+                    "id": "paragraph_mt7qypjx_543",
                     "kind": "paragraph",
                     "label": "{{ hourly_rate }}",
                     "x": 138,
@@ -965,7 +965,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2r1_547",
+                "id": "box_mt7qypjx_547",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -995,7 +995,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2r1_545",
+                    "id": "paragraph_mt7qypjx_545",
                     "kind": "paragraph",
                     "label": "Overtime pay",
                     "x": 0,
@@ -1020,7 +1020,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2r1_546",
+                    "id": "paragraph_mt7qypjx_546",
                     "kind": "paragraph",
                     "label": "{{ overtime_pay }}",
                     "x": 138,
@@ -1047,7 +1047,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2r1_550",
+                "id": "box_mt7qypjx_550",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -1077,7 +1077,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2r1_548",
+                    "id": "paragraph_mt7qypjx_548",
                     "kind": "paragraph",
                     "label": "Gross pay",
                     "x": 0,
@@ -1102,7 +1102,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2r1_549",
+                    "id": "paragraph_mt7qypjx_549",
                     "kind": "paragraph",
                     "label": "{{ gross_pay }}",
                     "x": 138,
@@ -1131,7 +1131,7 @@
             ]
           },
           {
-            "id": "box_mt38o2r1_568",
+            "id": "box_mt7qypjx_568",
             "kind": "box",
             "label": "Deductions",
             "x": 393,
@@ -1161,7 +1161,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2r1_552",
+                "id": "heading_mt7qypjx_552",
                 "kind": "heading",
                 "label": "Deductions",
                 "level": 3,
@@ -1187,7 +1187,7 @@
                 "children": []
               },
               {
-                "id": "box_mt38o2r1_555",
+                "id": "box_mt7qypjx_555",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -1217,7 +1217,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2r1_553",
+                    "id": "paragraph_mt7qypjx_553",
                     "kind": "paragraph",
                     "label": "Federal tax",
                     "x": 0,
@@ -1242,7 +1242,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2r1_554",
+                    "id": "paragraph_mt7qypjx_554",
                     "kind": "paragraph",
                     "label": "{{ federal_tax }}",
                     "x": 138,
@@ -1269,7 +1269,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2r1_558",
+                "id": "box_mt7qypjx_558",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -1299,7 +1299,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2r1_556",
+                    "id": "paragraph_mt7qypjx_556",
                     "kind": "paragraph",
                     "label": "State tax",
                     "x": 0,
@@ -1324,7 +1324,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2r1_557",
+                    "id": "paragraph_mt7qypjx_557",
                     "kind": "paragraph",
                     "label": "{{ state_tax }}",
                     "x": 138,
@@ -1351,7 +1351,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2r1_561",
+                "id": "box_mt7qypjx_561",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -1381,7 +1381,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2r1_559",
+                    "id": "paragraph_mt7qypjx_559",
                     "kind": "paragraph",
                     "label": "Insurance",
                     "x": 0,
@@ -1406,7 +1406,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2r1_560",
+                    "id": "paragraph_mt7qypjx_560",
                     "kind": "paragraph",
                     "label": "{{ insurance_deduction }}",
                     "x": 138,
@@ -1433,7 +1433,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2r1_564",
+                "id": "box_mt7qypjx_564",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -1463,7 +1463,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2r1_562",
+                    "id": "paragraph_mt7qypjx_562",
                     "kind": "paragraph",
                     "label": "Retirement (401k)",
                     "x": 0,
@@ -1488,7 +1488,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2r1_563",
+                    "id": "paragraph_mt7qypjx_563",
                     "kind": "paragraph",
                     "label": "{{ retirement_deduction }}",
                     "x": 138,
@@ -1515,7 +1515,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2r1_567",
+                "id": "box_mt7qypjx_567",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -1545,7 +1545,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2r1_565",
+                    "id": "paragraph_mt7qypjx_565",
                     "kind": "paragraph",
                     "label": "Total deductions",
                     "x": 0,
@@ -1570,7 +1570,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2r1_566",
+                    "id": "paragraph_mt7qypjx_566",
                     "kind": "paragraph",
                     "label": "{{ total_deductions }}",
                     "x": 138,
@@ -1601,7 +1601,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_571",
+        "id": "box_mt7qypjx_571",
         "kind": "box",
         "label": "Net pay",
         "x": 40,
@@ -1631,7 +1631,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2r1_570",
+            "id": "heading_mt7qypjx_570",
             "kind": "heading",
             "label": "Net Pay: {{ net_pay }}",
             "level": 2,
@@ -1662,126 +1662,126 @@
   },
   "variables": [
     {
-      "id": "var_mt38o2r1_572",
+      "id": "var_mt7qypjx_572",
       "name": "employer_name",
       "label": "Employer company name on the pay stub",
       "type": "text",
       "sampleValue": "Acme Corporation"
     },
     {
-      "id": "var_mt38o2r1_573",
+      "id": "var_mt7qypjx_573",
       "name": "employer_address",
       "label": "Employer address on the pay stub",
       "type": "text",
       "sampleValue": "123 Main St, City, ST 00000"
     },
     {
-      "id": "var_mt38o2r1_574",
+      "id": "var_mt7qypjx_574",
       "name": "pay_date",
       "label": "Pay date printed on the stub",
       "type": "date",
       "sampleValue": "02/15/2026"
     },
     {
-      "id": "var_mt38o2r1_575",
+      "id": "var_mt7qypjx_575",
       "name": "employee_name",
       "label": "Employee name on the pay stub",
       "type": "text",
       "sampleValue": "Jane Doe"
     },
     {
-      "id": "var_mt38o2r1_576",
+      "id": "var_mt7qypjx_576",
       "name": "employee_id",
       "label": "Employee ID on the pay stub",
       "type": "text",
       "sampleValue": "EMP-00214"
     },
     {
-      "id": "var_mt38o2r1_577",
+      "id": "var_mt7qypjx_577",
       "name": "pay_period_start",
       "label": "Pay period start date",
       "type": "date",
       "sampleValue": "02/01/2026"
     },
     {
-      "id": "var_mt38o2r1_578",
+      "id": "var_mt7qypjx_578",
       "name": "pay_period_end",
       "label": "Pay period end date",
       "type": "date",
       "sampleValue": "02/15/2026"
     },
     {
-      "id": "var_mt38o2r1_579",
+      "id": "var_mt7qypjx_579",
       "name": "filing_status",
       "label": "Employee tax filing status",
       "type": "text",
       "sampleValue": "Single"
     },
     {
-      "id": "var_mt38o2r1_580",
+      "id": "var_mt7qypjx_580",
       "name": "regular_hours",
       "label": "Regular hours worked this period",
       "type": "number",
       "sampleValue": "80"
     },
     {
-      "id": "var_mt38o2r1_581",
+      "id": "var_mt7qypjx_581",
       "name": "hourly_rate",
       "label": "Employee hourly rate",
       "type": "currency",
       "sampleValue": "$32.00"
     },
     {
-      "id": "var_mt38o2r1_582",
+      "id": "var_mt7qypjx_582",
       "name": "overtime_pay",
       "label": "Overtime pay this period",
       "type": "currency",
       "sampleValue": "$0.00"
     },
     {
-      "id": "var_mt38o2r1_583",
+      "id": "var_mt7qypjx_583",
       "name": "gross_pay",
       "label": "Gross pay this period",
       "type": "currency",
       "sampleValue": "$2,560.00"
     },
     {
-      "id": "var_mt38o2r1_584",
+      "id": "var_mt7qypjx_584",
       "name": "federal_tax",
       "label": "Federal tax withheld",
       "type": "currency",
       "sampleValue": "$384.00"
     },
     {
-      "id": "var_mt38o2r1_585",
+      "id": "var_mt7qypjx_585",
       "name": "state_tax",
       "label": "State tax withheld",
       "type": "currency",
       "sampleValue": "$128.00"
     },
     {
-      "id": "var_mt38o2r1_586",
+      "id": "var_mt7qypjx_586",
       "name": "insurance_deduction",
       "label": "Insurance deduction this period",
       "type": "currency",
       "sampleValue": "$60.00"
     },
     {
-      "id": "var_mt38o2r1_587",
+      "id": "var_mt7qypjx_587",
       "name": "retirement_deduction",
       "label": "Retirement (401k) deduction this period",
       "type": "currency",
       "sampleValue": "$102.40"
     },
     {
-      "id": "var_mt38o2r1_588",
+      "id": "var_mt7qypjx_588",
       "name": "total_deductions",
       "label": "Total deductions this period",
       "type": "currency",
       "sampleValue": "$674.40"
     },
     {
-      "id": "var_mt38o2r1_589",
+      "id": "var_mt7qypjx_589",
       "name": "net_pay",
       "label": "Net pay on the stub",
       "type": "currency",

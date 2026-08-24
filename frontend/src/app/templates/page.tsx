@@ -14,9 +14,9 @@ import { PRODUCT } from "@/lib/product-copy";
 import { SITE_URL } from "@/lib/legal";
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Document designs — family schedules, invoices & agendas",
+  title: "Document designs — agreements, plans, invoices & more",
   description:
-    "Browse FileWorks Designs: family daily/weekly/monthly/yearly schedules, invoices, receipts, meeting agendas, project plans, task lists, and timesheets. AI-fill from converted Markdown in the workspace, or render starter designs via the API with variable params.",
+    "Browse FileWorks Designs: NDAs, proposals, policies, purchase orders, checklists, offer letters, family schedules, invoices, agendas, and more. AI-fill from converted Markdown, or render starters via the API.",
   path: "/templates",
   keywords: TEMPLATE_KEYWORDS,
 });

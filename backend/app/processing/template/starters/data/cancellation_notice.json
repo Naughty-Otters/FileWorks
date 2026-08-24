@@ -1,0 +1,187 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 16,
+      "padding": 48,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "heading_mt7qypk1_1321",
+        "kind": "heading",
+        "label": "NOTICE OF CANCELLATION",
+        "level": 1,
+        "x": 48,
+        "y": 48,
+        "w": 754,
+        "h": 44,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 28,
+          "color": "#0f172a",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      },
+      {
+        "id": "paragraph_mt7qypk1_1322",
+        "kind": "paragraph",
+        "label": "Date: {{ notice_date }}\nTo: {{ recipient_name }}\nRe: {{ contract_name }} ({{ contract_ref }})",
+        "x": 48,
+        "y": 108,
+        "w": 754,
+        "h": 70,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#334155",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      },
+      {
+        "id": "paragraph_mt7qypk1_1323",
+        "kind": "paragraph",
+        "label": "This letter provides notice that {{ sender_name }} is cancelling {{ contract_name }} effective {{ effective_date }}, pursuant to {{ cancellation_clause }}.\n\n{{ reason_summary }}\n\nPlease confirm receipt and outline any wind-down steps by {{ reply_by }}.\n\nSincerely,\n{{ sender_name }}\n{{ sender_title }}",
+        "x": 48,
+        "y": 194,
+        "w": 754,
+        "h": 204,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#334155",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt7qypk1_1324",
+      "name": "notice_date",
+      "label": "Date of the cancellation notice",
+      "type": "date",
+      "sampleValue": "March 8, 2026"
+    },
+    {
+      "id": "var_mt7qypk1_1325",
+      "name": "recipient_name",
+      "label": "Recipient of the cancellation notice",
+      "type": "text",
+      "sampleValue": "Bright Supply Co."
+    },
+    {
+      "id": "var_mt7qypk1_1326",
+      "name": "contract_name",
+      "label": "Name of the contract being cancelled",
+      "type": "text",
+      "sampleValue": "Master Supply Agreement"
+    },
+    {
+      "id": "var_mt7qypk1_1327",
+      "name": "contract_ref",
+      "label": "Contract reference number",
+      "type": "text",
+      "sampleValue": "MSA-1190"
+    },
+    {
+      "id": "var_mt7qypk1_1328",
+      "name": "sender_name",
+      "label": "Party sending the cancellation",
+      "type": "text",
+      "sampleValue": "Acme Studio LLC"
+    },
+    {
+      "id": "var_mt7qypk1_1329",
+      "name": "effective_date",
+      "label": "Cancellation effective date",
+      "type": "date",
+      "sampleValue": "April 8, 2026"
+    },
+    {
+      "id": "var_mt7qypk1_1330",
+      "name": "cancellation_clause",
+      "label": "Contract clause authorizing cancellation",
+      "type": "text",
+      "sampleValue": "Section 8.2 (termination for convenience with 30 days' notice)"
+    },
+    {
+      "id": "var_mt7qypk1_1331",
+      "name": "reason_summary",
+      "label": "Optional reason summary for cancellation",
+      "type": "text",
+      "sampleValue": "We are consolidating vendors and will complete open POs through the effective date."
+    },
+    {
+      "id": "var_mt7qypk1_1332",
+      "name": "reply_by",
+      "label": "Date by which confirmation is requested",
+      "type": "date",
+      "sampleValue": "March 18, 2026"
+    },
+    {
+      "id": "var_mt7qypk1_1333",
+      "name": "sender_title",
+      "label": "Title of the sender",
+      "type": "text",
+      "sampleValue": "Head of Operations"
+    }
+  ]
+}

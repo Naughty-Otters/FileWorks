@@ -1,0 +1,323 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 14,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "paragraph_mt7qypk1_1360",
+        "kind": "paragraph",
+        "label": "FOR IMMEDIATE RELEASE · {{ release_date }} · {{ city_state }}",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 28,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 13,
+          "color": "#64748b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      },
+      {
+        "id": "heading_mt7qypk1_1361",
+        "kind": "heading",
+        "label": "{{ headline }}",
+        "level": 1,
+        "x": 40,
+        "y": 82,
+        "w": 770,
+        "h": 44,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 28,
+          "color": "#0f172a",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      },
+      {
+        "id": "paragraph_mt7qypk1_1362",
+        "kind": "paragraph",
+        "label": "{{ subhead }}",
+        "x": 40,
+        "y": 140,
+        "w": 770,
+        "h": 36,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 13,
+          "color": "#0f172a",
+          "bold": true,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      },
+      {
+        "id": "paragraph_mt7qypk1_1363",
+        "kind": "paragraph",
+        "label": "{{ lead_paragraph }}\n\n{{ body_paragraph }}\n\n\"{{ quote_text }}\" — {{ quote_attribution }}\n\n{{ closing_paragraph }}",
+        "x": 40,
+        "y": 190,
+        "w": 770,
+        "h": 180,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#334155",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "transparent",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": null,
+        "children": []
+      },
+      {
+        "id": "box_mt7qypk1_1366",
+        "kind": "box",
+        "label": "About {{ company_name }}",
+        "x": 40,
+        "y": 384,
+        "w": 770,
+        "h": 148,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypk1_1364",
+            "kind": "heading",
+            "label": "About {{ company_name }}",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypk1_1365",
+            "kind": "paragraph",
+            "label": "{{ company_boilerplate }}\n\nMedia contact: {{ media_contact_name }} · {{ media_contact_email }} · {{ media_contact_phone }}",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 70,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt7qypk1_1367",
+      "name": "release_date",
+      "label": "Press release date",
+      "type": "date",
+      "sampleValue": "March 25, 2026"
+    },
+    {
+      "id": "var_mt7qypk1_1368",
+      "name": "city_state",
+      "label": "Dateline city and state",
+      "type": "text",
+      "sampleValue": "San Francisco, CA"
+    },
+    {
+      "id": "var_mt7qypk1_1369",
+      "name": "headline",
+      "label": "Press release headline",
+      "type": "text",
+      "sampleValue": "Acme Studio Expands Fillable Design Library for Business Documents"
+    },
+    {
+      "id": "var_mt7qypk1_1370",
+      "name": "subhead",
+      "label": "Press release subhead",
+      "type": "text",
+      "sampleValue": "New starters help teams turn converted files into agreements, plans, proposals, and more"
+    },
+    {
+      "id": "var_mt7qypk1_1371",
+      "name": "lead_paragraph",
+      "label": "Opening paragraph of the release",
+      "type": "text",
+      "sampleValue": "Acme Studio today announced a major expansion of its Design studio starters, adding popular business document types with ready-made variables for AI-assisted fill."
+    },
+    {
+      "id": "var_mt7qypk1_1372",
+      "name": "body_paragraph",
+      "label": "Supporting body paragraph",
+      "type": "text",
+      "sampleValue": "The update covers agreements, plans, policies, forms, checklists, letters, proposals, reports, notices, memos, and press releases—so operators can go from PDF to polished output without rebuilding layouts."
+    },
+    {
+      "id": "var_mt7qypk1_1373",
+      "name": "quote_text",
+      "label": "Executive quote text",
+      "type": "text",
+      "sampleValue": "Customers asked for the same document types they already use to run the business. Now those layouts are one click away."
+    },
+    {
+      "id": "var_mt7qypk1_1374",
+      "name": "quote_attribution",
+      "label": "Quote attribution name and title",
+      "type": "text",
+      "sampleValue": "Alex Rivera, Head of Product, Acme Studio"
+    },
+    {
+      "id": "var_mt7qypk1_1375",
+      "name": "closing_paragraph",
+      "label": "Closing paragraph before boilerplate",
+      "type": "text",
+      "sampleValue": "The starters are available now in the Designs library for workspace and API customers."
+    },
+    {
+      "id": "var_mt7qypk1_1376",
+      "name": "company_name",
+      "label": "Company name in the boilerplate",
+      "type": "text",
+      "sampleValue": "Acme Studio"
+    },
+    {
+      "id": "var_mt7qypk1_1377",
+      "name": "company_boilerplate",
+      "label": "About-the-company boilerplate",
+      "type": "text",
+      "sampleValue": "Acme Studio helps teams convert documents and produce branded outputs with AI reading, translation, and fillable designs."
+    },
+    {
+      "id": "var_mt7qypk1_1378",
+      "name": "media_contact_name",
+      "label": "Media contact name",
+      "type": "text",
+      "sampleValue": "Riley Ortiz"
+    },
+    {
+      "id": "var_mt7qypk1_1379",
+      "name": "media_contact_email",
+      "label": "Media contact email",
+      "type": "text",
+      "sampleValue": "press@acme.example"
+    },
+    {
+      "id": "var_mt7qypk1_1380",
+      "name": "media_contact_phone",
+      "label": "Media contact phone",
+      "type": "text",
+      "sampleValue": "+1 (415) 555-0142"
+    }
+  ]
+}

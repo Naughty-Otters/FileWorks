@@ -35,7 +35,7 @@
     },
     "children": [
       {
-        "id": "box_mt38o2r1_630",
+        "id": "box_mt7qypjx_630",
         "kind": "box",
         "label": "Sender",
         "x": 64,
@@ -65,7 +65,7 @@
         },
         "children": [
           {
-            "id": "paragraph_mt38o2r1_629",
+            "id": "paragraph_mt7qypjx_629",
             "kind": "paragraph",
             "label": "{{ sender_name }}\n{{ sender_company }}\n{{ sender_address }}",
             "x": 0,
@@ -92,7 +92,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_632",
+        "id": "box_mt7qypjx_632",
         "kind": "box",
         "label": "Date",
         "x": 64,
@@ -122,7 +122,7 @@
         },
         "children": [
           {
-            "id": "paragraph_mt38o2r1_631",
+            "id": "paragraph_mt7qypjx_631",
             "kind": "paragraph",
             "label": "{{ letter_date }}",
             "x": 0,
@@ -149,7 +149,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_634",
+        "id": "box_mt7qypjx_634",
         "kind": "box",
         "label": "Recipient",
         "x": 64,
@@ -179,7 +179,7 @@
         },
         "children": [
           {
-            "id": "paragraph_mt38o2r1_633",
+            "id": "paragraph_mt7qypjx_633",
             "kind": "paragraph",
             "label": "{{ recipient_name }}\n{{ recipient_company }}\n{{ recipient_address }}",
             "x": 0,
@@ -206,7 +206,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_636",
+        "id": "box_mt7qypjx_636",
         "kind": "box",
         "label": "Greeting",
         "x": 64,
@@ -236,7 +236,7 @@
         },
         "children": [
           {
-            "id": "paragraph_mt38o2r1_635",
+            "id": "paragraph_mt7qypjx_635",
             "kind": "paragraph",
             "label": "Dear {{ recipient_name }},",
             "x": 0,
@@ -263,7 +263,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_638",
+        "id": "box_mt7qypjx_638",
         "kind": "box",
         "label": "Body",
         "x": 64,
@@ -293,7 +293,7 @@
         },
         "children": [
           {
-            "id": "paragraph_mt38o2r1_637",
+            "id": "paragraph_mt7qypjx_637",
             "kind": "paragraph",
             "label": "{{ letter_body }}",
             "x": 0,
@@ -320,7 +320,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r1_640",
+        "id": "box_mt7qypjx_640",
         "kind": "box",
         "label": "Closing",
         "x": 64,
@@ -350,7 +350,7 @@
         },
         "children": [
           {
-            "id": "paragraph_mt38o2r1_639",
+            "id": "paragraph_mt7qypjx_639",
             "kind": "paragraph",
             "label": "Sincerely,\n\n{{ sender_name }}\n{{ sender_title }}",
             "x": 0,
@@ -380,63 +380,63 @@
   },
   "variables": [
     {
-      "id": "var_mt38o2r1_641",
+      "id": "var_mt7qypjx_641",
       "name": "sender_name",
       "label": "Letter sender name",
       "type": "text",
       "sampleValue": "Alex Rivera"
     },
     {
-      "id": "var_mt38o2r1_642",
+      "id": "var_mt7qypjx_642",
       "name": "sender_company",
       "label": "Letter sender company",
       "type": "text",
       "sampleValue": "Rivera Consulting"
     },
     {
-      "id": "var_mt38o2r1_643",
+      "id": "var_mt7qypjx_643",
       "name": "sender_address",
       "label": "Letter sender address",
       "type": "text",
       "sampleValue": "123 Main St, City, ST 00000"
     },
     {
-      "id": "var_mt38o2r1_644",
+      "id": "var_mt7qypjx_644",
       "name": "sender_title",
       "label": "Letter sender title",
       "type": "text",
       "sampleValue": "Principal"
     },
     {
-      "id": "var_mt38o2r1_645",
+      "id": "var_mt7qypjx_645",
       "name": "letter_date",
       "label": "Letter date",
       "type": "date",
       "sampleValue": "March 20, 2026"
     },
     {
-      "id": "var_mt38o2r1_646",
+      "id": "var_mt7qypjx_646",
       "name": "recipient_name",
       "label": "Letter recipient name",
       "type": "text",
       "sampleValue": "Jordan Lee"
     },
     {
-      "id": "var_mt38o2r1_647",
+      "id": "var_mt7qypjx_647",
       "name": "recipient_company",
       "label": "Letter recipient company",
       "type": "text",
       "sampleValue": "Northwind Trading"
     },
     {
-      "id": "var_mt38o2r1_648",
+      "id": "var_mt7qypjx_648",
       "name": "recipient_address",
       "label": "Letter recipient address",
       "type": "text",
       "sampleValue": "500 Harbor Ave, City, ST 00000"
     },
     {
-      "id": "var_mt38o2r1_649",
+      "id": "var_mt7qypjx_649",
       "name": "letter_body",
       "label": "Letter body paragraphs from the source correspondence",
       "type": "text",

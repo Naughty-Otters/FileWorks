@@ -35,7 +35,7 @@
     },
     "children": [
       {
-        "id": "box_mt38o2qy_140",
+        "id": "box_mt7qypjt_140",
         "kind": "box",
         "label": "Header",
         "x": 28,
@@ -65,7 +65,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qy_137",
+            "id": "box_mt7qypjt_137",
             "kind": "box",
             "label": "Title",
             "x": 20,
@@ -95,7 +95,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qy_135",
+                "id": "paragraph_mt7qypjt_135",
                 "kind": "paragraph",
                 "label": "YEARLY FAMILY CALENDAR",
                 "x": 0,
@@ -120,7 +120,7 @@
                 "children": []
               },
               {
-                "id": "heading_mt38o2qy_136",
+                "id": "heading_mt7qypjt_136",
                 "kind": "heading",
                 "label": "{{ family_name }}",
                 "level": 2,
@@ -148,7 +148,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qy_139",
+            "id": "box_mt7qypjt_139",
             "kind": "box",
             "label": "Year",
             "x": 628,
@@ -178,7 +178,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2qy_138",
+                "id": "heading_mt7qypjt_138",
                 "kind": "heading",
                 "label": "{{ calendar_year }}",
                 "level": 1,
@@ -208,7 +208,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qy_180",
+        "id": "box_mt7qypju_180",
         "kind": "box",
         "label": "Months",
         "x": 28,
@@ -238,7 +238,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qy_153",
+            "id": "box_mt7qypju_153",
             "kind": "box",
             "label": "Row 1",
             "x": 0,
@@ -268,7 +268,7 @@
             },
             "children": [
               {
-                "id": "box_mt38o2qy_143",
+                "id": "box_mt7qypjt_143",
                 "kind": "box",
                 "label": "January",
                 "x": 0,
@@ -298,7 +298,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_141",
+                    "id": "paragraph_mt7qypjt_141",
                     "kind": "paragraph",
                     "label": "January",
                     "x": 10,
@@ -323,7 +323,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_142",
+                    "id": "paragraph_mt7qypjt_142",
                     "kind": "paragraph",
                     "label": "{{ jan_notes }}",
                     "x": 10,
@@ -350,7 +350,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2qy_146",
+                "id": "box_mt7qypjt_146",
                 "kind": "box",
                 "label": "February",
                 "x": 264,
@@ -380,7 +380,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_144",
+                    "id": "paragraph_mt7qypjt_144",
                     "kind": "paragraph",
                     "label": "February",
                     "x": 10,
@@ -405,7 +405,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_145",
+                    "id": "paragraph_mt7qypjt_145",
                     "kind": "paragraph",
                     "label": "{{ feb_notes }}",
                     "x": 10,
@@ -432,7 +432,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2qy_149",
+                "id": "box_mt7qypjt_149",
                 "kind": "box",
                 "label": "March",
                 "x": 528,
@@ -462,7 +462,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_147",
+                    "id": "paragraph_mt7qypjt_147",
                     "kind": "paragraph",
                     "label": "March",
                     "x": 10,
@@ -487,7 +487,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_148",
+                    "id": "paragraph_mt7qypjt_148",
                     "kind": "paragraph",
                     "label": "{{ mar_notes }}",
                     "x": 10,
@@ -514,7 +514,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2qy_152",
+                "id": "box_mt7qypju_152",
                 "kind": "box",
                 "label": "April",
                 "x": 792,
@@ -544,7 +544,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_150",
+                    "id": "paragraph_mt7qypju_150",
                     "kind": "paragraph",
                     "label": "April",
                     "x": 10,
@@ -569,7 +569,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_151",
+                    "id": "paragraph_mt7qypju_151",
                     "kind": "paragraph",
                     "label": "{{ apr_notes }}",
                     "x": 10,
@@ -598,7 +598,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qy_166",
+            "id": "box_mt7qypju_166",
             "kind": "box",
             "label": "Row 2",
             "x": 0,
@@ -628,7 +628,7 @@
             },
             "children": [
               {
-                "id": "box_mt38o2qy_156",
+                "id": "box_mt7qypju_156",
                 "kind": "box",
                 "label": "May",
                 "x": 0,
@@ -658,7 +658,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_154",
+                    "id": "paragraph_mt7qypju_154",
                     "kind": "paragraph",
                     "label": "May",
                     "x": 10,
@@ -683,7 +683,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_155",
+                    "id": "paragraph_mt7qypju_155",
                     "kind": "paragraph",
                     "label": "{{ may_notes }}",
                     "x": 10,
@@ -710,7 +710,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2qy_159",
+                "id": "box_mt7qypju_159",
                 "kind": "box",
                 "label": "June",
                 "x": 264,
@@ -740,7 +740,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_157",
+                    "id": "paragraph_mt7qypju_157",
                     "kind": "paragraph",
                     "label": "June",
                     "x": 10,
@@ -765,7 +765,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_158",
+                    "id": "paragraph_mt7qypju_158",
                     "kind": "paragraph",
                     "label": "{{ jun_notes }}",
                     "x": 10,
@@ -792,7 +792,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2qy_162",
+                "id": "box_mt7qypju_162",
                 "kind": "box",
                 "label": "July",
                 "x": 528,
@@ -822,7 +822,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_160",
+                    "id": "paragraph_mt7qypju_160",
                     "kind": "paragraph",
                     "label": "July",
                     "x": 10,
@@ -847,7 +847,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_161",
+                    "id": "paragraph_mt7qypju_161",
                     "kind": "paragraph",
                     "label": "{{ jul_notes }}",
                     "x": 10,
@@ -874,7 +874,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2qy_165",
+                "id": "box_mt7qypju_165",
                 "kind": "box",
                 "label": "August",
                 "x": 792,
@@ -904,7 +904,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_163",
+                    "id": "paragraph_mt7qypju_163",
                     "kind": "paragraph",
                     "label": "August",
                     "x": 10,
@@ -929,7 +929,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_164",
+                    "id": "paragraph_mt7qypju_164",
                     "kind": "paragraph",
                     "label": "{{ aug_notes }}",
                     "x": 10,
@@ -958,7 +958,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qy_179",
+            "id": "box_mt7qypju_179",
             "kind": "box",
             "label": "Row 3",
             "x": 0,
@@ -988,7 +988,7 @@
             },
             "children": [
               {
-                "id": "box_mt38o2qy_169",
+                "id": "box_mt7qypju_169",
                 "kind": "box",
                 "label": "September",
                 "x": 0,
@@ -1018,7 +1018,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_167",
+                    "id": "paragraph_mt7qypju_167",
                     "kind": "paragraph",
                     "label": "September",
                     "x": 10,
@@ -1043,7 +1043,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_168",
+                    "id": "paragraph_mt7qypju_168",
                     "kind": "paragraph",
                     "label": "{{ sep_notes }}",
                     "x": 10,
@@ -1070,7 +1070,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2qy_172",
+                "id": "box_mt7qypju_172",
                 "kind": "box",
                 "label": "October",
                 "x": 264,
@@ -1100,7 +1100,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_170",
+                    "id": "paragraph_mt7qypju_170",
                     "kind": "paragraph",
                     "label": "October",
                     "x": 10,
@@ -1125,7 +1125,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_171",
+                    "id": "paragraph_mt7qypju_171",
                     "kind": "paragraph",
                     "label": "{{ oct_notes }}",
                     "x": 10,
@@ -1152,7 +1152,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2qy_175",
+                "id": "box_mt7qypju_175",
                 "kind": "box",
                 "label": "November",
                 "x": 528,
@@ -1182,7 +1182,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_173",
+                    "id": "paragraph_mt7qypju_173",
                     "kind": "paragraph",
                     "label": "November",
                     "x": 10,
@@ -1207,7 +1207,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_174",
+                    "id": "paragraph_mt7qypju_174",
                     "kind": "paragraph",
                     "label": "{{ nov_notes }}",
                     "x": 10,
@@ -1234,7 +1234,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2qy_178",
+                "id": "box_mt7qypju_178",
                 "kind": "box",
                 "label": "December",
                 "x": 792,
@@ -1264,7 +1264,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qy_176",
+                    "id": "paragraph_mt7qypju_176",
                     "kind": "paragraph",
                     "label": "December",
                     "x": 10,
@@ -1289,7 +1289,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qy_177",
+                    "id": "paragraph_mt7qypju_177",
                     "kind": "paragraph",
                     "label": "{{ dec_notes }}",
                     "x": 10,
@@ -1320,7 +1320,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qy_187",
+        "id": "box_mt7qypju_187",
         "kind": "box",
         "label": "Bottom",
         "x": 28,
@@ -1350,7 +1350,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qy_183",
+            "id": "box_mt7qypju_183",
             "kind": "box",
             "label": "Annual goals",
             "x": 0,
@@ -1380,7 +1380,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2qy_181",
+                "id": "heading_mt7qypju_181",
                 "kind": "heading",
                 "label": "Annual goals",
                 "level": 3,
@@ -1406,7 +1406,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_182",
+                "id": "paragraph_mt7qypju_182",
                 "kind": "paragraph",
                 "label": "{{ yearly_goals }}",
                 "x": 16,
@@ -1433,7 +1433,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qy_186",
+            "id": "box_mt7qypju_186",
             "kind": "box",
             "label": "Trips",
             "x": 530,
@@ -1463,7 +1463,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2qy_184",
+                "id": "heading_mt7qypju_184",
                 "kind": "heading",
                 "label": "Trips & big moments",
                 "level": 3,
@@ -1489,7 +1489,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qy_185",
+                "id": "paragraph_mt7qypju_185",
                 "kind": "paragraph",
                 "label": "{{ yearly_trips }}",
                 "x": 16,
@@ -1521,112 +1521,112 @@
   },
   "variables": [
     {
-      "id": "var_mt38o2qy_188",
+      "id": "var_mt7qypju_188",
       "name": "family_name",
       "label": "Family or household name on the yearly calendar",
       "type": "text",
       "sampleValue": "The Rivera Family"
     },
     {
-      "id": "var_mt38o2qy_189",
+      "id": "var_mt7qypju_189",
       "name": "calendar_year",
       "label": "Calendar year shown on the yearly planner",
       "type": "text",
       "sampleValue": "2026"
     },
     {
-      "id": "var_mt38o2qy_190",
+      "id": "var_mt7qypju_190",
       "name": "jan_notes",
       "label": "January highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "New Year · ski weekend"
     },
     {
-      "id": "var_mt38o2qy_191",
+      "id": "var_mt7qypju_191",
       "name": "feb_notes",
       "label": "February highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "Maya birthday (12th)"
     },
     {
-      "id": "var_mt38o2qy_192",
+      "id": "var_mt7qypju_192",
       "name": "mar_notes",
       "label": "March highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "Spring break · photos"
     },
     {
-      "id": "var_mt38o2qy_193",
+      "id": "var_mt7qypju_193",
       "name": "apr_notes",
       "label": "April highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "Taxes · Easter"
     },
     {
-      "id": "var_mt38o2qy_194",
+      "id": "var_mt7qypju_194",
       "name": "may_notes",
       "label": "May highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "Mother's Day · field day"
     },
     {
-      "id": "var_mt38o2qy_195",
+      "id": "var_mt7qypju_195",
       "name": "jun_notes",
       "label": "June highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "Last day of school"
     },
     {
-      "id": "var_mt38o2qy_196",
+      "id": "var_mt7qypju_196",
       "name": "jul_notes",
       "label": "July highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "Beach trip (week 2)"
     },
     {
-      "id": "var_mt38o2qy_197",
+      "id": "var_mt7qypju_197",
       "name": "aug_notes",
       "label": "August highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "Back-to-school shopping"
     },
     {
-      "id": "var_mt38o2qy_198",
+      "id": "var_mt7qypju_198",
       "name": "sep_notes",
       "label": "September highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "School starts · soccer"
     },
     {
-      "id": "var_mt38o2qy_199",
+      "id": "var_mt7qypju_199",
       "name": "oct_notes",
       "label": "October highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "Halloween · fall fest"
     },
     {
-      "id": "var_mt38o2qy_200",
+      "id": "var_mt7qypju_200",
       "name": "nov_notes",
       "label": "November highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "Thanksgiving travel"
     },
     {
-      "id": "var_mt38o2qy_201",
+      "id": "var_mt7qypju_201",
       "name": "dec_notes",
       "label": "December highlights on the yearly calendar",
       "type": "text",
       "sampleValue": "Holidays · year review"
     },
     {
-      "id": "var_mt38o2qy_202",
+      "id": "var_mt7qypju_202",
       "name": "yearly_goals",
       "label": "Family goals for the full year",
       "type": "text",
       "sampleValue": "Save for summer beach trip\nCook together every Sunday\nVisit both sets of grandparents"
     },
     {
-      "id": "var_mt38o2qy_203",
+      "id": "var_mt7qypju_203",
       "name": "yearly_trips",
       "label": "Major trips and celebrations planned for the year",
       "type": "text",

@@ -35,7 +35,7 @@
     },
     "children": [
       {
-        "id": "box_mt38o2qz_306",
+        "id": "box_mt7qypjv_306",
         "kind": "box",
         "label": "Header",
         "x": 40,
@@ -65,7 +65,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qz_302",
+            "id": "box_mt7qypjv_302",
             "kind": "box",
             "label": "Title",
             "x": 22,
@@ -95,7 +95,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qz_300",
+                "id": "paragraph_mt7qypjv_300",
                 "kind": "paragraph",
                 "label": "TASK LIST",
                 "x": 0,
@@ -120,7 +120,7 @@
                 "children": []
               },
               {
-                "id": "heading_mt38o2qz_301",
+                "id": "heading_mt7qypjv_301",
                 "kind": "heading",
                 "label": "{{ board_name }}",
                 "level": 2,
@@ -148,7 +148,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qz_305",
+            "id": "box_mt7qypjv_305",
             "kind": "box",
             "label": "Period",
             "x": 484,
@@ -178,7 +178,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qz_303",
+                "id": "paragraph_mt7qypjv_303",
                 "kind": "paragraph",
                 "label": "Period",
                 "x": 8,
@@ -203,7 +203,7 @@
                 "children": []
               },
               {
-                "id": "heading_mt38o2qz_304",
+                "id": "heading_mt7qypjv_304",
                 "kind": "heading",
                 "label": "{{ task_period }}",
                 "level": 3,
@@ -233,7 +233,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qz_318",
+        "id": "box_mt7qypjv_318",
         "kind": "box",
         "label": "Tasks",
         "x": 40,
@@ -263,7 +263,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2qz_317",
+            "id": "heading_mt7qypjv_317",
             "kind": "heading",
             "label": "Work items",
             "level": 3,
@@ -289,7 +289,7 @@
             "children": []
           },
           {
-            "id": "box_mt38o2qz_311",
+            "id": "box_mt7qypjv_311",
             "kind": "box",
             "label": "Column headers",
             "x": 20,
@@ -319,7 +319,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qz_307",
+                "id": "paragraph_mt7qypjv_307",
                 "kind": "paragraph",
                 "label": "Task",
                 "x": 0,
@@ -344,7 +344,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qz_308",
+                "id": "paragraph_mt7qypjv_308",
                 "kind": "paragraph",
                 "label": "Owner",
                 "x": 306,
@@ -369,7 +369,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qz_309",
+                "id": "paragraph_mt7qypjv_309",
                 "kind": "paragraph",
                 "label": "Due",
                 "x": 437,
@@ -394,7 +394,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qz_310",
+                "id": "paragraph_mt7qypjv_310",
                 "kind": "paragraph",
                 "label": "Status",
                 "x": 553,
@@ -421,7 +421,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qz_316",
+            "id": "box_mt7qypjv_316",
             "kind": "box",
             "label": "Task",
             "x": 20,
@@ -451,7 +451,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qz_312",
+                "id": "paragraph_mt7qypjv_312",
                 "kind": "paragraph",
                 "label": "{{ task.title }}",
                 "x": 0,
@@ -476,7 +476,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qz_313",
+                "id": "paragraph_mt7qypjv_313",
                 "kind": "paragraph",
                 "label": "{{ task.owner }}",
                 "x": 306,
@@ -501,7 +501,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qz_314",
+                "id": "paragraph_mt7qypjv_314",
                 "kind": "paragraph",
                 "label": "{{ task.due }}",
                 "x": 437,
@@ -526,7 +526,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qz_315",
+                "id": "paragraph_mt7qypjv_315",
                 "kind": "paragraph",
                 "label": "{{ task.status }}",
                 "x": 553,
@@ -559,7 +559,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qz_321",
+        "id": "box_mt7qypjv_321",
         "kind": "box",
         "label": "Notes",
         "x": 40,
@@ -589,7 +589,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2qz_319",
+            "id": "heading_mt7qypjv_319",
             "kind": "heading",
             "label": "Notes",
             "level": 3,
@@ -615,7 +615,7 @@
             "children": []
           },
           {
-            "id": "paragraph_mt38o2qz_320",
+            "id": "paragraph_mt7qypjv_320",
             "kind": "paragraph",
             "label": "{{ task_notes }}",
             "x": 20,
@@ -645,46 +645,46 @@
   },
   "variables": [
     {
-      "id": "var_mt38o2qz_322",
+      "id": "var_mt7qypjv_322",
       "name": "board_name",
       "label": "Task list or board name",
       "type": "text",
       "sampleValue": "Launch readiness"
     },
     {
-      "id": "var_mt38o2qz_323",
+      "id": "var_mt7qypjv_323",
       "name": "task_period",
       "label": "Sprint or date range for this task list",
       "type": "text",
       "sampleValue": "Mar 17 – Mar 28"
     },
     {
-      "id": "var_mt38o2qz_324",
+      "id": "var_mt7qypjv_324",
       "name": "task_list_items",
       "label": "Tasks with title, owner, due date, and status",
       "type": "list",
       "sampleValue": "[{\"title\":\"Finalize pricing table copy\",\"owner\":\"Priya\",\"due\":\"Mar 19\",\"status\":\"In progress\"},{\"title\":\"Accessibility pass on templates\",\"owner\":\"Jordan\",\"due\":\"Mar 21\",\"status\":\"Todo\"},{\"title\":\"Set up status page\",\"owner\":\"Sam\",\"due\":\"Mar 20\",\"status\":\"In progress\"},{\"title\":\"Customer email draft\",\"owner\":\"Alex\",\"due\":\"Mar 24\",\"status\":\"Todo\"},{\"title\":\"Load-test preview pipeline\",\"owner\":\"Jordan\",\"due\":\"Mar 25\",\"status\":\"Blocked\"}]",
       "itemSchema": [
         {
-          "id": "field_mt38o2qz_325",
+          "id": "field_mt7qypjv_325",
           "name": "title",
           "label": "Task title",
           "type": "text"
         },
         {
-          "id": "field_mt38o2qz_326",
+          "id": "field_mt7qypjv_326",
           "name": "owner",
           "label": "Task owner",
           "type": "text"
         },
         {
-          "id": "field_mt38o2qz_327",
+          "id": "field_mt7qypjv_327",
           "name": "due",
           "label": "Task due date",
           "type": "date"
         },
         {
-          "id": "field_mt38o2qz_328",
+          "id": "field_mt7qypjv_328",
           "name": "status",
           "label": "Task status",
           "type": "text"
@@ -692,7 +692,7 @@
       ]
     },
     {
-      "id": "var_mt38o2qz_329",
+      "id": "var_mt7qypjv_329",
       "name": "task_notes",
       "label": "Notes or blockers for the task list",
       "type": "text",

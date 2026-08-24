@@ -35,7 +35,7 @@
     },
     "children": [
       {
-        "id": "box_mt38o2qz_256",
+        "id": "box_mt7qypju_256",
         "kind": "box",
         "label": "Header",
         "x": 40,
@@ -65,7 +65,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qz_252",
+            "id": "box_mt7qypju_252",
             "kind": "box",
             "label": "Title",
             "x": 22,
@@ -95,7 +95,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qz_250",
+                "id": "paragraph_mt7qypju_250",
                 "kind": "paragraph",
                 "label": "PROJECT PLAN",
                 "x": 0,
@@ -120,7 +120,7 @@
                 "children": []
               },
               {
-                "id": "heading_mt38o2qz_251",
+                "id": "heading_mt7qypju_251",
                 "kind": "heading",
                 "label": "{{ project_name }}",
                 "level": 2,
@@ -148,7 +148,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qz_255",
+            "id": "box_mt7qypju_255",
             "kind": "box",
             "label": "Status",
             "x": 515,
@@ -178,7 +178,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qz_253",
+                "id": "paragraph_mt7qypju_253",
                 "kind": "paragraph",
                 "label": "Status",
                 "x": 8,
@@ -203,7 +203,7 @@
                 "children": []
               },
               {
-                "id": "heading_mt38o2qz_254",
+                "id": "heading_mt7qypju_254",
                 "kind": "heading",
                 "label": "{{ project_status }}",
                 "level": 3,
@@ -233,7 +233,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qz_259",
+        "id": "box_mt7qypju_259",
         "kind": "box",
         "label": "Overview",
         "x": 40,
@@ -263,7 +263,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2qz_257",
+            "id": "heading_mt7qypju_257",
             "kind": "heading",
             "label": "Overview",
             "level": 3,
@@ -289,7 +289,7 @@
             "children": []
           },
           {
-            "id": "paragraph_mt38o2qz_258",
+            "id": "paragraph_mt7qypju_258",
             "kind": "paragraph",
             "label": "{{ project_summary }}",
             "x": 20,
@@ -316,7 +316,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qz_274",
+        "id": "box_mt7qypju_274",
         "kind": "box",
         "label": "Mid",
         "x": 40,
@@ -346,7 +346,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qz_270",
+            "id": "box_mt7qypju_270",
             "kind": "box",
             "label": "Details",
             "x": 0,
@@ -376,7 +376,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2qz_260",
+                "id": "heading_mt7qypju_260",
                 "kind": "heading",
                 "label": "Details",
                 "level": 3,
@@ -402,7 +402,7 @@
                 "children": []
               },
               {
-                "id": "box_mt38o2qz_263",
+                "id": "box_mt7qypju_263",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -432,7 +432,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qz_261",
+                    "id": "paragraph_mt7qypju_261",
                     "kind": "paragraph",
                     "label": "Owner",
                     "x": 0,
@@ -457,7 +457,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qz_262",
+                    "id": "paragraph_mt7qypju_262",
                     "kind": "paragraph",
                     "label": "{{ project_owner }}",
                     "x": 138,
@@ -484,7 +484,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2qz_266",
+                "id": "box_mt7qypju_266",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -514,7 +514,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qz_264",
+                    "id": "paragraph_mt7qypju_264",
                     "kind": "paragraph",
                     "label": "Start",
                     "x": 0,
@@ -539,7 +539,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qz_265",
+                    "id": "paragraph_mt7qypju_265",
                     "kind": "paragraph",
                     "label": "{{ project_start }}",
                     "x": 138,
@@ -566,7 +566,7 @@
                 ]
               },
               {
-                "id": "box_mt38o2qz_269",
+                "id": "box_mt7qypju_269",
                 "kind": "box",
                 "label": "Row",
                 "x": 16,
@@ -596,7 +596,7 @@
                 },
                 "children": [
                   {
-                    "id": "paragraph_mt38o2qz_267",
+                    "id": "paragraph_mt7qypju_267",
                     "kind": "paragraph",
                     "label": "Target",
                     "x": 0,
@@ -621,7 +621,7 @@
                     "children": []
                   },
                   {
-                    "id": "paragraph_mt38o2qz_268",
+                    "id": "paragraph_mt7qypju_268",
                     "kind": "paragraph",
                     "label": "{{ project_target }}",
                     "x": 138,
@@ -650,7 +650,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qz_273",
+            "id": "box_mt7qypju_273",
             "kind": "box",
             "label": "Success",
             "x": 393,
@@ -680,7 +680,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2qz_271",
+                "id": "heading_mt7qypju_271",
                 "kind": "heading",
                 "label": "Success criteria",
                 "level": 3,
@@ -706,7 +706,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qz_272",
+                "id": "paragraph_mt7qypju_272",
                 "kind": "paragraph",
                 "label": "{{ success_criteria }}",
                 "x": 16,
@@ -735,7 +735,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qz_284",
+        "id": "box_mt7qypju_284",
         "kind": "box",
         "label": "Milestones",
         "x": 40,
@@ -765,7 +765,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2qz_283",
+            "id": "heading_mt7qypju_283",
             "kind": "heading",
             "label": "Milestones",
             "level": 3,
@@ -791,7 +791,7 @@
             "children": []
           },
           {
-            "id": "box_mt38o2qz_278",
+            "id": "box_mt7qypju_278",
             "kind": "box",
             "label": "Column headers",
             "x": 20,
@@ -821,7 +821,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qz_275",
+                "id": "paragraph_mt7qypju_275",
                 "kind": "paragraph",
                 "label": "Date",
                 "x": 0,
@@ -846,7 +846,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qz_276",
+                "id": "paragraph_mt7qypju_276",
                 "kind": "paragraph",
                 "label": "Milestone",
                 "x": 100,
@@ -871,7 +871,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qz_277",
+                "id": "paragraph_mt7qypju_277",
                 "kind": "paragraph",
                 "label": "Owner",
                 "x": 428,
@@ -898,7 +898,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qz_282",
+            "id": "box_mt7qypju_282",
             "kind": "box",
             "label": "Milestone",
             "x": 20,
@@ -928,7 +928,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qz_279",
+                "id": "paragraph_mt7qypju_279",
                 "kind": "paragraph",
                 "label": "{{ mile.date }}",
                 "x": 0,
@@ -953,7 +953,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qz_280",
+                "id": "paragraph_mt7qypju_280",
                 "kind": "paragraph",
                 "label": "{{ mile.title }}",
                 "x": 100,
@@ -978,7 +978,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qz_281",
+                "id": "paragraph_mt7qypju_281",
                 "kind": "paragraph",
                 "label": "{{ mile.owner }}",
                 "x": 428,
@@ -1011,7 +1011,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qz_287",
+        "id": "box_mt7qypju_287",
         "kind": "box",
         "label": "Risks",
         "x": 40,
@@ -1041,7 +1041,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2qz_285",
+            "id": "heading_mt7qypju_285",
             "kind": "heading",
             "label": "Risks and open questions",
             "level": 3,
@@ -1067,7 +1067,7 @@
             "children": []
           },
           {
-            "id": "paragraph_mt38o2qz_286",
+            "id": "paragraph_mt7qypju_286",
             "kind": "paragraph",
             "label": "{{ project_risks }}",
             "x": 20,
@@ -1097,75 +1097,75 @@
   },
   "variables": [
     {
-      "id": "var_mt38o2qz_288",
+      "id": "var_mt7qypjv_288",
       "name": "project_name",
       "label": "Project name on the plan",
       "type": "text",
       "sampleValue": "Website redesign launch"
     },
     {
-      "id": "var_mt38o2qz_289",
+      "id": "var_mt7qypjv_289",
       "name": "project_status",
       "label": "Current project status label",
       "type": "text",
       "sampleValue": "On track"
     },
     {
-      "id": "var_mt38o2qz_290",
+      "id": "var_mt7qypjv_290",
       "name": "project_summary",
       "label": "Short project summary or objective",
       "type": "text",
       "sampleValue": "Ship the new marketing site with updated brand, pricing page, and template gallery by April 2."
     },
     {
-      "id": "var_mt38o2qz_291",
+      "id": "var_mt7qypjv_291",
       "name": "project_owner",
       "label": "Project owner or lead",
       "type": "text",
       "sampleValue": "Alex Rivera"
     },
     {
-      "id": "var_mt38o2qz_292",
+      "id": "var_mt7qypjv_292",
       "name": "project_start",
       "label": "Project start date",
       "type": "date",
       "sampleValue": "Feb 10, 2026"
     },
     {
-      "id": "var_mt38o2qz_293",
+      "id": "var_mt7qypjv_293",
       "name": "project_target",
       "label": "Project target ship date",
       "type": "date",
       "sampleValue": "Apr 2, 2026"
     },
     {
-      "id": "var_mt38o2qz_294",
+      "id": "var_mt7qypjv_294",
       "name": "success_criteria",
       "label": "How success will be measured for this project",
       "type": "text",
       "sampleValue": "Lighthouse perf > 90 on homepage\nAll starters render in preview\nZero severity-1 bugs at launch"
     },
     {
-      "id": "var_mt38o2qz_295",
+      "id": "var_mt7qypjv_295",
       "name": "project_plan_milestones",
       "label": "Project milestones with date, title, and owner",
       "type": "list",
       "sampleValue": "[{\"date\":\"Feb 28\",\"title\":\"Design system freeze\",\"owner\":\"Sam\"},{\"date\":\"Mar 14\",\"title\":\"Content migration complete\",\"owner\":\"Priya\"},{\"date\":\"Mar 21\",\"title\":\"QA + accessibility pass\",\"owner\":\"Jordan\"},{\"date\":\"Apr 2\",\"title\":\"Public launch\",\"owner\":\"Alex\"}]",
       "itemSchema": [
         {
-          "id": "field_mt38o2qz_296",
+          "id": "field_mt7qypjv_296",
           "name": "date",
           "label": "Milestone target date",
           "type": "date"
         },
         {
-          "id": "field_mt38o2qz_297",
+          "id": "field_mt7qypjv_297",
           "name": "title",
           "label": "Milestone title",
           "type": "text"
         },
         {
-          "id": "field_mt38o2qz_298",
+          "id": "field_mt7qypjv_298",
           "name": "owner",
           "label": "Milestone owner",
           "type": "text"
@@ -1173,7 +1173,7 @@
       ]
     },
     {
-      "id": "var_mt38o2qz_299",
+      "id": "var_mt7qypjv_299",
       "name": "project_risks",
       "label": "Risks, dependencies, or open questions for the project",
       "type": "text",

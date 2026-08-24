@@ -25,7 +25,7 @@ export type TargetTemplateOption = {
   id: string;
   name: string;
   description?: string;
-  /** Starter taxonomy: family | business | general (from TEMPLATE_CATEGORIES). */
+  /** Starter taxonomy from TEMPLATE_CATEGORIES (family, business ops, agreements, …). */
   category?: string;
 };
 
@@ -622,7 +622,7 @@ function StarterDesignPicker({
         >
           All
         </button>
-        {TEMPLATE_CATEGORIES.map((cat) => (
+        {TEMPLATE_CATEGORIES.filter((cat) => options.some((option) => option.category === cat.id)).map((cat) => (
           <button
             type="button"
             key={cat.id}

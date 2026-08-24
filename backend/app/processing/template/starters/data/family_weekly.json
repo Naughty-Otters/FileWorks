@@ -35,7 +35,7 @@
     },
     "children": [
       {
-        "id": "box_mt38o2qx_51",
+        "id": "box_mt7qypjt_51",
         "kind": "box",
         "label": "Header",
         "x": 32,
@@ -65,7 +65,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qx_47",
+            "id": "box_mt7qypjt_47",
             "kind": "box",
             "label": "Title",
             "x": 20,
@@ -95,7 +95,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qx_45",
+                "id": "paragraph_mt7qypjt_45",
                 "kind": "paragraph",
                 "label": "WEEKLY FAMILY SCHEDULE",
                 "x": 0,
@@ -120,7 +120,7 @@
                 "children": []
               },
               {
-                "id": "heading_mt38o2qx_46",
+                "id": "heading_mt7qypjt_46",
                 "kind": "heading",
                 "label": "{{ family_name }}",
                 "level": 2,
@@ -148,7 +148,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qx_50",
+            "id": "box_mt7qypjt_50",
             "kind": "box",
             "label": "Range",
             "x": 605,
@@ -178,7 +178,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qx_48",
+                "id": "paragraph_mt7qypjt_48",
                 "kind": "paragraph",
                 "label": "Week of",
                 "x": 8,
@@ -203,7 +203,7 @@
                 "children": []
               },
               {
-                "id": "heading_mt38o2qx_49",
+                "id": "heading_mt7qypjt_49",
                 "kind": "heading",
                 "label": "{{ week_of }}",
                 "level": 3,
@@ -233,7 +233,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qx_73",
+        "id": "box_mt7qypjt_73",
         "kind": "box",
         "label": "Week",
         "x": 32,
@@ -263,7 +263,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qx_54",
+            "id": "box_mt7qypjt_54",
             "kind": "box",
             "label": "Mon",
             "x": 0,
@@ -293,7 +293,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qx_52",
+                "id": "paragraph_mt7qypjt_52",
                 "kind": "paragraph",
                 "label": "Mon",
                 "x": 10,
@@ -318,7 +318,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qx_53",
+                "id": "paragraph_mt7qypjt_53",
                 "kind": "paragraph",
                 "label": "{{ monday_plan }}",
                 "x": 10,
@@ -345,7 +345,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qx_57",
+            "id": "box_mt7qypjt_57",
             "kind": "box",
             "label": "Tue",
             "x": 149,
@@ -375,7 +375,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qx_55",
+                "id": "paragraph_mt7qypjt_55",
                 "kind": "paragraph",
                 "label": "Tue",
                 "x": 10,
@@ -400,7 +400,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qx_56",
+                "id": "paragraph_mt7qypjt_56",
                 "kind": "paragraph",
                 "label": "{{ tuesday_plan }}",
                 "x": 10,
@@ -427,7 +427,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qx_60",
+            "id": "box_mt7qypjt_60",
             "kind": "box",
             "label": "Wed",
             "x": 298,
@@ -457,7 +457,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qx_58",
+                "id": "paragraph_mt7qypjt_58",
                 "kind": "paragraph",
                 "label": "Wed",
                 "x": 10,
@@ -482,7 +482,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qx_59",
+                "id": "paragraph_mt7qypjt_59",
                 "kind": "paragraph",
                 "label": "{{ wednesday_plan }}",
                 "x": 10,
@@ -509,7 +509,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qx_63",
+            "id": "box_mt7qypjt_63",
             "kind": "box",
             "label": "Thu",
             "x": 447,
@@ -539,7 +539,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qx_61",
+                "id": "paragraph_mt7qypjt_61",
                 "kind": "paragraph",
                 "label": "Thu",
                 "x": 10,
@@ -564,7 +564,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qx_62",
+                "id": "paragraph_mt7qypjt_62",
                 "kind": "paragraph",
                 "label": "{{ thursday_plan }}",
                 "x": 10,
@@ -591,7 +591,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qx_66",
+            "id": "box_mt7qypjt_66",
             "kind": "box",
             "label": "Fri",
             "x": 596,
@@ -621,7 +621,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qx_64",
+                "id": "paragraph_mt7qypjt_64",
                 "kind": "paragraph",
                 "label": "Fri",
                 "x": 10,
@@ -646,7 +646,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qx_65",
+                "id": "paragraph_mt7qypjt_65",
                 "kind": "paragraph",
                 "label": "{{ friday_plan }}",
                 "x": 10,
@@ -673,7 +673,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qx_69",
+            "id": "box_mt7qypjt_69",
             "kind": "box",
             "label": "Sat",
             "x": 745,
@@ -703,7 +703,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qx_67",
+                "id": "paragraph_mt7qypjt_67",
                 "kind": "paragraph",
                 "label": "Sat",
                 "x": 10,
@@ -728,7 +728,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qx_68",
+                "id": "paragraph_mt7qypjt_68",
                 "kind": "paragraph",
                 "label": "{{ saturday_plan }}",
                 "x": 10,
@@ -755,7 +755,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qx_72",
+            "id": "box_mt7qypjt_72",
             "kind": "box",
             "label": "Sun",
             "x": 894,
@@ -785,7 +785,7 @@
             },
             "children": [
               {
-                "id": "paragraph_mt38o2qx_70",
+                "id": "paragraph_mt7qypjt_70",
                 "kind": "paragraph",
                 "label": "Sun",
                 "x": 10,
@@ -810,7 +810,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qx_71",
+                "id": "paragraph_mt7qypjt_71",
                 "kind": "paragraph",
                 "label": "{{ sunday_plan }}",
                 "x": 10,
@@ -839,7 +839,7 @@
         ]
       },
       {
-        "id": "box_mt38o2qx_80",
+        "id": "box_mt7qypjt_80",
         "kind": "box",
         "label": "Footer row",
         "x": 32,
@@ -869,7 +869,7 @@
         },
         "children": [
           {
-            "id": "box_mt38o2qx_76",
+            "id": "box_mt7qypjt_76",
             "kind": "box",
             "label": "Dinners",
             "x": 0,
@@ -899,7 +899,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2qx_74",
+                "id": "heading_mt7qypjt_74",
                 "kind": "heading",
                 "label": "Dinner plan",
                 "level": 3,
@@ -925,7 +925,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qx_75",
+                "id": "paragraph_mt7qypjt_75",
                 "kind": "paragraph",
                 "label": "Mon {{ mon_dinner }} · Tue {{ tue_dinner }} · Wed {{ wed_dinner }}\nThu {{ thu_dinner }} · Fri {{ fri_dinner }} · Sat {{ sat_dinner }} · Sun {{ sun_dinner }}",
                 "x": 16,
@@ -952,7 +952,7 @@
             ]
           },
           {
-            "id": "box_mt38o2qx_79",
+            "id": "box_mt7qypjt_79",
             "kind": "box",
             "label": "Week focus",
             "x": 526,
@@ -982,7 +982,7 @@
             },
             "children": [
               {
-                "id": "heading_mt38o2qx_77",
+                "id": "heading_mt7qypjt_77",
                 "kind": "heading",
                 "label": "This week’s focus",
                 "level": 3,
@@ -1008,7 +1008,7 @@
                 "children": []
               },
               {
-                "id": "paragraph_mt38o2qx_78",
+                "id": "paragraph_mt7qypjt_78",
                 "kind": "paragraph",
                 "label": "{{ week_focus }}",
                 "x": 16,
@@ -1040,119 +1040,119 @@
   },
   "variables": [
     {
-      "id": "var_mt38o2qx_81",
+      "id": "var_mt7qypjt_81",
       "name": "family_name",
       "label": "Family or household name on the weekly card",
       "type": "text",
       "sampleValue": "The Rivera Family"
     },
     {
-      "id": "var_mt38o2qx_82",
+      "id": "var_mt7qypjt_82",
       "name": "week_of",
       "label": "Start date of the week shown on the card",
       "type": "date",
       "sampleValue": "March 16, 2026"
     },
     {
-      "id": "var_mt38o2qx_83",
+      "id": "var_mt7qypjt_83",
       "name": "monday_plan",
       "label": "Monday activities for the weekly schedule",
       "type": "text",
       "sampleValue": "School\nPiano 4:00 PM\nEarly bedtime"
     },
     {
-      "id": "var_mt38o2qx_84",
+      "id": "var_mt7qypjt_84",
       "name": "tuesday_plan",
       "label": "Tuesday activities for the weekly schedule",
       "type": "text",
       "sampleValue": "School\nGrocery run\nHomework club"
     },
     {
-      "id": "var_mt38o2qx_85",
+      "id": "var_mt7qypjt_85",
       "name": "wednesday_plan",
       "label": "Wednesday activities for the weekly schedule",
       "type": "text",
       "sampleValue": "School\nSoccer 5:30 PM"
     },
     {
-      "id": "var_mt38o2qx_86",
+      "id": "var_mt7qypjt_86",
       "name": "thursday_plan",
       "label": "Thursday activities for the weekly schedule",
       "type": "text",
       "sampleValue": "School\nLibrary books\nPack lunches"
     },
     {
-      "id": "var_mt38o2qx_87",
+      "id": "var_mt7qypjt_87",
       "name": "friday_plan",
       "label": "Friday activities for the weekly schedule",
       "type": "text",
       "sampleValue": "School\nPizza night\nGame night"
     },
     {
-      "id": "var_mt38o2qx_88",
+      "id": "var_mt7qypjt_88",
       "name": "saturday_plan",
       "label": "Saturday activities for the weekly schedule",
       "type": "text",
       "sampleValue": "Park morning\nChores\nMovie night"
     },
     {
-      "id": "var_mt38o2qx_89",
+      "id": "var_mt7qypjt_89",
       "name": "sunday_plan",
       "label": "Sunday activities for the weekly schedule",
       "type": "text",
       "sampleValue": "Brunch out\nMeal prep\nFamily video call"
     },
     {
-      "id": "var_mt38o2qx_90",
+      "id": "var_mt7qypjt_90",
       "name": "mon_dinner",
       "label": "Monday dinner",
       "type": "text",
       "sampleValue": "Pasta"
     },
     {
-      "id": "var_mt38o2qx_91",
+      "id": "var_mt7qypjt_91",
       "name": "tue_dinner",
       "label": "Tuesday dinner",
       "type": "text",
       "sampleValue": "Tacos"
     },
     {
-      "id": "var_mt38o2qx_92",
+      "id": "var_mt7qypjt_92",
       "name": "wed_dinner",
       "label": "Wednesday dinner",
       "type": "text",
       "sampleValue": "Stir-fry"
     },
     {
-      "id": "var_mt38o2qx_93",
+      "id": "var_mt7qypjt_93",
       "name": "thu_dinner",
       "label": "Thursday dinner",
       "type": "text",
       "sampleValue": "Soup and bread"
     },
     {
-      "id": "var_mt38o2qx_94",
+      "id": "var_mt7qypjt_94",
       "name": "fri_dinner",
       "label": "Friday dinner",
       "type": "text",
       "sampleValue": "Pizza"
     },
     {
-      "id": "var_mt38o2qx_95",
+      "id": "var_mt7qypjt_95",
       "name": "sat_dinner",
       "label": "Saturday dinner",
       "type": "text",
       "sampleValue": "Grill"
     },
     {
-      "id": "var_mt38o2qx_96",
+      "id": "var_mt7qypjt_96",
       "name": "sun_dinner",
       "label": "Sunday dinner",
       "type": "text",
       "sampleValue": "Roast chicken"
     },
     {
-      "id": "var_mt38o2qx_97",
+      "id": "var_mt7qypjt_97",
       "name": "week_focus",
       "label": "One short focus or goal for the household this week",
       "type": "text",

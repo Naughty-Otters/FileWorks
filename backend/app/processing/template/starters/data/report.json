@@ -35,7 +35,7 @@
     },
     "children": [
       {
-        "id": "box_mt38o2r2_651",
+        "id": "box_mt7qypjx_651",
         "kind": "box",
         "label": "Header",
         "x": 40,
@@ -65,7 +65,7 @@
         },
         "children": [
           {
-            "id": "heading_mt38o2r2_650",
+            "id": "heading_mt7qypjx_650",
             "kind": "heading",
             "label": "{{ report_title }}",
             "level": 1,
@@ -93,7 +93,7 @@
         ]
       },
       {
-        "id": "box_mt38o2r2_653",
+        "id": "box_mt7qypjx_653",
         "kind": "box",
         "label": "Body",
         "x": 40,
@@ -123,7 +123,7 @@
         },
         "children": [
           {
-            "id": "paragraph_mt38o2r2_652",
+            "id": "paragraph_mt7qypjx_652",
             "kind": "paragraph",
             "label": "{{ report_body }}",
             "x": 20,
@@ -153,14 +153,14 @@
   },
   "variables": [
     {
-      "id": "var_mt38o2r2_654",
+      "id": "var_mt7qypjx_654",
       "name": "report_title",
       "label": "Report title taken from the source document",
       "type": "text",
       "sampleValue": "Document report"
     },
     {
-      "id": "var_mt38o2r2_655",
+      "id": "var_mt7qypjx_655",
       "name": "report_body",
       "label": "Full report body transcribed from the source Markdown",
       "type": "text",

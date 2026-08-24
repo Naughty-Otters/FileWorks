@@ -9,12 +9,62 @@
     {
       "id": "business",
       "label": "Business",
-      "blurb": "Invoices, planning sheets, meetings, tasks, and contracts"
+      "blurb": "Invoices, meetings, tasks, timesheets, and day-to-day ops docs"
     },
     {
-      "id": "general",
-      "label": "General",
-      "blurb": "Flexible layouts for extracted documents"
+      "id": "agreements",
+      "label": "Agreements",
+      "blurb": "NDAs, service and employment contracts, board resolutions"
+    },
+    {
+      "id": "plans",
+      "label": "Plans",
+      "blurb": "Business, marketing, and cash-flow planning sheets"
+    },
+    {
+      "id": "policies",
+      "label": "Policies",
+      "blurb": "Leave, remote work, and workplace policy pages"
+    },
+    {
+      "id": "forms",
+      "label": "Forms",
+      "blurb": "Purchase orders, job descriptions, and fillable forms"
+    },
+    {
+      "id": "checklists",
+      "label": "Checklists",
+      "blurb": "New-hire and project launch checklists"
+    },
+    {
+      "id": "letters",
+      "label": "Letters",
+      "blurb": "Offer letters, resignation letters, and correspondence"
+    },
+    {
+      "id": "proposals",
+      "label": "Proposals",
+      "blurb": "Business and consulting proposals with phases and fees"
+    },
+    {
+      "id": "reports",
+      "label": "Reports",
+      "blurb": "Status reports, P&L, and extracted Markdown reports"
+    },
+    {
+      "id": "notices",
+      "label": "Notices",
+      "blurb": "Cancellation and formal notices"
+    },
+    {
+      "id": "memos",
+      "label": "Memos",
+      "blurb": "Internal memos with clear actions"
+    },
+    {
+      "id": "press",
+      "label": "Press",
+      "blurb": "Press releases with quote and boilerplate"
     }
   ],
   "starters": [
@@ -53,13 +103,13 @@
           "sampleValue": "[{\"time\":\"7:00 AM\",\"activity\":\"Breakfast & get ready\"},{\"time\":\"8:15 AM\",\"activity\":\"School drop-off\"},{\"time\":\"12:30 PM\",\"activity\":\"Lunch (kids at school)\"},{\"time\":\"3:30 PM\",\"activity\":\"Pickup · snacks · homework\"},{\"time\":\"5:30 PM\",\"activity\":\"Soccer practice (Maya)\"},{\"time\":\"7:00 PM\",\"activity\":\"Family dinner\"},{\"time\":\"8:30 PM\",\"activity\":\"Baths · bedtime stories\"}]",
           "itemSchema": [
             {
-              "id": "field_mt38o2qw_38",
+              "id": "field_mt7qypjt_38",
               "name": "time",
               "label": "Clock time for this block",
               "type": "text"
             },
             {
-              "id": "field_mt38o2qw_39",
+              "id": "field_mt7qypjt_39",
               "name": "activity",
               "label": "What the family does in this block",
               "type": "text"
@@ -274,19 +324,19 @@
           "sampleValue": "[{\"date\":\"Mar 3\",\"title\":\"Parent-teacher conferences\",\"who\":\"Alex & Jordan\"},{\"date\":\"Mar 12\",\"title\":\"Maya's birthday party\",\"who\":\"Whole family\"},{\"date\":\"Mar 18\",\"title\":\"School field trip\",\"who\":\"Leo\"},{\"date\":\"Mar 22\",\"title\":\"Family photo session\",\"who\":\"Whole family\"},{\"date\":\"Mar 28\",\"title\":\"Spring break starts\",\"who\":\"Kids\"}]",
           "itemSchema": [
             {
-              "id": "field_mt38o2qx_129",
+              "id": "field_mt7qypjt_129",
               "name": "date",
               "label": "Date of the event",
               "type": "date"
             },
             {
-              "id": "field_mt38o2qx_130",
+              "id": "field_mt7qypjt_130",
               "name": "title",
               "label": "Event title or description",
               "type": "text"
             },
             {
-              "id": "field_mt38o2qx_131",
+              "id": "field_mt7qypjt_131",
               "name": "who",
               "label": "Who the event involves",
               "type": "text"
@@ -501,19 +551,19 @@
           "sampleValue": "[{\"time\":\"5 min\",\"topic\":\"Wins since last week\",\"owner\":\"All\"},{\"time\":\"15 min\",\"topic\":\"Sprint goals and blockers\",\"owner\":\"Jordan\"},{\"time\":\"15 min\",\"topic\":\"Launch checklist review\",\"owner\":\"Priya\"},{\"time\":\"10 min\",\"topic\":\"Decisions and next steps\",\"owner\":\"Alex\"}]",
           "itemSchema": [
             {
-              "id": "field_mt38o2qy_245",
+              "id": "field_mt7qypju_245",
               "name": "time",
               "label": "Time box for this agenda topic",
               "type": "text"
             },
             {
-              "id": "field_mt38o2qy_246",
+              "id": "field_mt7qypju_246",
               "name": "topic",
               "label": "Agenda topic title",
               "type": "text"
             },
             {
-              "id": "field_mt38o2qy_247",
+              "id": "field_mt7qypju_247",
               "name": "owner",
               "label": "Person leading this topic",
               "type": "text"
@@ -603,19 +653,19 @@
           "sampleValue": "[{\"date\":\"Feb 28\",\"title\":\"Design system freeze\",\"owner\":\"Sam\"},{\"date\":\"Mar 14\",\"title\":\"Content migration complete\",\"owner\":\"Priya\"},{\"date\":\"Mar 21\",\"title\":\"QA + accessibility pass\",\"owner\":\"Jordan\"},{\"date\":\"Apr 2\",\"title\":\"Public launch\",\"owner\":\"Alex\"}]",
           "itemSchema": [
             {
-              "id": "field_mt38o2qz_296",
+              "id": "field_mt7qypjv_296",
               "name": "date",
               "label": "Milestone target date",
               "type": "date"
             },
             {
-              "id": "field_mt38o2qz_297",
+              "id": "field_mt7qypjv_297",
               "name": "title",
               "label": "Milestone title",
               "type": "text"
             },
             {
-              "id": "field_mt38o2qz_298",
+              "id": "field_mt7qypjv_298",
               "name": "owner",
               "label": "Milestone owner",
               "type": "text"
@@ -663,25 +713,25 @@
           "sampleValue": "[{\"title\":\"Finalize pricing table copy\",\"owner\":\"Priya\",\"due\":\"Mar 19\",\"status\":\"In progress\"},{\"title\":\"Accessibility pass on templates\",\"owner\":\"Jordan\",\"due\":\"Mar 21\",\"status\":\"Todo\"},{\"title\":\"Set up status page\",\"owner\":\"Sam\",\"due\":\"Mar 20\",\"status\":\"In progress\"},{\"title\":\"Customer email draft\",\"owner\":\"Alex\",\"due\":\"Mar 24\",\"status\":\"Todo\"},{\"title\":\"Load-test preview pipeline\",\"owner\":\"Jordan\",\"due\":\"Mar 25\",\"status\":\"Blocked\"}]",
           "itemSchema": [
             {
-              "id": "field_mt38o2qz_325",
+              "id": "field_mt7qypjv_325",
               "name": "title",
               "label": "Task title",
               "type": "text"
             },
             {
-              "id": "field_mt38o2qz_326",
+              "id": "field_mt7qypjv_326",
               "name": "owner",
               "label": "Task owner",
               "type": "text"
             },
             {
-              "id": "field_mt38o2qz_327",
+              "id": "field_mt7qypjv_327",
               "name": "due",
               "label": "Task due date",
               "type": "date"
             },
             {
-              "id": "field_mt38o2qz_328",
+              "id": "field_mt7qypjv_328",
               "name": "status",
               "label": "Task status",
               "type": "text"
@@ -743,25 +793,25 @@
           "sampleValue": "[{\"date\":\"Mar 2\",\"project\":\"Website redesign\",\"hours\":\"8.0\",\"notes\":\"Template polish\"},{\"date\":\"Mar 3\",\"project\":\"Website redesign\",\"hours\":\"7.5\",\"notes\":\"Preview QA\"},{\"date\":\"Mar 4\",\"project\":\"Client support\",\"hours\":\"8.0\",\"notes\":\"On-call\"},{\"date\":\"Mar 5\",\"project\":\"Website redesign\",\"hours\":\"8.0\",\"notes\":\"Family starters\"},{\"date\":\"Mar 6\",\"project\":\"Internal\",\"hours\":\"4.0\",\"notes\":\"Planning\"}]",
           "itemSchema": [
             {
-              "id": "field_mt38o2qz_366",
+              "id": "field_mt7qypjv_366",
               "name": "date",
               "label": "Work date",
               "type": "date"
             },
             {
-              "id": "field_mt38o2qz_367",
+              "id": "field_mt7qypjv_367",
               "name": "project",
               "label": "Project name or cost code",
               "type": "text"
             },
             {
-              "id": "field_mt38o2qz_368",
+              "id": "field_mt7qypjv_368",
               "name": "hours",
               "label": "Hours worked",
               "type": "number"
             },
             {
-              "id": "field_mt38o2qz_369",
+              "id": "field_mt7qypjv_369",
               "name": "notes",
               "label": "Short note for the entry",
               "type": "text"
@@ -851,13 +901,13 @@
           "sampleValue": "[{\"description\":\"Design retainer — March\",\"amount\":\"$2,400.00\"},{\"description\":\"Print production\",\"amount\":\"$350.00\"}]",
           "itemSchema": [
             {
-              "id": "field_mt38o2r0_404",
+              "id": "field_mt7qypjw_404",
               "name": "description",
               "label": "What this invoice line billed",
               "type": "text"
             },
             {
-              "id": "field_mt38o2r0_405",
+              "id": "field_mt7qypjw_405",
               "name": "amount",
               "label": "Amount charged on this invoice line",
               "type": "currency"
@@ -933,13 +983,13 @@
           "sampleValue": "[{\"description\":\"Coffee\",\"amount\":\"$4.50\"},{\"description\":\"Pastry\",\"amount\":\"$3.25\"},{\"description\":\"Sandwich\",\"amount\":\"$9.75\"}]",
           "itemSchema": [
             {
-              "id": "field_mt38o2r0_435",
+              "id": "field_mt7qypjw_435",
               "name": "description",
               "label": "Purchased item description",
               "type": "text"
             },
             {
-              "id": "field_mt38o2r0_436",
+              "id": "field_mt7qypjw_436",
               "name": "amount",
               "label": "Purchased item amount",
               "type": "currency"
@@ -1029,19 +1079,19 @@
           "sampleValue": "[{\"date\":\"01/03\",\"description\":\"Grocery Store\",\"amount\":\"-$86.20\"},{\"date\":\"01/07\",\"description\":\"Payroll Deposit\",\"amount\":\"+$2,400.00\"},{\"date\":\"01/15\",\"description\":\"Electric Utility\",\"amount\":\"-$120.44\"},{\"date\":\"01/22\",\"description\":\"Online Transfer\",\"amount\":\"-$300.00\"}]",
           "itemSchema": [
             {
-              "id": "field_mt38o2r0_477",
+              "id": "field_mt7qypjw_477",
               "name": "date",
               "label": "Transaction date",
               "type": "date"
             },
             {
-              "id": "field_mt38o2r0_478",
+              "id": "field_mt7qypjw_478",
               "name": "description",
               "label": "Transaction description",
               "type": "text"
             },
             {
-              "id": "field_mt38o2r0_479",
+              "id": "field_mt7qypjw_479",
               "name": "amount",
               "label": "Transaction amount (signed)",
               "type": "currency"
@@ -1089,13 +1139,13 @@
           "sampleValue": "[{\"type\":\"General Liability\",\"limit\":\"$1,000,000\"},{\"type\":\"Property Damage\",\"limit\":\"$500,000\"},{\"type\":\"Personal Injury\",\"limit\":\"$250,000\"}]",
           "itemSchema": [
             {
-              "id": "field_mt38o2r1_509",
+              "id": "field_mt7qypjw_509",
               "name": "type",
               "label": "Coverage type",
               "type": "text"
             },
             {
-              "id": "field_mt38o2r1_510",
+              "id": "field_mt7qypjw_510",
               "name": "limit",
               "label": "Coverage limit",
               "type": "currency"
@@ -1355,7 +1405,7 @@
       "id": "letter",
       "name": "Letterhead letter",
       "description": "Formal correspondence with sender, recipient, and body",
-      "category": "business",
+      "category": "letters",
       "document_file": "letter.json",
       "variables": [
         {
@@ -1431,7 +1481,7 @@
       "id": "report",
       "name": "Markdown report",
       "description": "Page layout for FileWorks-extracted Markdown from the workspace",
-      "category": "general",
+      "category": "reports",
       "document_file": "report.json",
       "variables": [
         {
@@ -1446,6 +1496,1931 @@
           "label": "Full report body transcribed from the source Markdown",
           "type": "text",
           "sampleValue": "Preview of extracted content from FileWorks.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "nda",
+      "name": "Non-disclosure agreement",
+      "description": "Mutual or one-way NDA with parties, obligations, term, and signatures",
+      "category": "agreements",
+      "document_file": "nda.json",
+      "variables": [
+        {
+          "name": "effective_date",
+          "label": "Date the NDA becomes effective",
+          "type": "date",
+          "sampleValue": "March 15, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "agreement_ref",
+          "label": "Internal reference number for the NDA",
+          "type": "text",
+          "sampleValue": "NDA-2026-041",
+          "itemSchema": []
+        },
+        {
+          "name": "disclosing_party",
+          "label": "Party disclosing confidential information",
+          "type": "text",
+          "sampleValue": "Acme Studio LLC",
+          "itemSchema": []
+        },
+        {
+          "name": "receiving_party",
+          "label": "Party receiving confidential information",
+          "type": "text",
+          "sampleValue": "Northwind Trading Inc.",
+          "itemSchema": []
+        },
+        {
+          "name": "purpose",
+          "label": "Business purpose for sharing confidential information",
+          "type": "text",
+          "sampleValue": "Evaluating a potential partnership",
+          "itemSchema": []
+        },
+        {
+          "name": "nda_obligations",
+          "label": "List of confidentiality topics and matching obligations for the receiving party",
+          "type": "list",
+          "sampleValue": "[{\"topic\":\"Product roadmap\",\"obligation\":\"Use only for evaluation; no third-party disclosure\"},{\"topic\":\"Customer data\",\"obligation\":\"Store encrypted; delete on request\"},{\"topic\":\"Pricing\",\"obligation\":\"Keep confidential for the term of this agreement\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypjx_688",
+              "name": "topic",
+              "label": "Confidential topic or asset class",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjx_689",
+              "name": "obligation",
+              "label": "Required handling obligation",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "term_years",
+          "label": "How many years the NDA remains in force",
+          "type": "number",
+          "sampleValue": "3",
+          "itemSchema": []
+        },
+        {
+          "name": "exclusions",
+          "label": "Information excluded from confidentiality",
+          "type": "text",
+          "sampleValue": "Public information, independently developed materials",
+          "itemSchema": []
+        },
+        {
+          "name": "governing_law",
+          "label": "Governing law and venue for the NDA",
+          "type": "text",
+          "sampleValue": "State of Delaware",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "service_agreement",
+      "name": "Service agreement",
+      "description": "Provider/client scope, deliverables, fees, and payment terms",
+      "category": "agreements",
+      "document_file": "service_agreement.json",
+      "variables": [
+        {
+          "name": "effective_date",
+          "label": "Service agreement start date",
+          "type": "date",
+          "sampleValue": "April 1, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "agreement_ref",
+          "label": "Service agreement reference number",
+          "type": "text",
+          "sampleValue": "SA-7781",
+          "itemSchema": []
+        },
+        {
+          "name": "provider_name",
+          "label": "Service provider legal name",
+          "type": "text",
+          "sampleValue": "Acme Studio LLC",
+          "itemSchema": []
+        },
+        {
+          "name": "client_name",
+          "label": "Client legal name",
+          "type": "text",
+          "sampleValue": "Northwind Trading Inc.",
+          "itemSchema": []
+        },
+        {
+          "name": "service_scope",
+          "label": "Summary of services to be performed",
+          "type": "text",
+          "sampleValue": "Brand identity, website design, and launch support",
+          "itemSchema": []
+        },
+        {
+          "name": "service_agreement_deliverables",
+          "label": "Deliverables with due dates and fees under the service agreement",
+          "type": "list",
+          "sampleValue": "[{\"name\":\"Brand guidelines\",\"due\":\"Apr 30, 2026\",\"fee\":\"$4,500\"},{\"name\":\"Website design\",\"due\":\"May 31, 2026\",\"fee\":\"$8,200\"},{\"name\":\"Launch support\",\"due\":\"Jun 15, 2026\",\"fee\":\"$1,800\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypjy_735",
+              "name": "name",
+              "label": "Deliverable name",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjy_736",
+              "name": "due",
+              "label": "Deliverable due date",
+              "type": "date"
+            },
+            {
+              "id": "field_mt7qypjy_737",
+              "name": "fee",
+              "label": "Fee for this deliverable",
+              "type": "currency"
+            }
+          ]
+        },
+        {
+          "name": "total_fees",
+          "label": "Total fees under the agreement",
+          "type": "currency",
+          "sampleValue": "$14,500",
+          "itemSchema": []
+        },
+        {
+          "name": "payment_schedule",
+          "label": "When invoices are issued",
+          "type": "text",
+          "sampleValue": "50% on signing, 50% on delivery",
+          "itemSchema": []
+        },
+        {
+          "name": "invoice_terms",
+          "label": "Net payment terms for invoices",
+          "type": "text",
+          "sampleValue": "Net 15",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "employment_agreement",
+      "name": "Employment agreement",
+      "description": "Role, compensation, schedule, and key employment terms",
+      "category": "agreements",
+      "document_file": "employment_agreement.json",
+      "variables": [
+        {
+          "name": "start_date",
+          "label": "Employee start date",
+          "type": "date",
+          "sampleValue": "May 4, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "agreement_ref",
+          "label": "Employment agreement reference",
+          "type": "text",
+          "sampleValue": "EA-4420",
+          "itemSchema": []
+        },
+        {
+          "name": "employee_name",
+          "label": "Full legal name of the employee",
+          "type": "text",
+          "sampleValue": "Jordan Lee",
+          "itemSchema": []
+        },
+        {
+          "name": "job_title",
+          "label": "Job title for the role",
+          "type": "text",
+          "sampleValue": "Senior Product Designer",
+          "itemSchema": []
+        },
+        {
+          "name": "department",
+          "label": "Department or team name",
+          "type": "text",
+          "sampleValue": "Product",
+          "itemSchema": []
+        },
+        {
+          "name": "manager_name",
+          "label": "Hiring manager or supervisor name",
+          "type": "text",
+          "sampleValue": "Alex Rivera",
+          "itemSchema": []
+        },
+        {
+          "name": "work_location",
+          "label": "Primary work location or remote status",
+          "type": "text",
+          "sampleValue": "San Francisco / Hybrid",
+          "itemSchema": []
+        },
+        {
+          "name": "base_salary",
+          "label": "Annual or period base salary",
+          "type": "currency",
+          "sampleValue": "$145,000 / year",
+          "itemSchema": []
+        },
+        {
+          "name": "pay_frequency",
+          "label": "How often payroll runs",
+          "type": "text",
+          "sampleValue": "Bi-weekly",
+          "itemSchema": []
+        },
+        {
+          "name": "equity_bonus",
+          "label": "Equity grant or bonus summary",
+          "type": "text",
+          "sampleValue": "0.15% options; target bonus 10%",
+          "itemSchema": []
+        },
+        {
+          "name": "work_schedule",
+          "label": "Expected work hours or FTE",
+          "type": "text",
+          "sampleValue": "Full-time, 40 hours / week",
+          "itemSchema": []
+        },
+        {
+          "name": "employment_type",
+          "label": "Full-time, part-time, or contractor classification note",
+          "type": "text",
+          "sampleValue": "Full-time exempt",
+          "itemSchema": []
+        },
+        {
+          "name": "benefits_summary",
+          "label": "Summary of benefits eligibility",
+          "type": "text",
+          "sampleValue": "Medical, dental, vision, 401(k) match",
+          "itemSchema": []
+        },
+        {
+          "name": "at_will_note",
+          "label": "At-will employment statement",
+          "type": "text",
+          "sampleValue": "Employment is at-will and may end by either party",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "board_resolution",
+      "name": "Board resolution",
+      "description": "Corporate resolution with director votes and certification",
+      "category": "agreements",
+      "document_file": "board_resolution.json",
+      "variables": [
+        {
+          "name": "company_name",
+          "label": "Legal company name for the resolution",
+          "type": "text",
+          "sampleValue": "Acme Studio LLC",
+          "itemSchema": []
+        },
+        {
+          "name": "resolution_date",
+          "label": "Date the board adopted the resolution",
+          "type": "date",
+          "sampleValue": "March 20, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "resolution_action",
+          "label": "Action the board resolves to take",
+          "type": "text",
+          "sampleValue": "authorizes opening a corporate operating account at First National Bank",
+          "itemSchema": []
+        },
+        {
+          "name": "background",
+          "label": "Brief background for the resolution",
+          "type": "text",
+          "sampleValue": "Treasury requested a dedicated operating account for customer receipts.",
+          "itemSchema": []
+        },
+        {
+          "name": "board_resolution_votes",
+          "label": "Board directors with role and vote on the resolution",
+          "type": "list",
+          "sampleValue": "[{\"director\":\"Sam Chen\",\"role\":\"Chair\",\"vote\":\"Aye\"},{\"director\":\"Priya Nair\",\"role\":\"Director\",\"vote\":\"Aye\"},{\"director\":\"Morgan Blake\",\"role\":\"Director\",\"vote\":\"Aye\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypjy_825",
+              "name": "director",
+              "label": "Director full name",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjy_826",
+              "name": "role",
+              "label": "Board role or title",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjy_827",
+              "name": "vote",
+              "label": "Vote cast (Aye / Nay / Abstain)",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "secretary_name",
+          "label": "Name of the corporate secretary certifying",
+          "type": "text",
+          "sampleValue": "Riley Ortiz",
+          "itemSchema": []
+        },
+        {
+          "name": "quorum_note",
+          "label": "Whether a quorum was present",
+          "type": "text",
+          "sampleValue": "Yes — 3 of 3 directors",
+          "itemSchema": []
+        },
+        {
+          "name": "resolution_number",
+          "label": "Board resolution number",
+          "type": "text",
+          "sampleValue": "BR-2026-09",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "business_plan",
+      "name": "Business plan",
+      "description": "One-page plan: summary, market, offer, milestones, and finance",
+      "category": "plans",
+      "document_file": "business_plan.json",
+      "variables": [
+        {
+          "name": "company_name",
+          "label": "Company name on the business plan",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "plan_horizon",
+          "label": "Planning horizon covered by the plan",
+          "type": "text",
+          "sampleValue": "2026–2027",
+          "itemSchema": []
+        },
+        {
+          "name": "prepared_date",
+          "label": "Date the plan was prepared",
+          "type": "date",
+          "sampleValue": "March 1, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "executive_summary",
+          "label": "One-paragraph executive summary",
+          "type": "text",
+          "sampleValue": "Acme Studio helps teams turn documents into structured outputs with AI-assisted conversion and fillable designs.",
+          "itemSchema": []
+        },
+        {
+          "name": "market_summary",
+          "label": "Target market and customer summary",
+          "type": "text",
+          "sampleValue": "SMB operations and professional services teams that convert PDFs and Office files weekly.",
+          "itemSchema": []
+        },
+        {
+          "name": "offer_summary",
+          "label": "Product or service differentiation summary",
+          "type": "text",
+          "sampleValue": "Browser workspace + API, with design templates that bind extracted Markdown to branded layouts.",
+          "itemSchema": []
+        },
+        {
+          "name": "business_plan_milestones",
+          "label": "Business plan milestones with owners and target dates",
+          "type": "list",
+          "sampleValue": "[{\"milestone\":\"Launch starter library\",\"owner\":\"Product\",\"date\":\"Q2 2026\"},{\"milestone\":\"Expand API customers\",\"owner\":\"Sales\",\"date\":\"Q3 2026\"},{\"milestone\":\"Break-even contribution\",\"owner\":\"Finance\",\"date\":\"Q4 2026\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypjy_871",
+              "name": "milestone",
+              "label": "Milestone name",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjy_872",
+              "name": "owner",
+              "label": "Owner team or person",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjy_873",
+              "name": "date",
+              "label": "Target date or quarter",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "revenue_target",
+          "label": "Year-one revenue target",
+          "type": "currency",
+          "sampleValue": "$1.2M",
+          "itemSchema": []
+        },
+        {
+          "name": "margin_target",
+          "label": "Target gross margin percentage",
+          "type": "text",
+          "sampleValue": "72%",
+          "itemSchema": []
+        },
+        {
+          "name": "funding_need",
+          "label": "Funding required if any",
+          "type": "currency",
+          "sampleValue": "$250,000 seed extension",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "marketing_plan",
+      "name": "Marketing plan",
+      "description": "Goals, audience, channel budget, and KPIs for a period",
+      "category": "plans",
+      "document_file": "marketing_plan.json",
+      "variables": [
+        {
+          "name": "company_name",
+          "label": "Company name on the marketing plan",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "plan_period",
+          "label": "Marketing plan period",
+          "type": "text",
+          "sampleValue": "Q2 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "marketing_goals",
+          "label": "Top marketing goals for the period",
+          "type": "text",
+          "sampleValue": "Grow qualified signups 30% and improve activation to first conversion.",
+          "itemSchema": []
+        },
+        {
+          "name": "audience_summary",
+          "label": "Target audience description",
+          "type": "text",
+          "sampleValue": "Ops leads at 20–200 person companies who convert documents weekly.",
+          "itemSchema": []
+        },
+        {
+          "name": "marketing_plan_channels",
+          "label": "Marketing channels with tactics and budget amounts",
+          "type": "list",
+          "sampleValue": "[{\"channel\":\"Content\",\"tactic\":\"SEO guides + comparison pages\",\"budget\":\"$6,000\"},{\"channel\":\"Paid\",\"tactic\":\"Search ads on converter keywords\",\"budget\":\"$8,500\"},{\"channel\":\"Lifecycle\",\"tactic\":\"Onboarding email sequence\",\"budget\":\"$2,000\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypjz_912",
+              "name": "channel",
+              "label": "Marketing channel name",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjz_913",
+              "name": "tactic",
+              "label": "Primary tactic for the channel",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjz_914",
+              "name": "budget",
+              "label": "Budget allocated to the channel",
+              "type": "currency"
+            }
+          ]
+        },
+        {
+          "name": "primary_kpi",
+          "label": "Primary success metric",
+          "type": "text",
+          "sampleValue": "Qualified signups / week",
+          "itemSchema": []
+        },
+        {
+          "name": "secondary_kpi",
+          "label": "Secondary success metric",
+          "type": "text",
+          "sampleValue": "Activation rate to first conversion",
+          "itemSchema": []
+        },
+        {
+          "name": "review_cadence",
+          "label": "How often results are reviewed",
+          "type": "text",
+          "sampleValue": "Weekly growth review",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "cash_flow_forecast",
+      "name": "Cash flow forecast",
+      "description": "Opening cash, monthly inflows/outflows, and assumptions",
+      "category": "plans",
+      "document_file": "cash_flow_forecast.json",
+      "variables": [
+        {
+          "name": "company_name",
+          "label": "Company name on the cash flow forecast",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "forecast_period",
+          "label": "Forecast period covered",
+          "type": "text",
+          "sampleValue": "Apr–Sep 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "opening_cash",
+          "label": "Cash balance at the start of the forecast",
+          "type": "currency",
+          "sampleValue": "$84,200",
+          "itemSchema": []
+        },
+        {
+          "name": "closing_cash",
+          "label": "Projected cash at the end of the forecast",
+          "type": "currency",
+          "sampleValue": "$112,400",
+          "itemSchema": []
+        },
+        {
+          "name": "net_change",
+          "label": "Net cash change over the forecast",
+          "type": "currency",
+          "sampleValue": "+$28,200",
+          "itemSchema": []
+        },
+        {
+          "name": "cash_flow_forecast_months",
+          "label": "Monthly cash inflows and outflows for the forecast",
+          "type": "list",
+          "sampleValue": "[{\"month\":\"April\",\"inflows\":\"$42,000\",\"outflows\":\"$31,500\"},{\"month\":\"May\",\"inflows\":\"$45,500\",\"outflows\":\"$33,200\"},{\"month\":\"June\",\"inflows\":\"$48,000\",\"outflows\":\"$34,800\"},{\"month\":\"July\",\"inflows\":\"$46,200\",\"outflows\":\"$35,100\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypjz_951",
+              "name": "month",
+              "label": "Month name",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjz_952",
+              "name": "inflows",
+              "label": "Cash inflows for the month",
+              "type": "currency"
+            },
+            {
+              "id": "field_mt7qypjz_953",
+              "name": "outflows",
+              "label": "Cash outflows for the month",
+              "type": "currency"
+            }
+          ]
+        },
+        {
+          "name": "assumptions",
+          "label": "Key forecast assumptions",
+          "type": "text",
+          "sampleValue": "Collections at 35 days; payroll stable; no new debt draws.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "leave_policy",
+      "name": "Leave & absence policy",
+      "description": "Leave types, accrual rules, approval, and request process",
+      "category": "policies",
+      "document_file": "leave_policy.json",
+      "variables": [
+        {
+          "name": "company_name",
+          "label": "Company issuing the leave policy",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "effective_date",
+          "label": "Policy effective date",
+          "type": "date",
+          "sampleValue": "January 1, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "policy_purpose",
+          "label": "Purpose statement for the leave policy",
+          "type": "text",
+          "sampleValue": "This policy explains paid and unpaid leave so employees can plan time away and managers can schedule coverage.",
+          "itemSchema": []
+        },
+        {
+          "name": "leave_policy_types",
+          "label": "Leave types with accrual rules and approval requirements",
+          "type": "list",
+          "sampleValue": "[{\"leave_type\":\"PTO\",\"accrual\":\"20 days / year\",\"approval\":\"Manager, 5 days notice\"},{\"leave_type\":\"Sick\",\"accrual\":\"10 days / year\",\"approval\":\"Manager (same day OK)\"},{\"leave_type\":\"Parental\",\"accrual\":\"12 weeks\",\"approval\":\"HR + manager\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypjz_978",
+              "name": "leave_type",
+              "label": "Name of the leave type",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjz_979",
+              "name": "accrual",
+              "label": "Accrual or allotment rule",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjz_980",
+              "name": "approval",
+              "label": "Who must approve the leave",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "request_process",
+          "label": "How employees request leave",
+          "type": "text",
+          "sampleValue": "Submit a leave request in HRIS. Managers respond within 2 business days. Extended leave requires HR coordination.",
+          "itemSchema": []
+        },
+        {
+          "name": "hr_contact",
+          "label": "HR contact for leave questions",
+          "type": "text",
+          "sampleValue": "people@acme.example",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "remote_work_policy",
+      "name": "Remote work policy",
+      "description": "Eligibility, expectations, equipment, and security contacts",
+      "category": "policies",
+      "document_file": "remote_work_policy.json",
+      "variables": [
+        {
+          "name": "company_name",
+          "label": "Company issuing the remote work policy",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "effective_date",
+          "label": "Remote work policy effective date",
+          "type": "date",
+          "sampleValue": "February 1, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "eligibility",
+          "label": "Who is eligible for remote or hybrid work",
+          "type": "text",
+          "sampleValue": "Full-time employees in roles marked Hybrid or Remote after 90 days of employment, with manager approval.",
+          "itemSchema": []
+        },
+        {
+          "name": "expectations",
+          "label": "Core remote work expectations",
+          "type": "text",
+          "sampleValue": "Core hours 10:00–15:00 local. Respond to Slack within 2 hours during core hours. Use VPN on public networks. Attend all-hands in person quarterly if local.",
+          "itemSchema": []
+        },
+        {
+          "name": "remote_work_policy_equipment",
+          "label": "Equipment items and who provides them for remote work",
+          "type": "list",
+          "sampleValue": "[{\"item\":\"Laptop\",\"provided_by\":\"Company\"},{\"item\":\"Monitor stipend\",\"provided_by\":\"Company (up to $300)\"},{\"item\":\"Home internet\",\"provided_by\":\"Employee\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypjz_1008",
+              "name": "item",
+              "label": "Equipment or expense item",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypjz_1009",
+              "name": "provided_by",
+              "label": "Who provides or pays for the item",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "policy_owner",
+          "label": "Owner of the remote work policy",
+          "type": "text",
+          "sampleValue": "People Ops — people@acme.example",
+          "itemSchema": []
+        },
+        {
+          "name": "security_contact",
+          "label": "Security contact for incidents",
+          "type": "text",
+          "sampleValue": "security@acme.example",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "purchase_order",
+      "name": "Purchase order",
+      "description": "Buyer/vendor PO with line items, total, and ship-to",
+      "category": "forms",
+      "document_file": "purchase_order.json",
+      "variables": [
+        {
+          "name": "buyer_name",
+          "label": "Buying company name on the purchase order",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "buyer_address",
+          "label": "Buying company address",
+          "type": "text",
+          "sampleValue": "123 Market St, City, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "po_number",
+          "label": "Purchase order number",
+          "type": "text",
+          "sampleValue": "PO-5521",
+          "itemSchema": []
+        },
+        {
+          "name": "po_date",
+          "label": "Purchase order date",
+          "type": "date",
+          "sampleValue": "March 18, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "vendor_name",
+          "label": "Vendor company name",
+          "type": "text",
+          "sampleValue": "Bright Supply Co.",
+          "itemSchema": []
+        },
+        {
+          "name": "vendor_address",
+          "label": "Vendor mailing address",
+          "type": "text",
+          "sampleValue": "88 Industrial Ave, City, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "vendor_email",
+          "label": "Vendor order email",
+          "type": "text",
+          "sampleValue": "orders@bright.example",
+          "itemSchema": []
+        },
+        {
+          "name": "purchase_order_lines",
+          "label": "Purchase order line items with quantity and amount",
+          "type": "list",
+          "sampleValue": "[{\"description\":\"Laptop docks\",\"qty\":\"12\",\"amount\":\"$2,400.00\"},{\"description\":\"USB-C hubs\",\"qty\":\"24\",\"amount\":\"$960.00\"},{\"description\":\"Shipping\",\"qty\":\"1\",\"amount\":\"$85.00\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypk0_1046",
+              "name": "description",
+              "label": "Line item description",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk0_1047",
+              "name": "qty",
+              "label": "Quantity ordered",
+              "type": "number"
+            },
+            {
+              "id": "field_mt7qypk0_1048",
+              "name": "amount",
+              "label": "Extended amount for the line",
+              "type": "currency"
+            }
+          ]
+        },
+        {
+          "name": "order_total",
+          "label": "Purchase order grand total",
+          "type": "currency",
+          "sampleValue": "$3,445.00",
+          "itemSchema": []
+        },
+        {
+          "name": "ship_to",
+          "label": "Ship-to or deliver-to address",
+          "type": "text",
+          "sampleValue": "Acme Studio — Receiving, Dock B",
+          "itemSchema": []
+        },
+        {
+          "name": "need_by_date",
+          "label": "Date goods or services are needed",
+          "type": "date",
+          "sampleValue": "April 2, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "po_notes",
+          "label": "Additional purchase order notes",
+          "type": "text",
+          "sampleValue": "Reference ticket OPS-214 on packing slip.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "job_description",
+      "name": "Job description",
+      "description": "Role summary, responsibilities, requirements, and offer",
+      "category": "forms",
+      "document_file": "job_description.json",
+      "variables": [
+        {
+          "name": "job_title",
+          "label": "Job title for the description",
+          "type": "text",
+          "sampleValue": "Senior Product Designer",
+          "itemSchema": []
+        },
+        {
+          "name": "company_name",
+          "label": "Hiring company name",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "location",
+          "label": "Job location or remote label",
+          "type": "text",
+          "sampleValue": "San Francisco / Hybrid",
+          "itemSchema": []
+        },
+        {
+          "name": "employment_type",
+          "label": "Full-time, contract, etc.",
+          "type": "text",
+          "sampleValue": "Full-time",
+          "itemSchema": []
+        },
+        {
+          "name": "role_summary",
+          "label": "Short summary of the role",
+          "type": "text",
+          "sampleValue": "Own end-to-end product design for conversion workflows and template studio experiences.",
+          "itemSchema": []
+        },
+        {
+          "name": "job_description_responsibilities",
+          "label": "Responsibility areas and details for the job description",
+          "type": "list",
+          "sampleValue": "[{\"area\":\"Product\",\"detail\":\"Design flows from upload through produce and export\"},{\"area\":\"Systems\",\"detail\":\"Maintain design system and template layout patterns\"},{\"area\":\"Collaboration\",\"detail\":\"Partner with eng and GTM on experiments\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypk0_1079",
+              "name": "area",
+              "label": "Responsibility area label",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk0_1080",
+              "name": "detail",
+              "label": "Responsibility detail",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "requirements",
+          "label": "Must-have requirements for candidates",
+          "type": "text",
+          "sampleValue": "5+ years product design; strong systems thinking; portfolio with complex B2B tools; comfort with AI-assisted workflows.",
+          "itemSchema": []
+        },
+        {
+          "name": "offer_summary",
+          "label": "Compensation and benefits summary",
+          "type": "text",
+          "sampleValue": "Competitive salary + equity, health benefits, learning stipend, flexible PTO.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "new_hire_checklist",
+      "name": "New hire checklist",
+      "description": "Onboarding tasks with owners and due timing",
+      "category": "checklists",
+      "document_file": "new_hire_checklist.json",
+      "variables": [
+        {
+          "name": "employee_name",
+          "label": "New hire full name",
+          "type": "text",
+          "sampleValue": "Jordan Lee",
+          "itemSchema": []
+        },
+        {
+          "name": "start_date",
+          "label": "New hire start date",
+          "type": "date",
+          "sampleValue": "May 4, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "job_title",
+          "label": "New hire job title",
+          "type": "text",
+          "sampleValue": "Senior Product Designer",
+          "itemSchema": []
+        },
+        {
+          "name": "manager_name",
+          "label": "Hiring manager name",
+          "type": "text",
+          "sampleValue": "Alex Rivera",
+          "itemSchema": []
+        },
+        {
+          "name": "buddy_name",
+          "label": "Onboarding buddy name",
+          "type": "text",
+          "sampleValue": "Sam Chen",
+          "itemSchema": []
+        },
+        {
+          "name": "new_hire_checklist_tasks",
+          "label": "New hire onboarding tasks with owners and due dates",
+          "type": "list",
+          "sampleValue": "[{\"task\":\"Provision laptop + accounts\",\"owner\":\"IT\",\"due\":\"Day 0\"},{\"task\":\"Benefits enrollment\",\"owner\":\"HR\",\"due\":\"Day 3\"},{\"task\":\"Product overview session\",\"owner\":\"Manager\",\"due\":\"Week 1\"},{\"task\":\"First design critique\",\"owner\":\"Buddy\",\"due\":\"Week 2\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypk0_1115",
+              "name": "task",
+              "label": "Onboarding task name",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk0_1116",
+              "name": "owner",
+              "label": "Task owner",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk0_1117",
+              "name": "due",
+              "label": "Due timing or date",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "onboarding_notes",
+          "label": "Extra notes for the new hire checklist",
+          "type": "text",
+          "sampleValue": "Schedule lunch with the design team in week one.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "project_launch_checklist",
+      "name": "Project launch checklist",
+      "description": "Launch readiness items, owners, and go/no-go notes",
+      "category": "checklists",
+      "document_file": "project_launch_checklist.json",
+      "variables": [
+        {
+          "name": "project_name",
+          "label": "Project name for the launch checklist",
+          "type": "text",
+          "sampleValue": "Template Studio v2",
+          "itemSchema": []
+        },
+        {
+          "name": "launch_date",
+          "label": "Target launch date",
+          "type": "date",
+          "sampleValue": "April 15, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "project_owner",
+          "label": "Launch owner name",
+          "type": "text",
+          "sampleValue": "Alex Rivera",
+          "itemSchema": []
+        },
+        {
+          "name": "launch_status",
+          "label": "Overall launch readiness status",
+          "type": "text",
+          "sampleValue": "On track",
+          "itemSchema": []
+        },
+        {
+          "name": "project_launch_checklist_items",
+          "label": "Launch checklist items with owners and status",
+          "type": "list",
+          "sampleValue": "[{\"item\":\"QA pass on starters\",\"owner\":\"QA\",\"status\":\"Done\"},{\"item\":\"Docs + changelog\",\"owner\":\"Product\",\"status\":\"In progress\"},{\"item\":\"Support macros\",\"owner\":\"Support\",\"status\":\"Not started\"},{\"item\":\"Marketing announce\",\"owner\":\"GTM\",\"status\":\"Scheduled\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypk0_1147",
+              "name": "item",
+              "label": "Checklist item",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk0_1148",
+              "name": "owner",
+              "label": "Item owner",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk0_1149",
+              "name": "status",
+              "label": "Item status",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "go_nogo_notes",
+          "label": "Go or no-go decision notes",
+          "type": "text",
+          "sampleValue": "Go if docs and support macros land by April 14 EOD.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "offer_letter",
+      "name": "Job offer letter",
+      "description": "Formal offer with compensation, start date, and contingencies",
+      "category": "letters",
+      "document_file": "offer_letter.json",
+      "variables": [
+        {
+          "name": "company_name",
+          "label": "Hiring company name on the offer letter",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "company_address",
+          "label": "Company address on the letterhead",
+          "type": "text",
+          "sampleValue": "123 Market St, City, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "company_email",
+          "label": "Company HR or recruiting email",
+          "type": "text",
+          "sampleValue": "careers@acme.example",
+          "itemSchema": []
+        },
+        {
+          "name": "letter_date",
+          "label": "Offer letter date",
+          "type": "date",
+          "sampleValue": "March 22, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "candidate_name",
+          "label": "Candidate full name",
+          "type": "text",
+          "sampleValue": "Jordan Lee",
+          "itemSchema": []
+        },
+        {
+          "name": "candidate_address",
+          "label": "Candidate mailing address",
+          "type": "text",
+          "sampleValue": "45 Oak Ave, City, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "job_title",
+          "label": "Offered job title",
+          "type": "text",
+          "sampleValue": "Senior Product Designer",
+          "itemSchema": []
+        },
+        {
+          "name": "manager_name",
+          "label": "Hiring manager name",
+          "type": "text",
+          "sampleValue": "Alex Rivera",
+          "itemSchema": []
+        },
+        {
+          "name": "start_date",
+          "label": "Proposed start date",
+          "type": "date",
+          "sampleValue": "May 4, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "base_salary",
+          "label": "Offered base salary",
+          "type": "currency",
+          "sampleValue": "$145,000 per year",
+          "itemSchema": []
+        },
+        {
+          "name": "pay_frequency",
+          "label": "Pay frequency for the role",
+          "type": "text",
+          "sampleValue": "bi-weekly",
+          "itemSchema": []
+        },
+        {
+          "name": "equity_bonus",
+          "label": "Equity or bonus language in the offer",
+          "type": "text",
+          "sampleValue": "You will also be recommended for an equity grant representing 0.15% of the company on a fully diluted basis.",
+          "itemSchema": []
+        },
+        {
+          "name": "contingencies",
+          "label": "Offer contingencies",
+          "type": "text",
+          "sampleValue": "successful background check and signed confidentiality agreement",
+          "itemSchema": []
+        },
+        {
+          "name": "reply_by",
+          "label": "Date by which the candidate should reply",
+          "type": "date",
+          "sampleValue": "March 29, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "signer_name",
+          "label": "Name of the person signing the offer",
+          "type": "text",
+          "sampleValue": "Alex Rivera",
+          "itemSchema": []
+        },
+        {
+          "name": "signer_title",
+          "label": "Title of the person signing the offer",
+          "type": "text",
+          "sampleValue": "Head of Product",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "resignation_letter",
+      "name": "Resignation letter",
+      "description": "Notice of resignation with last day and transition note",
+      "category": "letters",
+      "document_file": "resignation_letter.json",
+      "variables": [
+        {
+          "name": "letter_date",
+          "label": "Resignation letter date",
+          "type": "date",
+          "sampleValue": "March 10, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "manager_name",
+          "label": "Manager receiving the resignation",
+          "type": "text",
+          "sampleValue": "Alex Rivera",
+          "itemSchema": []
+        },
+        {
+          "name": "company_name",
+          "label": "Employer company name",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "company_address",
+          "label": "Company address block",
+          "type": "text",
+          "sampleValue": "123 Market St, City, ST 00000",
+          "itemSchema": []
+        },
+        {
+          "name": "job_title",
+          "label": "Current job title being resigned",
+          "type": "text",
+          "sampleValue": "Product Designer",
+          "itemSchema": []
+        },
+        {
+          "name": "last_day",
+          "label": "Employee's last day of work",
+          "type": "date",
+          "sampleValue": "March 24, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "transition_note",
+          "label": "Transition or thanks note",
+          "type": "text",
+          "sampleValue": "I will document open projects and am available to help with a smooth handover.",
+          "itemSchema": []
+        },
+        {
+          "name": "employee_name",
+          "label": "Resigning employee name",
+          "type": "text",
+          "sampleValue": "Jordan Lee",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "business_proposal",
+      "name": "Business proposal",
+      "description": "Client proposal with phases, fees, and next steps",
+      "category": "proposals",
+      "document_file": "business_proposal.json",
+      "variables": [
+        {
+          "name": "client_name",
+          "label": "Client name on the business proposal",
+          "type": "text",
+          "sampleValue": "Northwind Trading",
+          "itemSchema": []
+        },
+        {
+          "name": "proposal_date",
+          "label": "Proposal date",
+          "type": "date",
+          "sampleValue": "March 12, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "opportunity_summary",
+          "label": "Problem or opportunity the proposal addresses",
+          "type": "text",
+          "sampleValue": "Northwind needs a faster path from scanned invoices and contracts into structured internal records.",
+          "itemSchema": []
+        },
+        {
+          "name": "approach_summary",
+          "label": "Proposed solution approach",
+          "type": "text",
+          "sampleValue": "Deploy FileWorks conversion with custom designs for AP packets, plus API automation for the ERP inbox.",
+          "itemSchema": []
+        },
+        {
+          "name": "business_proposal_phases",
+          "label": "Proposal phases with duration and fee",
+          "type": "list",
+          "sampleValue": "[{\"phase\":\"Discovery & design\",\"duration\":\"2 weeks\",\"fee\":\"$6,500\"},{\"phase\":\"Implementation\",\"duration\":\"4 weeks\",\"fee\":\"$18,000\"},{\"phase\":\"Enablement\",\"duration\":\"1 week\",\"fee\":\"$3,500\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypk1_1211",
+              "name": "phase",
+              "label": "Phase name",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk1_1212",
+              "name": "duration",
+              "label": "Phase duration",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk1_1213",
+              "name": "fee",
+              "label": "Phase fee",
+              "type": "currency"
+            }
+          ]
+        },
+        {
+          "name": "next_steps",
+          "label": "Suggested next steps for the client",
+          "type": "text",
+          "sampleValue": "Schedule a technical workshop, confirm sample documents, and select a pilot team.",
+          "itemSchema": []
+        },
+        {
+          "name": "author_name",
+          "label": "Proposal author name",
+          "type": "text",
+          "sampleValue": "Sam Chen",
+          "itemSchema": []
+        },
+        {
+          "name": "valid_until",
+          "label": "Date through which pricing remains valid",
+          "type": "date",
+          "sampleValue": "April 12, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "proposal_total",
+          "label": "Total proposed investment",
+          "type": "currency",
+          "sampleValue": "$28,000",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "consulting_proposal",
+      "name": "Consulting proposal",
+      "description": "Scope, outcomes, engagement model, and fees",
+      "category": "proposals",
+      "document_file": "consulting_proposal.json",
+      "variables": [
+        {
+          "name": "consultant_name",
+          "label": "Consulting firm or consultant name",
+          "type": "text",
+          "sampleValue": "River Advisory",
+          "itemSchema": []
+        },
+        {
+          "name": "client_name",
+          "label": "Client name for the consulting proposal",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "scope_of_work",
+          "label": "Consulting scope of work summary",
+          "type": "text",
+          "sampleValue": "Advise on GTM packaging for API plans, including packaging, pricing experiments, and sales enablement assets.",
+          "itemSchema": []
+        },
+        {
+          "name": "consulting_proposal_outcomes",
+          "label": "Consulting outcomes and how each will be measured",
+          "type": "list",
+          "sampleValue": "[{\"outcome\":\"Clear plan tiers\",\"measure\":\"Published packaging doc\"},{\"outcome\":\"Pricing test design\",\"measure\":\"Experiment brief + metrics\"},{\"outcome\":\"Sales narrative\",\"measure\":\"One-pager + talk track\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypk1_1247",
+              "name": "outcome",
+              "label": "Desired consulting outcome",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk1_1248",
+              "name": "measure",
+              "label": "How success is measured",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "engagement_model",
+          "label": "Retainer, project, or hourly model",
+          "type": "text",
+          "sampleValue": "Fixed-fee project",
+          "itemSchema": []
+        },
+        {
+          "name": "consulting_fees",
+          "label": "Consulting fee summary",
+          "type": "currency",
+          "sampleValue": "$22,000",
+          "itemSchema": []
+        },
+        {
+          "name": "consulting_timeline",
+          "label": "Engagement timeline",
+          "type": "text",
+          "sampleValue": "6 weeks from kickoff",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "status_report",
+      "name": "Status report",
+      "description": "Project status with workstreams, risks, and asks",
+      "category": "reports",
+      "document_file": "status_report.json",
+      "variables": [
+        {
+          "name": "project_name",
+          "label": "Project name on the status report",
+          "type": "text",
+          "sampleValue": "Template Studio v2",
+          "itemSchema": []
+        },
+        {
+          "name": "report_period",
+          "label": "Reporting period",
+          "type": "text",
+          "sampleValue": "Week of Mar 16, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "overall_status",
+          "label": "Overall RAG or status label",
+          "type": "text",
+          "sampleValue": "Green",
+          "itemSchema": []
+        },
+        {
+          "name": "author_name",
+          "label": "Status report author",
+          "type": "text",
+          "sampleValue": "Alex Rivera",
+          "itemSchema": []
+        },
+        {
+          "name": "executive_update",
+          "label": "Short executive update paragraph",
+          "type": "text",
+          "sampleValue": "Starter library expansion is on track; smoke tests pass for new document types.",
+          "itemSchema": []
+        },
+        {
+          "name": "status_report_workstreams",
+          "label": "Status report workstreams with progress and next steps",
+          "type": "list",
+          "sampleValue": "[{\"workstream\":\"Agreements\",\"progress\":\"NDA + service live\",\"next\":\"Employment polish\"},{\"workstream\":\"Plans\",\"progress\":\"Business + marketing\",\"next\":\"Cash flow QA\"},{\"workstream\":\"GTM\",\"progress\":\"Copy draft\",\"next\":\"Library screenshots\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypk1_1283",
+              "name": "workstream",
+              "label": "Workstream name",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk1_1284",
+              "name": "progress",
+              "label": "Progress this period",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk1_1285",
+              "name": "next",
+              "label": "Next step",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "name": "risks_asks",
+          "label": "Risks and asks for stakeholders",
+          "type": "text",
+          "sampleValue": "Need legal review of employment agreement wording before staging publish.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "profit_loss",
+      "name": "Profit & loss statement",
+      "description": "P&L summary with revenue, expenses, and line items",
+      "category": "reports",
+      "document_file": "profit_loss.json",
+      "variables": [
+        {
+          "name": "company_name",
+          "label": "Company name on the P&L statement",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "period_label",
+          "label": "Accounting period for the P&L",
+          "type": "text",
+          "sampleValue": "Q1 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "total_revenue",
+          "label": "Total revenue for the period",
+          "type": "currency",
+          "sampleValue": "$312,400",
+          "itemSchema": []
+        },
+        {
+          "name": "total_expenses",
+          "label": "Total expenses for the period",
+          "type": "currency",
+          "sampleValue": "$248,900",
+          "itemSchema": []
+        },
+        {
+          "name": "net_income",
+          "label": "Net income for the period",
+          "type": "currency",
+          "sampleValue": "$63,500",
+          "itemSchema": []
+        },
+        {
+          "name": "profit_loss_lines",
+          "label": "Profit and loss line items with amounts",
+          "type": "list",
+          "sampleValue": "[{\"line\":\"Subscription revenue\",\"amount\":\"$246,000\"},{\"line\":\"API usage revenue\",\"amount\":\"$66,400\"},{\"line\":\"Payroll\",\"amount\":\"$168,000\"},{\"line\":\"Infrastructure\",\"amount\":\"$41,200\"},{\"line\":\"Marketing\",\"amount\":\"$39,700\"}]",
+          "itemSchema": [
+            {
+              "id": "field_mt7qypk1_1318",
+              "name": "line",
+              "label": "P&L line item name",
+              "type": "text"
+            },
+            {
+              "id": "field_mt7qypk1_1319",
+              "name": "amount",
+              "label": "Line item amount",
+              "type": "currency"
+            }
+          ]
+        },
+        {
+          "name": "pnl_notes",
+          "label": "Notes accompanying the P&L",
+          "type": "text",
+          "sampleValue": "Figures are management draft; audit adjustments pending.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "cancellation_notice",
+      "name": "Cancellation notice",
+      "description": "Formal notice cancelling a contract with effective date",
+      "category": "notices",
+      "document_file": "cancellation_notice.json",
+      "variables": [
+        {
+          "name": "notice_date",
+          "label": "Date of the cancellation notice",
+          "type": "date",
+          "sampleValue": "March 8, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "recipient_name",
+          "label": "Recipient of the cancellation notice",
+          "type": "text",
+          "sampleValue": "Bright Supply Co.",
+          "itemSchema": []
+        },
+        {
+          "name": "contract_name",
+          "label": "Name of the contract being cancelled",
+          "type": "text",
+          "sampleValue": "Master Supply Agreement",
+          "itemSchema": []
+        },
+        {
+          "name": "contract_ref",
+          "label": "Contract reference number",
+          "type": "text",
+          "sampleValue": "MSA-1190",
+          "itemSchema": []
+        },
+        {
+          "name": "sender_name",
+          "label": "Party sending the cancellation",
+          "type": "text",
+          "sampleValue": "Acme Studio LLC",
+          "itemSchema": []
+        },
+        {
+          "name": "effective_date",
+          "label": "Cancellation effective date",
+          "type": "date",
+          "sampleValue": "April 8, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "cancellation_clause",
+          "label": "Contract clause authorizing cancellation",
+          "type": "text",
+          "sampleValue": "Section 8.2 (termination for convenience with 30 days' notice)",
+          "itemSchema": []
+        },
+        {
+          "name": "reason_summary",
+          "label": "Optional reason summary for cancellation",
+          "type": "text",
+          "sampleValue": "We are consolidating vendors and will complete open POs through the effective date.",
+          "itemSchema": []
+        },
+        {
+          "name": "reply_by",
+          "label": "Date by which confirmation is requested",
+          "type": "date",
+          "sampleValue": "March 18, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "sender_title",
+          "label": "Title of the sender",
+          "type": "text",
+          "sampleValue": "Head of Operations",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "internal_memo",
+      "name": "Internal memo",
+      "description": "To/from/date/subject memo with action requested",
+      "category": "memos",
+      "document_file": "internal_memo.json",
+      "variables": [
+        {
+          "name": "memo_to",
+          "label": "Memo recipients",
+          "type": "text",
+          "sampleValue": "All managers",
+          "itemSchema": []
+        },
+        {
+          "name": "memo_from",
+          "label": "Memo author",
+          "type": "text",
+          "sampleValue": "Alex Rivera, Head of Product",
+          "itemSchema": []
+        },
+        {
+          "name": "memo_date",
+          "label": "Memo date",
+          "type": "date",
+          "sampleValue": "March 19, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "memo_subject",
+          "label": "Memo subject line",
+          "type": "text",
+          "sampleValue": "New document starters in Design studio",
+          "itemSchema": []
+        },
+        {
+          "name": "memo_body",
+          "label": "Body of the internal memo",
+          "type": "text",
+          "sampleValue": "We are shipping a broader starter library covering agreements, plans, policies, forms, and more. Please review the Designs library and flag gaps for your team.",
+          "itemSchema": []
+        },
+        {
+          "name": "action_requested",
+          "label": "Action requested from recipients",
+          "type": "text",
+          "sampleValue": "Try two starters this week and send feedback to product@acme.example by March 26.",
+          "itemSchema": []
+        }
+      ],
+      "pageSize": {
+        "w": 850,
+        "h": 1100
+      }
+    },
+    {
+      "id": "press_release",
+      "name": "Press release",
+      "description": "Headline, body, quote, boilerplate, and media contact",
+      "category": "press",
+      "document_file": "press_release.json",
+      "variables": [
+        {
+          "name": "release_date",
+          "label": "Press release date",
+          "type": "date",
+          "sampleValue": "March 25, 2026",
+          "itemSchema": []
+        },
+        {
+          "name": "city_state",
+          "label": "Dateline city and state",
+          "type": "text",
+          "sampleValue": "San Francisco, CA",
+          "itemSchema": []
+        },
+        {
+          "name": "headline",
+          "label": "Press release headline",
+          "type": "text",
+          "sampleValue": "Acme Studio Expands Fillable Design Library for Business Documents",
+          "itemSchema": []
+        },
+        {
+          "name": "subhead",
+          "label": "Press release subhead",
+          "type": "text",
+          "sampleValue": "New starters help teams turn converted files into agreements, plans, proposals, and more",
+          "itemSchema": []
+        },
+        {
+          "name": "lead_paragraph",
+          "label": "Opening paragraph of the release",
+          "type": "text",
+          "sampleValue": "Acme Studio today announced a major expansion of its Design studio starters, adding popular business document types with ready-made variables for AI-assisted fill.",
+          "itemSchema": []
+        },
+        {
+          "name": "body_paragraph",
+          "label": "Supporting body paragraph",
+          "type": "text",
+          "sampleValue": "The update covers agreements, plans, policies, forms, checklists, letters, proposals, reports, notices, memos, and press releases—so operators can go from PDF to polished output without rebuilding layouts.",
+          "itemSchema": []
+        },
+        {
+          "name": "quote_text",
+          "label": "Executive quote text",
+          "type": "text",
+          "sampleValue": "Customers asked for the same document types they already use to run the business. Now those layouts are one click away.",
+          "itemSchema": []
+        },
+        {
+          "name": "quote_attribution",
+          "label": "Quote attribution name and title",
+          "type": "text",
+          "sampleValue": "Alex Rivera, Head of Product, Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "closing_paragraph",
+          "label": "Closing paragraph before boilerplate",
+          "type": "text",
+          "sampleValue": "The starters are available now in the Designs library for workspace and API customers.",
+          "itemSchema": []
+        },
+        {
+          "name": "company_name",
+          "label": "Company name in the boilerplate",
+          "type": "text",
+          "sampleValue": "Acme Studio",
+          "itemSchema": []
+        },
+        {
+          "name": "company_boilerplate",
+          "label": "About-the-company boilerplate",
+          "type": "text",
+          "sampleValue": "Acme Studio helps teams convert documents and produce branded outputs with AI reading, translation, and fillable designs.",
+          "itemSchema": []
+        },
+        {
+          "name": "media_contact_name",
+          "label": "Media contact name",
+          "type": "text",
+          "sampleValue": "Riley Ortiz",
+          "itemSchema": []
+        },
+        {
+          "name": "media_contact_email",
+          "label": "Media contact email",
+          "type": "text",
+          "sampleValue": "press@acme.example",
+          "itemSchema": []
+        },
+        {
+          "name": "media_contact_phone",
+          "label": "Media contact phone",
+          "type": "text",
+          "sampleValue": "+1 (415) 555-0142",
           "itemSchema": []
         }
       ],

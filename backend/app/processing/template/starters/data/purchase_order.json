@@ -1,0 +1,869 @@
+{
+  "version": 2,
+  "pageSize": {
+    "w": 850,
+    "h": 1100
+  },
+  "root": {
+    "id": "root",
+    "kind": "box",
+    "label": "Document",
+    "x": 0,
+    "y": 0,
+    "w": 850,
+    "h": 1100,
+    "style": {
+      "fontFamily": "Arial, Helvetica, sans-serif",
+      "fontSize": 14,
+      "color": "#1e293b",
+      "bold": false,
+      "italic": false,
+      "underline": false,
+      "align": "left",
+      "link": "",
+      "backgroundColor": "#ffffff",
+      "borderColor": "transparent",
+      "borderWidth": 0,
+      "borderStyle": "none"
+    },
+    "layout": {
+      "direction": "column",
+      "gap": 16,
+      "padding": 40,
+      "align": "stretch",
+      "justify": "start"
+    },
+    "children": [
+      {
+        "id": "box_mt7qypk0_1018",
+        "kind": "box",
+        "label": "Header",
+        "x": 40,
+        "y": 40,
+        "w": 770,
+        "h": 96,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "transparent",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 0,
+          "borderStyle": "none"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 20,
+          "padding": 0,
+          "align": "stretch",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "box_mt7qypk0_1014",
+            "kind": "box",
+            "label": "Buyer",
+            "x": 0,
+            "y": 0,
+            "w": 423,
+            "h": 96,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "stretch",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt7qypk0_1012",
+                "kind": "heading",
+                "label": "{{ buyer_name }}",
+                "level": 2,
+                "x": 0,
+                "y": 0,
+                "w": 423,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 23,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypk0_1013",
+                "kind": "paragraph",
+                "label": "{{ buyer_address }}",
+                "x": 0,
+                "y": 48,
+                "w": 423,
+                "h": 36,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#334155",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt7qypk0_1017",
+            "kind": "box",
+            "label": "PO meta",
+            "x": 478,
+            "y": 0,
+            "w": 292,
+            "h": 96,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "column",
+              "gap": 4,
+              "padding": 0,
+              "align": "end",
+              "justify": "start"
+            },
+            "children": [
+              {
+                "id": "heading_mt7qypk0_1015",
+                "kind": "heading",
+                "label": "PURCHASE ORDER",
+                "level": 1,
+                "x": 8,
+                "y": 0,
+                "w": 284,
+                "h": 44,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 28,
+                  "color": "#0f172a",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypk0_1016",
+                "kind": "paragraph",
+                "label": "PO #: {{ po_number }}\nDate: {{ po_date }}",
+                "x": 8,
+                "y": 48,
+                "w": 284,
+                "h": 48,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 14,
+                  "color": "#334155",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypk0_1021",
+        "kind": "box",
+        "label": "Vendor",
+        "x": 40,
+        "y": 152,
+        "w": 770,
+        "h": 145,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypk0_1019",
+            "kind": "heading",
+            "label": "Vendor",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypk0_1020",
+            "kind": "paragraph",
+            "label": "{{ vendor_name }}\n{{ vendor_address }}\n{{ vendor_email }}",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 67,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypk0_1031",
+        "kind": "box",
+        "label": "Lines",
+        "x": 40,
+        "y": 313,
+        "w": 770,
+        "h": 152,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypk0_1026",
+            "kind": "heading",
+            "label": "Order lines",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "box_mt7qypk0_1030",
+            "kind": "box",
+            "label": "Row",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt7qypk0_1027",
+                "kind": "paragraph",
+                "label": "Description",
+                "x": 0,
+                "y": 2,
+                "w": 401,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypk0_1028",
+                "kind": "paragraph",
+                "label": "Qty",
+                "x": 401,
+                "y": 2,
+                "w": 109,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypk0_1029",
+                "kind": "paragraph",
+                "label": "Amount",
+                "x": 510,
+                "y": 2,
+                "w": 220,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 12,
+                  "color": "#64748b",
+                  "bold": true,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "box_mt7qypk0_1025",
+            "kind": "box",
+            "label": "Row",
+            "x": 20,
+            "y": 100,
+            "w": 730,
+            "h": 32,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#1e293b",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "#e2e8f0",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": {
+              "direction": "row",
+              "gap": 0,
+              "padding": 0,
+              "align": "center",
+              "justify": "space-between"
+            },
+            "children": [
+              {
+                "id": "paragraph_mt7qypk0_1022",
+                "kind": "paragraph",
+                "label": "{{ item.description }}",
+                "x": 0,
+                "y": 2,
+                "w": 401,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypk0_1023",
+                "kind": "paragraph",
+                "label": "{{ item.qty }}",
+                "x": 401,
+                "y": 2,
+                "w": 109,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "left",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              },
+              {
+                "id": "paragraph_mt7qypk0_1024",
+                "kind": "paragraph",
+                "label": "{{ item.amount }}",
+                "x": 510,
+                "y": 2,
+                "w": 220,
+                "h": 28,
+                "style": {
+                  "fontFamily": "Arial, Helvetica, sans-serif",
+                  "fontSize": 13,
+                  "color": "#0f172a",
+                  "bold": false,
+                  "italic": false,
+                  "underline": false,
+                  "align": "right",
+                  "link": "",
+                  "backgroundColor": "transparent",
+                  "borderColor": "transparent",
+                  "borderWidth": 0,
+                  "borderStyle": "none"
+                },
+                "layout": null,
+                "children": []
+              }
+            ],
+            "repeat": {
+              "over": "purchase_order_lines",
+              "as": "item"
+            }
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypk0_1034",
+        "kind": "box",
+        "label": "Total",
+        "x": 40,
+        "y": 481,
+        "w": 770,
+        "h": 92,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "row",
+          "gap": 12,
+          "padding": 18,
+          "align": "center",
+          "justify": "space-between"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypk0_1032",
+            "kind": "heading",
+            "label": "Order total",
+            "level": 3,
+            "x": 18,
+            "y": 24,
+            "w": 200,
+            "h": 44,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 19,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "heading_mt7qypk0_1033",
+            "kind": "heading",
+            "label": "{{ order_total }}",
+            "level": 3,
+            "x": 592,
+            "y": 18,
+            "w": 160,
+            "h": 56,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 19,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "right",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "box_mt7qypk0_1037",
+        "kind": "box",
+        "label": "Ship / deliver to",
+        "x": 40,
+        "y": 589,
+        "w": 770,
+        "h": 145,
+        "style": {
+          "fontFamily": "Arial, Helvetica, sans-serif",
+          "fontSize": 14,
+          "color": "#1e293b",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "left",
+          "link": "",
+          "backgroundColor": "#ffffff",
+          "borderColor": "#e2e8f0",
+          "borderWidth": 1,
+          "borderStyle": "solid"
+        },
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 20,
+          "align": "stretch",
+          "justify": "start"
+        },
+        "children": [
+          {
+            "id": "heading_mt7qypk0_1035",
+            "kind": "heading",
+            "label": "Ship / deliver to",
+            "level": 3,
+            "x": 20,
+            "y": 20,
+            "w": 730,
+            "h": 28,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 15,
+              "color": "#0f172a",
+              "bold": true,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          },
+          {
+            "id": "paragraph_mt7qypk0_1036",
+            "kind": "paragraph",
+            "label": "{{ ship_to }}\nNeeded by: {{ need_by_date }}\nNotes: {{ po_notes }}",
+            "x": 20,
+            "y": 58,
+            "w": 730,
+            "h": 67,
+            "style": {
+              "fontFamily": "Arial, Helvetica, sans-serif",
+              "fontSize": 14,
+              "color": "#334155",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "left",
+              "link": "",
+              "backgroundColor": "transparent",
+              "borderColor": "transparent",
+              "borderWidth": 0,
+              "borderStyle": "none"
+            },
+            "layout": null,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "variables": [
+    {
+      "id": "var_mt7qypk0_1038",
+      "name": "buyer_name",
+      "label": "Buying company name on the purchase order",
+      "type": "text",
+      "sampleValue": "Acme Studio"
+    },
+    {
+      "id": "var_mt7qypk0_1039",
+      "name": "buyer_address",
+      "label": "Buying company address",
+      "type": "text",
+      "sampleValue": "123 Market St, City, ST 00000"
+    },
+    {
+      "id": "var_mt7qypk0_1040",
+      "name": "po_number",
+      "label": "Purchase order number",
+      "type": "text",
+      "sampleValue": "PO-5521"
+    },
+    {
+      "id": "var_mt7qypk0_1041",
+      "name": "po_date",
+      "label": "Purchase order date",
+      "type": "date",
+      "sampleValue": "March 18, 2026"
+    },
+    {
+      "id": "var_mt7qypk0_1042",
+      "name": "vendor_name",
+      "label": "Vendor company name",
+      "type": "text",
+      "sampleValue": "Bright Supply Co."
+    },
+    {
+      "id": "var_mt7qypk0_1043",
+      "name": "vendor_address",
+      "label": "Vendor mailing address",
+      "type": "text",
+      "sampleValue": "88 Industrial Ave, City, ST 00000"
+    },
+    {
+      "id": "var_mt7qypk0_1044",
+      "name": "vendor_email",
+      "label": "Vendor order email",
+      "type": "text",
+      "sampleValue": "orders@bright.example"
+    },
+    {
+      "id": "var_mt7qypk0_1045",
+      "name": "purchase_order_lines",
+      "label": "Purchase order line items with quantity and amount",
+      "type": "list",
+      "sampleValue": "[{\"description\":\"Laptop docks\",\"qty\":\"12\",\"amount\":\"$2,400.00\"},{\"description\":\"USB-C hubs\",\"qty\":\"24\",\"amount\":\"$960.00\"},{\"description\":\"Shipping\",\"qty\":\"1\",\"amount\":\"$85.00\"}]",
+      "itemSchema": [
+        {
+          "id": "field_mt7qypk0_1046",
+          "name": "description",
+          "label": "Line item description",
+          "type": "text"
+        },
+        {
+          "id": "field_mt7qypk0_1047",
+          "name": "qty",
+          "label": "Quantity ordered",
+          "type": "number"
+        },
+        {
+          "id": "field_mt7qypk0_1048",
+          "name": "amount",
+          "label": "Extended amount for the line",
+          "type": "currency"
+        }
+      ]
+    },
+    {
+      "id": "var_mt7qypk0_1049",
+      "name": "order_total",
+      "label": "Purchase order grand total",
+      "type": "currency",
+      "sampleValue": "$3,445.00"
+    },
+    {
+      "id": "var_mt7qypk0_1050",
+      "name": "ship_to",
+      "label": "Ship-to or deliver-to address",
+      "type": "text",
+      "sampleValue": "Acme Studio — Receiving, Dock B"
+    },
+    {
+      "id": "var_mt7qypk0_1051",
+      "name": "need_by_date",
+      "label": "Date goods or services are needed",
+      "type": "date",
+      "sampleValue": "April 2, 2026"
+    },
+    {
+      "id": "var_mt7qypk0_1052",
+      "name": "po_notes",
+      "label": "Additional purchase order notes",
+      "type": "text",
+      "sampleValue": "Reference ticket OPS-214 on packing slip."
+    }
+  ]
+}
