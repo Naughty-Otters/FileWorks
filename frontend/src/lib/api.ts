@@ -75,6 +75,12 @@ export type ExtractResponse = {
   regions?: RegionBox[];
   image_size?: ImageSize | null;
   structure?: Record<string, unknown> | null;
+  design_template_id?: string | null;
+  design_template_name?: string | null;
+  design_html?: string | null;
+  design_markdown?: string | null;
+  design_context?: Record<string, unknown> | null;
+  design_return_format?: "markdown" | "docx" | "pdf" | null;
 };
 
 export type LLMFileProvider = {
@@ -131,6 +137,9 @@ export type HistoryItem = {
   storage_backend: string;
   has_markdown: boolean;
   has_json: boolean;
+  has_design?: boolean;
+  design_template_id?: string | null;
+  design_template_name?: string | null;
 };
 
 export type HistoryListResponse = {
@@ -622,6 +631,28 @@ export async function fetchHistoryDetail(id: string): Promise<HistoryDetail> {
   return res.json();
 }
 
+export async function patchHistoryDesign(
+  id: string,
+  input: {
+    design_template_id: string;
+    design_template_name?: string | null;
+    design_html: string;
+    design_markdown?: string | null;
+    design_context?: Record<string, unknown> | null;
+    design_return_format?: "markdown" | "docx" | "pdf" | null;
+  },
+): Promise<HistoryDetail> {
+  const res = await apiFetch(`/api/history/${encodeURIComponent(id)}/design`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new Error(await readError(res, `Failed to save design output (${res.status})`));
+  }
+  return res.json();
+}
+
 export async function fetchHistoryFile(
   id: string,
   filename: string,
@@ -692,6 +723,10 @@ export async function exportMarkdownFile(
 /** Client-side fallback exporters (no round-trip) for offline-friendly downloads. */
 export function downloadTextFile(content: string, filename: string, mime: string) {
   const blob = new Blob([content], { type: mime });
+  downloadBlob(blob, filename);
+}
+
+export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -807,8 +842,40 @@ export type TemplateRenderResponse = {
   markdown?: string;
   filename?: string;
   docx?: Blob;
+  pdf?: Blob;
+  context?: Record<string, unknown>;
   fillMode?: string | null;
+  warnings?: string[];
 };
+
+async function parseTemplateRenderResponse(
+  res: Response,
+  format: "html" | "docx" | "pdf" | "markdown" | undefined,
+): Promise<TemplateRenderResponse> {
+  const contentType = res.headers.get("Content-Type") || "";
+  const fillMode = res.headers.get("X-Template-Fill");
+  if (contentType.includes("application/json")) {
+    const payload = await res.json();
+    return {
+      html: payload.html ?? payload.rendered_html ?? "",
+      markdown: payload.markdown,
+      filename: payload.filename,
+      context: payload.context,
+      fillMode: payload.fill_mode ?? fillMode,
+      warnings: payload.warnings,
+    };
+  }
+  if (format === "docx" || contentType.includes("wordprocessingml")) {
+    return { html: "", docx: await res.blob(), fillMode };
+  }
+  if (format === "pdf" || contentType.includes("application/pdf")) {
+    return { html: "", pdf: await res.blob(), fillMode };
+  }
+  if (format === "markdown" || contentType.includes("text/markdown")) {
+    return { html: "", markdown: await res.text(), fillMode };
+  }
+  return { html: await res.text(), fillMode };
+}
 
 export async function renderTemplate(
   id: string,
@@ -817,31 +884,17 @@ export async function renderTemplate(
     variables?: Record<string, unknown>;
     format?: "html" | "docx" | "pdf" | "markdown";
     fill?: "auto" | "defaults" | "none";
+    envelope?: boolean;
   },
 ): Promise<TemplateRenderResponse> {
+  const envelope = input.envelope ?? (input.format === "html" || !input.format);
   const res = await apiFetch(`/api/templates/${encodeURIComponent(id)}/render`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, envelope }),
   });
   if (!res.ok) throw new Error(await readError(res, `Template render failed (${res.status})`));
-  const contentType = res.headers.get("Content-Type") || "";
-  const fillMode = res.headers.get("X-Template-Fill");
-  if (contentType.includes("application/json")) {
-    const payload = await res.json();
-    return {
-      html: payload.html ?? payload.rendered_html ?? "",
-      filename: payload.filename,
-      fillMode,
-    };
-  }
-  if (input.format === "docx" || contentType.includes("wordprocessingml")) {
-    return { html: "", docx: await res.blob(), fillMode };
-  }
-  if (input.format === "markdown" || contentType.includes("text/markdown")) {
-    return { html: "", markdown: await res.text(), fillMode };
-  }
-  return { html: await res.text(), fillMode };
+  return parseTemplateRenderResponse(res, input.format);
 }
 
 export type StarterVariable = {
@@ -890,8 +943,10 @@ export async function renderStarter(
     variables?: Record<string, unknown>;
     format?: "html" | "docx" | "pdf" | "markdown";
     fill?: "auto" | "defaults" | "none";
+    envelope?: boolean;
   } = {},
 ): Promise<TemplateRenderResponse> {
+  const envelope = input.envelope ?? (input.format === "html" || !input.format);
   const res = await apiFetch(`/api/templates/starters/${encodeURIComponent(starterId)}/render`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -900,16 +955,9 @@ export async function renderStarter(
       variables: input.variables ?? {},
       format: input.format ?? "html",
       fill: input.fill ?? (input.markdown ? "auto" : "defaults"),
+      envelope,
     }),
   });
   if (!res.ok) throw new Error(await readError(res, `Starter render failed (${res.status})`));
-  const contentType = res.headers.get("Content-Type") || "";
-  const fillMode = res.headers.get("X-Template-Fill");
-  if (input.format === "docx" || contentType.includes("wordprocessingml")) {
-    return { html: "", docx: await res.blob(), fillMode };
-  }
-  if (input.format === "markdown" || contentType.includes("text/markdown")) {
-    return { html: "", markdown: await res.text(), fillMode };
-  }
-  return { html: await res.text(), fillMode };
+  return parseTemplateRenderResponse(res, input.format);
 }

@@ -53,9 +53,42 @@ RUN uv sync --frozen --no-dev --all-extras
 RUN rm -rf /var/task/.venv/lib/python3.12/site-packages/nvidia \
            /var/task/.venv/lib/python3.12/site-packages/triton \
            /var/task/.venv/lib/python3.12/site-packages/triton*
-# OpenCV gapi assumes GStreamer symbols that this wheel does not export.
-RUN python -c "from pathlib import Path; old='cv.gapi.wip.GStreamerPipeline = cv.gapi_wip_gst_GStreamerPipeline'; new='cv.gapi.wip.GStreamerPipeline = getattr(cv, \"gapi_wip_gst_GStreamerPipeline\", None)';\
-[p.write_text(p.read_text().replace(old,new), encoding='utf-8') for p in Path('/var/task/.venv/lib').glob('python*/site-packages/cv2/gapi/__init__.py') if old in p.read_text()]"
+# Docling, EasyOCR, and Paddle each pull a different OpenCV flavor into the
+# same ``cv2`` package. Co-installing them circular-imports under qemu
+# (``cv2.GMat`` / ``cv2.gapi``). Keep one headless wheel — Docling FAQ.
+RUN uv pip uninstall --python /var/task/.venv/bin/python -y \
+        opencv-python opencv-contrib-python opencv-python-headless \
+    || true \
+ && uv pip install --python /var/task/.venv/bin/python --no-cache \
+        "opencv-python-headless>=4.8,<4.12"
+# OpenCV gapi assigns GStreamerPipeline via ``cv.gapi`` during import; that
+# circular-fails under qemu/headless even with getattr. Skip the assignment.
+RUN python - <<'PY'
+from pathlib import Path
+needles = (
+    "cv.gapi.wip.GStreamerPipeline = cv.gapi_wip_gst_GStreamerPipeline",
+    "cv.gapi.wip.GStreamerPipeline = getattr(cv, 'gapi_wip_gst_GStreamerPipeline', None)",
+    'cv.gapi.wip.GStreamerPipeline = getattr(cv, "gapi_wip_gst_GStreamerPipeline", None)',
+)
+replacement = (
+    "# Patched for Lambda/headless: GStreamer symbols are not exported, and "
+    "assigning via cv.gapi during import circular-fails.\n"
+    "pass  # was: cv.gapi.wip.GStreamerPipeline = …\n"
+)
+root = Path("/var/task/.venv/lib")
+for path in root.glob("python*/site-packages/cv2/gapi/__init__.py"):
+    text = path.read_text(encoding="utf-8")
+    updated = text
+    for needle in needles:
+        if needle in updated:
+            updated = updated.replace(needle, replacement)
+    if updated != text:
+        path.write_text(updated, encoding="utf-8")
+        print(f"patched {path}")
+# Fail the build early if OpenCV is still broken (before model download).
+import cv2
+print(f"cv2 import ok ({cv2.__version__})")
+PY
 
 # `fw push-image` overrides the model-cache context with the previously
 # published image so qemu does not re-import Docling/OpenCV. Older images

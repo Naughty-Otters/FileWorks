@@ -84,12 +84,13 @@ TARGETS: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "pdf",
-        "label": "PDF (print)",
+        "label": "PDF",
         "aliases": [],
         "media_type": "application/pdf",
         "extension": "pdf",
+        # Markdown→PDF export is not registered yet (design fills use a separate renderer).
         "available": False,
-        "unavailable_reason": "PDF is a browser print step in the app. Use target=html.",
+        "unavailable_reason": "PDF export is not available yet",
     },
 )
 

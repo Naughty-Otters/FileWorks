@@ -113,6 +113,9 @@ class HistoryDocument(Base):
     storage_backend: Mapped[str] = mapped_column(String(16), nullable=False, default="s3")
     has_markdown: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     has_json: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    has_design: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    design_template_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    design_template_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     user: Mapped[User] = relationship(back_populates="history_documents")
 

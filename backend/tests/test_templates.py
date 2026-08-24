@@ -410,9 +410,12 @@ def test_expand_skips_non_list_repeats_and_clamps_layout() -> None:
     laid_out, warnings = auto_layout(expanded)
     assert warnings
     tall = next(node for node in laid_out.iter_nodes() if node.id == "tall")
-    assert tall.x == 0
-    assert tall.w <= 100
-    assert tall.y + tall.h <= 80
+    # Width is clamped to the page right edge; freeform x is preserved.
+    # Vertical overflow grows the root in whole-page increments (not clipped).
+    assert tall.x == -10.0
+    assert tall.w == 110.0  # page.w (100) - x (-10)
+    assert laid_out.root.h >= 160.0  # 2 × page.h to fit y+h
+    assert any("pages" in warning.lower() for warning in warnings)
 
 
 def test_render_html_and_docx_cover_node_kinds() -> None:

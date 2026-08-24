@@ -15,7 +15,10 @@ export async function waitForWorkspaceReady(page: Page) {
   await expect(page.getByRole("button", { name: "Upload document" })).toBeVisible({
     timeout: 20_000,
   });
-  await expect(page.getByRole("button", { name: /^Convert$/i })).toBeVisible();
+  // Run action is icon-only; accessible name is Convert / AI Convert / Fill {design}.
+  await expect(
+    page.getByRole("button", { name: /^(AI )?Convert$|^(AI )?Fill /i }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Options" })).toBeVisible();
   await expect(page.locator('input[type="file"]').first()).toBeAttached();
 }
@@ -39,7 +42,7 @@ export async function uploadWorkspaceFile(page: Page, filePath: string) {
     await expect(page.getByText(name).first()).toBeVisible({ timeout: 2_000 });
   }).toPass({ timeout: 20_000, intervals: [200, 500, 1_000] });
 
-  await expect(page.getByRole("button", { name: /^Convert$/i })).toBeEnabled({
+  await expect(page.getByRole("button", { name: /^(AI )?Convert$|^(AI )?Fill /i })).toBeEnabled({
     timeout: 5_000,
   });
 }

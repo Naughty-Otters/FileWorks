@@ -4,8 +4,6 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
-  ChevronDown,
-  ChevronUp,
   Code,
   Heading1,
   Heading2,
@@ -16,6 +14,7 @@ import {
   List,
   ListOrdered,
   Minus,
+  PanelTop,
   Quote,
   StretchHorizontal,
   Strikethrough,
@@ -30,7 +29,6 @@ import type { FormatCommand, FormatExtra } from "@/lib/markdown-format";
 type MarkdownToolbarProps = {
   disabled?: boolean;
   onCommand: (command: FormatCommand, extra?: FormatExtra) => void;
-  onHide: () => void;
 };
 
 function ToolButton({
@@ -67,7 +65,37 @@ function ToolGroup({ children }: { children: ReactNode }) {
   return <div className="flex items-center gap-0.5">{children}</div>;
 }
 
-export function MarkdownToolbar({ disabled, onCommand, onHide }: MarkdownToolbarProps) {
+/** Icon toggle for showing / hiding the Markdown formatting toolbar. */
+export function MarkdownToolbarToggle({
+  pressed,
+  onToggle,
+}: {
+  pressed: boolean;
+  onToggle: () => void;
+}) {
+  const label = pressed ? "Hide formatting toolbar" : "Show formatting toolbar";
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      aria-pressed={pressed}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onToggle}
+      className={cn(
+        "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition",
+        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]",
+        pressed
+          ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+          : "border-[var(--line)] bg-[var(--bg-panel)] text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent-strong)]",
+      )}
+    >
+      <PanelTop size={14} strokeWidth={1.85} aria-hidden />
+    </button>
+  );
+}
+
+export function MarkdownToolbar({ disabled, onCommand }: MarkdownToolbarProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   function insertImageFile(file: File) {
@@ -175,34 +203,6 @@ export function MarkdownToolbar({ disabled, onCommand, onHide }: MarkdownToolbar
           if (file) insertImageFile(file);
         }}
       />
-      <button
-        type="button"
-        title="Hide formatting toolbar"
-        aria-label="Hide formatting toolbar"
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={onHide}
-        className={cn(
-          "ml-auto inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[10px] text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]",
-        )}
-      >
-        <ChevronUp size={12} />
-        <span className="hidden sm:inline">Hide</span>
-      </button>
     </div>
-  );
-}
-
-export function ShowMarkdownToolbarButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      title="Show formatting toolbar"
-      aria-label="Show formatting toolbar"
-      onClick={onClick}
-      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
-    >
-      <ChevronDown size={12} />
-      <span className="hidden sm:inline">Format</span>
-    </button>
   );
 }

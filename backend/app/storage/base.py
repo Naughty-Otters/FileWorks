@@ -31,6 +31,17 @@ class DocumentRecord:
     structure: dict[str, Any] | None = None
     storage_backend: str = "local"
     owner_id: str | None = None
+    # Design / template fill (P0): visual artifact + recipe for reopen.
+    design_template_id: str | None = None
+    design_template_name: str | None = None
+    design_html: str | None = None
+    design_markdown: str | None = None
+    design_context: dict[str, Any] | None = None
+    design_return_format: str | None = None
+
+    @property
+    def has_design(self) -> bool:
+        return bool(self.design_html and self.design_html.strip() and self.design_template_id)
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -44,6 +55,9 @@ class DocumentRecord:
             "storage_backend": self.storage_backend,
             "has_markdown": bool(self.markdown and self.markdown.strip()),
             "has_json": self.json_data is not None or self.structure is not None,
+            "has_design": self.has_design,
+            "design_template_id": self.design_template_id,
+            "design_template_name": self.design_template_name,
             "owner_id": self.owner_id,
         }
 
@@ -67,6 +81,12 @@ class DocumentRecord:
         filtered.setdefault("storage_backend", "local")
         filtered.setdefault("owner_id", None)
         filtered.setdefault("structure", None)
+        filtered.setdefault("design_template_id", None)
+        filtered.setdefault("design_template_name", None)
+        filtered.setdefault("design_html", None)
+        filtered.setdefault("design_markdown", None)
+        filtered.setdefault("design_context", None)
+        filtered.setdefault("design_return_format", None)
         return cls(**filtered)
 
 
@@ -96,6 +116,20 @@ class DocumentStore(Protocol):
         owner_id: str | None = None,
         structure: dict[str, Any] | None = None,
     ) -> DocumentRecord: ...
+
+    def update_design(
+        self,
+        document_id: str,
+        *,
+        design_template_id: str | None,
+        design_template_name: str | None,
+        design_html: str | None,
+        design_markdown: str | None = None,
+        design_context: dict[str, Any] | None = None,
+        design_return_format: str | None = None,
+    ) -> DocumentRecord | None:
+        """Persist filled design output onto an existing history record."""
+        ...
 
     def list_documents(self, limit: int = 100) -> list[DocumentRecord]: ...
 

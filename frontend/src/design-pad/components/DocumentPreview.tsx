@@ -106,7 +106,7 @@ export default function DocumentPreview({
         <div className="document-preview-header">
           <div>
             <h2>Output preview</h2>
-            <p>Final document with default values filled in. Download as PDF (print) or Markdown.</p>
+            <p>Final document with default values filled in. Download as PDF or Markdown.</p>
           </div>
           <div className="document-preview-actions">
             <button type="button" className="chip-btn" onClick={downloadMd}>

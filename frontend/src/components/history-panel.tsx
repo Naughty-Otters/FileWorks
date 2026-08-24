@@ -113,7 +113,14 @@ export function HistoryPanel({
                         {isPdf ? <FileText size={14} /> : <FileImage size={14} />}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium">{item.filename}</span>
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="block truncate text-sm font-medium">{item.filename}</span>
+                          {item.has_design ? (
+                            <span className="shrink-0 rounded-full bg-[var(--accent-soft)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent-strong)]">
+                              {item.design_template_name || "Design"}
+                            </span>
+                          ) : null}
+                        </span>
                         <span className="mt-0.5 block text-[11px] text-[var(--ink-muted)]">
                           {formatWhen(item.created_at)} · {formatBytes(item.size_bytes)}
                           {item.page_count ? ` · ${item.page_count}p` : ""}

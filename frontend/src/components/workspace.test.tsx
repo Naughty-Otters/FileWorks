@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Workspace } from "@/components/workspace";
 import type { MeResponse } from "@/lib/auth";
@@ -149,9 +149,10 @@ describe("Workspace", () => {
     expect(screen.getAllByRole("link", { name: "API" })[0]).toHaveAttribute("href", "/docs");
     expect(screen.getByRole("link", { name: "About" })).toHaveAttribute("href", "/about");
     expect(screen.getAllByText(/Drop a file\. Choose what to produce/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Source is your file/i)).toBeInTheDocument();
+    expect(screen.getByText(/Choose what to produce on the right/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument();
     expect(screen.getByText(/You’ll get Markdown/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Choose what to produce" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
     expect(document.getElementById("history-panel")?.className).toContain("[grid-area:history]");
@@ -166,12 +167,50 @@ describe("Workspace", () => {
     expect(screen.queryByLabelText("Hide history")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Show history")).toBeInTheDocument();
     expect(screen.queryByLabelText("Show full history")).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Workspace panes" })).toBeInTheDocument();
     await user.click(screen.getByLabelText("Show history"));
     expect(screen.getByLabelText("Hide history")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Workspace panes" })).not.toBeInTheDocument();
     expect(screen.getAllByText("old.pdf").length).toBeGreaterThan(0);
 
     await user.click(screen.getByLabelText("Delete old.pdf"));
     await waitFor(() => expect(api.deleteHistoryItem).toHaveBeenCalled());
+  });
+
+  it("keeps a far-left global pane toggle list when any pane is closed", async () => {
+    const user = userEvent.setup();
+    render(<Workspace />);
+    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
+
+    expect(screen.queryByRole("navigation", { name: "Workspace panes" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText("Hide history"));
+    const toggles = screen.getByRole("navigation", { name: "Workspace panes" });
+    expect(toggles.parentElement?.className).toContain("[grid-area:toggles]");
+    expect(within(toggles).getByLabelText("Show history")).toHaveAttribute("aria-pressed", "false");
+    expect(within(toggles).getByLabelText("Source")).toHaveAttribute("aria-pressed", "true");
+    // No history count badge on the closed-pane toggle.
+    expect(within(toggles).queryByText(/^\d+$/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText("Hide source"));
+    await waitFor(() => expect(screen.getByLabelText("Show source")).toBeInTheDocument());
+    expect(screen.getByRole("navigation", { name: "Workspace panes" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Show history")).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByLabelText("Show source")).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(screen.getByLabelText("Show history"));
+    const panes = screen.getByRole("navigation", { name: "Workspace panes" });
+    expect(within(panes).getByRole("button", { name: "History" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(panes).getByLabelText("Show source")).toHaveAttribute("aria-pressed", "false");
+    expect(document.getElementById("history-panel")).toBeInTheDocument();
+    expect(panes).toBeInTheDocument();
+
+    await user.click(within(panes).getByLabelText("Show source"));
+    expect(screen.getByLabelText("Hide source")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Workspace panes" })).not.toBeInTheDocument();
   });
 
   it("lets signed-in users browse while history loads", async () => {
@@ -219,12 +258,12 @@ describe("Workspace", () => {
     );
     expect(screen.getByText(/You’ll get Client invoice/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload document" })).toHaveTextContent(
-      /Drop file for Client invoice/i,
+      /Choose file for Client invoice/i,
     );
-    expect(screen.getByText(/Intent: Client invoice/i)).toBeInTheDocument();
+    expect(screen.getByText(/Then fill Client invoice/i)).toBeInTheDocument();
   });
 
-  it("opens Produce as from the empty Source CTA", async () => {
+  it("opens Produce as from the Target Intent control", async () => {
     const user = userEvent.setup();
     vi.mocked(api.fetchMe).mockResolvedValue({
       ...guestMe,
@@ -234,8 +273,7 @@ describe("Workspace", () => {
     });
     render(<Workspace />);
     await waitFor(() => expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument());
-    const sourceCtas = screen.getAllByRole("button", { name: "Produce as" });
-    await user.click(sourceCtas[sourceCtas.length - 1]);
+    await user.click(screen.getByRole("button", { name: "Choose what to produce" }));
     expect(screen.getByRole("dialog", { name: "Produce as" })).toBeInTheDocument();
     expect(screen.getByRole("listbox", { name: "Starter design" })).toBeInTheDocument();
   });
@@ -267,7 +305,7 @@ describe("Workspace", () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, new File(["abc"], "note.png", { type: "image/png" }));
     await waitFor(() => expect(screen.getByText("note.png")).toBeInTheDocument());
-    await user.click(screen.getByText("Convert"));
+    await user.click(screen.getByRole("button", { name: "Convert" }));
     await waitFor(() => expect(screen.getByText("1 page")).toBeInTheDocument());
     await waitFor(() => expect(screen.getByTitle("a.png")).toBeInTheDocument());
 
@@ -287,7 +325,7 @@ describe("Workspace", () => {
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, new File(["abc"], "note.png", { type: "image/png" }));
     await waitFor(() => expect(screen.getByText("note.png")).toBeInTheDocument());
-    await user.click(screen.getByText("Convert"));
+    await user.click(screen.getByRole("button", { name: "Convert" }));
     await waitFor(() => expect(screen.getByText("1 page")).toBeInTheDocument());
     expect(screen.queryByText(/AnyDoc|PP-OCR|Paddle/i)).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByText("a.png").length).toBeGreaterThan(0));
@@ -295,8 +333,10 @@ describe("Workspace", () => {
 
     await user.click(screen.getByLabelText("Hide source"));
     await waitFor(() => expect(screen.getByLabelText("Show source")).toBeInTheDocument());
+    expect(screen.getByRole("navigation", { name: "Workspace panes" })).toBeInTheDocument();
     expect(screen.queryByText("Show preview")).not.toBeInTheDocument();
     await user.click(screen.getByLabelText("Show source"));
     expect(screen.getByLabelText("Hide source")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Workspace panes" })).not.toBeInTheDocument();
   });
 });

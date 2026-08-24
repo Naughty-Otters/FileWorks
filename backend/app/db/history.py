@@ -63,6 +63,9 @@ def upsert_history_summary(db: Session | None, record: DocumentRecord) -> None:
     row.storage_backend = record.storage_backend or "s3"
     row.has_markdown = bool(record.markdown and str(record.markdown).strip())
     row.has_json = record.json_data is not None
+    row.has_design = bool(getattr(record, "has_design", False))
+    row.design_template_id = getattr(record, "design_template_id", None)
+    row.design_template_name = getattr(record, "design_template_name", None)
     row.created_at = _parse_created(record.created_at)
 
 
@@ -170,5 +173,8 @@ def _summary_payload(row: HistoryDocument) -> dict:
         "storage_backend": row.storage_backend,
         "has_markdown": row.has_markdown,
         "has_json": row.has_json,
+        "has_design": bool(getattr(row, "has_design", False)),
+        "design_template_id": getattr(row, "design_template_id", None),
+        "design_template_name": getattr(row, "design_template_name", None),
         "owner_id": str(row.user_id),
     }

@@ -213,6 +213,9 @@ class HistoryItem(BaseModel):
     storage_backend: str = "local"
     has_markdown: bool = False
     has_json: bool = False
+    has_design: bool = False
+    design_template_id: str | None = None
+    design_template_name: str | None = None
     owner_id: str | None = None
 
     @field_serializer("engine")
@@ -245,10 +248,25 @@ class HistoryDetailResponse(BaseModel):
     image_size: ImageSize | None = None
     options: ExtractOptionsResponse | None = None
     structure: dict[str, Any] | None = None
+    design_template_id: str | None = None
+    design_template_name: str | None = None
+    design_html: str | None = None
+    design_markdown: str | None = None
+    design_context: dict[str, Any] | None = None
+    design_return_format: str | None = None
 
     @field_serializer("engine")
     def _public_engine(self, _value: str | None) -> str | None:
         return public_engine_name(_value) if _value else None
+
+
+class HistoryDesignUpdateRequest(BaseModel):
+    design_template_id: str = Field(min_length=1, max_length=128)
+    design_template_name: str | None = Field(default=None, max_length=255)
+    design_html: str = Field(min_length=1)
+    design_markdown: str | None = None
+    design_context: dict[str, Any] | None = None
+    design_return_format: Literal["markdown", "docx", "pdf"] | None = None
 
 
 class ErrorResponse(BaseModel):

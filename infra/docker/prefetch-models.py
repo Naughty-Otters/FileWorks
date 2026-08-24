@@ -30,16 +30,47 @@ def _has_models(path: Path) -> bool:
 
 
 def _patch_cv2_gstreamer_stub() -> None:
-    """OpenCV's gapi init crashes under qemu if GStreamer symbols are missing."""
-    old = "cv.gapi.wip.GStreamerPipeline = cv.gapi_wip_gst_GStreamerPipeline"
-    new = "cv.gapi.wip.GStreamerPipeline = getattr(cv, 'gapi_wip_gst_GStreamerPipeline', None)"
+    """Neutralize OpenCV GStreamer wiring that breaks under qemu / headless.
+
+    Upstream does ``cv.gapi.wip.GStreamerPipeline = …`` while ``cv2`` is still
+    partially initialized. Even the getattr form fails because ``cv.gapi`` is
+    not bound yet (circular import). Skip the assignment entirely — GStreamer
+    is unavailable in this image anyway.
+    """
     root = Path("/var/task/.venv/lib")
     if not root.is_dir():
         return
+    needles = (
+        "cv.gapi.wip.GStreamerPipeline = cv.gapi_wip_gst_GStreamerPipeline",
+        "cv.gapi.wip.GStreamerPipeline = getattr(cv, 'gapi_wip_gst_GStreamerPipeline', None)",
+        'cv.gapi.wip.GStreamerPipeline = getattr(cv, "gapi_wip_gst_GStreamerPipeline", None)',
+    )
+    replacement = (
+        "# Patched for Lambda/headless: GStreamer symbols are not exported, and "
+        "assigning via cv.gapi during import circular-fails.\n"
+        "pass  # was: cv.gapi.wip.GStreamerPipeline = …\n"
+    )
     for path in root.glob("python*/site-packages/cv2/gapi/__init__.py"):
         text = path.read_text(encoding="utf-8")
-        if old in text:
-            path.write_text(text.replace(old, new), encoding="utf-8")
+        updated = text
+        for needle in needles:
+            if needle in updated:
+                updated = updated.replace(needle, replacement)
+        if updated != text:
+            path.write_text(updated, encoding="utf-8")
+            print(f"patched OpenCV gapi stub: {path}")
+
+
+def _ensure_opencv_importable() -> None:
+    """Fail fast with a clear message if OpenCV is still conflicted."""
+    try:
+        import cv2  # noqa: F401
+    except Exception as exc:  # noqa: BLE001
+        raise SystemExit(
+            "OpenCV import failed after image patching. The Dockerfile must "
+            "uninstall opencv-python / opencv-contrib-python and leave only "
+            f"opencv-python-headless. Underlying error: {exc}"
+        ) from exc
 
 
 def prefetch_docling() -> None:
@@ -47,6 +78,7 @@ def prefetch_docling() -> None:
         print(f"Docling models already present at {DOCLING_DIR}")
         return
     _patch_cv2_gstreamer_stub()
+    _ensure_opencv_importable()
     try:
         from docling.utils.model_downloader import download_models
     except ImportError:

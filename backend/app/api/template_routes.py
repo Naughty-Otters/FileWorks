@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -15,7 +15,7 @@ from app.auth.quota import AI_ACTION, assert_can_use_ai
 from app.db.models import UsageEvent, UserTemplate
 from app.db.session import get_db
 from app.processing.template.extract import extract_template_context
-from app.processing.template.render import render_docx, render_html, render_markdown
+from app.processing.template.render import render_docx, render_html, render_markdown, render_pdf
 from app.processing.template.runtime import (
     auto_layout,
     coalesce_context,
@@ -78,6 +78,7 @@ class TemplateRenderRequest(BaseModel):
 
     Pass ``variables`` (alias ``context``) to supply values by variable name.
     List variables expect arrays of objects matching each field in ``itemSchema``.
+    Set ``envelope`` to receive HTML/markdown plus the filled context as JSON.
     """
 
     source_markdown: str | None = Field(
@@ -88,6 +89,7 @@ class TemplateRenderRequest(BaseModel):
     )
     format: Literal["html", "docx", "pdf", "markdown"] = "html"
     fill: Literal["auto", "defaults", "none"] = "auto"
+    envelope: bool = False
 
 
 class StarterVariable(BaseModel):
@@ -281,13 +283,27 @@ def _fill_and_render(
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers=headers,
         )
-    if body.format == "markdown":
-        text = render_markdown(laid_out)
-        headers["Content-Disposition"] = f'attachment; filename="{filename_stem}.md"'
-        return Response(content=text, media_type="text/markdown; charset=utf-8", headers=headers)
-    html = render_html(laid_out, title=title)
     if body.format == "pdf":
-        headers["X-FileWorks-PDF-Mode"] = "browser-print"
+        data = render_pdf(laid_out, title=title)
+        headers["Content-Disposition"] = f'attachment; filename="{filename_stem}.pdf"'
+        return Response(content=data, media_type="application/pdf", headers=headers)
+    html = render_html(laid_out, title=title)
+    markdown_out = render_markdown(laid_out)
+    if body.format == "markdown" and not body.envelope:
+        headers["Content-Disposition"] = f'attachment; filename="{filename_stem}.md"'
+        return Response(content=markdown_out, media_type="text/markdown; charset=utf-8", headers=headers)
+    if body.envelope or body.format == "markdown":
+        return JSONResponse(
+            content={
+                "html": html,
+                "markdown": markdown_out,
+                "context": context,
+                "fill_mode": fill_mode,
+                "filename": f"{filename_stem}.html",
+                "warnings": [*warnings, *layout_warnings],
+            },
+            headers=headers,
+        )
     return Response(content=html, media_type="text/html; charset=utf-8", headers=headers)
 
 

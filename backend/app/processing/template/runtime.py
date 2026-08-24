@@ -199,20 +199,14 @@ def expand_repeats(document: DesignDocument, context: Mapping[str, Any]) -> Desi
 
 
 def auto_layout(document: DesignDocument) -> tuple[DesignDocument, list[str]]:
-    """Fill missing coordinates and clamp nodes to their page bounds."""
-    laid_out = document.model_copy(deep=True)
-    page = laid_out.page
+    """Full design-pad layout (text-fit, arrange, reflow, page growth)."""
+    from app.processing.template.layout import apply_full_layout
+
+    laid_out = apply_full_layout(document)
     warnings: list[str] = []
-
-    def place(nodes: list[DesignNode]) -> None:
-        for node in nodes:
-            node.w = min(node.w, page.w)
-            node.h = min(node.h, page.h)
-            node.x = max(0, min(node.x, page.w - node.w))
-            if node.y + node.h > page.h:
-                warnings.append(f"Node {node.id} exceeded page bounds and was clamped")
-            node.y = max(0, min(node.y, page.h - node.h))
-            place(node.children)
-
-    place([laid_out.root])
+    page_h = laid_out.page.h
+    if laid_out.root.h > page_h + 0.5:
+        pages = max(1, int(round(laid_out.root.h / page_h)))
+        if pages > 1:
+            warnings.append(f"Document grew to {pages} pages to fit content")
     return laid_out, warnings

@@ -47,6 +47,8 @@ class LambdaReaderImageTests(unittest.TestCase):
         self.assertIn("--mount=from=model-cache", body)
         self.assertIn("/mc/var/task/.cache", body)
         self.assertIn("gapi_wip_gst_GStreamerPipeline", body)
+        self.assertIn("opencv-python-headless", body)
+        self.assertIn("opencv-contrib-python", body)
         self.assertIn("site-packages/nvidia", body)
         self.assertIn('CMD ["/var/task/.venv/bin/python", "-m", "app"]', body)
 
@@ -58,6 +60,7 @@ class LambdaReaderImageTests(unittest.TestCase):
         self.assertIn("craft_mlt_25k.zip", body)
         self.assertIn("gapi_wip_gst_GStreamerPipeline", body)
         self.assertIn("prefetch_paddle", body)
+        self.assertIn("_ensure_opencv_importable", body)
 
     def test_lambda_env_points_caches_at_image_fs(self) -> None:
         body = LAMBDA_TF.read_text(encoding="utf-8")

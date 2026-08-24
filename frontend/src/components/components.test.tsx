@@ -2,13 +2,13 @@ import { createRef } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HistoryPanel } from "@/components/history-panel";
-import { MarkdownToolbar, ShowMarkdownToolbarButton } from "@/components/markdown-toolbar";
+import { MarkdownToolbar, MarkdownToolbarToggle } from "@/components/markdown-toolbar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AnnotatedImage, RegionList } from "@/components/region-overlay";
 import { UploadPanel } from "@/components/upload-panel";
 import { ExtractOptionsPanel } from "@/components/extract-options-panel";
-import { ConvertControls } from "@/components/convert-controls";
+import { ConvertControls, TargetFormatDialog } from "@/components/convert-controls";
 import { AuthBar } from "@/components/auth-bar";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { LoginScreen, loginRedirectPath } from "@/components/login-screen";
@@ -110,11 +110,10 @@ describe("HistoryPanel", () => {
 });
 
 describe("MarkdownToolbar", () => {
-  it("fires commands and can hide", async () => {
+  it("fires commands", async () => {
     const user = userEvent.setup();
     const onCommand = vi.fn();
-    const onHide = vi.fn();
-    render(<MarkdownToolbar onCommand={onCommand} onHide={onHide} />);
+    render(<MarkdownToolbar onCommand={onCommand} />);
     await user.click(screen.getByTitle("Bold"));
     expect(onCommand).toHaveBeenCalledWith("bold");
     await user.click(screen.getByTitle("Italic"));
@@ -133,16 +132,25 @@ describe("MarkdownToolbar", () => {
     vi.spyOn(window, "prompt").mockReturnValue("https://example.com");
     await user.click(screen.getByTitle("Insert link"));
     expect(onCommand).toHaveBeenCalledWith("link", { url: "https://example.com" });
-    await user.click(screen.getByTitle("Hide formatting toolbar"));
-    expect(onHide).toHaveBeenCalled();
-    const show = vi.fn();
-    render(<ShowMarkdownToolbarButton onClick={show} />);
-    await user.click(screen.getByTitle("Show formatting toolbar"));
-    expect(show).toHaveBeenCalled();
+  });
+
+  it("toggles formatting toolbar from a single chrome control", async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+    const { rerender } = render(<MarkdownToolbarToggle pressed onToggle={onToggle} />);
+    const hide = screen.getByRole("button", { name: "Hide formatting toolbar" });
+    expect(hide).toHaveAttribute("aria-pressed", "true");
+    await user.click(hide);
+    expect(onToggle).toHaveBeenCalled();
+    rerender(<MarkdownToolbarToggle pressed={false} onToggle={onToggle} />);
+    const show = screen.getByRole("button", { name: "Show formatting toolbar" });
+    expect(show).toHaveAttribute("aria-pressed", "false");
+    await user.click(show);
+    expect(onToggle).toHaveBeenCalledTimes(2);
   });
 
   it("wraps onto extra rows instead of scrolling sideways", () => {
-    render(<MarkdownToolbar onCommand={vi.fn()} onHide={vi.fn()} />);
+    render(<MarkdownToolbar onCommand={vi.fn()} />);
     const bar = screen.getByTitle("Bold").closest("div")?.parentElement;
     expect(bar?.className).toContain("flex-wrap");
     expect(bar?.className).not.toContain("overflow-x-auto");
@@ -220,27 +228,22 @@ describe("UploadPanel", () => {
       />,
     );
     expect(screen.getByText("note.png")).toBeInTheDocument();
-    await user.click(screen.getByLabelText("Clear file"));
+    await user.click(screen.getByLabelText("New source"));
     expect(onFileSelect).toHaveBeenCalledWith(null);
   });
 
-  it("empty source invites file and Produce as", async () => {
-    const user = userEvent.setup();
-    const onChooseIntent = vi.fn();
+  it("empty source invites a file drop", async () => {
     render(
       <UploadPanel
         file={null}
         previewUrl={null}
         onFileSelect={vi.fn()}
         onCollapse={vi.fn()}
-        onChooseIntent={onChooseIntent}
       />,
     );
     expect(screen.getAllByText(/Drop a file\. Choose what to produce/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Source is your file/i)).toBeInTheDocument();
+    expect(screen.getByText(/Choose what to produce on the right/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Produce as" }));
-    expect(onChooseIntent).toHaveBeenCalled();
   });
 
   it("previews a markdown file and accepts txt/md in the picker", async () => {
@@ -277,19 +280,10 @@ describe("ExtractOptionsPanel", () => {
 });
 
 describe("ConvertControls", () => {
-  it("defaults target format to Markdown via its own popup", async () => {
-    const user = userEvent.setup();
+  it("defaults target format to Markdown via Produce as dialog", () => {
     render(
-      <ConvertControls
-        options={DEFAULT_EXTRACT_OPTIONS}
-        onChange={vi.fn()}
-        me={guestMe}
-        health={null}
-        loading={false}
-        canExtract={false}
-        quotaBlocked={false}
-        onConvert={vi.fn()}
-        onStop={vi.fn()}
+      <TargetFormatDialog
+        outputLayout="standard"
         designTargets={[
           {
             id: "builtin:invoice",
@@ -298,13 +292,14 @@ describe("ConvertControls", () => {
             category: "business",
           },
         ]}
+        templates={[]}
+        returnFileType="pdf"
+        templateNeedsAi={false}
+        wantsReadAi={false}
+        onClose={vi.fn()}
       />,
     );
     expect(screen.queryByLabelText("Output layout")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Options" }));
-    expect(screen.queryByLabelText("Output layout")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Return file type")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Produce as" }));
     expect(screen.getByRole("dialog", { name: "Produce as" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Markdown/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /Starter design/i })).toBeInTheDocument();
@@ -320,16 +315,7 @@ describe("ConvertControls", () => {
     const user = userEvent.setup();
     const onOutputLayoutChange = vi.fn();
     render(
-      <ConvertControls
-        options={DEFAULT_EXTRACT_OPTIONS}
-        onChange={vi.fn()}
-        me={guestMe}
-        health={null}
-        loading={false}
-        canExtract={false}
-        quotaBlocked={false}
-        onConvert={vi.fn()}
-        onStop={vi.fn()}
+      <TargetFormatDialog
         outputLayout="standard"
         onOutputLayoutChange={onOutputLayoutChange}
         designTargets={[
@@ -352,9 +338,13 @@ describe("ConvertControls", () => {
             category: "general",
           },
         ]}
+        templates={[]}
+        returnFileType="pdf"
+        templateNeedsAi={false}
+        wantsReadAi={false}
+        onClose={vi.fn()}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Produce as" }));
 
     const list = screen.getByRole("listbox", { name: "Starter design" });
     expect(within(list).getByText("Bill-to and totals")).toBeInTheDocument();
@@ -386,20 +376,11 @@ describe("ConvertControls", () => {
     expect(onOutputLayoutChange).toHaveBeenCalledWith("builtin:invoice");
   });
 
-  it("shows the selected starter name on the Produce as control", async () => {
+  it("selects a starter Intent from the Produce as dialog", async () => {
     const user = userEvent.setup();
     const onOutputLayoutChange = vi.fn();
-    const { rerender } = render(
-      <ConvertControls
-        options={DEFAULT_EXTRACT_OPTIONS}
-        onChange={vi.fn()}
-        me={guestMe}
-        health={null}
-        loading={false}
-        canExtract={false}
-        quotaBlocked={false}
-        onConvert={vi.fn()}
-        onStop={vi.fn()}
+    render(
+      <TargetFormatDialog
         outputLayout="standard"
         onOutputLayoutChange={onOutputLayoutChange}
         designTargets={[
@@ -410,38 +391,15 @@ describe("ConvertControls", () => {
             category: "business",
           },
         ]}
+        templates={[]}
+        returnFileType="pdf"
+        templateNeedsAi={false}
+        wantsReadAi={false}
+        onClose={vi.fn()}
       />,
     );
-    expect(screen.getByRole("button", { name: /Produce as/i })).toHaveTextContent("Markdown");
-
-    await user.click(screen.getByRole("button", { name: /Produce as/i }));
     await user.click(screen.getByRole("option", { name: /Timesheet/i }));
     expect(onOutputLayoutChange).toHaveBeenCalledWith("builtin:timesheet");
-
-    rerender(
-      <ConvertControls
-        options={DEFAULT_EXTRACT_OPTIONS}
-        onChange={vi.fn()}
-        me={guestMe}
-        health={null}
-        loading={false}
-        canExtract={false}
-        quotaBlocked={false}
-        onConvert={vi.fn()}
-        onStop={vi.fn()}
-        outputLayout="builtin:timesheet"
-        onOutputLayoutChange={onOutputLayoutChange}
-        designTargets={[
-          {
-            id: "builtin:timesheet",
-            name: "Timesheet",
-            description: "Employee hours by project",
-            category: "business",
-          },
-        ]}
-      />,
-    );
-    expect(screen.getByRole("button", { name: /Produce as/i })).toHaveTextContent("Timesheet");
   });
 
   it("uses Fill label when a starter Intent is selected", async () => {
@@ -470,6 +428,7 @@ describe("ConvertControls", () => {
       />,
     );
     expect(screen.getByRole("button", { name: "Fill Client invoice" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Fill Client invoice" })).toHaveTextContent("");
     await user.click(screen.getByRole("button", { name: "Fill Client invoice" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Sign in to convert")).toBeInTheDocument();
@@ -494,6 +453,7 @@ describe("ConvertControls", () => {
           ocr_ready: true,
           ocr_engine: "ocr",
           ocr_error: null,
+          storage_backend: "local",
           llm_ready: true,
           translate_ready: true,
           translate_languages: [
@@ -509,7 +469,9 @@ describe("ConvertControls", () => {
         onStop={vi.fn()}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "AI Convert" }));
+    const run = screen.getByRole("button", { name: "AI Convert" });
+    expect(run).toHaveTextContent("");
+    await user.click(run);
     expect(onConvert).toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Options" }));
     await user.click(screen.getByText("Read with AI"));
@@ -535,7 +497,7 @@ describe("ConvertControls", () => {
         onStop={onStop}
       />,
     );
-    await user.click(screen.getByText("Stop"));
+    await user.click(screen.getByRole("button", { name: "Stop conversion" }));
     expect(onStop).toHaveBeenCalled();
   });
 
@@ -558,6 +520,7 @@ describe("ConvertControls", () => {
     );
     const convert = screen.getByRole("button", { name: "Convert" });
     expect(convert).toBeEnabled();
+    expect(convert).toHaveTextContent("");
     await user.click(convert);
     expect(onConvert).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog", { name: "Sign in to convert" })).toBeInTheDocument();
@@ -1554,11 +1517,15 @@ describe("ResultPanel", () => {
         onToolbarVisibleChange={vi.fn()}
       />,
     );
-    await user.click(screen.getByTitle("JSON"));
+    await user.click(screen.getByRole("tab", { name: "JSON" }));
     expect(onViewChange).toHaveBeenCalledWith("json");
-    await user.click(screen.getByTitle("Source"));
-    await user.click(screen.getByLabelText("Copy"));
-    expect(navigator.clipboard.writeText).toHaveBeenCalled();
+    await user.click(screen.getByRole("tab", { name: "Source" }));
+    const tablist = screen.getByRole("tablist", { name: "Result view" });
+    expect(within(tablist).getByRole("tab", { name: "Preview" })).toBeInTheDocument();
+    // Icon-only tabs — labels live in aria-label/title, not visible text.
+    expect(within(tablist).queryByText("Preview")).not.toBeInTheDocument();
+    expect(within(tablist).queryByText("Source")).not.toBeInTheDocument();
+    expect(within(tablist).queryByText("JSON")).not.toBeInTheDocument();
     Object.defineProperty(window, "open", {
       configurable: true,
       value: vi.fn(() => ({
@@ -1572,7 +1539,7 @@ describe("ResultPanel", () => {
     expect(screen.queryByText("PNG (.png)")).not.toBeInTheDocument();
     expect(screen.queryByText("JPEG (.jpg)")).not.toBeInTheDocument();
     expect(screen.getByText("Word (.docx)")).toBeInTheDocument();
-    await user.click(screen.getByText("PDF (print)"));
+    await user.click(screen.getByText("PDF"));
     await user.click(screen.getByText(/recognized region/));
     expect(screen.getAllByText("Hello").length).toBeGreaterThan(0);
     rerender(
@@ -1605,7 +1572,7 @@ describe("ResultPanel", () => {
       <ResultPanel result={null} loading={false} error={null} view="markdown" onViewChange={vi.fn()} />,
     );
     expect(screen.getByText(/You’ll get Markdown/i)).toBeInTheDocument();
-    expect(screen.getByText(/Drop a source file, then Convert/i)).toBeInTheDocument();
+    expect(screen.getByText(/Choose what to produce, drop a source file/i)).toBeInTheDocument();
     rerender(
       <ResultPanel
         result={null}
@@ -1619,6 +1586,9 @@ describe("ResultPanel", () => {
     );
     expect(screen.getByText(/You’ll get Client invoice/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Change what to produce/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Produce as: Client invoice/i })).toHaveTextContent(
+      "Client invoice",
+    );
     rerender(<ResultPanel result={null} loading={false} error="boom" view="markdown" onViewChange={vi.fn()} />);
     expect(screen.getByText("boom")).toBeInTheDocument();
     rerender(<ResultPanel result={null} loading error={null} view="markdown" onViewChange={vi.fn()} />);
@@ -1707,7 +1677,7 @@ describe("ResultPanel", () => {
     expect(first.value).toContain(`Line ${LINES_PER_PAGE * PAGES_PER_VIEW}`);
     expect(first.value).not.toContain(`Line ${LINES_PER_PAGE * PAGES_PER_VIEW + 1}`);
     expect(screen.getByText("Pages 1–5 of 7")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Show next pages" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
     const next = screen.getByPlaceholderText("Edit Markdown source…") as HTMLTextAreaElement;
     expect(next.value).toContain(`Line ${LINES_PER_PAGE * PAGES_PER_VIEW + 1}`);
     expect(next.value).not.toContain("Line 1");
@@ -1715,6 +1685,42 @@ describe("ResultPanel", () => {
     await user.click(screen.getByRole("button", { name: "Previous" }));
     expect(screen.getByText("Pages 1–5 of 7")).toBeInTheDocument();
     expect((screen.getByPlaceholderText("Edit Markdown source…") as HTMLTextAreaElement).value).toContain("Line 1");
+    const goTo = screen.getByLabelText("Go to page") as HTMLInputElement;
+    await user.clear(goTo);
+    await user.type(goTo, "7{Enter}");
+    expect(screen.getByText("Pages 6–7 of 7")).toBeInTheDocument();
+  });
+
+  it("previews filled design HTML in an iframe so styles do not leak to the app shell", () => {
+    const designHtml =
+      '<!doctype html><html><head><style>html,body{background:#e8ece9}</style></head><body><section class="page">Invoice</section></body></html>';
+    render(
+      <ResultPanel
+        result={{
+          filename: "note.png",
+          content_type: "image/png",
+          size_bytes: 1,
+          engine: "ocr",
+          page_count: 1,
+          format: "both",
+          markdown: "# Hello",
+          json: {},
+          pages: [],
+        }}
+        loading={false}
+        error={null}
+        view="markdown"
+        onViewChange={vi.fn()}
+        markdownDraft="# Hello"
+        renderedHtml={designHtml}
+        templateId="invoice"
+        templateName="Client invoice"
+      />,
+    );
+    const frame = screen.getByTitle("Client invoice design") as HTMLIFrameElement;
+    expect(frame.tagName).toBe("IFRAME");
+    expect(frame.getAttribute("srcdoc")).toContain("background:#e8ece9");
+    expect(document.body.querySelector("style")?.textContent ?? "").not.toContain("background:#e8ece9");
   });
 });
 

@@ -81,6 +81,7 @@ test.describe("Workspace UI — upload and options", () => {
       test.skip(true, "Signed-in storage state present; guest gate not applicable");
     }
 
+    // Convert is icon-only; accessible name remains "Convert".
     const convert = page.getByRole("button", { name: /^Convert$/i });
     await expect(convert).toBeDisabled();
 
@@ -89,6 +90,30 @@ test.describe("Workspace UI — upload and options", () => {
     await convert.click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(/Sign in to convert|Sign in|Free Basic/i).first()).toBeVisible();
+  });
+
+  test("pane toggle rail appears on the far left when a pane is closed", async ({ page }) => {
+    await expect(page.getByRole("navigation", { name: "Workspace panes" })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Hide history" }).click();
+    const toggles = page.getByRole("navigation", { name: "Workspace panes" });
+    // New chrome (this branch). Staging may still be on the prior rail until deploy.
+    test.skip((await toggles.count()) === 0, "Workspace panes toggle rail not deployed on this env");
+
+    await expect(toggles).toBeVisible();
+    await expect(toggles.getByRole("button", { name: "Show history" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    await expect(toggles.getByRole("button", { name: "Source" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(toggles.getByText(/^\d+$/)).toHaveCount(0);
+
+    await toggles.getByRole("button", { name: "Show history" }).click();
+    await expect(page.getByRole("button", { name: "Hide history" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Workspace panes" })).toHaveCount(0);
   });
 });
 
@@ -128,6 +153,7 @@ test.describe("Workspace UI — Produce as starter picker", () => {
     await expect(dialog.getByRole("radio", { name: /Starter design/i })).toBeChecked();
     await dialog.getByRole("button", { name: "Done" }).click();
     await expect(produceAsToolbarButton(page)).toContainText(/Client invoice|invoice/i);
+    // Run action may be icon-only; accessible name still carries Fill {design}.
     await expect(page.getByRole("button", { name: /Fill Client invoice/i })).toBeVisible();
     await expect(page.getByText(/You’ll get Client invoice/i)).toBeVisible();
   });

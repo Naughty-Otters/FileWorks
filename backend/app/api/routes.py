@@ -17,6 +17,7 @@ from app.api.schemas import (
     ExtractOptionsResponse,
     ExtractResponse,
     HealthResponse,
+    HistoryDesignUpdateRequest,
     HistoryDetailResponse,
     HistoryFileUrlResponse,
     HistoryItem,
@@ -925,6 +926,60 @@ async def get_history_item(
         regions=regions,
         image_size=image_size,
         structure=record.structure if isinstance(record.structure, dict) else None,
+        design_template_id=record.design_template_id,
+        design_template_name=record.design_template_name,
+        design_html=record.design_html,
+        design_markdown=record.design_markdown,
+        design_context=record.design_context,
+        design_return_format=record.design_return_format,
+    )
+
+
+@router.patch("/history/{document_id}/design", response_model=HistoryDetailResponse)
+async def patch_history_design(
+    document_id: str,
+    body: HistoryDesignUpdateRequest,
+    principal: Principal = Depends(get_principal),
+    db: Session | None = Depends(get_db),
+) -> HistoryDetailResponse:
+    """Persist filled design output so history reopen matches the session preview."""
+    store, _record = _require_owned_record(document_id, principal, db)
+    updated = store.update_design(
+        document_id,
+        design_template_id=body.design_template_id,
+        design_template_name=body.design_template_name,
+        design_html=body.design_html,
+        design_markdown=body.design_markdown,
+        design_context=body.design_context,
+        design_return_format=body.design_return_format,
+    )
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+    upsert_history_summary(db, updated)
+    regions, image_size = _regions_payload(updated.json_data, updated.pages)
+    return HistoryDetailResponse(
+        id=updated.id,
+        filename=updated.filename,
+        content_type=updated.content_type,
+        size_bytes=updated.size_bytes,
+        created_at=updated.created_at,
+        engine=updated.engine,
+        page_count=updated.page_count,
+        format=updated.output_format,
+        markdown=updated.markdown,
+        data=updated.json_data,
+        pages=updated.pages,
+        storage_backend=updated.storage_backend,
+        file_url=f"/api/history/{updated.id}/file",
+        regions=regions,
+        image_size=image_size,
+        structure=updated.structure if isinstance(updated.structure, dict) else None,
+        design_template_id=updated.design_template_id,
+        design_template_name=updated.design_template_name,
+        design_html=updated.design_html,
+        design_markdown=updated.design_markdown,
+        design_context=updated.design_context,
+        design_return_format=updated.design_return_format,
     )
 
 

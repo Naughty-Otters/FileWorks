@@ -16,7 +16,7 @@ fileworks/
 - Drag-and-drop upload for images, PDFs, Markdown, TXT, and office docs (Word / Excel / PowerPoint / ODT / CSV / …)
 - **AnyDoc** conversion to clean Markdown (via `firecrawl-anydoc`)
 - Automatic fallback for scans and images (layout + text recognition when a file has no text layer)
-- Editable Markdown preview on the right; download as Markdown / TXT / HTML / JSON / PDF (print)
+- Editable Markdown preview on the right; download as Markdown / TXT / HTML / JSON / PDF
 - Light / dark theme toggle
 - Google sign-in with plans: **Guest** (browse only), **Basic** (5 files/day, 3 AI or translation/month), **Pro** (150/month, 40 with AI or translation), **Premium** (600/month, 150 with AI or translation)
 - Stripe subscriptions (optional): each pay grade maps to the matching role after Checkout / webhook confirmation

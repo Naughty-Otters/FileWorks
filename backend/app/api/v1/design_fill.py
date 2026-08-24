@@ -8,7 +8,7 @@ from typing import Any, Literal
 from fastapi import HTTPException
 
 from app.processing.template.extract import extract_template_context
-from app.processing.template.render import render_docx, render_html, render_markdown
+from app.processing.template.render import render_docx, render_html, render_markdown, render_pdf
 from app.processing.template.runtime import (
     auto_layout,
     coalesce_context,
@@ -20,7 +20,7 @@ from app.processing.template.runtime import (
 from app.processing.template.starters import get_starter_meta, load_starter_document
 
 DesignFillMode = Literal["auto", "defaults", "none"]
-DesignOutputFormat = Literal["html", "docx", "markdown"]
+DesignOutputFormat = Literal["html", "docx", "markdown", "pdf"]
 
 
 def resolve_design_output_format(target: str) -> DesignOutputFormat:
@@ -29,6 +29,8 @@ def resolve_design_output_format(target: str) -> DesignOutputFormat:
         return "docx"
     if key in {"markdown", "md"}:
         return "markdown"
+    if key == "pdf":
+        return "pdf"
     return "html"
 
 
@@ -97,6 +99,13 @@ def fill_starter_design(
             render_markdown(laid_out),
             "text/markdown; charset=utf-8",
             "md",
+            fill_mode,
+        )
+    if output_format == "pdf":
+        return (
+            render_pdf(laid_out, title=title),
+            "application/pdf",
+            "pdf",
             fill_mode,
         )
     return (

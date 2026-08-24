@@ -134,7 +134,9 @@ class V1ConvertTests(unittest.TestCase):
             files={"file": ("note.txt", b"hello", "text/plain")},
         )
         self.assertEqual(res.status_code, 400)
-        self.assertEqual(res.json()["detail"]["code"], "unsupported_target")
+        detail = res.json()["detail"]
+        self.assertEqual(detail["code"], "unsupported_target")
+        self.assertIn("PDF", detail["message"])
 
     def test_rejects_use_ai_when_unavailable(self) -> None:
         principal = _api_principal()
