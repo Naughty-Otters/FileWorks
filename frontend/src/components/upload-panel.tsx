@@ -219,41 +219,47 @@ export function UploadPanel({
         {!file ? (
           <div
             className={cn(
-              "flex min-h-0 flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-5 py-8 text-center transition sm:px-8",
+              "grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto_minmax(0,1fr)] overflow-y-auto px-5 py-6 text-center sm:px-8",
               dragging ? "bg-[var(--accent-soft)]" : "",
               disabled && "pointer-events-none opacity-60",
             )}
             {...dropHandlers}
           >
-            <div className="min-w-0 w-full max-w-sm space-y-2">
-              <p className="font-[family-name:var(--font-display)] text-xl tracking-tight text-[var(--ink)]">
-                {PRODUCT.homeLine}
-              </p>
-              <p className="text-xs leading-relaxed text-[var(--ink-muted)]">
-                {intentName
-                  ? `Then fill ${intentName} from this file.`
-                  : "Choose what to produce on the right, then convert this file."}
-              </p>
+            <div className="flex min-h-0 flex-col items-center justify-end pb-5">
+              <div className="min-w-0 w-full max-w-sm space-y-2">
+                <p className="font-[family-name:var(--font-display)] text-xl tracking-tight text-[var(--ink)]">
+                  {PRODUCT.homeLine}
+                </p>
+                <p className="text-xs leading-relaxed text-[var(--ink-muted)]">
+                  {intentName
+                    ? `Then fill ${intentName} from this file.`
+                    : "Choose what to produce on the right, then convert this file."}
+                </p>
+              </div>
             </div>
 
-            <button
-              type="button"
-              aria-label="Upload document"
-              onClick={openPicker}
-              className={cn(
-                "inline-flex w-full max-w-sm min-w-0 items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition",
-                "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)] hover:bg-[color-mix(in_oklab,var(--accent-soft)_80%,var(--accent)_12%)]",
-              )}
-            >
-              <Upload size={16} className="shrink-0" aria-hidden />
-              <span className="min-w-0 truncate">
-                {intentName ? `Choose file for ${intentName}` : "Drop or choose a file"}
-              </span>
-            </button>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                aria-label="Upload document"
+                onClick={openPicker}
+                className={cn(
+                  "inline-flex w-full max-w-sm min-w-0 items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition",
+                  "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)] hover:bg-[color-mix(in_oklab,var(--accent-soft)_80%,var(--accent)_12%)]",
+                )}
+              >
+                <Upload size={16} className="shrink-0" aria-hidden />
+                <span className="min-w-0 truncate">
+                  {intentName ? `Choose file for ${intentName}` : "Drop or choose a file"}
+                </span>
+              </button>
+            </div>
 
-            <p className="max-w-sm text-[11px] leading-relaxed text-[var(--ink-muted)]">
-              Word, Excel, PowerPoint, PDF, Markdown, TXT, CSV, images · up to 50MB
-            </p>
+            <div className="flex min-h-0 flex-col items-center justify-start pt-5">
+              <p className="max-w-sm text-[11px] leading-relaxed text-[var(--ink-muted)]">
+                Word, Excel, PowerPoint, PDF, Markdown, TXT, CSV, images · up to 50MB
+              </p>
+            </div>
           </div>
         ) : (
           <div className="relative min-h-0 flex-1 overflow-hidden bg-[color-mix(in_oklab,var(--bg)_80%,black_4%)] p-3">
