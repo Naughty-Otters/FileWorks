@@ -57,8 +57,8 @@ class V1ConvertTests(unittest.TestCase):
         self.assertIn("target_lang", option_names)
         self.assertIn("use_table_recognition", option_names)
         self.assertIn("credits", body)
-        self.assertEqual(body["credits"]["standard_per_page"], 1)
-        self.assertEqual(body["credits"]["ai_per_page"], 3)
+        self.assertEqual(body["credits"]["standard_per_page"], 0)
+        self.assertEqual(body["credits"]["ai_per_page"], 1)
         self.assertIn("pipeline", body)
         self.assertEqual(
             [item["id"] for item in body["pipeline"]["readers"]],
@@ -171,7 +171,7 @@ class V1ConvertTests(unittest.TestCase):
         self.assertIn("<html", body["content"])
         self.assertIn("Hello", body["content"])
         self.assertEqual(body["engine"], "FileWorks")
-        self.assertEqual(body["credits_used"], 1)
+        self.assertEqual(body["credits_used"], 0)
         self.assertNotIn("s3_key", body)
 
     def test_download_flag_returns_file(self) -> None:
@@ -240,6 +240,8 @@ class V1ConvertTests(unittest.TestCase):
                 }
             ),
         ), patch("app.api.v1.convert.record_api_credits"), patch(
+            "app.api.v1.convert.record_api_standard_pages"
+        ), patch(
             "app.api.v1.convert.assert_api_credits"
         ):
             res = client.post(
@@ -258,4 +260,4 @@ class V1ConvertTests(unittest.TestCase):
         self.assertTrue(body["target"].startswith("design:invoice:"))
         self.assertIn("<html", body["content"].lower())
         self.assertEqual(body["markdown"], "# Invoice\nClient: Acme\nTotal: $10")
-        self.assertEqual(body["credits_used"], 1)
+        self.assertEqual(body["credits_used"], 0)

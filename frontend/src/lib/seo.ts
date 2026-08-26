@@ -75,7 +75,7 @@ export const INPUT_FORMATS = [
 export const OUTPUT_FORMATS = ["Markdown", "TXT", "HTML", "JSON", "Word (.docx)", "print PDF"] as const;
 
 export const SITE_DESCRIPTION =
-  "From any file → Markdown or a finished Design. Convert PDF, Word, Excel, PowerPoint, images, and scans online; optionally AI-read and translate; fill invoices, family schedules, agendas, and more from that content. Workspace from free Basic; Convert API from free with page credits.";
+  "From any file → Markdown or a finished Design. Convert PDF, Word, Excel, PowerPoint, images, and scans online; optionally AI-read and translate; fill invoices, family schedules, agendas, and more from that content. Workspace from free Casual; Convert API from free with AI page credits.";
 
 export const SITE_TAGLINE = "Drop a file. Choose what to produce.";
 
@@ -90,17 +90,17 @@ export const HOME_FAQS: FaqItem[] = [
   {
     question: "Can FileWorks convert scanned PDFs and photos with OCR?",
     answer:
-      "Yes. Enable AI reading for image-only PDFs, phone photos of pages, and other scans. AI reading uses page credits on the Convert API (3 credits per page) or your workspace AI allowance.",
+      "Yes. Enable AI reading for image-only PDFs, phone photos of pages, and other scans. AI reading uses 1 page credit on the Convert API or your workspace AI page allowance.",
   },
   {
     question: "Is there a PDF to Markdown API?",
     answer:
-      "Yes. POST multipart files to /api/v1/convert with a long-lived fw_live_ API key. Examples for curl, Python, and JavaScript are on the API docs. API Free includes 100 page credits per month; paid API plans start at $19/month.",
+      "Yes. POST multipart files to /api/v1/convert with a long-lived fw_live_ API key. Examples for curl, Python, and JavaScript are on the API docs. API Free includes 1,000 standard pages and 25 AI pages per month; paid API plans start at $5/month.",
   },
   {
     question: "Does FileWorks translate documents?",
     answer:
-      "Yes. Optionally translate into 19 languages in the same conversion pass as PDF or office extraction. Translation shares the AI / translation allowance on workspace plans and uses enhanced page credits on the Convert API.",
+      "Yes. Optionally translate into 19 languages in the same conversion pass as PDF or office extraction. Translation shares the AI page allowance on workspace plans and uses 1 Convert API credit per page.",
   },
   {
     question: "Can I turn converted Markdown into invoices, schedules, or agendas?",
@@ -110,7 +110,7 @@ export const HOME_FAQS: FaqItem[] = [
   {
     question: "How much does FileWorks cost?",
     answer:
-      "Workspace Basic is free (5 conversions/day). Pro is $12/month (150 files) and Premium is $29/month (600 files). Convert API Free is free (100 credits/month); Builder $19, Scale $49, and Business $99. You can hold a workspace role and an API plan together.",
+      "Workspace Casual is free (30 conversions/day). Daily is $5/month (500 AI pages) and Expert is $29/month (5,000 AI pages). Convert is included; you pay for AI pages. Convert API Free is free; API Daily $5 and API Expert $29. You can hold a workspace role and an API plan together.",
   },
 ];
 
@@ -136,12 +136,12 @@ export const PRICING_FAQS: FaqItem[] = [
   {
     question: "What is the difference between workspace and Convert API plans?",
     answer:
-      "Workspace roles (Basic, Pro, Premium) cover the FileWorks web app: file quotas, AI reading, translation, history, and downloads. Convert API plans bill page credits and API keys separately for scripts and integrations. Both can be active on one account.",
+      "Workspace roles (Casual, Daily, Expert) cover the FileWorks web app: conversion fair-use, AI reading, translation, history, and downloads. Convert API plans bill AI page credits and API keys separately. Standard API convert is free up to a monthly page cap. Both can be active on one account.",
   },
   {
     question: "How do Convert API page credits work?",
     answer:
-      "Standard conversion costs 1 credit per page. AI reading or translation costs 3 credits per page. Unused monthly credits reset with the billing period; keys do not expire.",
+      "Standard conversion is free (monthly page cap). AI reading, translation, or Design auto-fill costs 1 credit per page. Unused monthly credits reset with the billing period; keys do not expire.",
   },
   {
     question: "Can I cancel or get a refund?",
@@ -151,7 +151,7 @@ export const PRICING_FAQS: FaqItem[] = [
   {
     question: "Do I need to pay to try PDF to Markdown?",
     answer:
-      "No. Sign in for free Basic (5 conversions per day and a small AI allowance). API Free adds 100 page credits per month for programmatic convert calls.",
+      "No. Sign in for free Casual (30 conversions per day and 25 AI pages). API Free adds 1,000 standard pages and 25 AI pages per month for programmatic convert calls.",
   },
 ];
 
@@ -175,7 +175,7 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
     title: "PDF to Markdown with AI & translation",
     headline: "Convert PDF to Markdown — AI reading & translation",
     description:
-      "Turn PDFs into editable Markdown online. Optional AI reading for scanned/OCR pages and translation into 19 languages in the same pass. Free Basic plan at fileworks.ai.",
+      "Turn PDFs into editable Markdown online. Optional AI reading for scanned/OCR pages and translation into 19 languages in the same pass. Free Casual plan at fileworks.ai.",
     intro:
       "PDFs keep layout for printing, not for editing or feeding LLMs. FileWorks converts PDF layout into Markdown for Obsidian, Cursor, ChatGPT, Claude, docs repos, and RAG pipelines. Enable AI reading for scans, and optionally translate the result into 19 languages without a second tool.",
     bullets: [
@@ -193,12 +193,12 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
       {
         question: "Is PDF to Markdown free on FileWorks?",
         answer:
-          "Yes on Basic: five conversions per day after you sign in, plus a small AI / translation allowance. Guest browsing does not convert files. Paid Pro and Premium raise monthly volume and AI allowances.",
+          "Yes on Casual: thirty conversions per day after you sign in, plus 25 AI pages a month. Guest browsing does not convert files. Daily ($5) and Expert ($29) raise AI page allowances.",
       },
       {
         question: "Can I OCR and translate a PDF in one step?",
         answer:
-          "Yes. Enable AI reading for image-only or poorly selectable PDFs, and set a translation language. Both share the workspace AI / translation allowance, or Convert API enhanced credits (3 per page).",
+          "Yes. Enable AI reading for image-only or poorly selectable PDFs, and set a translation language. Both share the workspace AI page allowance, or Convert API AI credits (1 per page).",
       },
     ],
     related: ["word-to-markdown", "image-to-markdown", "excel-to-markdown"],
@@ -209,7 +209,7 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
     title: "Word to Markdown with AI & translation",
     headline: "Convert Word (DOCX) to Markdown — translate too",
     description:
-      "Convert Microsoft Word .doc and .docx to editable Markdown online. Optional AI cleanup for hard pages and translation into 19 languages. Free Basic plan available.",
+      "Convert Microsoft Word .doc and .docx to editable Markdown online. Optional AI cleanup for hard pages and translation into 19 languages. Free Casual plan available.",
     intro:
       "Move Word drafts into Markdown without hand-fixing headings and lists. FileWorks accepts .doc and .docx, extracts structure, and can translate into 19 languages in the same pass — then you edit in the workspace or export again as DOCX, HTML, or PDF.",
     bullets: [
@@ -238,14 +238,14 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
     title: "Excel to Markdown with translation",
     headline: "Convert Excel to Markdown tables — with translation",
     description:
-      "Convert Excel .xls and .xlsx into Markdown tables online. Optionally translate sheet text into 19 languages. Useful for reports, docs, and LLM context. Free Basic plan.",
+      "Convert Excel .xls and .xlsx into Markdown tables online. Optionally translate sheet text into 19 languages. Useful for reports, docs, and LLM context. Free Casual plan.",
     intro:
       "Spreadsheets do not paste cleanly into notes or prompts. FileWorks turns Excel workbooks into Markdown you can edit, share, or send to an API — and optionally translate cell text into 19 languages in the same pass. CSV and OpenDocument spreadsheets are supported too.",
     bullets: [
       "Accepts .xls, .xlsx, .ods, and CSV",
       "Markdown table-oriented output for structured sheets",
       "Optional translation into 19 languages",
-      "Automate with the Convert API (AI / translation use enhanced page credits)",
+      "Automate with the Convert API (AI / translation use 1 credit per page)",
     ],
     steps: [
       "Drop an Excel or CSV file into the workspace.",
@@ -267,7 +267,7 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
     title: "PowerPoint to Markdown with AI & translation",
     headline: "Convert PowerPoint to Markdown — AI & translation",
     description:
-      "Convert PowerPoint .ppt and .pptx into editable Markdown online. AI reading for image-heavy slides and translation into 19 languages. Free Basic plan available.",
+      "Convert PowerPoint .ppt and .pptx into editable Markdown online. AI reading for image-heavy slides and translation into 19 languages. Free Casual plan available.",
     intro:
       "Slide decks are awkward to quote in docs and agents. FileWorks converts PowerPoint into Markdown so you can summarize, search, and reuse the content. Use AI reading when slides are image-heavy, and optionally translate into 19 languages in one pass.",
     bullets: [
@@ -314,7 +314,7 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
       {
         question: "Is AI OCR and translation included on the free plan?",
         answer:
-          "Basic includes a small monthly AI / translation allowance (3 uses). Pro and Premium raise that allowance. Convert API charges 3 credits per page when AI reading or translation is on.",
+          "Casual includes 25 AI / translation pages per month. Daily and Expert raise that allowance. Convert API charges 1 credit per page when AI reading or translation is on. Standard convert does not use AI credits.",
       },
     ],
     related: ["pdf-to-markdown", "word-to-markdown", "powerpoint-to-markdown"],
@@ -438,30 +438,30 @@ export function softwareApplicationJsonLd() {
     offers: [
       {
         "@type": "Offer",
-        name: "Basic",
+        name: "Casual",
         price: "0",
         priceCurrency: "USD",
         availability: "https://schema.org/InStock",
         url: absoluteUrl("/pricing"),
-        description: "5 conversions per day with a small AI / translation allowance",
+        description: "30 conversions per day with 25 AI / translation pages per month",
       },
       {
         "@type": "Offer",
-        name: "Pro",
-        price: "12.00",
+        name: "Daily",
+        price: "5.00",
         priceCurrency: "USD",
         availability: "https://schema.org/InStock",
         url: absoluteUrl("/pricing"),
         priceSpecification: {
           "@type": "UnitPriceSpecification",
-          price: "12.00",
+          price: "5.00",
           priceCurrency: "USD",
           billingDuration: "P1M",
         },
       },
       {
         "@type": "Offer",
-        name: "Premium",
+        name: "Expert",
         price: "29.00",
         priceCurrency: "USD",
         availability: "https://schema.org/InStock",
@@ -475,14 +475,14 @@ export function softwareApplicationJsonLd() {
       },
       {
         "@type": "Offer",
-        name: "API Builder",
-        price: "19.00",
+        name: "API Expert",
+        price: "29.00",
         priceCurrency: "USD",
         availability: "https://schema.org/InStock",
         url: absoluteUrl("/pricing"),
         priceSpecification: {
           "@type": "UnitPriceSpecification",
-          price: "19.00",
+          price: "29.00",
           priceCurrency: "USD",
           billingDuration: "P1M",
         },

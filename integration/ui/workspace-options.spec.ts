@@ -89,7 +89,7 @@ test.describe("Workspace UI — upload and options", () => {
     await expect(convert).toBeEnabled();
     await convert.click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/Sign in to convert|Sign in|Free Basic/i).first()).toBeVisible();
+    await expect(page.getByText(/Sign in to convert|Sign in|Free Casual/i).first()).toBeVisible();
   });
 
   test("pane toggle rail appears on the far left when a pane is closed", async ({ page }) => {

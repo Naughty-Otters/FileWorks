@@ -32,9 +32,14 @@ from app.api.v1.schemas import (
     ConvertSource,
 )
 from app.processing.template.starters import get_starter_meta
-from app.auth.api_plans import convert_credits, get_api_plan
+from app.auth.api_plans import convert_credits, convert_standard_pages, get_api_plan
 from app.auth.deps import Principal, get_principal
-from app.auth.quota import api_quota_snapshot, assert_api_credits, record_api_credits
+from app.auth.quota import (
+    api_quota_snapshot,
+    assert_api_credits,
+    record_api_credits,
+    record_api_standard_pages,
+)
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.processing.remote_llm import invoke_remote_convert, needs_remote_llm
@@ -224,7 +229,6 @@ async def convert_file(
             },
         )
     api_plan = principal.api_plan or get_api_plan(getattr(principal.user, "api_plan", None))
-    assert_api_credits(db, user_id=principal.user_id, plan=api_plan)
     design_id = (design or "").strip()
     fill_raw = (design_fill or "auto").strip().lower() or "auto"
     if fill_raw not in {"auto", "defaults", "none"}:
@@ -260,6 +264,7 @@ async def convert_file(
     # Design AI fill (auto) bills like AI reading / translation.
     design_ai = bool(design_id) and fill_raw == "auto"
     enhanced = options.use_ai or bool(options.normalized_target_lang()) or design_ai
+    assert_api_credits(db, user_id=principal.user_id, plan=api_plan, enhanced=enhanced)
 
     data = await file.read()
     original_name, suffix = _validate_file(file, data)
@@ -334,6 +339,7 @@ async def convert_file(
         markdown = result.get("markdown") or ""
         page_count = int(result.get("page_count", 0))
         credits_used = convert_credits(page_count=page_count, enhanced=enhanced)
+        standard_pages = convert_standard_pages(page_count=page_count, enhanced=enhanced)
         title = Path(original_name).stem or "document"
         design_fill_used: str | None = None
         response_target = str(target_info["id"])
@@ -376,6 +382,11 @@ async def convert_file(
             db,
             user_id=principal.user_id,
             credits=credits_used,
+        )
+        record_api_standard_pages(
+            db,
+            user_id=principal.user_id,
+            pages=standard_pages,
         )
 
         if _form_bool(download):

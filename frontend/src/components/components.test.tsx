@@ -524,11 +524,11 @@ describe("ConvertControls", () => {
     await user.click(convert);
     expect(onConvert).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog", { name: "Sign in to convert" })).toBeInTheDocument();
-    expect(screen.getByText(/Free · Basic/i)).toBeInTheDocument();
-    expect(screen.getByText("5 conversions / day")).toBeInTheDocument();
-    expect(screen.getByText("5 files / day")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Start free with Basic" })).toHaveAttribute("href", "/login");
-    expect(screen.getByRole("link", { name: /See Free Basic/i })).toHaveAttribute("href", "/pricing");
+    expect(screen.getByText(/Free · Casual/i)).toBeInTheDocument();
+    expect(screen.getByText("30 conversions / day")).toBeInTheDocument();
+    expect(screen.getByText("30 files / day")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Start free with Casual" })).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("link", { name: /See Free Casual/i })).toHaveAttribute("href", "/pricing");
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await user.click(convert);
@@ -589,7 +589,7 @@ describe("ConvertControls", () => {
       />,
     );
     await user.click(screen.getByRole("button", { name: "Convert" }));
-    expect(screen.getByRole("dialog", { name: "Daily conversion limit reached" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Today's conversion limit reached" })).toBeInTheDocument();
   });
 
   it("explains a reached monthly quota in the policy popup", async () => {
@@ -651,7 +651,7 @@ describe("ConvertControls", () => {
     );
     await user.click(screen.getByRole("button", { name: "AI Convert" }));
     expect(screen.getByRole("dialog", { name: "Monthly AI allowance reached" })).toBeInTheDocument();
-    expect(screen.getByText(/40 with AI or translation/)).toBeInTheDocument();
+    expect(screen.getByText(/500 AI pages \/ month/)).toBeInTheDocument();
   });
 });
 
@@ -697,7 +697,7 @@ describe("AuthBar", () => {
       />,
     );
     expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/profile");
-    expect(screen.getByTitle("Ada · pro · 1/5 today")).toBeInTheDocument();
+    expect(screen.getByTitle("Ada · Daily · 1/5 today")).toBeInTheDocument();
     expect(screen.queryByLabelText("Sign out")).not.toBeInTheDocument();
   });
 
@@ -713,7 +713,7 @@ describe("AuthBar", () => {
       />,
     );
     expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/profile");
-    expect(screen.getByTitle("a@b.co · premium · 12/500 this month")).toBeInTheDocument();
+    expect(screen.getByTitle("a@b.co · Expert · 12/500 this month")).toBeInTheDocument();
     expect(screen.getByText("A")).toBeInTheDocument();
   });
 });
@@ -781,9 +781,9 @@ describe("LoginScreen", () => {
     render(<LoginScreen />);
     expect(screen.getByText("Sign in")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Continue as guest" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: /See Free Basic/i })).toHaveAttribute("href", "/pricing");
-    expect(screen.getByText(/Free · Basic/i)).toBeInTheDocument();
-    expect(screen.getByText(/five conversions a day/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /See Free Casual/i })).toHaveAttribute("href", "/pricing");
+    expect(screen.getByText(/Free · Casual/i)).toBeInTheDocument();
+    expect(screen.getByText(/thirty conversions a day/i)).toBeInTheDocument();
     await waitFor(() => expect(api.fetchMe).toHaveBeenCalled());
   });
 
@@ -850,23 +850,23 @@ describe("PricingPage", () => {
     vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
       enabled: false,
       currency: "usd",
-      amounts: { basic: 0, pro: 12, premium: 29 },
+      amounts: { basic: 0, pro: 5, premium: 29 },
       prices: { basic: false, pro: false, premium: false },
     });
     render(<PricingPage />);
     expect(await screen.findByText("Prices and roles")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Choose Pro" })).toHaveAttribute("href", "/login?next=%2Fpricing");
-    expect(screen.getByRole("link", { name: "Start free with Basic" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Choose Daily" })).toHaveAttribute("href", "/login?next=%2Fpricing");
+    expect(screen.getByRole("link", { name: "Start free with Casual" })).toHaveAttribute(
       "href",
       "/login?next=%2Fpricing",
     );
     expect(screen.getAllByText("Free").length).toBeGreaterThan(2);
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login?next=%2Fpricing");
     expect(screen.getByText("Role comparison")).toBeInTheDocument();
-    expect(screen.getAllByText("$12 / month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("$5 / month").length).toBeGreaterThan(0);
     expect(screen.getAllByText("$29 / month").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("40 with AI or translation").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("150 with AI or translation").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("500 AI pages / month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("5,000 AI pages / month").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Refunds" })).toHaveAttribute("href", "/legal#refunds");
     expect(screen.getByRole("link", { name: "Cancellation" })).toHaveAttribute("href", "/legal#cancellation");
   });
@@ -883,7 +883,7 @@ describe("PricingPage", () => {
     vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
       enabled: true,
       currency: "usd",
-      amounts: { basic: 0, pro: 12, premium: 29 },
+      amounts: { basic: 0, pro: 5, premium: 29 },
       prices: { basic: false, pro: true, premium: true },
     });
     vi.spyOn(api, "startCheckout").mockResolvedValue({
@@ -892,7 +892,7 @@ describe("PricingPage", () => {
       plan: "pro",
     });
     render(<PricingPage />);
-    await user.click(await screen.findByRole("button", { name: "Upgrade to Pro" }));
+    await user.click(await screen.findByRole("button", { name: "Upgrade to Daily" }));
     expect(api.startCheckout).toHaveBeenCalledWith("pro", "/pricing");
     expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs");
   });
@@ -906,7 +906,7 @@ describe("PricingPage", () => {
     vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
       enabled: true,
       currency: "usd",
-      amounts: { basic: 0, pro: 12, premium: 29 },
+      amounts: { basic: 0, pro: 5, premium: 29 },
       prices: { basic: false, pro: true, premium: true },
     });
     render(<PricingPage />);
@@ -927,7 +927,7 @@ describe("PricingPage", () => {
     vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
       enabled: true,
       currency: "usd",
-      amounts: { basic: 0, pro: 12, premium: 29 },
+      amounts: { basic: 0, pro: 5, premium: 29 },
       prices: { basic: false, pro: true, premium: true },
     });
     vi.spyOn(api, "startCheckout").mockResolvedValue({
@@ -936,7 +936,7 @@ describe("PricingPage", () => {
       plan: "pro",
     });
     render(<PricingPage />);
-    await user.click(await screen.findByRole("button", { name: "Switch to Pro" }));
+    await user.click(await screen.findByRole("button", { name: "Switch to Daily" }));
     expect(api.startCheckout).toHaveBeenCalledWith("pro", "/pricing");
     expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs_switch");
   });
@@ -951,7 +951,7 @@ describe("PricingPage", () => {
     vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
       enabled: true,
       currency: "usd",
-      amounts: { basic: 0, pro: 12, premium: 29 },
+      amounts: { basic: 0, pro: 5, premium: 29 },
       prices: { basic: false, pro: true, premium: true },
     });
     vi.spyOn(api, "confirmCheckout").mockResolvedValue({ plan: "pro" });
@@ -976,7 +976,7 @@ describe("PricingPage", () => {
     vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
       enabled: true,
       currency: "usd",
-      amounts: { basic: 0, pro: 12, premium: 29 },
+      amounts: { basic: 0, pro: 5, premium: 29 },
       prices: { basic: false, pro: true, premium: true },
     });
     vi.spyOn(api, "confirmCheckout").mockRejectedValue(new Error("confirm failed"));
@@ -1002,13 +1002,13 @@ describe("PricingPage", () => {
     vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
       enabled: true,
       currency: "usd",
-      amounts: { basic: 0, pro: 12, premium: 29 },
+      amounts: { basic: 0, pro: 5, premium: 29 },
       prices: { basic: false, pro: true, premium: true },
     });
     vi.spyOn(api, "startCheckout").mockResolvedValue({ url: null, updated: false, plan: "pro" });
     render(<PricingPage />);
     expect(await screen.findByText(/Checkout canceled — no charge/i)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+    await user.click(screen.getByRole("button", { name: "Upgrade to Daily" }));
     expect(await screen.findByText("Stripe did not return a billing URL")).toBeInTheDocument();
     expect(assign).not.toHaveBeenCalled();
   });
@@ -1023,7 +1023,7 @@ describe("PricingPage", () => {
     vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
       enabled: true,
       currency: "usd",
-      amounts: { basic: 0, pro: 12, premium: 29 },
+      amounts: { basic: 0, pro: 5, premium: 29 },
       prices: { basic: false, pro: true, premium: true },
     });
     vi.spyOn(api, "syncBilling").mockResolvedValue({
@@ -1047,7 +1047,7 @@ describe("PricingPage", () => {
     vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
       enabled: true,
       currency: "usd",
-      amounts: { basic: 0, pro: 12, premium: 29 },
+      amounts: { basic: 0, pro: 5, premium: 29 },
       prices: { basic: false, pro: true, premium: true },
     });
     vi.spyOn(api, "syncBilling").mockResolvedValue({
@@ -1074,16 +1074,16 @@ describe("PricingPage", () => {
       ...guestMe,
       user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "premium" },
       plan: "premium",
-      quota: { ...guestMe.quota, used_month: 200, used_ai_month: 10 },
+      quota: { ...guestMe.quota, used_day: 50, used_ai_month: 600 },
     });
     vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
       enabled: true,
       currency: "usd",
-      amounts: { basic: 0, pro: 12, premium: 29 },
+      amounts: { basic: 0, pro: 5, premium: 29 },
       prices: { basic: false, pro: true, premium: true },
     });
     render(<PricingPage />);
-    expect(await screen.findByRole("button", { name: "Switch to Pro" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Switch to Daily" })).toBeDisabled();
     expect(screen.getByText(/Usage is over this plan/)).toBeInTheDocument();
   });
 });
@@ -1109,10 +1109,9 @@ describe("AboutPage", () => {
     expect(screen.getByRole("heading", { name: "FileWorks" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Goods and services" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Products we sell" })).toBeInTheDocument();
-    expect(screen.getAllByText("$12 / month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("$5 / month").length).toBeGreaterThan(0);
     expect(screen.getAllByText("$29 / month").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("$19 / month").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("API Scale").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("API Expert").length).toBeGreaterThan(0);
     expect(screen.getAllByText("support@fileworks.ai").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "API" })[0]).toHaveAttribute("href", "/docs");
   });
@@ -1196,7 +1195,7 @@ describe("ProfilePage", () => {
     expect(screen.getAllByText(/1 \/ 1 today/).length).toBeGreaterThan(0);
     expect(screen.getByText("AI / translation today")).toBeInTheDocument();
     expect(screen.getByText("Convert files")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+    await user.click(screen.getByRole("button", { name: "Upgrade to Daily" }));
     expect(api.upgradePlan).toHaveBeenCalledWith("pro");
     expect(await screen.findByText("Current plan")).toBeInTheDocument();
   });
@@ -1221,7 +1220,7 @@ describe("ProfilePage", () => {
     vi.spyOn(api, "upgradePlan").mockResolvedValue(basicMe);
     render(<ProfilePage />);
     expect(await screen.findByText("Ada")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Switch to Basic" }));
+    await user.click(screen.getByRole("button", { name: "Switch to Casual" }));
     expect(api.upgradePlan).toHaveBeenCalledWith("basic");
     expect(await screen.findByText("Current plan")).toBeInTheDocument();
   });
@@ -1246,8 +1245,8 @@ describe("ProfilePage", () => {
     vi.spyOn(api, "upgradePlan").mockRejectedValue(new Error("plan_invalid"));
     render(<ProfilePage />);
     expect(await screen.findByText(/20 \/ 100 this month/)).toBeInTheDocument();
-    expect(screen.getByText(/AI \/ translation this month/)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Upgrade to Premium" }));
+    expect(screen.getByText(/AI \/ translation pages this month/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Upgrade to Expert" }));
     expect(await screen.findByText("plan_invalid")).toBeInTheDocument();
   });
 
@@ -1265,7 +1264,7 @@ describe("ProfilePage", () => {
     vi.spyOn(api, "startCheckout").mockResolvedValue({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
     render(<ProfilePage />);
     expect(await screen.findByText(/Downgrade when this period's usage fits/)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+    await user.click(screen.getByRole("button", { name: "Upgrade to Daily" }));
     expect(api.startCheckout).toHaveBeenCalledWith("pro");
     expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs");
     expect(screen.getByRole("button", { name: "Manage billing" })).toBeInTheDocument();
@@ -1296,11 +1295,11 @@ describe("ProfilePage", () => {
       user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "premium" },
       plan: "premium",
       permissions: { extract: true, "extract.ai": true, export: true },
-      quota: { ...guestMe.quota, used_month: 200, used_ai_month: 10, limit_month: 600, remaining_month: 400 },
-      billing: { enabled: true, prices: { basic: false, pro: true, premium: true }, amounts: { basic: 0, pro: 12, premium: 29 } },
+      quota: { ...guestMe.quota, used_day: 50, used_ai_month: 600, limit_day: 200, remaining_day: 150 },
+      billing: { enabled: true, prices: { basic: false, pro: true, premium: true }, amounts: { basic: 0, pro: 5, premium: 29 } },
     });
     render(<ProfilePage />);
-    expect(await screen.findByRole("button", { name: "Switch to Pro" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Switch to Daily" })).toBeDisabled();
     expect(screen.getByText(/Usage is over this plan/)).toBeInTheDocument();
   });
 
@@ -1321,7 +1320,7 @@ describe("ProfilePage", () => {
       plan: "pro",
     });
     render(<ProfilePage />);
-    await user.click(await screen.findByRole("button", { name: "Switch to Pro" }));
+    await user.click(await screen.findByRole("button", { name: "Switch to Daily" }));
     expect(api.startCheckout).toHaveBeenCalledWith("pro");
     expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs_switch");
   });
@@ -1333,7 +1332,7 @@ describe("ProfilePage", () => {
       user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
       plan: "basic",
       api_plan: "api_free",
-      api_quota: { used_credits: 0, limit_credits: 100, remaining_credits: 100 },
+      api_quota: { used_credits: 0, limit_credits: 25, remaining_credits: 25 },
     });
     vi.spyOn(api, "createApiKey").mockResolvedValue({
       id: "k1",
@@ -1359,9 +1358,9 @@ describe("ProfilePage", () => {
     render(<ProfilePage />);
     expect(await screen.findByRole("heading", { name: "API keys" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "API plan" })).toBeInTheDocument();
-    expect(screen.getByText("API credits this month")).toBeInTheDocument();
-    expect(screen.getAllByText(/0 \/ 100 this month/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Convert API: 100 credits \/ month/)).toBeInTheDocument();
+    expect(screen.getByText("API AI pages this month")).toBeInTheDocument();
+    expect(screen.getAllByText(/0 \/ 25 this month/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Convert API: 25 AI pages \/ month/)).toBeInTheDocument();
     await user.type(screen.getByPlaceholderText("Key name (optional)"), "CI");
     await user.click(screen.getByRole("button", { name: "Generate key" }));
     expect(api.createApiKey).toHaveBeenCalledWith("CI");
@@ -1427,7 +1426,7 @@ describe("ProfilePage", () => {
     vi.spyOn(api, "openBillingPortal").mockResolvedValue({ url: "https://billing.stripe.test/p" });
     render(<ProfilePage />);
     expect(await screen.findByText(/Checkout canceled — no charge/i)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+    await user.click(screen.getByRole("button", { name: "Upgrade to Daily" }));
     expect(await screen.findByText("Stripe did not return a billing URL")).toBeInTheDocument();
     expect(assign).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Manage billing" }));

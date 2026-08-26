@@ -4,7 +4,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { MarketingNav } from "@/components/marketing-nav";
 import { SeoFaq } from "@/components/seo-faq";
 import { JsonLd } from "@/components/json-ld";
-import { API_PLAN_CATALOG, PLAN_CATALOG, PRICE_ROLES } from "@/lib/plans";
+import { PUBLIC_API_PLANS, PLAN_CATALOG, PRICE_ROLES } from "@/lib/plans";
 import { BUSINESS_NAME, SITE_HOST, SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
 import {
   CONVERT_GUIDES,
@@ -75,9 +75,10 @@ export function AboutPage() {
             Markdown or Design starter API variable params.
           </p>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            What we charge for: workspace access (file quotas and AI / translation allowances) and
-            Convert API access (page credits and API keys), each billed as a monthly software
-            subscription through Stripe. The two products can be held together.
+            What we charge for: workspace AI page allowances (Daily and Expert) and
+            Convert API AI page credits and keys. Default convert is included. Each paid
+            product is a monthly software subscription through Stripe. The two products can
+            be held together.
           </p>
         </section>
 
@@ -127,8 +128,8 @@ export function AboutPage() {
             Products we sell
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Two products. Workspace: Guest, Basic, Pro, Premium. Convert API: Free, Builder, Scale,
-            Business. Paid grades are billed monthly through Stripe. Guest can browse the site but
+            Two products. Workspace: Guest, Casual, Daily, Expert. Convert API: Free, Daily,
+            Expert. Paid grades are billed monthly through Stripe. Guest can browse the site but
             cannot convert files in the app.
           </p>
           <div className="mt-5 overflow-x-auto">
@@ -149,7 +150,7 @@ export function AboutPage() {
                     <td className="py-2.5 text-[var(--ink-muted)]">{item.blurb}</td>
                   </tr>
                 ))}
-                {API_PLAN_CATALOG.map((item) => (
+                {PUBLIC_API_PLANS.map((item) => (
                   <tr key={item.id} className="border-t border-[var(--line)]">
                     <td className="py-2.5 pr-3 font-medium">{item.label}</td>
                     <td className="py-2.5 pr-3 text-[var(--ink-muted)]">{item.price}</td>
@@ -167,7 +168,7 @@ export function AboutPage() {
                 {plan.price}. {plan.quota}. {plan.features[1] || plan.features[0]}
               </li>
             ))}
-            {API_PLAN_CATALOG.map((plan) => (
+            {PUBLIC_API_PLANS.map((plan) => (
               <li key={plan.id}>
                 <span className="font-medium text-[var(--ink)]">{plan.label}</span>
                 {" — "}

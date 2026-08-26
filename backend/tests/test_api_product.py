@@ -36,22 +36,23 @@ def _settings(**overrides: object) -> Settings:
 
 class ApiPlanTests(unittest.TestCase):
     def test_credit_math(self) -> None:
-        self.assertEqual(convert_credits(page_count=0, enhanced=False), 1)
-        self.assertEqual(convert_credits(page_count=4, enhanced=False), 4)
-        self.assertEqual(convert_credits(page_count=4, enhanced=True), 12)
+        self.assertEqual(convert_credits(page_count=0, enhanced=False), 0)
+        self.assertEqual(convert_credits(page_count=4, enhanced=False), 0)
+        self.assertEqual(convert_credits(page_count=4, enhanced=True), 4)
         self.assertTrue(is_api_plan("api_scale"))
         self.assertFalse(is_api_plan("pro"))
         self.assertEqual(get_api_plan("nope").id, "api_free")
-        self.assertEqual(get_api_plan("api_business").credits_per_month, 20000)
+        self.assertEqual(get_api_plan("api_business").credits_per_month, 10000)
+        self.assertEqual(get_api_plan("api_free").standard_pages_per_month, 1000)
 
     def test_quota_blocks_at_zero(self) -> None:
         plan = get_api_plan("api_free")
         db = MagicMock()
-        db.scalar.return_value = 100
+        db.scalar.return_value = 25
         snap = api_quota_snapshot(db, user_id=uuid4(), plan=plan)
         self.assertEqual(snap["remaining_credits"], 0)
         with self.assertRaises(HTTPException) as ctx:
-            assert_api_credits(db, user_id=uuid4(), plan=plan)
+            assert_api_credits(db, user_id=uuid4(), plan=plan, enhanced=True)
         self.assertEqual(ctx.exception.status_code, 403)
         self.assertEqual(ctx.exception.detail["code"], "quota_credits")
 
@@ -99,10 +100,10 @@ class ApiStripeTests(unittest.TestCase):
     def test_catalog_includes_api_bucket(self) -> None:
         catalog = billing_catalog(_settings())
         self.assertIn("api", catalog)
-        self.assertEqual(catalog["api"]["amounts"]["api_builder"], 19)
+        self.assertEqual(catalog["api"]["amounts"]["api_builder"], 5)
         self.assertTrue(catalog["api"]["prices"]["api_builder"])
         self.assertFalse(catalog["api"]["prices"]["api_free"])
-        self.assertEqual(catalog["amounts"]["pro"], 12)
+        self.assertEqual(catalog["amounts"]["pro"], 5)
 
     def test_apply_api_subscription_does_not_touch_workspace(self) -> None:
         user = User(email="a@b.co", google_sub="g1", name="A", plan="pro")

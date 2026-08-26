@@ -18,7 +18,7 @@ fileworks/
 - Automatic fallback for scans and images (layout + text recognition when a file has no text layer)
 - Editable Markdown preview on the right; download as Markdown / TXT / HTML / JSON / PDF
 - Light / dark theme toggle
-- Google sign-in with plans: **Guest** (browse only), **Basic** (5 files/day, 3 AI or translation/month), **Pro** (150/month, 40 with AI or translation), **Premium** (600/month, 150 with AI or translation)
+- Google sign-in with plans: **Guest** (browse only), **Casual** (30 files/day, 25 AI pages/month, free), **Daily** ($5, 40 files/day, 500 AI pages), **Expert** ($29, 200 files/day, 5,000 AI pages)
 - Stripe subscriptions (optional): each pay grade maps to the matching role after Checkout / webhook confirmation
 - Reading order: **Text** (`.txt` / `.md`) → **Docling** (PDF/images when Prefer structure) → **AnyDoc** → **LLM** (if configured) → **OCR**
 
@@ -112,9 +112,9 @@ Without Compose, run the API and UI separately as below. Auth (Google sign-in, p
 
 Create a Google OAuth **Web** client and add authorized JavaScript origins `http://localhost:3000` (and later `https://fileworks-<env>.pages.dev`). Set `GOOGLE_CLIENT_ID` / `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
 
-Stripe (optional): set `STRIPE_SECRET_KEY` and `STRIPE_PRICE_*` on the API. Each `STRIPE_PRICE_*` value can be a Dashboard price id (`price_...`) or a monthly USD amount (`12`). Workspace prices are `STRIPE_PRICE_BASIC|PRO|PREMIUM`. Convert API prices are `STRIPE_PRICE_API_BUILDER|SCALE|BUSINESS`. The two products are separate Stripe subscriptions on the same customer. Point the webhook at `/api/billing/webhook` for `checkout.session.completed` and `customer.subscription.*`. Without a secret key, profile plan switches stay local (dev).
+Stripe (optional): set `STRIPE_SECRET_KEY` and `STRIPE_PRICE_*` on the API. Each `STRIPE_PRICE_*` value can be a Dashboard price id (`price_...`) or a monthly USD amount (`5`). Workspace prices are `STRIPE_PRICE_BASIC|PRO|PREMIUM` (Casual $0 / Daily $5 / Expert $29). Convert API prices are `STRIPE_PRICE_API_BUILDER|SCALE|BUSINESS` (Daily $5 / Expert $29). The two products are separate Stripe subscriptions on the same customer. Point the webhook at `/api/billing/webhook` for `checkout.session.completed` and `customer.subscription.*`. Without a secret key, profile plan switches stay local (dev).
 
-API keys: signed-in users generate long-lived `fw_live_` keys on Profile. `POST /api/v1/convert` requires a key and bills page credits on the API plan (1/page, 3/page with AI or translation). Workspace JWT is for the app only.
+API keys: signed-in users generate long-lived `fw_live_` keys on Profile. `POST /api/v1/convert` requires a key. Standard convert is free (monthly page cap). AI reading or translation is 1 credit per page. Workspace JWT is for the app only.
 
 ## Backend
 

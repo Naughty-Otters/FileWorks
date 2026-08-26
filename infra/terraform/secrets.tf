@@ -21,10 +21,10 @@ resource "aws_secretsmanager_secret_version" "app" {
     STRIPE_SECRET_KEY     = ""
     STRIPE_WEBHOOK_SECRET = ""
     STRIPE_PRICE_BASIC    = "0"
-    STRIPE_PRICE_PRO      = "12"
+    STRIPE_PRICE_PRO      = "5"
     STRIPE_PRICE_PREMIUM  = "29"
-    STRIPE_PRICE_API_BUILDER = "19"
-    STRIPE_PRICE_API_SCALE   = "49"
+    STRIPE_PRICE_API_BUILDER = "5"
+    STRIPE_PRICE_API_SCALE   = "29"
     STRIPE_PRICE_API_BUSINESS = "99"
     PUBLIC_APP_URL        = var.environment == "prod" ? "https://fileworks.ai" : "https://staging.fileworks.ai"
   })

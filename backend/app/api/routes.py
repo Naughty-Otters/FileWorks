@@ -767,6 +767,7 @@ async def extract(
             user_id=principal.user_id,
             anonymous_id=principal.anonymous_id,
             enhanced=options.use_ai or bool(options.normalized_target_lang()),
+            pages=int(result.get("page_count", 0) or 1),
         )
 
         regions_raw = result.get("regions") or []

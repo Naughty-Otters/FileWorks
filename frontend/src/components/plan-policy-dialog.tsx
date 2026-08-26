@@ -66,15 +66,15 @@ export function PlanPolicyDialog({
           <div className="mt-4 rounded-2xl border border-[var(--accent)] bg-[var(--accent-soft)]/50 px-4 py-3">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-strong)]">
-                Free · Basic
+                Free · Casual
               </p>
               <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white dark:text-[#06281d]">
                 Free
               </span>
             </div>
             <ul className="mt-2 space-y-1 text-sm leading-5 text-[var(--ink)]">
-              <li>5 conversions / day</li>
-              <li>3 AI reading or translation / month</li>
+              <li>30 conversions / day</li>
+              <li>25 AI reading or translation pages / month</li>
               <li>No credit card · document history after sign-in</li>
             </ul>
           </div>
@@ -128,7 +128,7 @@ export function PlanPolicyDialog({
             href="/pricing"
             className="mr-auto rounded-full px-3 py-1.5 text-sm font-medium text-[var(--accent-strong)] transition hover:bg-[var(--accent-soft)] hover:underline"
           >
-            See Free Basic &amp; paid roles
+            See Free Casual &amp; paid roles
           </a>
           <button
             type="button"
@@ -154,7 +154,7 @@ export function PlanPolicyDialog({
               href="/login"
               className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white dark:text-[#06281d]"
             >
-              {gate === "login" ? "Start free with Basic" : "Sign in"}
+              {gate === "login" ? "Start free with Casual" : "Sign in"}
             </a>
           ) : null}
         </div>

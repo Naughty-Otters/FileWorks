@@ -21,7 +21,7 @@ import { BrandLockup } from "@/components/brand-lockup";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteFooter } from "@/components/site-footer";
 import { MarketingNav } from "@/components/marketing-nav";
-import { canMoveToApiPlan, canMoveToPlan, formatPlanPrice, PERMISSION_LABELS, PLAN_CATALOG, API_PLAN_CATALOG, apiPlanSwitchLabel, apiUsageOverLimitReasons, planIsPurchasable, planSwitchLabel, usageOverLimitReasons } from "@/lib/plans";
+import { canMoveToApiPlan, canMoveToPlan, formatPlanPrice, PERMISSION_LABELS, PLAN_CATALOG, API_PLAN_CATALOG, apiPlanSwitchLabel, apiUsageOverLimitReasons, planDisplayLabel, planIsPurchasable, planSwitchLabel, usageOverLimitReasons } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 function usageLine(used: number, limit: number | null, remaining: number | null, period: string) {
@@ -56,7 +56,7 @@ export function ProfilePage() {
     const checkout = params.get("checkout");
     if (checkout === "cancel") {
       setNotice(
-        "Checkout canceled — no charge. You can keep using Free Basic (5 conversions / day) or pick a paid role when you are ready.",
+        "Checkout canceled — no charge. You can keep using Free Casual (30 conversions / day) or pick Daily or Expert when you are ready.",
       );
     }
     const fromPortal = params.get("billing") === "return";
@@ -92,7 +92,7 @@ export function ProfilePage() {
         if (fromPortal) {
           setNotice(
             session.billing?.cancel_at_period_end
-              ? `Billing updated. This role stays until ${formatPeriodEnd(session.billing.current_period_end)}, then Basic.`
+              ? `Billing updated. This role stays until ${formatPeriodEnd(session.billing.current_period_end)}, then Casual.`
               : "Billing updated from Stripe.",
           );
           return;
@@ -238,13 +238,13 @@ export function ProfilePage() {
               <p className="truncate text-sm text-[var(--ink-muted)]">{me.user.email}</p>
             </div>
             <span className="ml-auto rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-medium uppercase tracking-wide text-[var(--accent-strong)]">
-              {me.plan}
+              {planDisplayLabel(me.plan)}
             </span>
           </div>
           {me.billing?.cancel_at_period_end ? (
             <p className="mt-4 text-sm text-[var(--ink-muted)]">
               Cancels {formatPeriodEnd(me.billing.current_period_end)}. You keep this role until then,
-              then Basic.
+              then Casual.
             </p>
           ) : null}
         </div>
@@ -307,7 +307,7 @@ export function ProfilePage() {
             {me.quota.limit_ai_month != null ? (
               <div>
                 <div className="flex justify-between text-sm">
-                  <dt>AI / translation this month</dt>
+                  <dt>AI / translation pages this month</dt>
                   <dd className="text-[var(--ink-muted)]">
                     {usageLine(
                       me.quota.used_ai_month,
@@ -328,7 +328,7 @@ export function ProfilePage() {
             {me.api_quota ? (
               <div>
                 <div className="flex justify-between text-sm">
-                  <dt>API credits this month</dt>
+                  <dt>API AI pages this month</dt>
                   <dd className="text-[var(--ink-muted)]">
                     {usageLine(
                       me.api_quota.used_credits,
@@ -439,8 +439,8 @@ export function ProfilePage() {
           {me.billing?.enabled ? (
             <div className="mt-4">
               <p className="text-xs text-[var(--ink-muted)]">
-                Switch Pro and Premium here or in Manage billing. Canceling stops the next charge —
-                this period stays paid, with no refund for unused days. The role drops to Basic when
+                Switch Daily and Expert here or in Manage billing. Canceling stops the next charge —
+                this period stays paid, with no refund for unused days. The role drops to Casual when
                 the paid period ends.{" "}
                 <a href="/legal#refunds" className="text-[var(--accent-strong)] hover:underline">
                   Refund and cancellation policy
@@ -536,28 +536,57 @@ export function ProfilePage() {
         <section className="panel rounded-3xl px-6 py-6">
           <h2 className="font-[family-name:var(--font-display)] text-xl tracking-tight">API plan</h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            Convert API billing is separate from the workspace role. Credits: 1 per page, 3 per page
-            with AI or translation. Unused credits do not roll over.
+            Convert API billing is separate from the workspace role. Standard convert is free
+            (monthly page cap). AI reading, translation, or Design auto-fill is 1 credit per page.
+            Unused credits do not roll over.
           </p>
           {me.api_quota ? (
-            <div className="mt-4">
-              <div className="flex justify-between text-sm">
-                <p>Credits this month</p>
-                <p className="text-[var(--ink-muted)]">
-                  {usageLine(
-                    me.api_quota.used_credits,
-                    me.api_quota.limit_credits,
-                    me.api_quota.remaining_credits,
-                    "this month",
-                  )}
-                </p>
+            <div className="mt-4 space-y-4">
+              <div>
+                <div className="flex justify-between text-sm">
+                  <p>AI pages this month</p>
+                  <p className="text-[var(--ink-muted)]">
+                    {usageLine(
+                      me.api_quota.used_credits,
+                      me.api_quota.limit_credits,
+                      me.api_quota.remaining_credits,
+                      "this month",
+                    )}
+                  </p>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--accent)]"
+                    style={{ width: `${usagePercent(me.api_quota.used_credits, me.api_quota.limit_credits)}%` }}
+                  />
+                </div>
               </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
-                <div
-                  className="h-full rounded-full bg-[var(--accent)]"
-                  style={{ width: `${usagePercent(me.api_quota.used_credits, me.api_quota.limit_credits)}%` }}
-                />
-              </div>
+              {me.api_quota.limit_standard_pages != null ? (
+                <div>
+                  <div className="flex justify-between text-sm">
+                    <p>Standard pages this month</p>
+                    <p className="text-[var(--ink-muted)]">
+                      {usageLine(
+                        me.api_quota.used_standard_pages ?? 0,
+                        me.api_quota.limit_standard_pages,
+                        me.api_quota.remaining_standard_pages ?? null,
+                        "this month",
+                      )}
+                    </p>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
+                    <div
+                      className="h-full rounded-full bg-[var(--accent)]"
+                      style={{
+                        width: `${usagePercent(
+                          me.api_quota.used_standard_pages ?? 0,
+                          me.api_quota.limit_standard_pages,
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
           {me.billing?.api_cancel_at_period_end ? (
@@ -567,7 +596,9 @@ export function ProfilePage() {
             </p>
           ) : null}
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {API_PLAN_CATALOG.map((plan) => {
+            {API_PLAN_CATALOG.filter(
+              (plan) => !plan.hidden || (me.api_plan || "api_free") === plan.id,
+            ).map((plan) => {
               const currentApi = (me.api_plan || "api_free") === plan.id;
               const apiBilling = me.billing?.api ?? me.billing;
               const switchable =

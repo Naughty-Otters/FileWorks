@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.auth.api_plans import API_PLAN_RANK, ApiPlan, can_change_api_plan, get_api_plan
@@ -14,6 +14,7 @@ from app.db.models import UsageEvent
 EXTRACT_ACTION = "extract"
 AI_ACTION = "extract.ai"
 API_CONVERT_ACTION = "api.convert"
+API_STANDARD_ACTION = "api.convert.standard"
 
 
 def _utcnow() -> datetime:
@@ -45,7 +46,12 @@ def _count(db: Session | None, user_id: UUID | None, action: str, since: datetim
     )
 
 
-def _sum_credits(db: Session | None, user_id: UUID | None, since: datetime) -> int:
+def _sum_credits(
+    db: Session | None,
+    user_id: UUID | None,
+    since: datetime,
+    action: str = API_CONVERT_ACTION,
+) -> int:
     if db is None or user_id is None:
         return 0
     scalar = getattr(db, "scalar", None)
@@ -55,7 +61,27 @@ def _sum_credits(db: Session | None, user_id: UUID | None, since: datetime) -> i
         scalar(
             select(func.coalesce(func.sum(UsageEvent.credits), 0)).where(
                 UsageEvent.user_id == user_id,
-                UsageEvent.action == API_CONVERT_ACTION,
+                UsageEvent.action == action,
+                UsageEvent.created_at >= since,
+            )
+        )
+        or 0
+    )
+
+
+def _sum_ai_pages(db: Session | None, user_id: UUID | None, action: str, since: datetime) -> int:
+    """AI allowance is pages. Legacy events with credits=0 count as 1 page (one file)."""
+    if db is None or user_id is None:
+        return 0
+    scalar = getattr(db, "scalar", None)
+    if not callable(scalar):
+        return 0
+    page_expr = case((UsageEvent.credits > 0, UsageEvent.credits), else_=1)
+    return int(
+        scalar(
+            select(func.coalesce(func.sum(page_expr), 0)).where(
+                UsageEvent.user_id == user_id,
+                UsageEvent.action == action,
                 UsageEvent.created_at >= since,
             )
         )
@@ -71,8 +97,8 @@ def quota_snapshot(db: Session | None, *, user_id: UUID | None, plan: Plan) -> d
     start_day, start_month = _period_bounds()
     used_day = _count(db, user_id, EXTRACT_ACTION, start_day)
     used_month = _count(db, user_id, EXTRACT_ACTION, start_month)
-    used_ai_day = _count(db, user_id, AI_ACTION, start_day)
-    used_ai_month = _count(db, user_id, AI_ACTION, start_month)
+    used_ai_day = _sum_ai_pages(db, user_id, AI_ACTION, start_day)
+    used_ai_month = _sum_ai_pages(db, user_id, AI_ACTION, start_month)
     return {
         "used_day": used_day,
         "used_month": used_month,
@@ -123,17 +149,29 @@ def usage_fits_plan(db: Session | None, *, user_id: UUID | None, plan: Plan) -> 
 
 def api_quota_snapshot(db: Session | None, *, user_id: UUID | None, plan: ApiPlan) -> dict[str, int | None]:
     _, start_month = _period_bounds()
-    used = _sum_credits(db, user_id, start_month)
+    used = _sum_credits(db, user_id, start_month, API_CONVERT_ACTION)
+    used_standard = _sum_credits(db, user_id, start_month, API_STANDARD_ACTION)
     limit = plan.credits_per_month
+    standard_limit = plan.standard_pages_per_month
     return {
         "used_credits": used,
         "limit_credits": limit,
         "remaining_credits": _remaining(limit, used),
+        "used_standard_pages": used_standard,
+        "limit_standard_pages": standard_limit,
+        "remaining_standard_pages": _remaining(standard_limit, used_standard),
     }
 
 
-def api_usage_over_limit(plan: ApiPlan, *, used_credits: int) -> bool:
-    return used_credits > plan.credits_per_month
+def api_usage_over_limit(
+    plan: ApiPlan,
+    *,
+    used_credits: int,
+    used_standard_pages: int = 0,
+) -> bool:
+    if used_credits > plan.credits_per_month:
+        return True
+    return used_standard_pages > plan.standard_pages_per_month
 
 
 def assert_can_switch_to_api_plan(
@@ -152,7 +190,11 @@ def assert_can_switch_to_api_plan(
         return
     plan = get_api_plan(target)
     snap = api_quota_snapshot(db, user_id=user_id, plan=plan)
-    if api_usage_over_limit(plan, used_credits=int(snap["used_credits"] or 0)):
+    if api_usage_over_limit(
+        plan,
+        used_credits=int(snap["used_credits"] or 0),
+        used_standard_pages=int(snap["used_standard_pages"] or 0),
+    ):
         raise HTTPException(
             status_code=400,
             detail={
@@ -161,6 +203,8 @@ def assert_can_switch_to_api_plan(
                 "target": target,
                 "used_credits": snap["used_credits"],
                 "limit_credits": plan.credits_per_month,
+                "used_standard_pages": snap["used_standard_pages"],
+                "limit_standard_pages": plan.standard_pages_per_month,
             },
         )
 
@@ -170,16 +214,29 @@ def assert_api_credits(
     *,
     user_id: UUID | None,
     plan: ApiPlan,
+    enhanced: bool = False,
 ) -> None:
     snap = api_quota_snapshot(db, user_id=user_id, plan=plan)
-    if snap["remaining_credits"] == 0:
+    if enhanced:
+        if snap["remaining_credits"] == 0:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "quota_credits",
+                    "plan": plan.id,
+                    "limit": plan.credits_per_month,
+                    "used": snap["used_credits"],
+                },
+            )
+        return
+    if snap["remaining_standard_pages"] == 0:
         raise HTTPException(
             status_code=403,
             detail={
-                "code": "quota_credits",
+                "code": "quota_standard_pages",
                 "plan": plan.id,
-                "limit": plan.credits_per_month,
-                "used": snap["used_credits"],
+                "limit": plan.standard_pages_per_month,
+                "used": snap["used_standard_pages"],
             },
         )
 
@@ -193,6 +250,17 @@ def record_api_credits(
     if db is None or user_id is None or credits <= 0:
         return
     db.add(UsageEvent(user_id=user_id, action=API_CONVERT_ACTION, credits=credits))
+
+
+def record_api_standard_pages(
+    db: Session | None,
+    *,
+    user_id: UUID | None,
+    pages: int,
+) -> None:
+    if db is None or user_id is None or pages <= 0:
+        return
+    db.add(UsageEvent(user_id=user_id, action=API_STANDARD_ACTION, credits=pages))
 
 
 def assert_can_switch_to_plan(
@@ -291,9 +359,17 @@ def record_extract(
     user_id: UUID | None,
     anonymous_id: str | None,
     enhanced: bool = False,
+    pages: int = 1,
 ) -> None:
     if db is None:
         return
     db.add(UsageEvent(user_id=user_id, anonymous_id=anonymous_id, action=EXTRACT_ACTION))
     if enhanced:
-        db.add(UsageEvent(user_id=user_id, anonymous_id=anonymous_id, action=AI_ACTION))
+        db.add(
+            UsageEvent(
+                user_id=user_id,
+                anonymous_id=anonymous_id,
+                action=AI_ACTION,
+                credits=max(1, int(pages or 0)),
+            )
+        )

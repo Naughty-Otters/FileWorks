@@ -17,7 +17,7 @@ import {
 import { reloadSession, setSessionMe, useSession } from "@/lib/session";
 import { SeoFaq } from "@/components/seo-faq";
 import { JsonLd } from "@/components/json-ld";
-import { API_PLAN_CATALOG, apiPlanSwitchLabel, canMoveToApiPlan, formatPlanPrice, PLAN_CATALOG, planIsPurchasable, planSwitchLabel, PRICE_ROLES, usageFitsPlan, usageOverLimitReasons } from "@/lib/plans";
+import { API_PLAN_CATALOG, PUBLIC_API_PLANS, apiPlanSwitchLabel, canMoveToApiPlan, formatPlanPrice, PLAN_CATALOG, planIsPurchasable, planSwitchLabel, PRICE_ROLES, usageFitsPlan, usageOverLimitReasons } from "@/lib/plans";
 import { faqJsonLd, organizationJsonLd, PRICING_FAQS, softwareApplicationJsonLd } from "@/lib/seo";
 import { SITE_URL } from "@/lib/legal";
 import { cn } from "@/lib/utils";
@@ -46,7 +46,7 @@ export function PricingPage() {
           setSessionMe(next);
           setNotice(
             next.billing?.cancel_at_period_end
-              ? "Billing updated. This role stays until the period ends, then Basic."
+              ? "Billing updated. This role stays until the period ends, then Casual."
               : "Billing updated from Stripe.",
           );
         } catch {
@@ -77,7 +77,7 @@ export function PricingPage() {
       if (params.get("checkout") === "cancel") {
         handledReturn.current = true;
         setNotice(
-          "Checkout canceled — no charge. You can keep using Free Basic (5 conversions / day) or pick a paid role when you are ready.",
+          "Checkout canceled — no charge. You can keep using Free Casual (30 conversions / day) or pick Daily or Expert when you are ready.",
         );
         return;
       }
@@ -159,10 +159,10 @@ export function PricingPage() {
             Prices and roles
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
-            Two products, one account. Workspace roles (Basic, Pro, Premium) cover PDF, Word,
-            Excel, PowerPoint, image, and scan conversion in the FileWorks app — including optional
-            AI reading (OCR) and translation into 19 languages. Convert API plans are billed
-            separately with page credits and a long-lived API key. You can hold both at once.{" "}
+            Two products, one account. Convert PDF, Word, Excel, PowerPoint, images, and scans
+            in the FileWorks app for free on Casual. Pay only when you need more AI reading or
+            translation pages. Convert API is billed separately: standard pages are free,
+            AI is 1 credit per page. You can hold both at once.{" "}
             <a href="/legal#refunds" className="text-[var(--accent-strong)] hover:underline">
               Refunds, cancellation, and contact
             </a>
@@ -176,8 +176,8 @@ export function PricingPage() {
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Workspace</h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
             File conversions in the app.{" "}
-            <span className="font-medium text-[var(--accent-strong)]">Guest and Basic are Free</span>
-            — no card required. Pro and Premium are monthly subscriptions.
+            <span className="font-medium text-[var(--accent-strong)]">Guest and Casual are Free</span>
+            — no card required. Daily is $5. Expert is the volume plan.
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -296,10 +296,12 @@ export function PricingPage() {
         <div>
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Convert API</h2>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
-            Separate product. Authenticate with a key from Profile. Credits: 1 per page, 3 per page
-            with AI or translation.{" "}
-            <span className="font-medium text-[var(--accent-strong)]">API Free</span> starts at 100
-            credits / month with no card. Combines with any workspace role.{" "}
+            Separate product. Authenticate with a key from Profile. Standard convert is free
+            (monthly page cap). AI reading, translation, or Design auto-fill is 1 credit per
+            page.{" "}
+            <span className="font-medium text-[var(--accent-strong)]">API Free</span> starts at
+            1,000 standard pages and 25 AI pages / month with no card. Combines with any
+            workspace role.{" "}
             <a href="/docs" className="text-[var(--accent-strong)] hover:underline">
               API docs
             </a>
@@ -307,7 +309,7 @@ export function PricingPage() {
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {API_PLAN_CATALOG.map((item) => {
+          {PUBLIC_API_PLANS.map((item) => {
             const signedIn = Boolean(me?.user);
             const current = signedIn && (me?.api_plan || "api_free") === item.id;
             const paidPlan = item.id !== "api_free";

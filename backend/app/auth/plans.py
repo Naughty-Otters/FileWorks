@@ -18,7 +18,7 @@ class Plan:
     export: bool
     extracts_per_day: int | None  # None = unlimited
     extracts_per_month: int | None
-    ai_per_day: int | None  # AI or translation; None = unlimited / not applicable
+    ai_per_day: int | None  # AI or translation pages; None = unlimited / not applicable
     ai_per_month: int | None
 
 
@@ -39,45 +39,45 @@ PLANS: dict[str, Plan] = {
     ),
     "basic": Plan(
         id="basic",
-        label="Basic",
+        label="Casual",
         extract=True,
         full_result=True,
         ai=True,
         translate=True,
         history=True,
         export=True,
-        extracts_per_day=5,
+        extracts_per_day=30,
         extracts_per_month=None,
         ai_per_day=None,
-        ai_per_month=3,
+        ai_per_month=25,
     ),
     "pro": Plan(
         id="pro",
-        label="Pro",
+        label="Daily",
         extract=True,
         full_result=True,
         ai=True,
         translate=True,
         history=True,
         export=True,
-        extracts_per_day=None,
-        extracts_per_month=150,
+        extracts_per_day=40,
+        extracts_per_month=None,
         ai_per_day=None,
-        ai_per_month=40,
+        ai_per_month=500,
     ),
     "premium": Plan(
         id="premium",
-        label="Premium",
+        label="Expert",
         extract=True,
         full_result=True,
         ai=True,
         translate=True,
         history=True,
         export=True,
-        extracts_per_day=None,
-        extracts_per_month=600,
+        extracts_per_day=200,
+        extracts_per_month=None,
         ai_per_day=None,
-        ai_per_month=150,
+        ai_per_month=5000,
     ),
 }
 

@@ -10,20 +10,43 @@ ApiPlanId = str  # api_free | api_builder | api_scale | api_business
 class ApiPlan:
     id: ApiPlanId
     label: str
-    credits_per_month: int
+    credits_per_month: int  # AI / translation / Design auto-fill pages
+    standard_pages_per_month: int  # default convert, 0 AI credits
     max_keys: int
 
 
-# Page credits for POST /api/v1/convert. Workspace file quotas are a separate product.
-STANDARD_CREDITS_PER_PAGE = 1
-AI_CREDITS_PER_PAGE = 3
+# POST /api/v1/convert. Standard convert is free (page cap only). AI is 1 credit / page.
+STANDARD_CREDITS_PER_PAGE = 0
+AI_CREDITS_PER_PAGE = 1
 
 API_PLANS: dict[str, ApiPlan] = {
-    "api_free": ApiPlan(id="api_free", label="API Free", credits_per_month=100, max_keys=2),
-    "api_builder": ApiPlan(id="api_builder", label="API Builder", credits_per_month=2000, max_keys=5),
-    "api_scale": ApiPlan(id="api_scale", label="API Scale", credits_per_month=8000, max_keys=10),
+    "api_free": ApiPlan(
+        id="api_free",
+        label="API Free",
+        credits_per_month=25,
+        standard_pages_per_month=1000,
+        max_keys=2,
+    ),
+    "api_builder": ApiPlan(
+        id="api_builder",
+        label="API Daily",
+        credits_per_month=500,
+        standard_pages_per_month=5000,
+        max_keys=5,
+    ),
+    "api_scale": ApiPlan(
+        id="api_scale",
+        label="API Expert",
+        credits_per_month=5000,
+        standard_pages_per_month=20000,
+        max_keys=20,
+    ),
     "api_business": ApiPlan(
-        id="api_business", label="API Business", credits_per_month=20000, max_keys=20
+        id="api_business",
+        label="API Business",
+        credits_per_month=10000,
+        standard_pages_per_month=40000,
+        max_keys=20,
     ),
 }
 
@@ -49,7 +72,17 @@ def can_change_api_plan(current: str, target: str) -> bool:
     return target != current
 
 
+def _pages(page_count: int) -> int:
+    return max(1, int(page_count or 0))
+
+
 def convert_credits(*, page_count: int, enhanced: bool) -> int:
-    pages = max(1, int(page_count or 0))
-    per_page = AI_CREDITS_PER_PAGE if enhanced else STANDARD_CREDITS_PER_PAGE
-    return pages * per_page
+    if not enhanced:
+        return 0
+    return _pages(page_count) * AI_CREDITS_PER_PAGE
+
+
+def convert_standard_pages(*, page_count: int, enhanced: bool) -> int:
+    if enhanced:
+        return 0
+    return _pages(page_count)

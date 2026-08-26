@@ -5,7 +5,7 @@ import { buildPageMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildPageMetadata({
   title: "Pricing — Workspace and Convert API",
   description:
-    "FileWorks pricing: free Basic workspace, Pro $12/mo, Premium $29/mo — includes AI reading and translation allowances. Convert API Free with 100 credits, Builder $19, Scale $49, Business $99.",
+    "FileWorks pricing: free Casual workspace (30 conversions/day), Daily $5/mo, Expert $29/mo. Convert is free; pay for AI pages. Convert API Free, Daily $5, Expert $29.",
   path: "/pricing",
   keywords: [
     "PDF to Markdown pricing",
@@ -13,7 +13,7 @@ export const metadata: Metadata = buildPageMetadata({
     "AI OCR Markdown pricing",
     "document translation subscription",
     "Markdown conversion API pricing",
-    "FileWorks Pro Premium",
+    "FileWorks Daily Expert",
   ],
 });
 

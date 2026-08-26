@@ -16,9 +16,10 @@ from app.auth.api_plans import (
     API_PAID_PLANS,
     API_PLAN_RANK,
     FALLBACK_API_PLAN,
+    get_api_plan,
     is_api_plan,
 )
-from app.auth.plans import CHANGEABLE_PLANS, PLAN_RANK
+from app.auth.plans import CHANGEABLE_PLANS, PLAN_RANK, get_plan
 from app.auth.quota import assert_can_switch_to_api_plan, assert_can_switch_to_plan
 from app.core.config import Settings, get_settings
 from app.db.models import User
@@ -33,11 +34,11 @@ PRODUCT_WORKSPACE = "workspace"
 PRODUCT_API = "api"
 DISPLAY_DEFAULTS = {
     "basic": 0,
-    "pro": 12,
+    "pro": 5,
     "premium": 29,
     "api_free": 0,
-    "api_builder": 19,
-    "api_scale": 49,
+    "api_builder": 5,
+    "api_scale": 29,
     "api_business": 99,
 }
 WORKSPACE_PLANS = ("basic", "pro", "premium")
@@ -219,11 +220,23 @@ def _plan_from_name(name: str | None) -> str | None:
     text = (name or "").strip().lower()
     if not text:
         return None
+    # Public labels first, then legacy Stripe product names (Pro / Builder / Scale).
     for label, plan in (
         ("api business", "api_business"),
+        ("api expert", "api_scale"),
         ("api scale", "api_scale"),
+        ("api daily", "api_builder"),
         ("api builder", "api_builder"),
+        ("fileworks expert", "premium"),
+        ("fileworks daily", "pro"),
+        ("fileworks casual", "basic"),
+        ("fileworks premium", "premium"),
+        ("fileworks pro", "pro"),
+        ("fileworks basic", "basic"),
         ("premium", "premium"),
+        ("expert", "premium"),
+        ("casual", "basic"),
+        ("daily", "pro"),
         ("pro", "pro"),
         ("basic", "basic"),
     ):
@@ -233,9 +246,9 @@ def _plan_from_name(name: str | None) -> str | None:
 
 
 def _product_display_name(plan: str) -> str:
-    if plan.startswith("api_"):
-        return f"FileWorks API {plan.removeprefix('api_').replace('_', ' ').title()}"
-    return f"FileWorks {plan.title()}"
+    if is_api_plan(plan):
+        return f"FileWorks {get_api_plan(plan).label}"
+    return f"FileWorks {get_plan(plan).label}"
 
 
 def _resolved_plan(subscription: dict[str, Any], settings: Settings) -> str | None:

@@ -25,16 +25,15 @@ Always call GET first. `available` / `allowed` on each option reflect this serve
 | GET `/api/v1/convert` | Works without a key (guest catalog) |
 | POST `/api/v1/convert` | API key required. Workspace Google access tokens are rejected. |
 
-Convert API is a **separate product** from the workspace (Basic / Pro / Premium). Keys bill page credits on the API plan. Workspace file quotas do not apply.
+Convert API is a **separate product** from the workspace (Casual / Daily / Expert). Keys bill AI page credits on the API plan. Standard convert is free up to a monthly page cap. Workspace file quotas do not apply.
 
-| API plan | Price | Credits / month |
-|---|---|---|
-| API Free | $0 | 100 |
-| API Builder | $19 | 2,000 |
-| API Scale | $49 | 8,000 |
-| API Business | $99 | 20,000 |
+| API plan | Price | Standard pages | AI credits / month |
+|---|---|---|---|
+| API Free | $0 | 1,000 | 25 |
+| API Daily | $5 | 5,000 | 500 |
+| API Expert | $29 | 20,000 | 5,000 |
 
-Credits: **1 per page** for a standard convert (minimum 1). **3 per page** when `use_ai=true` or a real `target_lang` is set. Unused credits do not roll over. An API plan can be combined with any workspace role.
+Credits: **0 per page** for a standard convert. **1 per page** when `use_ai=true`, a real `target_lang` is set, or Design `design_fill=auto`. Unused credits do not roll over. An API plan can be combined with any workspace role.
 
 ---
 

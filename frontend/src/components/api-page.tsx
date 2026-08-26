@@ -278,7 +278,7 @@ console.log(data.markdown);`,
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             Send <code className="api-inline">Authorization: Bearer fw_live_…</code> (or{" "}
             <code className="api-inline">X-Api-Key</code>). Workspace sign-in tokens are not accepted.
-            GET convert catalog works without a key; POST convert bills API page credits.
+            GET convert catalog works without a key; POST convert bills AI page credits only.
           </p>
           {me?.user ? (
             <div className="mt-4">
@@ -330,7 +330,7 @@ console.log(data.markdown);`,
             <div>
               <dt className="font-medium text-[var(--ink)]">use_ai</dt>
               <dd className="mt-0.5 text-[var(--ink-muted)]">
-                <code className="api-inline">true</code> for OCR on scans and images (3 credits /
+                <code className="api-inline">true</code> for OCR on scans and images (1 AI credit /
                 page).
               </dd>
             </div>
@@ -357,7 +357,7 @@ console.log(data.markdown);`,
               <dd className="mt-0.5 text-[var(--ink-muted)]">
                 With <code className="api-inline">design</code>:{" "}
                 <code className="api-inline">defaults</code> (samples),{" "}
-                <code className="api-inline">auto</code> (AI-fill, enhanced credits), or{" "}
+                <code className="api-inline">auto</code> (AI-fill, 1 credit / page), or{" "}
                 <code className="api-inline">none</code> plus{" "}
                 <code className="api-inline">design_variables</code> JSON.
               </dd>
@@ -386,9 +386,9 @@ console.log(data.markdown);`,
         <section className="panel rounded-3xl px-5 py-5">
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Quota</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Standard convert is 1 credit per page. AI reading, translation, or Design{" "}
-            <code className="api-inline">design_fill=auto</code> is 3 credits per page. API Free
-            includes 100 credits / month. See{" "}
+            Standard convert is free (monthly page cap). AI reading, translation, or Design{" "}
+            <code className="api-inline">design_fill=auto</code> is 1 credit per page. API Free
+            includes 1,000 standard pages and 25 AI pages / month. See{" "}
             <a href="/pricing" className="text-[var(--accent-strong)] underline-offset-2 hover:underline">
               Pricing
             </a>

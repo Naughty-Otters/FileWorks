@@ -51,6 +51,8 @@ import {
   API_PLAN_CATALOG,
   PRICE_ROLES,
   formatPlanPrice,
+  planDisplayLabel,
+  apiPlanDisplayLabel,
 } from "@/lib/plans";
 import {
   joinLines,
@@ -607,7 +609,7 @@ describe("plan policy", () => {
     expect(canSwitchPlan("premium", "pro")).toBe(true);
     expect(canSwitchPlan("basic", "basic")).toBe(false);
     const lowUsage = { used_day: 1, used_month: 20, used_ai_day: 0, used_ai_month: 4 };
-    const overPro = { used_day: 1, used_month: 200, used_ai_day: 0, used_ai_month: 4 };
+    const overPro = { used_day: 50, used_month: 200, used_ai_day: 0, used_ai_month: 4 };
     expect(usageFitsPlan(lowUsage, "pro")).toBe(true);
     expect(usageFitsPlan(overPro, "pro")).toBe(false);
     expect(canMoveToPlan("premium", "pro", lowUsage)).toBe(true);
@@ -615,34 +617,38 @@ describe("plan policy", () => {
     expect(canMoveToPlan("pro", "premium", overPro)).toBe(true);
     expect(canMoveToPlan("pro", "pro", lowUsage)).toBe(false);
     expect(usageFitsPlan({ used_day: 5, used_month: 0, used_ai_day: 0, used_ai_month: 3 }, "basic")).toBe(true);
-    expect(usageOverLimitReasons(overPro, "pro")[0]).toMatch(/200 conversions this month/);
-    expect(usageOverLimitReasons({ used_day: 6, used_month: 0, used_ai_day: 0, used_ai_month: 4 }, "basic")).toEqual([
-      "6 conversions today (limit 5)",
-      "4 AI this month (limit 3)",
+    expect(usageOverLimitReasons(overPro, "pro")[0]).toMatch(/50 conversions today/);
+    expect(usageOverLimitReasons({ used_day: 31, used_month: 0, used_ai_day: 0, used_ai_month: 30 }, "basic")).toEqual([
+      "31 conversions today (limit 30)",
+      "30 AI pages this month (limit 25)",
     ]);
-    expect(planIsPurchasable("pro", { enabled: true, prices: { pro: false }, amounts: { pro: 12 } })).toBe(true);
+    expect(planIsPurchasable("pro", { enabled: true, prices: { pro: false }, amounts: { pro: 5 } })).toBe(true);
     expect(planIsPurchasable("basic", { enabled: true, prices: { basic: false }, amounts: { basic: 0 } })).toBe(false);
     expect(planIsPurchasable("pro", { enabled: false, prices: { pro: false } })).toBe(true);
-    expect(planSwitchLabel("basic", PLAN_CATALOG[1])).toBe("Upgrade to Pro");
-    expect(planSwitchLabel("premium", PLAN_CATALOG[0])).toBe("Switch to Basic");
+    expect(planSwitchLabel("basic", PLAN_CATALOG[1])).toBe("Upgrade to Daily");
+    expect(planSwitchLabel("premium", PLAN_CATALOG[0])).toBe("Switch to Casual");
     expect(planRank("nope")).toBe(0);
-    expect(PRICE_ROLES.map((item) => item.role)).toEqual(["Guest", "Basic", "Pro", "Premium"]);
-    expect(PRICE_ROLES.find((item) => item.id === "pro")?.price).toBe("$12 / month");
+    expect(PRICE_ROLES.map((item) => item.role)).toEqual(["Guest", "Casual", "Daily", "Expert"]);
+    expect(planDisplayLabel("basic")).toBe("Casual");
+    expect(planDisplayLabel("pro")).toBe("Daily");
+    expect(planDisplayLabel("premium")).toBe("Expert");
+    expect(apiPlanDisplayLabel("api_builder")).toBe("API Daily");
+    expect(PRICE_ROLES.find((item) => item.id === "pro")?.price).toBe("$5 / month");
     expect(formatPlanPrice(0)).toBe("Free");
-    expect(formatPlanPrice(12)).toBe("$12 / month");
+    expect(formatPlanPrice(5)).toBe("$5 / month");
     expect(formatPlanPrice(29)).toBe("$29 / month");
   });
 
   it("describes each gate", () => {
     expect(convertGateTitle("login")).toMatch(/Sign in/);
-    expect(convertGateTitle("quota_day")).toMatch(/Daily/);
+    expect(convertGateTitle("quota_day")).toMatch(/Today/);
     expect(convertGateTitle("quota_month")).toMatch(/Monthly/);
     expect(convertGateTitle("quota_ai_day")).toMatch(/AI/);
     expect(convertGateTitle("quota_ai_month")).toMatch(/AI/);
     expect(convertGateTitle("plan")).toMatch(/cannot convert/);
     expect(convertGateTitle("ready")).toMatch(/Plan rules/);
-    expect(convertGateBody("login")).toMatch(/Free Basic/);
-    expect(convertGateBody("quota_day")).toMatch(/five conversions/);
+    expect(convertGateBody("login")).toMatch(/Free Casual/);
+    expect(convertGateBody("quota_day")).toMatch(/daily conversion/);
     expect(convertGateBody("quota_month")).toMatch(/monthly/);
     expect(convertGateBody("quota_ai_day")).toMatch(/without AI/);
     expect(convertGateBody("quota_ai_month")).toMatch(/without AI/);
@@ -660,8 +666,8 @@ describe("API plans", () => {
       "api_business",
     ]);
     expect(canMoveToApiPlan("api_free", "api_builder")).toBe(true);
-    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 10, limit_credits: 8000, remaining_credits: 7990 })).toBe(true);
-    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 500, limit_credits: 8000, remaining_credits: 7500 })).toBe(false);
+    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 10, limit_credits: 5000, remaining_credits: 4990 })).toBe(true);
+    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 500, limit_credits: 5000, remaining_credits: 4500 })).toBe(false);
     expect(planIsPurchasable("api_builder", { enabled: true, prices: { api_builder: true } })).toBe(true);
     expect(planIsPurchasable("api_free", { enabled: true, prices: { api_free: false }, amounts: { api_free: 0 } })).toBe(false);
   });

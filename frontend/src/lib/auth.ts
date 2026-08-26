@@ -75,6 +75,9 @@ export type MeResponse = {
     used_credits: number;
     limit_credits: number | null;
     remaining_credits: number | null;
+    used_standard_pages?: number;
+    limit_standard_pages?: number | null;
+    remaining_standard_pages?: number | null;
   };
 };
 

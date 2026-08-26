@@ -10,9 +10,9 @@ export type PlanRule = {
 
 export const PLAN_RULES: PlanRule[] = [
   { id: "anonymous", label: "Guest", convert: "Sign in required", quota: "—", extras: "No history", price: "Free", free: true },
-  { id: "basic", label: "Basic", convert: "Yes", quota: "5 files / day", extras: "3 AI or translation / month", price: "Free", free: true },
-  { id: "pro", label: "Pro", convert: "Yes", quota: "150 / month", extras: "40 with AI or translation", price: "$12 / month" },
-  { id: "premium", label: "Premium", convert: "Yes", quota: "600 / month", extras: "150 with AI or translation", price: "$29 / month" },
+  { id: "basic", label: "Casual", convert: "Yes", quota: "30 files / day", extras: "25 AI pages / month", price: "Free", free: true },
+  { id: "pro", label: "Daily", convert: "Yes", quota: "40 files / day", extras: "500 AI pages / month", price: "$5 / month" },
+  { id: "premium", label: "Expert", convert: "Yes", quota: "200 files / day", extras: "5,000 AI pages / month", price: "$29 / month" },
 ];
 
 export const PLAN_ORDER = ["anonymous", "basic", "pro", "premium"] as const;
@@ -34,83 +34,88 @@ export type ApiCatalogPlan = {
   quota: string;
   features: string[];
   highlight?: boolean;
+  /** Keep serving current subscribers; hide from pricing. */
+  hidden?: boolean;
 };
 
 export const API_PLAN_CATALOG: ApiCatalogPlan[] = [
   {
     id: "api_free",
     label: "API Free",
-    blurb: "Try the convert API with a long-lived key. Stacks with any workspace role.",
+    blurb: "Try the convert API with a long-lived key. Standard convert is free; AI uses page credits.",
     price: "Free",
-    quota: "100 credits / month",
+    quota: "25 AI pages / month",
     features: [
-      "100 credits / month",
-      "1 credit per page (3 with AI or translation)",
+      "1,000 standard pages / month (free)",
+      "25 AI pages / month (1 credit per page)",
       "2 API keys that do not expire",
-      "Combine with Basic, Pro, or Premium",
+      "Combine with Casual, Daily, or Expert",
     ],
-    highlight: true,
   },
   {
     id: "api_builder",
-    label: "API Builder",
-    blurb: "For scripts and light production volume.",
-    price: "$19 / month",
-    quota: "2,000 credits / month",
+    label: "API Daily",
+    blurb: "Personal scripts and light daily automation.",
+    price: "$5 / month",
+    quota: "500 AI pages / month",
     features: [
-      "2,000 credits / month",
-      "1 credit per page (3 with AI or translation)",
+      "5,000 standard pages / month (free)",
+      "500 AI pages / month",
       "5 API keys that do not expire",
-      "Billed separately from workspace Pro / Premium",
+      "Billed separately from workspace Daily / Expert",
     ],
   },
   {
     id: "api_scale",
-    label: "API Scale",
-    blurb: "Higher monthly page volume for product integrations.",
-    price: "$49 / month",
-    quota: "8,000 credits / month",
+    label: "API Expert",
+    blurb: "Pipelines, inboxes, and product integrations.",
+    price: "$29 / month",
+    quota: "5,000 AI pages / month",
     features: [
-      "8,000 credits / month",
-      "1 credit per page (3 with AI or translation)",
-      "10 API keys that do not expire",
-      "Billed separately from workspace Pro / Premium",
+      "20,000 standard pages / month (free)",
+      "5,000 AI pages / month",
+      "20 API keys that do not expire",
+      "Billed separately from workspace Daily / Expert",
     ],
+    highlight: true,
   },
   {
     id: "api_business",
     label: "API Business",
-    blurb: "Highest self-serve convert volume.",
+    blurb: "Legacy high-volume plan. Hidden from new checkout.",
     price: "$99 / month",
-    quota: "20,000 credits / month",
+    quota: "10,000 AI pages / month",
     features: [
-      "20,000 credits / month",
-      "1 credit per page (3 with AI or translation)",
+      "40,000 standard pages / month (free)",
+      "10,000 AI pages / month",
       "20 API keys that do not expire",
-      "Billed separately from workspace Pro / Premium",
+      "Billed separately from workspace roles",
     ],
+    hidden: true,
   },
 ];
 
+export const PUBLIC_API_PLANS = API_PLAN_CATALOG.filter((plan) => !plan.hidden);
+
 export const API_PLAN_ORDER = ["api_free", "api_builder", "api_scale", "api_business"] as const;
 
-export const API_PLAN_LIMITS: Record<string, { creditsPerMonth: number }> = {
-  api_free: { creditsPerMonth: 100 },
-  api_builder: { creditsPerMonth: 2000 },
-  api_scale: { creditsPerMonth: 8000 },
-  api_business: { creditsPerMonth: 20000 },
+export const API_PLAN_LIMITS: Record<string, { creditsPerMonth: number; standardPagesPerMonth: number }> = {
+  api_free: { creditsPerMonth: 25, standardPagesPerMonth: 1000 },
+  api_builder: { creditsPerMonth: 500, standardPagesPerMonth: 5000 },
+  api_scale: { creditsPerMonth: 5000, standardPagesPerMonth: 20000 },
+  api_business: { creditsPerMonth: 10000, standardPagesPerMonth: 40000 },
 };
 
 export const PLAN_CATALOG: CatalogPlan[] = [
   {
     id: "basic",
-    label: "Basic",
-    blurb: "Daily conversions. A small monthly AI and translation allowance.",
+    label: "Casual",
+    blurb: "Use FileWorks for free. Convert is the product — no card.",
     price: "Free",
-    quota: "5 files / day",
+    quota: "30 files / day",
     features: [
-      "5 conversions / day",
-      "3 AI reading or translation / month",
+      "30 conversions / day",
+      "25 AI reading or translation pages / month",
       "Translate into 19 languages",
       "Unlimited downloads of each result",
       "Document history",
@@ -118,28 +123,28 @@ export const PLAN_CATALOG: CatalogPlan[] = [
   },
   {
     id: "pro",
-    label: "Pro",
-    blurb: "Monthly volume for regular conversion, with AI reading and translation.",
-    price: "$12 / month",
-    quota: "150 files / month",
+    label: "Daily",
+    blurb: "For people who open FileWorks on workdays, including some AI.",
+    price: "$5 / month",
+    quota: "40 files / day",
     features: [
-      "Everything in Basic",
-      "150 conversions / month (PDF, office, Markdown, TXT, images, scans)",
-      "40 AI reading or translation",
+      "Everything in Casual",
+      "40 conversions / day (PDF, office, Markdown, TXT, images, scans)",
+      "500 AI reading or translation pages",
       "Translate into 19 languages",
       "Unlimited downloads of each result",
     ],
   },
   {
     id: "premium",
-    label: "Premium",
-    blurb: "Highest single-seat volume, AI reading, and translation.",
+    label: "Expert",
+    blurb: "Heavy and automated load. The plan we built for production volume.",
     price: "$29 / month",
-    quota: "600 files / month",
+    quota: "200 files / day",
     features: [
-      "Everything in Pro",
-      "600 conversions / month",
-      "150 AI reading or translation",
+      "Everything in Daily",
+      "200 conversions / day",
+      "5,000 AI reading or translation pages",
       "Translate into 19 languages",
       "Unlimited downloads of each result",
     ],
@@ -176,38 +181,38 @@ export const PRICE_ROLES: PriceRole[] = [
   },
   {
     id: "basic",
-    role: "Basic",
+    role: "Casual",
     price: "Free",
-    quota: "5 files / day",
-    ai: "3 / month",
+    quota: "30 files / day",
+    ai: "25 pages / month",
     history: "Unlimited downloads",
-    blurb: "Signed-in starter role. Five conversions a day, with a small AI allowance — no credit card.",
+    blurb: "Stay here forever if you only convert. No credit card.",
     features: PLAN_CATALOG[0].features,
-    cta: { href: "/login?next=%2Fpricing", label: "Start free with Basic" },
+    cta: { href: "/login?next=%2Fpricing", label: "Start free with Casual" },
     free: true,
-    highlight: true,
   },
   {
     id: "pro",
-    role: "Pro",
-    price: "$12 / month",
-    quota: "150 files / month",
-    ai: "40 with AI or translation",
+    role: "Daily",
+    price: "$5 / month",
+    quota: "40 files / day",
+    ai: "500 AI pages / month",
     history: "Unlimited downloads",
-    blurb: "Paid grade. Stripe assigns the Pro role after checkout.",
+    blurb: "Coffee-money plan when you use AI on workdays.",
     features: PLAN_CATALOG[1].features,
-    cta: { href: "/profile", label: "Choose Pro" },
+    cta: { href: "/profile", label: "Choose Daily" },
   },
   {
     id: "premium",
-    role: "Premium",
+    role: "Expert",
     price: "$29 / month",
-    quota: "600 files / month",
-    ai: "150 with AI or translation",
+    quota: "200 files / day",
+    ai: "5,000 AI pages / month",
     history: "Unlimited downloads",
-    blurb: "Highest single-seat grade. Stripe assigns the Premium role after checkout.",
+    blurb: "Pipelines, inboxes, and volume AI. The plan we sell.",
     features: PLAN_CATALOG[2].features,
-    cta: { href: "/profile", label: "Choose Premium" },
+    cta: { href: "/profile", label: "Choose Expert" },
+    highlight: true,
   },
 ];
 
@@ -224,6 +229,14 @@ export function formatPlanPrice(amount: number | null | undefined): string {
   if (amount == null) return "—";
   if (amount <= 0) return "Free";
   return `$${amount} / month`;
+}
+
+export function planDisplayLabel(id: string | null | undefined): string {
+  return PLAN_RULES.find((plan) => plan.id === id)?.label ?? id ?? "";
+}
+
+export function apiPlanDisplayLabel(id: string | null | undefined): string {
+  return API_PLAN_CATALOG.find((plan) => plan.id === id)?.label ?? id ?? "";
 }
 
 export function planRank(id: string): number {
@@ -243,9 +256,9 @@ export type PlanLimits = {
 };
 
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
-  basic: { extractsPerDay: 5, extractsPerMonth: null, aiPerDay: null, aiPerMonth: 3 },
-  pro: { extractsPerDay: null, extractsPerMonth: 150, aiPerDay: null, aiPerMonth: 40 },
-  premium: { extractsPerDay: null, extractsPerMonth: 600, aiPerDay: null, aiPerMonth: 150 },
+  basic: { extractsPerDay: 30, extractsPerMonth: null, aiPerDay: null, aiPerMonth: 25 },
+  pro: { extractsPerDay: 40, extractsPerMonth: null, aiPerDay: null, aiPerMonth: 500 },
+  premium: { extractsPerDay: 200, extractsPerMonth: null, aiPerDay: null, aiPerMonth: 5000 },
 };
 
 export type UsageSnapshot = {
@@ -269,7 +282,7 @@ export function usageOverLimitReasons(quota: UsageSnapshot, targetId: string): s
     reasons.push(`${quota.used_ai_day} AI today (limit ${limits.aiPerDay})`);
   }
   if (limits.aiPerMonth != null && quota.used_ai_month > limits.aiPerMonth) {
-    reasons.push(`${quota.used_ai_month} AI this month (limit ${limits.aiPerMonth})`);
+    reasons.push(`${quota.used_ai_month} AI pages this month (limit ${limits.aiPerMonth})`);
   }
   return reasons;
 }
@@ -310,16 +323,24 @@ export type ApiUsageSnapshot = {
   used_credits: number;
   limit_credits: number | null;
   remaining_credits: number | null;
+  used_standard_pages?: number;
+  limit_standard_pages?: number | null;
+  remaining_standard_pages?: number | null;
 };
 
 export function apiUsageOverLimitReasons(quota: ApiUsageSnapshot | undefined, targetId: string): string[] {
   const limits = API_PLAN_LIMITS[targetId];
   if (!limits) return ["Unknown API plan"];
+  const reasons: string[] = [];
   const used = quota?.used_credits ?? 0;
   if (used > limits.creditsPerMonth) {
-    return [`${used} API credits this month (limit ${limits.creditsPerMonth})`];
+    reasons.push(`${used} API AI pages this month (limit ${limits.creditsPerMonth})`);
   }
-  return [];
+  const usedStandard = quota?.used_standard_pages ?? 0;
+  if (usedStandard > limits.standardPagesPerMonth) {
+    reasons.push(`${usedStandard} standard API pages this month (limit ${limits.standardPagesPerMonth})`);
+  }
+  return reasons;
 }
 
 export function canMoveToApiPlan(
@@ -379,11 +400,11 @@ export function convertGateTitle(gate: ConvertGate): string {
     case "login":
       return "Sign in to convert";
     case "quota_day":
-      return "Daily conversion limit reached";
+      return "Today's conversion limit reached";
     case "quota_month":
       return "Monthly conversion limit reached";
     case "quota_ai_day":
-      return "Daily AI allowance reached";
+      return "Today's AI allowance reached";
     case "quota_ai_month":
       return "Monthly AI allowance reached";
     case "plan":
@@ -396,15 +417,15 @@ export function convertGateTitle(gate: ConvertGate): string {
 export function convertGateBody(gate: ConvertGate): string {
   switch (gate) {
     case "login":
-      return "Sign in once and you start on Free Basic — five conversions a day and a small AI allowance. No credit card. Guest browsing is fine; converting a file needs an account.";
+      return "Sign in once and you start on Free Casual — thirty conversions a day and 25 AI pages a month. No credit card. Guest browsing is fine; converting a file needs an account.";
     case "quota_day":
-      return "Basic includes five conversions per day. Come back tomorrow, or upgrade for a monthly allowance.";
+      return "This role’s daily conversion allowance is used. Come back tomorrow, or upgrade if you need more volume.";
     case "quota_month":
       return "This account has used its monthly conversions. Upgrade or wait until next month.";
     case "quota_ai_day":
-      return "Today’s AI or translation conversion is used. You can still convert without AI, or come back tomorrow.";
+      return "Today’s AI or translation pages are used. You can still convert without AI, or come back tomorrow.";
     case "quota_ai_month":
-      return "This plan’s AI or translation allowance is used for the month. You can still convert files without AI, or upgrade.";
+      return "This plan’s AI or translation page allowance is used for the month. You can still convert files without AI, or upgrade.";
     case "plan":
       return "This account’s plan does not include file conversion.";
     default:

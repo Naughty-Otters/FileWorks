@@ -14,6 +14,8 @@ from app.auth.deps import Principal, get_principal
 from app.auth.plans import get_plan
 from app.billing.stripe import (
     _as_dict,
+    _plan_from_name,
+    _product_display_name,
     apply_checkout_session,
     apply_subscription,
     billing_status,
@@ -84,7 +86,7 @@ class StripeMappingTests(unittest.TestCase):
         self.assertTrue(status["enabled"])
         self.assertFalse(status["prices"]["basic"])
         self.assertTrue(status["prices"]["pro"])
-        self.assertEqual(status["amounts"]["pro"], 12)
+        self.assertEqual(status["amounts"]["pro"], 5)
         self.assertEqual(status["amounts"]["premium"], 29)
 
     def test_numeric_amounts_are_display_dollars(self) -> None:
@@ -509,7 +511,7 @@ class BillingRouteTests(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["amounts"]["pro"], 20)
         self.assertTrue(res.json()["prices"]["pro"])
-        self.assertEqual(res.json()["api"]["amounts"]["api_builder"], 19)
+        self.assertEqual(res.json()["api"]["amounts"]["api_builder"], 5)
 
     def test_confirm_applies_checkout_session(self) -> None:
         user = _user()
@@ -1051,7 +1053,7 @@ class StripeObjectAndWebhookTests(unittest.TestCase):
         self.assertIsNone(parse_amount_dollars("price_pro"))
         self.assertIsNone(parse_amount_dollars("nope"))
         self.assertEqual(plan_amount_dollars("pro", _settings(stripe_price_pro="15")), 15)
-        self.assertEqual(plan_amount_dollars("pro", _settings(stripe_price_pro="price_pro")), 12)
+        self.assertEqual(plan_amount_dollars("pro", _settings(stripe_price_pro="price_pro")), 5)
 
     def test_as_dict_accepts_stripe_objects(self) -> None:
         self.assertEqual(_as_dict({"id": "x"}), {"id": "x"})
@@ -1078,6 +1080,26 @@ class StripeObjectAndWebhookTests(unittest.TestCase):
         )
         self.assertEqual(plan, "premium")
         self.assertEqual(user.stripe_customer_id, "cus_1")
+
+    def test_product_display_names_match_public_labels(self) -> None:
+        self.assertEqual(_product_display_name("basic"), "FileWorks Casual")
+        self.assertEqual(_product_display_name("pro"), "FileWorks Daily")
+        self.assertEqual(_product_display_name("premium"), "FileWorks Expert")
+        self.assertEqual(_product_display_name("api_free"), "FileWorks API Free")
+        self.assertEqual(_product_display_name("api_builder"), "FileWorks API Daily")
+        self.assertEqual(_product_display_name("api_scale"), "FileWorks API Expert")
+        self.assertEqual(_product_display_name("api_business"), "FileWorks API Business")
+
+    def test_plan_from_name_accepts_public_and_legacy_labels(self) -> None:
+        self.assertEqual(_plan_from_name("FileWorks Daily"), "pro")
+        self.assertEqual(_plan_from_name("FileWorks Pro"), "pro")
+        self.assertEqual(_plan_from_name("FileWorks Expert"), "premium")
+        self.assertEqual(_plan_from_name("FileWorks Premium"), "premium")
+        self.assertEqual(_plan_from_name("FileWorks Casual"), "basic")
+        self.assertEqual(_plan_from_name("FileWorks API Daily"), "api_builder")
+        self.assertEqual(_plan_from_name("FileWorks API Builder"), "api_builder")
+        self.assertEqual(_plan_from_name("FileWorks API Expert"), "api_scale")
+        self.assertEqual(_plan_from_name("FileWorks API Scale"), "api_scale")
 
     def test_apply_subscription_reads_product_name(self) -> None:
         user = _user()

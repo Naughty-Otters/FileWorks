@@ -265,8 +265,8 @@ export function ConvertControls({
                   Sign in
                 </a>{" "}
                 to convert on{" "}
-                <span className="font-medium text-[var(--accent-strong)]">Free Basic</span>{" "}
-                (5 conversions / day, no credit card) and save history.
+                <span className="font-medium text-[var(--accent-strong)]">Free Casual</span>{" "}
+                (30 conversions / day, no credit card) and save history.
               </p>
             ) : null}
           </div>

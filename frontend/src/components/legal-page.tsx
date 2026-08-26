@@ -61,7 +61,8 @@ export function LegalPage() {
               Markdown, and TXT into editable Markdown, with optional AI reading and translation.
             </li>
             <li>
-              Products for sale: monthly Pro ($12) and Premium ($29) subscriptions. Basic is free.
+              Products for sale: monthly Daily ($5) and Expert ($29) workspace subscriptions, and
+              Convert API Daily ($5) and Expert ($29). Casual and API Free are free.
               See{" "}
               <a href="/about" className="text-[var(--accent-strong)] hover:underline">
                 About
@@ -125,9 +126,9 @@ export function LegalPage() {
             Refund and dispute policy
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Workspace Pro and Premium, and Convert API Builder / Scale / Business, are prepaid
-            monthly subscriptions billed through Stripe. Basic and API Free are free. Fees pay for
-            access during that billing period: workspace conversion quota, or API page credits. The
+            Workspace Daily and Expert, and Convert API Daily / Expert, are prepaid
+            monthly subscriptions billed through Stripe. Casual and API Free are free. Fees pay for
+            AI page allowances during that billing period. Default convert is included. The
             two products can be combined on one account and are billed separately.
           </p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--ink-muted)]">
@@ -172,8 +173,8 @@ export function LegalPage() {
             <li>Cancel that subscription. Access continues until the period end date shown there.</li>
           </ol>
           <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
-            When the paid period ends, the account role returns to Basic. History already saved
-            remains available; new conversions follow Basic limits. You can subscribe again from{" "}
+            When the paid period ends, the account role returns to Casual. History already saved
+            remains available; new conversions follow Casual limits. You can subscribe again from{" "}
             <a href="/pricing" className="text-[var(--accent-strong)] hover:underline">
               Pricing
             </a>

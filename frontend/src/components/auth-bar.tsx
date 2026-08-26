@@ -1,6 +1,7 @@
 "use client";
 
 import type { MeResponse, SessionUser } from "@/lib/auth";
+import { planDisplayLabel } from "@/lib/plans";
 import type { SessionStatus } from "@/lib/session";
 
 type AuthBarProps = {
@@ -20,7 +21,7 @@ function accountTitle(user: SessionUser, me: MeResponse | null): string {
         : me.quota.limit_month != null
           ? `${me.quota.used_month}/${me.quota.limit_month} this month`
           : null;
-  return [who, me?.plan ?? user.plan, quota].filter(Boolean).join(" · ");
+  return [who, planDisplayLabel(me?.plan ?? user.plan), quota].filter(Boolean).join(" · ");
 }
 
 function initials(user: SessionUser): string {

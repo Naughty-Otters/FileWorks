@@ -44,11 +44,14 @@ class ConvertLanguage(BaseModel):
 
 
 class ConvertCredits(BaseModel):
-    standard_per_page: int = 1
-    ai_per_page: int = 3
+    standard_per_page: int = 0
+    ai_per_page: int = 1
     used: int | None = None
     limit: int | None = None
     remaining: int | None = None
+    standard_used: int | None = None
+    standard_limit: int | None = None
+    standard_remaining: int | None = None
 
 
 class ConvertCatalogResponse(BaseModel):

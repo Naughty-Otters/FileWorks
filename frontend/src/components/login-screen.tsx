@@ -91,15 +91,16 @@ export function LoginScreen() {
           <div className="mt-5 rounded-2xl border border-[var(--accent)] bg-[var(--accent-soft)]/50 px-4 py-3">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-strong)]">
-                Free · Basic
+                Free · Casual
               </p>
               <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white dark:text-[#06281d]">
                 Free
               </span>
             </div>
             <p className="mt-1.5 text-sm leading-5 text-[var(--ink)]">
-              Sign in and you start on Free Basic — five conversions a day and a small AI allowance. No
-              credit card. Pro and Premium add monthly volume when you need more.
+              Sign in and you start on Free Casual — thirty conversions a day and 25 AI pages a
+              month. No credit card. Daily is $5 when you use AI every workday. Expert is $29 for
+              volume.
             </p>
           </div>
           <div className="mt-8">
@@ -130,7 +131,7 @@ export function LoginScreen() {
               href="/pricing"
               className="text-sm font-medium text-[var(--accent-strong)] transition hover:underline"
             >
-              See Free Basic &amp; paid roles
+              See Free Casual &amp; paid roles
             </a>
           </div>
         </div>
