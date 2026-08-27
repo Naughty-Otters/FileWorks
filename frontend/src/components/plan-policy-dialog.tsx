@@ -37,6 +37,7 @@ export function PlanPolicyDialog({
   }, [onClose]);
 
   const needLogin = gate === "login" || gate === "plan";
+  const needUpgrade = gate === "editor_save";
 
   return (
     <div
@@ -81,6 +82,19 @@ export function PlanPolicyDialog({
               <li>{conversionsPerDayLabel(WORKSPACE_QUOTAS.basic.extractsPerDay)}</li>
               <li>{aiPagesMonthLabel(WORKSPACE_QUOTAS.basic.aiPerMonth, { prefix: "AI reading or translation" })}</li>
               <li>No credit card · document history after sign-in</li>
+            </ul>
+          </div>
+        ) : null}
+
+        {gate === "editor_save" ? (
+          <div className="mt-4 rounded-2xl border border-[var(--accent)] bg-[var(--accent-soft)]/50 px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-strong)]">
+              Editor · Daily or Expert
+            </p>
+            <ul className="mt-2 space-y-1 text-sm leading-5 text-[var(--ink)]">
+              <li>Edit PDF, images, text, and Word for free</li>
+              <li>Save or download the stamped file on Daily (${WORKSPACE_QUOTAS.pro.priceUsd}/mo) or Expert</li>
+              <li>Convert-result downloads stay free on Casual</li>
             </ul>
           </div>
         ) : null}
@@ -153,6 +167,14 @@ export function PlanPolicyDialog({
             >
               {secondaryLabel}
             </button>
+          ) : null}
+          {needUpgrade ? (
+            <a
+              href="/pricing"
+              className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white dark:text-[#06281d]"
+            >
+              Choose Daily
+            </a>
           ) : null}
           {needLogin ? (
             <a

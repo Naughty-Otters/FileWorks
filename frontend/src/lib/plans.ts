@@ -27,12 +27,18 @@ export type PlanRule = {
 
 function workspaceRule(id: WorkspaceQuota["id"], convert: string, free?: boolean): PlanRule {
   const q = WORKSPACE_QUOTAS[id];
+  const extras =
+    id === "anonymous"
+      ? "Edit free · no save"
+      : id === "basic"
+        ? `${aiPagesMonthLabel(q.aiPerMonth)} · edit free`
+        : `${aiPagesMonthLabel(q.aiPerMonth)} · editor save`;
   return {
     id: q.id,
     label: q.label,
     convert,
     quota: filesPerDayLabel(q.extractsPerDay),
-    extras: q.aiPerMonth == null ? "No history" : aiPagesMonthLabel(q.aiPerMonth),
+    extras,
     price: formatUsdMonth(q.priceUsd),
     free,
   };
@@ -140,7 +146,8 @@ function workspaceCatalogEntry(id: "basic" | "pro" | "premium"): CatalogPlan {
           conversionsPerDayLabel(day),
           `${aiPagesMonthLabel(ai, { prefix: "AI reading or translation" })}`,
           "Translate into 19 languages",
-          "Unlimited downloads of each result",
+          "Edit files for free; save/download on Daily+",
+          "Unlimited downloads of each convert result",
           "Document history",
         ]
       : [
@@ -150,7 +157,8 @@ function workspaceCatalogEntry(id: "basic" | "pro" | "premium"): CatalogPlan {
             : conversionsPerDayLabel(day),
           `${formatCount(ai)} AI reading or translation pages`,
           "Translate into 19 languages",
-          "Unlimited downloads of each result",
+          "Save and download from the Editor",
+          "Unlimited downloads of each convert result",
         ];
   return {
     id,
@@ -192,7 +200,7 @@ export const PRICE_ROLES: PriceRole[] = [
     ai: "No",
     history: "No",
     blurb: "Look around the workspace. Conversion needs a signed-in role.",
-    features: ["Browse the app", "No file conversion", "No saved history"],
+    features: ["Browse the app", "Edit files (no save/download)", "No file conversion", "No saved history"],
     cta: { href: "/", label: "Continue as guest" },
     free: true,
   },
@@ -202,7 +210,7 @@ export const PRICE_ROLES: PriceRole[] = [
     price: formatUsdMonth(WORKSPACE_QUOTAS.basic.priceUsd),
     quota: filesPerDayLabel(WORKSPACE_QUOTAS.basic.extractsPerDay),
     ai: aiPagesMonthLabel(WORKSPACE_QUOTAS.basic.aiPerMonth, { short: true }),
-    history: "Unlimited downloads",
+    history: "Convert downloads · edit free",
     blurb: "Stay here forever if you only convert. No credit card.",
     features: PLAN_CATALOG[0].features,
     cta: { href: "/login?next=%2Fpricing", label: "Start free with Casual" },
@@ -214,7 +222,7 @@ export const PRICE_ROLES: PriceRole[] = [
     price: formatUsdMonth(WORKSPACE_QUOTAS.pro.priceUsd),
     quota: filesPerDayLabel(WORKSPACE_QUOTAS.pro.extractsPerDay),
     ai: aiPagesMonthLabel(WORKSPACE_QUOTAS.pro.aiPerMonth),
-    history: "Unlimited downloads",
+    history: "Editor save + convert downloads",
     blurb: "Coffee-money plan when you use AI on workdays.",
     features: PLAN_CATALOG[1].features,
     cta: { href: "/profile", label: "Choose Daily" },
@@ -225,7 +233,7 @@ export const PRICE_ROLES: PriceRole[] = [
     price: formatUsdMonth(WORKSPACE_QUOTAS.premium.priceUsd),
     quota: filesPerDayLabel(WORKSPACE_QUOTAS.premium.extractsPerDay),
     ai: aiPagesMonthLabel(WORKSPACE_QUOTAS.premium.aiPerMonth),
-    history: "Unlimited downloads",
+    history: "Editor save + convert downloads",
     blurb: "Pipelines, inboxes, and volume AI. The plan we sell.",
     features: PLAN_CATALOG[2].features,
     cta: { href: "/profile", label: "Choose Expert" },
@@ -239,7 +247,8 @@ export const PERMISSION_LABELS: Record<string, string> = {
   "extract.ai": "AI reading",
   "extract.translate": "Translation",
   "history.read": "History",
-  export: "Export",
+  export: "Export convert results",
+  "editor.download": "Editor save / download",
 };
 
 export function formatPlanPrice(amount: number | null | undefined): string {
@@ -400,7 +409,15 @@ export function planSwitchLabel(current: string, target: CatalogPlan): string {
   return `Switch to ${target.label}`;
 }
 
-export type ConvertGate = "login" | "plan" | "quota_day" | "quota_month" | "quota_ai_day" | "quota_ai_month" | "ready";
+export type ConvertGate =
+  | "login"
+  | "plan"
+  | "quota_day"
+  | "quota_month"
+  | "quota_ai_day"
+  | "quota_ai_month"
+  | "editor_save"
+  | "ready";
 
 export function convertGate(args: {
   signedIn: boolean;
@@ -421,6 +438,11 @@ export function convertGate(args: {
   if (args.wantsAi && args.remainingAiMonth === 0) return "quota_ai_month";
   if (!args.canExtract) return "plan";
   return "ready";
+}
+
+/** Edit is free; saving or downloading the stamped file needs Daily or Expert. */
+export function editorSaveGate(canEditorDownload: boolean | undefined): ConvertGate {
+  return canEditorDownload ? "ready" : "editor_save";
 }
 
 export function aiQuotaLeft(quota: {
@@ -446,6 +468,8 @@ export function convertGateTitle(gate: ConvertGate): string {
       return "Monthly AI allowance reached";
     case "plan":
       return "Your plan cannot convert files";
+    case "editor_save":
+      return "Save on Daily or Expert";
     default:
       return "Plan rules";
   }
@@ -465,6 +489,8 @@ export function convertGateBody(gate: ConvertGate): string {
       return "This plan’s AI or translation page allowance is used for the month. You can still convert files without AI, or upgrade.";
     case "plan":
       return "This account’s plan does not include file conversion.";
+    case "editor_save":
+      return "You can edit for free. Saving or downloading the stamped file needs Daily or Expert.";
     default:
       return "FileWorks conversion follows the plan rules below.";
   }

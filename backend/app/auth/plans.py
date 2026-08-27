@@ -21,7 +21,8 @@ class Plan:
     ai: bool
     translate: bool
     history: bool
-    export: bool
+    export: bool  # convert-result download via /api/export
+    editor_download: bool  # save / download from the /edit stamp editor
     extracts_per_day: int | None  # None = unlimited
     extracts_per_month: int | None
     ai_per_day: int | None  # AI or translation pages; None = unlimited / not applicable
@@ -38,6 +39,7 @@ PLANS: dict[str, Plan] = {
         translate=False,
         history=False,
         export=True,
+        editor_download=False,
         extracts_per_day=None,
         extracts_per_month=None,
         ai_per_day=None,
@@ -52,6 +54,7 @@ PLANS: dict[str, Plan] = {
         translate=True,
         history=True,
         export=True,
+        editor_download=False,
         extracts_per_day=15,
         extracts_per_month=None,
         ai_per_day=None,
@@ -66,6 +69,7 @@ PLANS: dict[str, Plan] = {
         translate=True,
         history=True,
         export=True,
+        editor_download=True,
         extracts_per_day=40,
         extracts_per_month=None,
         ai_per_day=None,
@@ -80,6 +84,7 @@ PLANS: dict[str, Plan] = {
         translate=True,
         history=True,
         export=True,
+        editor_download=True,
         extracts_per_day=200,
         extracts_per_month=None,
         ai_per_day=None,
@@ -113,4 +118,5 @@ def permissions_for(plan: Plan) -> dict[str, bool]:
         "history.read": plan.history,
         "history.write": plan.history,
         "export": plan.export,
+        "editor.download": plan.editor_download,
     }

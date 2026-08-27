@@ -87,7 +87,9 @@ describe("plan-quotas", () => {
       expect(plan.features.some((f) => f.includes(formatCount(q.aiPerMonth!)))).toBe(true);
     }
 
-    expect(PLAN_RULES.find((p) => p.id === "pro")?.extras).toBe(aiPagesMonthLabel(DAILY.aiPerMonth));
+    expect(PLAN_RULES.find((p) => p.id === "pro")?.extras).toBe(
+      `${aiPagesMonthLabel(DAILY.aiPerMonth)} · editor save`,
+    );
     expect(PRICE_ROLES.find((p) => p.id === "premium")?.ai).toBe(aiPagesMonthLabel(EXPERT.aiPerMonth));
     expect(PRICE_ROLES.find((p) => p.id === "basic")?.quota).toContain("15");
   });

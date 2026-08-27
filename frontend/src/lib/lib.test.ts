@@ -41,6 +41,7 @@ import {
   convertGate,
   convertGateBody,
   convertGateTitle,
+  editorSaveGate,
   canMoveToApiPlan,
   canMoveToPlan,
   canSwitchPlan,
@@ -656,6 +657,7 @@ describe("plan policy", () => {
     expect(convertGateTitle("quota_ai_day")).toMatch(/AI/);
     expect(convertGateTitle("quota_ai_month")).toMatch(/AI/);
     expect(convertGateTitle("plan")).toMatch(/cannot convert/);
+    expect(convertGateTitle("editor_save")).toMatch(/Daily or Expert/);
     expect(convertGateTitle("ready")).toMatch(/Plan rules/);
     expect(convertGateBody("login")).toMatch(/Free Casual/);
     expect(convertGateBody("quota_day")).toMatch(/daily conversion/);
@@ -663,7 +665,11 @@ describe("plan policy", () => {
     expect(convertGateBody("quota_ai_day")).toMatch(/without AI/);
     expect(convertGateBody("quota_ai_month")).toMatch(/without AI/);
     expect(convertGateBody("plan")).toMatch(/does not include/);
+    expect(convertGateBody("editor_save")).toMatch(/edit for free/i);
     expect(convertGateBody("ready")).toMatch(/plan rules/);
+    expect(editorSaveGate(true)).toBe("ready");
+    expect(editorSaveGate(false)).toBe("editor_save");
+    expect(editorSaveGate(undefined)).toBe("editor_save");
   });
 });
 

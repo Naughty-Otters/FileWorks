@@ -5,6 +5,7 @@ import { FolderOpen, Save, Upload } from "lucide-react";
 import { AuthBar } from "@/components/auth-bar";
 import { BrandLockup } from "@/components/brand-lockup";
 import { DocsLiteEditor } from "@/components/docs-lite-editor";
+import { PlanPolicyDialog } from "@/components/plan-policy-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   canUseFilePicker,
@@ -23,6 +24,7 @@ import {
   type EditorWritableHandle,
 } from "@/lib/editor-files";
 import { docxFileToEditorMarkdown, isWordDocxFile } from "@/lib/docx-to-editor";
+import { editorSaveGate, type ConvertGate } from "@/lib/plans";
 import { PRODUCT } from "@/lib/product-copy";
 import { reloadSession, useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -57,6 +59,7 @@ export function TextDocumentEditor({
   const [dragging, setDragging] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [mode, setMode] = useState<"preview" | "source">("preview");
+  const [gate, setGate] = useState<ConvertGate | null>(null);
   const sourceOnly = Boolean(file && isSourceOnlyTextFile(file));
   const docsFormat = file && isMarkdownDocumentFile(file) ? "markdown" : "plain";
   const dirty = content !== baseline;
@@ -168,6 +171,11 @@ export function TextDocumentEditor({
 
   async function onSave(modeSave: "save" | "save-as") {
     if (!file) return;
+    const nextGate = editorSaveGate(me?.permissions?.["editor.download"]);
+    if (nextGate !== "ready") {
+      setGate(nextGate);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -371,6 +379,9 @@ export function TextDocumentEditor({
           </section>
         )}
       </main>
+      {gate && gate !== "ready" ? (
+        <PlanPolicyDialog gate={gate} onClose={() => setGate(null)} loginHref="/login?next=/edit" />
+      ) : null}
     </div>
   );
 }

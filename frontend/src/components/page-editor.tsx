@@ -64,7 +64,7 @@ import {
   type EditorRegion,
 } from "@/lib/editor-regions";
 import { stampImageFile, stampPdfBytes } from "@/lib/editor-save";
-import { type ConvertGate } from "@/lib/plans";
+import { editorSaveGate, type ConvertGate } from "@/lib/plans";
 import { PRODUCT } from "@/lib/product-copy";
 import { reloadSession, useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -580,6 +580,11 @@ export function PageEditor({
 
   async function onSave(mode: "save" | "save-as") {
     if (!file || !kind) return;
+    const nextGate = editorSaveGate(me?.permissions?.["editor.download"]);
+    if (nextGate !== "ready") {
+      setGate(nextGate);
+      return;
+    }
     commitActive();
     setBusy(true);
     setError(null);

@@ -40,14 +40,20 @@ class PlansTests(unittest.TestCase):
         self.assertEqual(get_plan("basic").ai_per_month, 2)
         self.assertIsNone(get_plan("basic").ai_per_day)
         self.assertEqual(get_plan("basic").extracts_per_day, 15)
+        self.assertFalse(perms["editor.download"])
+        self.assertFalse(get_plan("basic").editor_download)
 
     def test_pro_permissions(self) -> None:
         perms = permissions_for(get_plan("pro"))
         self.assertTrue(perms["extract.ai"])
         self.assertTrue(perms["history.read"])
+        self.assertTrue(perms["editor.download"])
         self.assertEqual(get_plan("pro").extracts_per_day, 40)
         self.assertIsNone(get_plan("pro").extracts_per_month)
         self.assertEqual(get_plan("pro").ai_per_month, 100)
+        self.assertTrue(get_plan("pro").editor_download)
+        self.assertFalse(get_plan("anonymous").editor_download)
+        self.assertTrue(get_plan("premium").editor_download)
         self.assertEqual(get_plan("premium").extracts_per_day, 200)
         self.assertEqual(get_plan("premium").ai_per_month, 1000)
 

@@ -6,6 +6,7 @@ import type { MeResponse } from "@/lib/api";
 import * as editorPdf from "@/lib/editor-pdf";
 import * as editorFiles from "@/lib/editor-files";
 import * as sessionFiles from "@/lib/workspace-session";
+import { resetSessionStore } from "@/lib/session";
 
 vi.mock("@/lib/editor-pdf", () => ({
   openPdfDocument: vi.fn(),
@@ -46,12 +47,14 @@ const guestMe: MeResponse = {
 
 describe("PageEditor", () => {
   beforeEach(() => {
+    resetSessionStore();
     vi.spyOn(api, "fetchMe").mockResolvedValue(guestMe);
     vi.spyOn(api, "extractDocument");
     vi.spyOn(sessionFiles, "loadEditorFile").mockResolvedValue(null);
     vi.spyOn(sessionFiles, "saveEditorFile").mockResolvedValue();
     vi.spyOn(sessionFiles, "saveSessionFile").mockResolvedValue();
     vi.spyOn(editorFiles, "downloadBlob").mockImplementation(() => undefined);
+    vi.mocked(editorFiles.downloadBlob).mockClear();
     vi.mocked(editorPdf.openPdfDocument).mockResolvedValue({
       pageCount: 2,
       getPage: vi.fn(),
@@ -138,6 +141,12 @@ describe("PageEditor", () => {
 
   it("lets the user click PDF text, type, and download a stamped copy", async () => {
     const user = userEvent.setup();
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
+      plan: "pro",
+      permissions: { "editor.download": true, "extract.ai": true },
+    });
     render(<PageEditor />);
     await screen.findByLabelText("Open a PDF or image");
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -152,6 +161,23 @@ describe("PageEditor", () => {
     expect(screen.getByRole("button", { name: 'Edit “Hi”' })).toHaveTextContent("Hi");
     await user.click(screen.getByRole("button", { name: "Download copy" }));
     await waitFor(() => expect(editorFiles.downloadBlob).toHaveBeenCalled());
+  });
+
+  it("asks guests to upgrade before downloading a stamped copy", async () => {
+    const user = userEvent.setup();
+    render(<PageEditor />);
+    await screen.findByLabelText("Open a PDF or image");
+    // Wait for guest session so a prior paid-plan test cannot leak editor.download.
+    await waitFor(() => {
+      expect(api.fetchMe).toHaveBeenCalled();
+    });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, new File(["pdf"], "letter.pdf", { type: "application/pdf" }));
+    expect(await screen.findByRole("button", { name: 'Edit “Hello”' })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Download copy" }));
+    expect(await screen.findByText("Save on Daily or Expert")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Choose Daily" })).toHaveAttribute("href", "/pricing");
+    expect(editorFiles.downloadBlob).not.toHaveBeenCalled();
   });
 
   it("commits on Enter and keeps the new text on the box", async () => {
