@@ -232,6 +232,21 @@ describe("UploadPanel", () => {
     expect(onFileSelect).toHaveBeenCalledWith(null);
   });
 
+  it("offers a secondary Editor link for PDFs", async () => {
+    const onEditText = vi.fn();
+    const file = new File(["pdf"], "letter.pdf", { type: "application/pdf" });
+    render(
+      <UploadPanel
+        file={file}
+        previewUrl="blob:mock"
+        onFileSelect={vi.fn()}
+        onEditText={onEditText}
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Open in Editor" }));
+    expect(onEditText).toHaveBeenCalled();
+  });
+
   it("empty source invites a file drop", async () => {
     render(
       <UploadPanel

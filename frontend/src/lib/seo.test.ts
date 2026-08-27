@@ -61,6 +61,7 @@ describe("seo helpers", () => {
     expect(paths).toContain("/pricing");
     expect(paths).toContain("/docs");
     expect(paths).toContain("/templates");
+    expect(paths).toContain("/edit");
     expect(paths).toContain("/about");
     for (const guide of CONVERT_GUIDES) {
       expect(paths).toContain(guide.path);

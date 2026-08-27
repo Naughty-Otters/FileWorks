@@ -8,6 +8,7 @@ export const LEGAL_UPDATED = "August 15, 2026";
 
 export const MARKETING_LINKS = [
   { href: "/templates", label: "Designs" },
+  { href: "/edit", label: "Editor" },
   { href: "/pricing", label: "Pricing" },
   { href: "/docs", label: "API" },
   { href: "/legal", label: "Legal" },
@@ -25,6 +26,7 @@ export const GUIDE_LINKS = [
 export const LEGAL_LINKS = [
   { href: "/docs", label: "API" },
   { href: "/templates", label: "Designs" },
+  { href: "/edit", label: "Editor" },
   { href: "/about", label: "About" },
   { href: "/pdf-to-markdown", label: "PDF to Markdown" },
   { href: "/legal#contact", label: "Contact" },

@@ -39,6 +39,7 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
+  transpilePackages: ["pdfjs-dist"],
   // Keep tooling rooted at the frontend package (nested git / monorepo safety).
   turbopack: {
     root: __dirname,

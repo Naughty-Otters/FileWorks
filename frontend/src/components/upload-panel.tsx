@@ -6,6 +6,7 @@ import type { ImageSize, RegionBox } from "@/lib/api";
 import { PRODUCT } from "@/lib/product-copy";
 import { cn, formatBytes } from "@/lib/utils";
 import { AnnotatedImage } from "@/components/region-overlay";
+import { isEditorSourceFile } from "@/lib/editor-files";
 
 type UploadPanelProps = {
   file: File | null;
@@ -17,6 +18,8 @@ type UploadPanelProps = {
   onActiveRegionChange?: (id: string | null) => void;
   onFileSelect: (file: File | null) => void;
   onCollapse?: () => void;
+  /** Open this PDF/image in Editor without converting. */
+  onEditText?: () => void;
   /** Pipeline actions (Produce as · Options · Convert) — lives in the single Source chrome. */
   actions?: ReactNode;
   leadingToggle?: ReactNode;
@@ -63,6 +66,7 @@ export function UploadPanel({
   onActiveRegionChange,
   onFileSelect,
   onCollapse,
+  onEditText,
   actions,
   leadingToggle,
   intentName = null,
@@ -289,6 +293,20 @@ export function UploadPanel({
                 Preview not available for this file type — convert to see the result on the right.
               </div>
             )}
+            {onEditText && isEditorSourceFile(file) ? (
+              <p className="pointer-events-none absolute bottom-4 left-4 right-4 text-center text-[11px] text-[var(--ink-muted)]">
+                <span className="pointer-events-auto rounded-full bg-[var(--bg)]/90 px-3 py-1.5">
+                  Want to change text on the page?{" "}
+                  <button
+                    type="button"
+                    onClick={onEditText}
+                    className="font-medium text-[var(--accent-strong)] underline-offset-2 hover:underline"
+                  >
+                    Open in Editor
+                  </button>
+                </span>
+              </p>
+            ) : null}
           </div>
         )}
       </div>

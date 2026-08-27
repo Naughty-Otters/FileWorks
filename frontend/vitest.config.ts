@@ -21,6 +21,7 @@ export default defineConfig({
         "src/app/**/page.tsx",
         "src/app/layout.tsx",
         "src/lib/empty-polyfill.ts",
+        "src/lib/editor-pdf.ts",
         // Thin page wrappers / marketing shells.
         "src/components/auth-redirect.tsx",
         "src/components/convert-guide-page.tsx",

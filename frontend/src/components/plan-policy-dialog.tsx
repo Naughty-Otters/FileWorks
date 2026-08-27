@@ -15,6 +15,7 @@ type PlanPolicyDialogProps = {
   onClose: () => void;
   secondaryLabel?: string;
   onSecondary?: () => void;
+  loginHref?: string;
 };
 
 export function PlanPolicyDialog({
@@ -22,6 +23,7 @@ export function PlanPolicyDialog({
   onClose,
   secondaryLabel,
   onSecondary,
+  loginHref = "/login",
 }: PlanPolicyDialogProps) {
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -151,7 +153,7 @@ export function PlanPolicyDialog({
           ) : null}
           {needLogin ? (
             <a
-              href="/login"
+              href={loginHref}
               className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white dark:text-[#06281d]"
             >
               {gate === "login" ? "Start free with Casual" : "Sign in"}

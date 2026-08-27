@@ -19,6 +19,7 @@ const body = Manrope({
   subsets: ["latin"],
   display: "swap",
   adjustFontFallback: true,
+  preload: false,
 });
 
 const mono = IBM_Plex_Mono({

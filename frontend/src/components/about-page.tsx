@@ -76,9 +76,10 @@ export function AboutPage() {
           </p>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             What we charge for: workspace AI page allowances (Daily and Expert) and
-            Convert API AI page credits and keys. Default convert is included. Each paid
-            product is a monthly software subscription through Stripe. The two products can
-            be held together.
+            Convert API AI page credits and keys. Default convert is included. Editor
+            edits text on PDFs and images; finding text on scans uses the same AI page
+            allowance. Each paid product is a monthly software subscription through Stripe.
+            The two products can be held together.
           </p>
         </section>
 

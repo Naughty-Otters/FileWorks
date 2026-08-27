@@ -36,6 +36,10 @@ export const PRODUCT = {
   placeholders: "Placeholders",
   /** Home / workspace promise — Source + Intent */
   homeLine: "Drop a file. Choose what to produce.",
+  /** Page editor at /edit */
+  editor: "Editor",
+  editorLine: "Open a PDF or image. Click the text. Save.",
+  editTextOnPage: "Edit text on the page.",
   /** CTA from Designs library into workspace with Intent set */
   produceFromFile: "Produce from file",
   /** Edit starter in studio */

@@ -146,6 +146,7 @@ describe("Workspace", () => {
     render(<Workspace />);
     await waitFor(() => expect(screen.getByRole("link", { name: "FileWorks" })).toBeInTheDocument());
     expect(screen.getAllByRole("link", { name: "Designs" })[0]).toHaveAttribute("href", "/templates");
+    expect(screen.getAllByRole("link", { name: "Editor" })[0]).toHaveAttribute("href", "/edit");
     expect(screen.getAllByRole("link", { name: "API" })[0]).toHaveAttribute("href", "/docs");
     expect(screen.getByRole("link", { name: "About" })).toHaveAttribute("href", "/about");
     expect(screen.getAllByText(/Drop a file\. Choose what to produce/i).length).toBeGreaterThan(0);

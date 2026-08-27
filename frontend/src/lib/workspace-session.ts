@@ -8,6 +8,7 @@ const PREFS_KEY = "fileworks.workspace.v1";
 const FILE_DB = "fileworks";
 const FILE_STORE = "session-file";
 const FILE_KEY = "current";
+const EDITOR_FILE_KEY = "editor";
 
 export type MarkdownMode = "preview" | "edit";
 
@@ -77,7 +78,7 @@ function openFileDb(): Promise<IDBDatabase> {
   });
 }
 
-export async function saveSessionFile(file: File | null): Promise<void> {
+async function saveKeyedFile(key: string, file: File | null): Promise<void> {
   if (typeof window === "undefined" || !window.indexedDB) return;
   try {
     const db = await openFileDb();
@@ -85,7 +86,7 @@ export async function saveSessionFile(file: File | null): Promise<void> {
       const tx = db.transaction(FILE_STORE, "readwrite");
       const store = tx.objectStore(FILE_STORE);
       if (!file) {
-        store.delete(FILE_KEY);
+        store.delete(key);
       } else {
         store.put(
           {
@@ -94,7 +95,7 @@ export async function saveSessionFile(file: File | null): Promise<void> {
             lastModified: file.lastModified,
             buffer: file,
           },
-          FILE_KEY,
+          key,
         );
       }
       tx.oncomplete = () => resolve();
@@ -106,7 +107,7 @@ export async function saveSessionFile(file: File | null): Promise<void> {
   }
 }
 
-export async function loadSessionFile(): Promise<File | null> {
+async function loadKeyedFile(key: string): Promise<File | null> {
   if (typeof window === "undefined" || !window.indexedDB) return null;
   try {
     const db = await openFileDb();
@@ -117,7 +118,7 @@ export async function loadSessionFile(): Promise<File | null> {
       buffer: Blob | File | ArrayBuffer;
     } | null>((resolve, reject) => {
       const tx = db.transaction(FILE_STORE, "readonly");
-      const request = tx.objectStore(FILE_STORE).get(FILE_KEY);
+      const request = tx.objectStore(FILE_STORE).get(key);
       request.onsuccess = () => resolve(request.result ?? null);
       request.onerror = () => reject(request.error);
     });
@@ -134,4 +135,20 @@ export async function loadSessionFile(): Promise<File | null> {
   } catch {
     return null;
   }
+}
+
+export async function saveSessionFile(file: File | null): Promise<void> {
+  return saveKeyedFile(FILE_KEY, file);
+}
+
+export async function loadSessionFile(): Promise<File | null> {
+  return loadKeyedFile(FILE_KEY);
+}
+
+export async function saveEditorFile(file: File | null): Promise<void> {
+  return saveKeyedFile(EDITOR_FILE_KEY, file);
+}
+
+export async function loadEditorFile(): Promise<File | null> {
+  return loadKeyedFile(EDITOR_FILE_KEY);
 }

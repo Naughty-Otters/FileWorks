@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+/public/pdf.worker.min.mjs
 
 # debug
 npm-debug.log*

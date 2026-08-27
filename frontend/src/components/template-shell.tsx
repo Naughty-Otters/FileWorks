@@ -30,6 +30,12 @@ export function TemplateShell({ children, fixed = false }: { children: ReactNode
               {PRODUCT.designs}
             </a>
             <a
+              href="/edit"
+              className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+            >
+              {PRODUCT.editor}
+            </a>
+            <a
               href="/pricing"
               className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
             >

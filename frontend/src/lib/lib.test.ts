@@ -22,6 +22,8 @@ import {
 import {
   loadSessionFile,
   saveSessionFile,
+  loadEditorFile,
+  saveEditorFile,
   loadWorkspacePrefs,
   saveWorkspacePrefs,
 } from "@/lib/workspace-session";
@@ -354,7 +356,12 @@ describe("workspace prefs", () => {
     await saveSessionFile(file);
     const loaded = await loadSessionFile();
     expect(loaded?.name).toBe("note.txt");
+    const editor = new File(["pdf"], "letter.pdf", { type: "application/pdf" });
+    await saveEditorFile(editor);
+    expect((await loadEditorFile())?.name).toBe("letter.pdf");
+    expect((await loadSessionFile())?.name).toBe("note.txt");
     await saveSessionFile(null);
+    await saveEditorFile(null);
   });
 });
 

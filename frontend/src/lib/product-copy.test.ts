@@ -5,6 +5,8 @@ describe("product-copy", () => {
   it("frames Source meets Intent in the home line and one-liner", () => {
     expect(PRODUCT.homeLine).toMatch(/Drop a file/i);
     expect(PRODUCT.homeLine).toMatch(/produce/i);
+    expect(PRODUCT.editorLine).toMatch(/Open a PDF or image/i);
+    expect(PRODUCT.editor).toBe("Editor");
     expect(PRODUCT.oneLiner.toLowerCase()).toContain("markdown");
     expect(PRODUCT.oneLiner.toLowerCase()).toContain("design");
     expect(PRODUCT.produceFromFile).toMatch(/Produce from file/i);

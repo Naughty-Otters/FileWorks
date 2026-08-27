@@ -161,7 +161,8 @@ export function PricingPage() {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-muted)]">
             Two products, one account. Convert PDF, Word, Excel, PowerPoint, images, and scans
             in the FileWorks app for free on Casual. Pay only when you need more AI reading or
-            translation pages. Convert API is billed separately: standard pages are free,
+            translation pages. Editor edits text on PDFs and images; OCR uses the workspace AI
+            allowance. Convert API is billed separately: standard pages are free,
             AI is 1 credit per page. You can hold both at once.{" "}
             <a href="/legal#refunds" className="text-[var(--accent-strong)] hover:underline">
               Refunds, cancellation, and contact

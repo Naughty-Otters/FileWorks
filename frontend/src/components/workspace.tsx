@@ -40,6 +40,7 @@ import { aiQuotaLeft } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 import {
   loadWorkspacePrefs,
+  saveEditorFile,
   saveSessionFile,
   saveWorkspacePrefs,
   type MarkdownMode,
@@ -1005,6 +1006,12 @@ export function Workspace() {
               Designs
             </a>
             <a
+              href="/edit"
+              className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+            >
+              Editor
+            </a>
+            <a
               href="/pricing"
               className="rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
             >
@@ -1100,6 +1107,15 @@ export function Workspace() {
                 activeRegionId={activeRegionId}
                 onActiveRegionChange={setActiveRegionId}
                 onFileSelect={handleFileSelect}
+                onEditText={
+                  file
+                    ? () => {
+                        void saveEditorFile(file).then(() => {
+                          window.location.assign("/edit");
+                        });
+                      }
+                    : undefined
+                }
                 onCollapse={() => {
                   restoreShowSourceFocusRef.current = true;
                   setPreviewOpen(false);
