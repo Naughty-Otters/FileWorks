@@ -383,11 +383,16 @@ export async function upgradePlan(plan: string): Promise<MeResponse> {
 export type BillingCatalog = {
   enabled: boolean;
   currency: string;
+  yearly_discount?: number;
   amounts: Record<string, number>;
+  yearly_amounts?: Record<string, number>;
   prices: Record<string, boolean>;
+  yearly_prices?: Record<string, boolean>;
   api?: {
     amounts: Record<string, number>;
+    yearly_amounts?: Record<string, number>;
     prices: Record<string, boolean>;
+    yearly_prices?: Record<string, boolean>;
   };
 };
 
@@ -413,11 +418,12 @@ export async function fetchBillingCatalog(): Promise<BillingCatalog> {
 export async function startCheckout(
   plan: string,
   returnTo = "/profile",
+  interval: "month" | "year" = "month",
 ): Promise<{ url: string | null; updated: boolean; plan?: string }> {
   const res = await apiFetch("/api/billing/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ plan, return_to: returnTo }),
+    body: JSON.stringify({ plan, return_to: returnTo, interval }),
   });
   if (!res.ok) {
     throw new Error(await readError(res, `Checkout failed (${res.status})`));

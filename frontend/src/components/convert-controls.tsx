@@ -3,16 +3,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
-import { Bot, Languages, Play, Search, Settings2, Square, X } from "lucide-react";
+import { Play, Search, Settings2, Square, X } from "lucide-react";
 import {
   DEFAULT_EXTRACT_OPTIONS,
   type ExtractOptions,
   type HealthResponse,
-  type TranslateLanguage,
 } from "@/lib/api";
 import type { MeResponse } from "@/lib/auth";
 import { aiQuotaLeft, convertGate, convertGateTitle, casualConvertTeaser } from "@/lib/plans";
 import { PlanPolicyDialog } from "@/components/plan-policy-dialog";
+import { ProduceRevenueOptions } from "@/components/produce-revenue-options";
 import { PRODUCT, produceActionLabel } from "@/lib/product-copy";
 import { TEMPLATE_CATEGORIES } from "@/design-pad/templates";
 import { cn } from "@/lib/utils";
@@ -92,11 +92,6 @@ export function ConvertControls({
     remainingAiMonth: me?.quota.remaining_ai_month,
   });
   const aiLeft = aiQuotaLeft(me?.quota);
-  const canAi = Boolean(me?.permissions["extract.ai"] && health?.llm_ready && aiLeft);
-  const canTranslate = Boolean(me?.permissions["extract.translate"] && health?.translate_ready && aiLeft);
-  const languages: TranslateLanguage[] = health?.translate_languages?.length
-    ? health.translate_languages
-    : [{ id: "original", label: "Original (no translation)" }];
   const optionCount = (
     Object.keys(DEFAULT_EXTRACT_OPTIONS) as Array<keyof ExtractOptions>
   ).filter((key) => options[key] !== DEFAULT_EXTRACT_OPTIONS[key]).length;
@@ -171,74 +166,13 @@ export function ConvertControls({
               "fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] max-h-[min(70dvh,calc(100dvh-1.5rem))] w-auto",
               "sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:max-h-[min(70vh,34rem)] sm:w-[min(22rem,calc(100vw-2rem))]",
             )}
-          >            <label
-              className={cn(
-                "flex items-center gap-3 rounded-xl border px-3 py-2.5",
-                options.use_ai
-                  ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                  : "border-[var(--line)]",
-                (!canAi || loading) && "opacity-55",
-              )}
-              title={
-                !me?.permissions["extract.ai"]
-                  ? "Sign in to use AI reading"
-                  : !aiLeft
-                    ? "AI or translation allowance is used"
-                    : health?.llm_ready
-                      ? "Use a vision model to read this file"
-                      : health?.llm_error || "AI reading is not configured"
-              }
-            >
-              <Bot size={16} className="shrink-0 text-[var(--accent)]" />
-              <span className="min-w-0 flex-1 text-sm font-medium">Read with AI</span>
-              <input
-                type="checkbox"
-                className="accent-[var(--accent)]"
-                checked={options.use_ai}
-                disabled={loading || !canAi}
-                onChange={(event) => onChange({ ...options, use_ai: event.target.checked })}
-              />
-            </label>
-            <label
-              className={cn(
-                "mt-2 flex items-center gap-3 rounded-xl border px-3 py-2.5",
-                options.target_lang
-                  ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                  : "border-[var(--line)]",
-              )}
-              title={
-                !me?.permissions["extract.translate"]
-                  ? "Sign in to translate"
-                  : !aiLeft
-                    ? "AI or translation allowance is used"
-                    : health?.translate_ready
-                      ? "Translate Markdown after conversion"
-                      : health?.translate_error || "Translation is not configured"
-              }
-            >
-              <Languages size={16} className="shrink-0 text-[var(--accent)]" />
-              <select
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-                value={options.target_lang || "original"}
-                disabled={loading}
-                onChange={(event) =>
-                  onChange({
-                    ...options,
-                    target_lang: event.target.value === "original" ? "" : event.target.value,
-                  })
-                }
-              >
-                {languages.map((item) => (
-                  <option
-                    key={item.id}
-                    value={item.id}
-                    disabled={item.id !== "original" && !canTranslate}
-                  >
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          >            <ProduceRevenueOptions
+              options={options}
+              onChange={onChange}
+              me={me}
+              health={health}
+              loading={loading}
+            />
             <p className="mt-3 mb-2 px-1 text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">
               Layout
             </p>

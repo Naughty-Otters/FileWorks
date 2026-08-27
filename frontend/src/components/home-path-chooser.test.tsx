@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HomePathChooser } from "@/components/home-path-chooser";
 import { PRODUCT } from "@/lib/product-copy";
@@ -44,39 +44,62 @@ describe("HomePathChooser", () => {
     expect(onEdit).toHaveBeenCalled();
   });
 
-  it("previews markdown and replaces the file", async () => {
+  it("previews markdown and offers Edit this document", async () => {
     const user = userEvent.setup();
+    const onEdit = vi.fn();
     const onReplace = vi.fn();
     render(
       <HomePathChooser
         file={new File(["# Hello"], "note.md", { type: "text/markdown" })}
         previewUrl={null}
-        onEdit={vi.fn()}
+        onEdit={onEdit}
         onProduce={vi.fn()}
         onReplace={onReplace}
       />,
     );
     expect(await screen.findByText("# Hello")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Edit text on the page/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Edit this document/i }));
+    expect(onEdit).toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Replace" }));
     expect(onReplace).toHaveBeenCalled();
   });
 
-  it("hides Edit for office files", () => {
+  it("offers Edit this document for Word .docx", async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
     render(
       <HomePathChooser
         file={new File(["doc"], "letter.docx", {
           type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         })}
         previewUrl={null}
-        onEdit={vi.fn()}
+        onEdit={onEdit}
         onProduce={vi.fn()}
         onReplace={vi.fn()}
       />,
     );
-    expect(screen.queryByRole("button", { name: /Edit text on the page/i })).not.toBeInTheDocument();
-    expect(screen.getByText(PRODUCT.editorPdfImagesOnly)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Produce a Design/i })).toBeInTheDocument();
+    expect(screen.getByText(/Word document/i)).toBeInTheDocument();
+    expect(screen.getByText(/no server convert/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Edit this document/i }));
+    expect(onEdit).toHaveBeenCalled();
+  });
+
+  it("offers Convert & edit for Excel files", async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+    render(
+      <HomePathChooser
+        file={new File(["sheet"], "budget.xlsx", {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        })}
+        previewUrl={null}
+        onEdit={onEdit}
+        onProduce={vi.fn()}
+        onReplace={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Convert & edit/i }));
+    expect(onEdit).toHaveBeenCalled();
   });
 
   it("respects disabled state", () => {

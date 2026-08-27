@@ -21,12 +21,14 @@ from app.billing.stripe import (
     billing_status,
     construct_webhook_event,
     handle_webhook_event,
+    normalize_billing_interval,
     parse_amount_dollars,
     plan_amount_dollars,
     plan_for_price,
     stripe_billing_enabled,
     subscription_view,
     sync_user_subscription,
+    yearly_amount_from_monthly,
 )
 from app.core.config import Settings
 from app.db.models import User
@@ -72,6 +74,14 @@ def _portal_stripe() -> MagicMock:
 
 
 class StripeMappingTests(unittest.TestCase):
+    def test_yearly_math_helpers(self) -> None:
+        self.assertEqual(yearly_amount_from_monthly(5), 42)
+        self.assertEqual(yearly_amount_from_monthly(29), 244)
+        self.assertEqual(normalize_billing_interval("year"), "year")
+        self.assertEqual(normalize_billing_interval("YEAR"), "year")
+        self.assertEqual(normalize_billing_interval("weekly"), "month")
+        self.assertEqual(normalize_billing_interval(None), "month")
+
     def test_price_maps_to_role(self) -> None:
         settings = _settings()
         self.assertTrue(stripe_billing_enabled(settings))
@@ -88,6 +98,15 @@ class StripeMappingTests(unittest.TestCase):
         self.assertTrue(status["prices"]["pro"])
         self.assertEqual(status["amounts"]["pro"], 5)
         self.assertEqual(status["amounts"]["premium"], 29)
+        self.assertEqual(status["yearly_discount"], 0.3)
+        self.assertEqual(status["yearly_amounts"]["pro"], 42)
+        self.assertEqual(status["yearly_amounts"]["premium"], 244)
+
+    def test_yearly_amount_env_override(self) -> None:
+        settings = _settings(stripe_price_pro="5", stripe_price_pro_yearly="40")
+        self.assertEqual(plan_amount_dollars("pro", settings, "month"), 5)
+        self.assertEqual(plan_amount_dollars("pro", settings, "year"), 40)
+        self.assertEqual(plan_for_price("price_pro_yearly", _settings(stripe_price_pro_yearly="price_pro_yearly")), "pro")
 
     def test_numeric_amounts_are_display_dollars(self) -> None:
         settings = _settings(stripe_price_basic="0", stripe_price_pro="20", stripe_price_premium="50")
@@ -395,6 +414,34 @@ class BillingRouteTests(unittest.TestCase):
         self.assertFalse(res.json()["updated"])
         self.assertEqual(user.stripe_customer_id, "cus_new")
         self.assertEqual(stripe.checkout.Session.create.call_args.kwargs["customer"], "cus_new")
+        self.assertEqual(
+            stripe.checkout.Session.create.call_args.kwargs["metadata"]["fileworks_interval"],
+            "month",
+        )
+
+    def test_checkout_yearly_interval(self) -> None:
+        user = _user()
+        with patch(
+            "app.billing.stripe.get_settings",
+            return_value=_settings(stripe_price_pro="5", stripe_price_pro_yearly=None),
+        ), patch("app.billing.stripe._stripe_mod") as stripe_mod:
+            stripe = stripe_mod.return_value
+            stripe.Customer.list.return_value = {"data": []}
+            stripe.Customer.create.return_value = {"id": "cus_new"}
+            stripe.Product.list.return_value = {"data": []}
+            stripe.Product.create.return_value = {"id": "prod_pro"}
+            stripe.Price.create.return_value = {"id": "price_pro_year"}
+            stripe.checkout.Session.create.return_value = {"url": "https://checkout.stripe.test/year"}
+            client = TestClient(self._app(user))
+            res = client.post("/api/billing/checkout", json={"plan": "pro", "interval": "year"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["url"], "https://checkout.stripe.test/year")
+        create_kwargs = stripe.checkout.Session.create.call_args.kwargs
+        self.assertEqual(create_kwargs["metadata"]["fileworks_interval"], "year")
+        self.assertEqual(create_kwargs["line_items"], [{"price": "price_pro_year", "quantity": 1}])
+        price_kwargs = stripe.Price.create.call_args.kwargs
+        self.assertEqual(price_kwargs["unit_amount"], 4200)
+        self.assertEqual(price_kwargs["recurring"]["interval"], "year")
 
     def test_checkout_recovers_from_stale_customer_id(self) -> None:
         user = _user()
@@ -509,9 +556,49 @@ class BillingRouteTests(unittest.TestCase):
             client = TestClient(app)
             res = client.get("/api/billing/catalog")
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json()["amounts"]["pro"], 20)
-        self.assertTrue(res.json()["prices"]["pro"])
-        self.assertEqual(res.json()["api"]["amounts"]["api_builder"], 5)
+        body = res.json()
+        self.assertEqual(body["amounts"]["pro"], 20)
+        self.assertTrue(body["prices"]["pro"])
+        self.assertEqual(body["api"]["amounts"]["api_builder"], 5)
+        self.assertEqual(body["yearly_discount"], 0.3)
+        self.assertEqual(body["yearly_amounts"]["pro"], 168)  # round(20 * 12 * 0.7)
+        self.assertEqual(body["yearly_amounts"]["premium"], 420)  # round(50 * 12 * 0.7)
+        self.assertTrue(body["yearly_prices"]["pro"])
+        self.assertEqual(body["api"]["yearly_amounts"]["api_builder"], 42)
+
+    def test_checkout_invalid_interval_defaults_to_month(self) -> None:
+        user = _user()
+        with patch("app.billing.stripe.get_settings", return_value=_settings()), patch(
+            "app.billing.stripe._stripe_mod"
+        ) as stripe_mod:
+            stripe = stripe_mod.return_value
+            stripe.Customer.list.return_value = {"data": []}
+            stripe.Customer.create.return_value = {"id": "cus_new"}
+            stripe.checkout.Session.create.return_value = {"url": "https://checkout.stripe.test/cs_1"}
+            client = TestClient(self._app(user))
+            res = client.post("/api/billing/checkout", json={"plan": "pro", "interval": "weekly"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(
+            stripe.checkout.Session.create.call_args.kwargs["metadata"]["fileworks_interval"],
+            "month",
+        )
+
+    def test_checkout_uses_configured_yearly_price_id(self) -> None:
+        user = _user()
+        with patch(
+            "app.billing.stripe.get_settings",
+            return_value=_settings(stripe_price_pro_yearly="price_pro_year"),
+        ), patch("app.billing.stripe._stripe_mod") as stripe_mod:
+            stripe = stripe_mod.return_value
+            stripe.Customer.list.return_value = {"data": []}
+            stripe.Customer.create.return_value = {"id": "cus_new"}
+            stripe.checkout.Session.create.return_value = {"url": "https://checkout.stripe.test/year"}
+            client = TestClient(self._app(user))
+            res = client.post("/api/billing/checkout", json={"plan": "pro", "interval": "year"})
+        self.assertEqual(res.status_code, 200)
+        kwargs = stripe.checkout.Session.create.call_args.kwargs
+        self.assertEqual(kwargs["line_items"], [{"price": "price_pro_year", "quantity": 1}])
+        self.assertEqual(kwargs["metadata"]["fileworks_interval"], "year")
 
     def test_confirm_applies_checkout_session(self) -> None:
         user = _user()

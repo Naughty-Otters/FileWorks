@@ -41,6 +41,9 @@ DISPLAY_DEFAULTS = {
     "api_scale": 29,
     "api_business": 99,
 }
+# Yearly list price = round(monthly × 12 × (1 − YEARLY_DISCOUNT)).
+YEARLY_DISCOUNT = 0.3
+BILLING_INTERVALS = ("month", "year")
 WORKSPACE_PLANS = ("basic", "pro", "premium")
 API_BILLING_PLANS = ("api_free", "api_builder", "api_scale", "api_business")
 ALL_PRICE_PLANS = ("basic", "pro", "premium", "api_builder", "api_scale", "api_business")
@@ -65,8 +68,21 @@ PORTAL_FEATURES = {
 }
 
 
-def _raw_price(settings: Settings, plan: str) -> str | None:
-    value = getattr(settings, f"stripe_price_{plan}", None)
+def normalize_billing_interval(interval: str | None) -> str:
+    text = (interval or "month").strip().lower()
+    return text if text in BILLING_INTERVALS else "month"
+
+
+def yearly_amount_from_monthly(monthly: int) -> int:
+    if monthly <= 0:
+        return 0
+    return int(round(monthly * 12 * (1 - YEARLY_DISCOUNT)))
+
+
+def _raw_price(settings: Settings, plan: str, interval: str = "month") -> str | None:
+    interval = normalize_billing_interval(interval)
+    attr = f"stripe_price_{plan}_yearly" if interval == "year" else f"stripe_price_{plan}"
+    value = getattr(settings, attr, None)
     if value is None:
         return None
     text = str(value).strip()
@@ -85,39 +101,62 @@ def parse_amount_dollars(raw: str | None) -> int | None:
             return None
 
 
-def stripe_price_id(plan: str, settings: Settings | None = None) -> str | None:
+def stripe_price_id(
+    plan: str, settings: Settings | None = None, interval: str = "month"
+) -> str | None:
     settings = settings or get_settings()
-    raw = _raw_price(settings, plan)
+    raw = _raw_price(settings, plan, interval)
     if raw and raw.startswith("price_"):
         return raw
     return None
 
 
-def plan_amount_dollars(plan: str, settings: Settings | None = None) -> int:
+def plan_amount_dollars(
+    plan: str, settings: Settings | None = None, interval: str = "month"
+) -> int:
     settings = settings or get_settings()
-    parsed = parse_amount_dollars(_raw_price(settings, plan))
+    interval = normalize_billing_interval(interval)
+    if interval == "year":
+        parsed = parse_amount_dollars(_raw_price(settings, plan, "year"))
+        if parsed is not None:
+            return parsed
+        monthly = plan_amount_dollars(plan, settings, "month")
+        return yearly_amount_from_monthly(monthly)
+    parsed = parse_amount_dollars(_raw_price(settings, plan, "month"))
     if parsed is not None:
         return parsed
     return DISPLAY_DEFAULTS.get(plan, 0)
 
 
 def price_map(settings: Settings | None = None) -> dict[str, str]:
+    """Map plan → preferred monthly price id (legacy). Prefer plan_for_price for lookup."""
     settings = settings or get_settings()
     return {
         plan: price_id
         for plan in ALL_PRICE_PLANS
-        if (price_id := stripe_price_id(plan, settings))
+        if (price_id := stripe_price_id(plan, settings, "month"))
     }
+
+
+def plan_for_price(price_id: str | None, settings: Settings | None = None) -> str | None:
+    if not price_id:
+        return None
+    settings = settings or get_settings()
+    for plan in ALL_PRICE_PLANS:
+        for interval in BILLING_INTERVALS:
+            if stripe_price_id(plan, settings, interval) == price_id:
+                return plan
+    return None
 
 
 def purchasable_plans(settings: Settings | None = None) -> dict[str, bool]:
     settings = settings or get_settings()
     flags: dict[str, bool] = {}
     for plan in WORKSPACE_PLANS:
-        if stripe_price_id(plan, settings):
+        if stripe_price_id(plan, settings, "month") or stripe_price_id(plan, settings, "year"):
             flags[plan] = True
         else:
-            flags[plan] = plan_amount_dollars(plan, settings) > 0
+            flags[plan] = plan_amount_dollars(plan, settings, "month") > 0
     return flags
 
 
@@ -128,11 +167,18 @@ def api_purchasable_plans(settings: Settings | None = None) -> dict[str, bool]:
         if plan == FALLBACK_API_PLAN:
             flags[plan] = False
             continue
-        if stripe_price_id(plan, settings):
+        if stripe_price_id(plan, settings, "month") or stripe_price_id(plan, settings, "year"):
             flags[plan] = True
         else:
-            flags[plan] = plan_amount_dollars(plan, settings) > 0
+            flags[plan] = plan_amount_dollars(plan, settings, "month") > 0
     return flags
+
+
+def _interval_purchasable(plan: str, settings: Settings, interval: str) -> bool:
+    interval = normalize_billing_interval(interval)
+    if stripe_price_id(plan, settings, interval):
+        return True
+    return plan_amount_dollars(plan, settings, interval) > 0
 
 
 def stripe_billing_enabled(settings: Settings | None = None) -> bool:
@@ -144,27 +190,34 @@ def stripe_billing_enabled(settings: Settings | None = None) -> bool:
 
 def billing_catalog(settings: Settings | None = None) -> dict[str, Any]:
     settings = settings or get_settings()
+    workspace_amounts = {plan: plan_amount_dollars(plan, settings, "month") for plan in WORKSPACE_PLANS}
+    workspace_yearly = {plan: plan_amount_dollars(plan, settings, "year") for plan in WORKSPACE_PLANS}
+    api_amounts = {plan: plan_amount_dollars(plan, settings, "month") for plan in API_BILLING_PLANS}
+    api_yearly = {plan: plan_amount_dollars(plan, settings, "year") for plan in API_BILLING_PLANS}
     return {
         "enabled": stripe_billing_enabled(settings),
         "currency": "usd",
-        "amounts": {plan: plan_amount_dollars(plan, settings) for plan in WORKSPACE_PLANS},
+        "yearly_discount": YEARLY_DISCOUNT,
+        "amounts": workspace_amounts,
+        "yearly_amounts": workspace_yearly,
         "prices": purchasable_plans(settings),
+        "yearly_prices": {
+            plan: _interval_purchasable(plan, settings, "year") for plan in WORKSPACE_PLANS
+        },
         "api": {
-            "amounts": {plan: plan_amount_dollars(plan, settings) for plan in API_BILLING_PLANS},
+            "amounts": api_amounts,
+            "yearly_amounts": api_yearly,
             "prices": api_purchasable_plans(settings),
+            "yearly_prices": {
+                plan: (False if plan == FALLBACK_API_PLAN else _interval_purchasable(plan, settings, "year"))
+                for plan in API_BILLING_PLANS
+            },
         },
     }
 
 
 def billing_status(settings: Settings | None = None) -> dict[str, Any]:
     return billing_catalog(settings)
-
-
-def plan_for_price(price_id: str | None, settings: Settings | None = None) -> str | None:
-    if not price_id:
-        return None
-    inverted = {price: plan for plan, price in price_map(settings).items()}
-    return inverted.get(price_id)
 
 
 def _stripe_mod(settings: Settings | None = None):
@@ -696,8 +749,11 @@ def _user_from_refs(
     return None
 
 
-def _find_or_create_plan_price(stripe, plan: str, amount: int, settings: Settings) -> tuple[str, str]:
+def _find_or_create_plan_price(
+    stripe, plan: str, amount: int, settings: Settings, interval: str = "month"
+) -> tuple[str, str]:
     """Stable Stripe product/price for a dollar-amount plan so the portal can switch."""
+    interval = normalize_billing_interval(interval)
     listed = _as_dict(stripe.Product.list(active=True, limit=100))
     unit = amount * 100
     for raw in listed.get("data") or []:
@@ -709,19 +765,22 @@ def _find_or_create_plan_price(stripe, plan: str, amount: int, settings: Setting
         for price_raw in prices.get("data") or []:
             price = _as_dict(price_raw)
             recurring = price.get("recurring") or {}
-            if price.get("unit_amount") == unit and recurring.get("interval") == "month":
+            if price.get("unit_amount") == unit and recurring.get("interval") == interval:
                 return product_id, str(price["id"])
         created_price = _as_dict(
             stripe.Price.create(
                 product=product_id,
                 currency="usd",
                 unit_amount=unit,
-                recurring={"interval": "month"},
-                metadata={"fileworks_plan": plan},
+                recurring={"interval": interval},
+                metadata={"fileworks_plan": plan, "fileworks_interval": interval},
             )
         )
         return product_id, str(created_price["id"])
-    product_meta = {"fileworks_plan": plan, "fileworks_product": _product_bucket(plan)}
+    product_meta = {
+        "fileworks_plan": plan,
+        "fileworks_product": _product_bucket(plan),
+    }
     product = _as_dict(
         stripe.Product.create(
             name=_product_display_name(plan),
@@ -729,13 +788,14 @@ def _find_or_create_plan_price(stripe, plan: str, amount: int, settings: Setting
             tax_code=settings.stripe_tax_code,
         )
     )
+    price_meta = {**product_meta, "fileworks_interval": interval}
     price = _as_dict(
         stripe.Price.create(
             product=product["id"],
             currency="usd",
             unit_amount=unit,
-            recurring={"interval": "month"},
-            metadata=product_meta,
+            recurring={"interval": interval},
+            metadata=price_meta,
         )
     )
     return str(product["id"]), str(price["id"])
@@ -752,20 +812,43 @@ def _portal_products(stripe, settings: Settings, product: str = PRODUCT_WORKSPAC
     for plan in plans:
         if not purchasable.get(plan):
             continue
-        price_id = stripe_price_id(plan, settings)
-        if price_id:
-            price = _as_dict(stripe.Price.retrieve(price_id))
-            stripe_product = price.get("product")
-            if isinstance(stripe_product, dict):
-                stripe_product = stripe_product.get("id")
-            if stripe_product:
-                products.append({"product": str(stripe_product), "prices": [price_id]})
-            continue
-        amount = plan_amount_dollars(plan, settings)
-        if amount <= 0:
-            continue
-        product_id, created_price = _find_or_create_plan_price(stripe, plan, amount, settings)
-        products.append({"product": product_id, "prices": [created_price]})
+        price_ids: list[str] = []
+        product_id: str | None = None
+        for interval in BILLING_INTERVALS:
+            try:
+                configured = stripe_price_id(plan, settings, interval)
+                if configured:
+                    price = _as_dict(stripe.Price.retrieve(configured))
+                    stripe_product = price.get("product")
+                    if isinstance(stripe_product, dict):
+                        stripe_product = stripe_product.get("id")
+                    if stripe_product:
+                        product_id = str(stripe_product)
+                    price_ids.append(configured)
+                    continue
+                amount = plan_amount_dollars(plan, settings, interval)
+                if amount <= 0:
+                    continue
+                created_product, created_price = _find_or_create_plan_price(
+                    stripe, plan, amount, settings, interval
+                )
+                product_id = created_product
+                price_ids.append(created_price)
+            except Exception:  # noqa: BLE001
+                # Monthly portal prices must still work if yearly price creation fails.
+                logger.exception(
+                    "Failed to resolve Stripe portal price for %s (%s)", plan, interval
+                )
+                continue
+        if product_id and price_ids:
+            seen: set[str] = set()
+            unique: list[str] = []
+            for pid in price_ids:
+                if pid in seen:
+                    continue
+                seen.add(pid)
+                unique.append(pid)
+            products.append({"product": product_id, "prices": unique})
     return products
 
 
@@ -795,17 +878,20 @@ def _portal_features(stripe, settings: Settings, product: str = PRODUCT_WORKSPAC
     return features
 
 
-def _subscription_price_id_for_plan(stripe, plan: str, settings: Settings) -> str | None:
-    price_id = stripe_price_id(plan, settings)
+def _subscription_price_id_for_plan(
+    stripe, plan: str, settings: Settings, interval: str = "month"
+) -> str | None:
+    interval = normalize_billing_interval(interval)
+    price_id = stripe_price_id(plan, settings, interval)
     if price_id:
         return price_id
-    amount = plan_amount_dollars(plan, settings)
+    amount = plan_amount_dollars(plan, settings, interval)
     if amount <= 0:
         return None
     try:
-        return _find_or_create_plan_price(stripe, plan, amount, settings)[1]
+        return _find_or_create_plan_price(stripe, plan, amount, settings, interval)[1]
     except Exception:  # noqa: BLE001
-        logger.exception("Failed to resolve Stripe price for %s", plan)
+        logger.exception("Failed to resolve Stripe price for %s (%s)", plan, interval)
         return None
 
 
@@ -886,11 +972,12 @@ def _plan_change_confirm_url(
     return str(session.get("url") or "") or None
 
 
-def _checkout_line_item(plan: str, settings: Settings) -> dict[str, Any]:
-    price_id = stripe_price_id(plan, settings)
+def _checkout_line_item(plan: str, settings: Settings, interval: str = "month") -> dict[str, Any]:
+    interval = normalize_billing_interval(interval)
+    price_id = stripe_price_id(plan, settings, interval)
     if price_id:
         return {"price": price_id, "quantity": 1}
-    amount = plan_amount_dollars(plan, settings)
+    amount = plan_amount_dollars(plan, settings, interval)
     if amount <= 0:
         raise HTTPException(status_code=400, detail={"code": "price_missing", "plan": plan})
     bucket = _product_bucket(plan)
@@ -898,11 +985,16 @@ def _checkout_line_item(plan: str, settings: Settings) -> dict[str, Any]:
         "price_data": {
             "currency": "usd",
             "unit_amount": amount * 100,
-            "recurring": {"interval": "month"},
+            "recurring": {"interval": interval},
             "product_data": {
                 "name": _product_display_name(plan),
                 "tax_code": settings.stripe_tax_code,
-                "metadata": {"plan": plan, "fileworks_plan": plan, "fileworks_product": bucket},
+                "metadata": {
+                    "plan": plan,
+                    "fileworks_plan": plan,
+                    "fileworks_product": bucket,
+                    "fileworks_interval": interval,
+                },
             },
         },
         "quantity": 1,
@@ -914,8 +1006,10 @@ def create_checkout_session(
     user: User,
     plan: str,
     return_to: str | None = None,
+    interval: str | None = None,
 ) -> dict[str, Any]:
     settings = get_settings()
+    billing_interval = normalize_billing_interval(interval)
     if not stripe_billing_enabled(settings):
         raise HTTPException(status_code=503, detail="Stripe is not configured")
     target = (plan or "").strip().lower()
@@ -932,13 +1026,15 @@ def create_checkout_session(
         assert_can_switch_to_plan(db, user_id=user.id, current=user.plan, target=target)
         if not purchasable_plans(settings).get(target):
             raise HTTPException(status_code=400, detail={"code": "price_missing", "plan": target})
+    if not _interval_purchasable(target, settings, billing_interval):
+        raise HTTPException(status_code=400, detail={"code": "price_missing", "plan": target, "interval": billing_interval})
     dest = _safe_return_path(return_to)
     try:
         stripe = _stripe_mod(settings)
         customer_id = _ensure_stripe_customer(db, user, stripe, create=True)
         if not customer_id:
             raise HTTPException(status_code=502, detail="Could not create a Stripe customer")
-        price_id = _subscription_price_id_for_plan(stripe, target, settings)
+        price_id = _subscription_price_id_for_plan(stripe, target, settings, billing_interval)
         current = _active_subscription(stripe, user, bucket)
         if current:
             if not price_id:
@@ -966,23 +1062,23 @@ def create_checkout_session(
                     detail="Stripe could not open a plan-change confirmation",
                 )
             return {"url": confirm_url, "updated": False, "plan": target}
+        meta = {
+            "user_id": str(user.id),
+            "plan": target,
+            "fileworks_plan": target,
+            "fileworks_product": bucket,
+            "fileworks_interval": billing_interval,
+        }
         checkout_kwargs = dict(
             mode="subscription",
             customer=customer_id,
             client_reference_id=str(user.id),
-            metadata={"user_id": str(user.id), "plan": target, "fileworks_product": bucket},
-            subscription_data={
-                "metadata": {
-                    "user_id": str(user.id),
-                    "plan": target,
-                    "fileworks_plan": target,
-                    "fileworks_product": bucket,
-                }
-            },
+            metadata=meta,
+            subscription_data={"metadata": meta},
             line_items=(
                 [{"price": price_id, "quantity": 1}]
                 if price_id
-                else [_checkout_line_item(target, settings)]
+                else [_checkout_line_item(target, settings, billing_interval)]
             ),
             success_url=f"{_app_url(settings)}{dest}?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{_app_url(settings)}{dest}?checkout=cancel",

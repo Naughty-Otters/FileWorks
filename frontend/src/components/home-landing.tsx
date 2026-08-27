@@ -5,6 +5,7 @@ import { Upload } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { BUSINESS_NAME } from "@/lib/legal";
 import { PRODUCT } from "@/lib/product-copy";
+import { TEXT_FILE_EXTENSIONS } from "@/lib/editor-files";
 import { cn } from "@/lib/utils";
 
 const ACCEPT = [
@@ -15,6 +16,9 @@ const ACCEPT = [
   "image/bmp",
   "image/tiff",
   "application/pdf",
+  "text/*",
+  "application/json",
+  "application/xml",
   ".doc",
   ".docx",
   ".ppt",
@@ -26,10 +30,7 @@ const ACCEPT = [
   ".odp",
   ".rtf",
   ".epub",
-  ".csv",
-  ".txt",
-  ".md",
-  ".markdown",
+  ...TEXT_FILE_EXTENSIONS,
 ].join(",");
 
 type HomeLandingProps = {

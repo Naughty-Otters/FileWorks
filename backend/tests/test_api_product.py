@@ -43,7 +43,9 @@ class ApiPlanTests(unittest.TestCase):
         self.assertFalse(is_api_plan("pro"))
         self.assertEqual(get_api_plan("nope").id, "api_free")
         self.assertEqual(get_api_plan("api_business").credits_per_month, 2000)
-        self.assertEqual(get_api_plan("api_free").standard_pages_per_month, 1000)
+        self.assertEqual(get_api_plan("api_free").standard_pages_per_month, 500)
+        self.assertEqual(get_api_plan("api_free").credits_per_month, 2)
+        self.assertEqual(get_api_plan("api_free").max_keys, 1)
 
     def test_quota_blocks_at_zero(self) -> None:
         plan = get_api_plan("api_free")
@@ -80,7 +82,7 @@ class ApiKeyHelperTests(unittest.TestCase):
 
     def test_key_limit(self) -> None:
         db = MagicMock()
-        db.scalar.return_value = 2
+        db.scalar.return_value = 1
         with self.assertRaises(HTTPException) as ctx:
             create_api_key(db, user_id=uuid4(), plan=get_api_plan("api_free"))
         self.assertEqual(ctx.exception.detail["code"], "api_key_limit")
@@ -104,6 +106,13 @@ class ApiStripeTests(unittest.TestCase):
         self.assertTrue(catalog["api"]["prices"]["api_builder"])
         self.assertFalse(catalog["api"]["prices"]["api_free"])
         self.assertEqual(catalog["amounts"]["pro"], 5)
+        self.assertEqual(catalog["yearly_discount"], 0.3)
+        self.assertEqual(catalog["yearly_amounts"]["pro"], 42)
+        self.assertEqual(catalog["yearly_amounts"]["premium"], 244)
+        self.assertEqual(catalog["api"]["yearly_amounts"]["api_builder"], 42)
+        self.assertEqual(catalog["api"]["yearly_amounts"]["api_scale"], 244)
+        self.assertFalse(catalog["api"]["yearly_prices"]["api_free"])
+        self.assertTrue(catalog["api"]["yearly_prices"]["api_builder"])
 
     def test_apply_api_subscription_does_not_touch_workspace(self) -> None:
         user = User(email="a@b.co", google_sub="g1", name="A", plan="pro")

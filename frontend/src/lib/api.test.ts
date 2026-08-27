@@ -217,7 +217,7 @@ describe("api client", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/api/billing/checkout")) {
-        expect(JSON.parse(String(init?.body))).toEqual({ plan: "pro", return_to: "/pricing" });
+        expect(JSON.parse(String(init?.body))).toEqual({ plan: "pro", return_to: "/pricing", interval: "month" });
         return jsonResponse({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
       }
       if (url.endsWith("/api/billing/portal")) return jsonResponse({ url: "https://billing.stripe.test/p" });
@@ -226,6 +226,23 @@ describe("api client", () => {
     vi.stubGlobal("fetch", fetchMock);
     expect(await startCheckout("pro", "/pricing")).toEqual({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
     expect(await openBillingPortal()).toEqual({ url: "https://billing.stripe.test/p" });
+  });
+
+  it("passes yearly interval through checkout", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(JSON.parse(String(init?.body))).toEqual({
+        plan: "premium",
+        return_to: "/profile",
+        interval: "year",
+      });
+      return jsonResponse({ url: "https://checkout.stripe.test/year", updated: false, plan: "premium" });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await startCheckout("premium", "/profile", "year")).toEqual({
+      url: "https://checkout.stripe.test/year",
+      updated: false,
+      plan: "premium",
+    });
   });
 
   it("surfaces checkout portal confirm and sync errors", async () => {
@@ -273,8 +290,11 @@ describe("api client", () => {
           return jsonResponse({
             enabled: true,
             currency: "usd",
+            yearly_discount: 0.3,
             amounts: { basic: 0, pro: 12, premium: 29 },
+            yearly_amounts: { basic: 0, pro: 101, premium: 244 },
             prices: { basic: false, pro: true, premium: true },
+            yearly_prices: { basic: false, pro: true, premium: true },
           });
         }
         if (url.endsWith("/api/billing/confirm")) return jsonResponse({ plan: "pro" });
@@ -284,8 +304,11 @@ describe("api client", () => {
     expect(await fetchBillingCatalog()).toEqual({
       enabled: true,
       currency: "usd",
+      yearly_discount: 0.3,
       amounts: { basic: 0, pro: 12, premium: 29 },
+      yearly_amounts: { basic: 0, pro: 101, premium: 244 },
       prices: { basic: false, pro: true, premium: true },
+      yearly_prices: { basic: false, pro: true, premium: true },
     });
     expect(await confirmCheckout("cs_1")).toEqual({ plan: "pro" });
   });

@@ -7,9 +7,11 @@ import {
   conversionsPerDayLabel,
   filesPerDayLabel,
   formatCount,
+  formatUsdForInterval,
   formatUsdMonth,
   standardPagesMonthLabel,
   type ApiQuota,
+  type BillingInterval,
   type WorkspaceQuota,
 } from "@/lib/plan-quotas";
 
@@ -242,6 +244,13 @@ export const PERMISSION_LABELS: Record<string, string> = {
 
 export function formatPlanPrice(amount: number | null | undefined): string {
   return formatUsdMonth(amount);
+}
+
+export function formatPlanPriceForInterval(
+  amount: number | null | undefined,
+  interval: BillingInterval,
+): string {
+  return formatUsdForInterval(amount, interval);
 }
 
 export function planDisplayLabel(id: string | null | undefined): string {

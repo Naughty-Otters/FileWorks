@@ -6,7 +6,8 @@ import type { ImageSize, RegionBox } from "@/lib/api";
 import { PRODUCT } from "@/lib/product-copy";
 import { cn, formatBytes } from "@/lib/utils";
 import { AnnotatedImage } from "@/components/region-overlay";
-import { isEditorSourceFile } from "@/lib/editor-files";
+import { canOfferEditor, isPageStampFile, isTextEditorFile, TEXT_FILE_EXTENSIONS } from "@/lib/editor-files";
+import { isWordDocxFile } from "@/lib/docx-to-editor";
 
 type UploadPanelProps = {
   file: File | null;
@@ -35,6 +36,9 @@ const ACCEPT = [
   "image/bmp",
   "image/tiff",
   "application/pdf",
+  "text/*",
+  "application/json",
+  "application/xml",
   ".doc",
   ".docx",
   ".ppt",
@@ -46,10 +50,7 @@ const ACCEPT = [
   ".odp",
   ".rtf",
   ".epub",
-  ".csv",
-  ".txt",
-  ".md",
-  ".markdown",
+  ...TEXT_FILE_EXTENSIONS,
 ].join(",");
 
 function ToolbarDivider() {
@@ -293,10 +294,17 @@ export function UploadPanel({
                 Preview not available for this file type — convert to see the result on the right.
               </div>
             )}
-            {onEditText && isEditorSourceFile(file) ? (
+            {onEditText && canOfferEditor(file) ? (
               <p className="pointer-events-none absolute bottom-4 left-4 right-4 text-center text-[11px] text-[var(--ink-muted)]">
                 <span className="pointer-events-auto rounded-full bg-[var(--bg)]/90 px-3 py-1.5">
-                  {PRODUCT.editOnPage}?{" "}
+                  {isPageStampFile(file)
+                    ? PRODUCT.editOnPage
+                    : isTextEditorFile(file)
+                      ? PRODUCT.editDocument
+                      : isWordDocxFile(file)
+                        ? PRODUCT.editWord
+                        : PRODUCT.editAsMarkdown}
+                  ?{" "}
                   <button
                     type="button"
                     onClick={onEditText}

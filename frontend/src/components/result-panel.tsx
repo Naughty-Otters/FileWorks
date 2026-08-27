@@ -17,15 +17,19 @@ import {
   exportMarkdownFile,
   getApiBase,
   type DownloadFormat,
+  type ExtractOptions,
   type ExtractResponse,
+  type HealthResponse,
   type RegionBox,
 } from "@/lib/api";
+import type { MeResponse } from "@/lib/auth";
 import { applyMarkdownFormat, type FormatCommand, type FormatExtra } from "@/lib/markdown-format";
 import { joinLines, lineRangeForPages, PAGES_PER_VIEW, replaceLineRange, splitLines } from "@/lib/markdown-pages";
 import { cn } from "@/lib/utils";
 import { PRODUCT, targetEmptyTitle } from "@/lib/product-copy";
 import { EditableMarkdownPreview, type MarkdownPreviewHandle } from "@/components/editable-markdown-preview";
 import { MarkdownToolbar, MarkdownToolbarToggle } from "@/components/markdown-toolbar";
+import { ProduceRevenueOptions } from "@/components/produce-revenue-options";
 import { RegionList } from "@/components/region-overlay";
 
 type ResultPanelProps = {
@@ -58,6 +62,11 @@ type ResultPanelProps = {
   /** Empty-state Intent name (Markdown when null). */
   intentName?: string | null;
   onChooseIntent?: () => void;
+  /** AI + translation on the empty Target panel (revenue options). */
+  extractOptions?: ExtractOptions;
+  onExtractOptionsChange?: (next: ExtractOptions) => void;
+  me?: MeResponse | null;
+  health?: HealthResponse | null;
 };
 
 const SOURCE_DOWNLOAD_OPTIONS: Array<{ id: DownloadFormat | "pdf"; label: string }> = [
@@ -124,6 +133,10 @@ export function ResultPanel({
   onDesignExport,
   intentName = null,
   onChooseIntent,
+  extractOptions,
+  onExtractOptionsChange,
+  me = null,
+  health = null,
 }: ResultPanelProps) {
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -550,7 +563,7 @@ export function ResultPanel({
                 </p>
                 </div>
               </div>
-              <div className="flex justify-center">
+              <div className="flex w-full flex-col items-center gap-3">
                 {onChooseIntent ? (
                   <button
                     type="button"
@@ -569,6 +582,17 @@ export function ResultPanel({
                 ) : (
                   <div className="h-[46px] w-full max-w-sm" aria-hidden />
                 )}
+                {extractOptions && onExtractOptionsChange ? (
+                  <ProduceRevenueOptions
+                    className="w-full max-w-sm text-left"
+                    prominent
+                    options={extractOptions}
+                    onChange={onExtractOptionsChange}
+                    me={me}
+                    health={health}
+                    loading={loading}
+                  />
+                ) : null}
               </div>
               <div className="min-h-0" aria-hidden />
             </div>

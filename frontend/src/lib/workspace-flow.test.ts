@@ -5,22 +5,25 @@ import {
 
 describe("workspace flow", () => {
   describe("phaseForRestoredFile", () => {
-    it("shows the path chooser for PDFs and images", () => {
+    it("shows the path chooser for PDFs, images, text, and office", () => {
       expect(phaseForRestoredFile(new File(["x"], "a.pdf", { type: "application/pdf" }))).toBe(
         "choose",
       );
       expect(phaseForRestoredFile(new File(["x"], "a.png", { type: "image/png" }))).toBe("choose");
-    });
-
-    it("opens produce directly for office and unknown files", () => {
+      expect(phaseForRestoredFile(new File(["x"], "a.md", { type: "text/markdown" }))).toBe("choose");
       expect(
         phaseForRestoredFile(
           new File(["x"], "a.docx", {
             type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
           }),
         ),
-      ).toBe("produce");
-      expect(phaseForRestoredFile(new File(["x"], "a.csv", { type: "text/csv" }))).toBe("produce");
+      ).toBe("choose");
+    });
+
+    it("opens produce directly for unknown files", () => {
+      expect(phaseForRestoredFile(new File(["x"], "a.zip", { type: "application/zip" }))).toBe(
+        "produce",
+      );
     });
 
     it("opens produce when the blob has not arrived yet", () => {

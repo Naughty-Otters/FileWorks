@@ -26,6 +26,7 @@ import {
   classifyEditorFile,
   downloadBlob,
   EDITOR_ACCEPT,
+  fileLooksLikeText,
   pickEditorFile,
   pickSaveHandle,
   saveActionLabel,
@@ -33,6 +34,7 @@ import {
   type EditorFileKind,
   type EditorWritableHandle,
 } from "@/lib/editor-files";
+import { isWordDocxFile } from "@/lib/docx-to-editor";
 import {
   extractPdfRegions,
   isPasswordPdfError,
@@ -77,7 +79,15 @@ const OCR_OPTIONS: ExtractOptions = {
 const navLink =
   "rounded-full px-2.5 py-1.5 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]";
 
-export function PageEditor() {
+export function PageEditor({
+  initialFile = null,
+  initialHandle = null,
+  onOpenTextFile,
+}: {
+  initialFile?: File | null;
+  initialHandle?: EditorWritableHandle | null;
+  onOpenTextFile?: (file: File, handle: EditorWritableHandle | null) => void;
+} = {}) {
   const { me, status, displayUser } = useSession();
   const inputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -223,6 +233,18 @@ export function PageEditor() {
       setSelectedId(null);
       setThumbs([]);
       const nextKind = classifyEditorFile(next);
+      if (
+        nextKind === "text" ||
+        isWordDocxFile(next) ||
+        (nextKind === "other" && (await fileLooksLikeText(next)))
+      ) {
+        if (onOpenTextFile) {
+          onOpenTextFile(next, handle);
+          return;
+        }
+        setRejected(next);
+        return;
+      }
       if (nextKind === "office" || nextKind === "other") {
         closePdf();
         setFile(null);
@@ -285,12 +307,17 @@ export function PageEditor() {
         setBusy(false);
       }
     },
-    [closePdf, commitActive],
+    [closePdf, commitActive, onOpenTextFile],
   );
 
   useEffect(() => {
     let alive = true;
     void (async () => {
+      if (initialFile) {
+        if (alive) await openSource(initialFile, initialHandle);
+        if (alive) setLoaded(true);
+        return;
+      }
       const handed = await loadEditorFile();
       if (!alive) return;
       if (handed) await openSource(handed, null);
@@ -299,7 +326,7 @@ export function PageEditor() {
     return () => {
       alive = false;
     };
-    // Load once on mount. Do not destroy the PDF here — React Strict Mode
+    // Load once on mount / seed change. Do not destroy the PDF here — React Strict Mode
     // unmounts immediately and would cancel the first paint.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -746,10 +773,11 @@ export function PageEditor() {
         {rejected ? (
           <div className="panel mx-auto mt-8 max-w-lg rounded-3xl px-6 py-8 text-center">
             <p className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
-              Editor edits text on PDFs and images.
+              {PRODUCT.editor}
             </p>
             <p className="mt-2 text-sm text-[var(--ink-muted)]">
-              Convert office files to Markdown.
+              Page editing is for PDFs and images. Text and Word (.docx) open in the document editor.
+              Excel/PowerPoint use Home → Convert & edit.
             </p>
             <p className="mt-3 truncate text-sm text-[var(--ink)]">{rejected.name}</p>
             <button
@@ -770,7 +798,7 @@ export function PageEditor() {
           >
             <p className="font-[family-name:var(--font-display)] text-3xl tracking-tight">{PRODUCT.editorLine}</p>
             <p className="mt-2 max-w-md text-sm text-[var(--ink-muted)]">
-              PDF or image. Fix a typo on a letter, change a date on a scan.
+              PDF or image for page stamps. Markdown, TXT, or CSV opens the text editor.
             </p>
             <button
               type="button"

@@ -216,8 +216,10 @@ class Settings(BaseSettings):
     llm_lambda_function: str | None = None
 
     # Stripe subscriptions. STRIPE_PRICE_* may be a Dashboard id (price_...) or
-    # a monthly USD amount (5). When STRIPE_SECRET_KEY is set, paid grades go
-    # through Checkout instead of POST /me/plan.
+    # a monthly USD amount (5). STRIPE_PRICE_*_YEARLY is the annual price (id or
+    # dollars); when unset, yearly is derived as 30% off 12× monthly. When
+    # STRIPE_SECRET_KEY is set, paid grades go through Checkout instead of
+    # POST /me/plan.
     stripe_secret_key: str | None = None
     stripe_webhook_secret: str | None = None
     stripe_price_basic: str | None = None
@@ -226,6 +228,11 @@ class Settings(BaseSettings):
     stripe_price_api_builder: str | None = None
     stripe_price_api_scale: str | None = None
     stripe_price_api_business: str | None = None
+    stripe_price_pro_yearly: str | None = None
+    stripe_price_premium_yearly: str | None = None
+    stripe_price_api_builder_yearly: str | None = None
+    stripe_price_api_scale_yearly: str | None = None
+    stripe_price_api_business_yearly: str | None = None
     # Required when Stripe Managed Payments is on (sandbox default).
     # txcd_10103000 = Software as a service (SaaS).
     stripe_tax_code: str = "txcd_10103000"

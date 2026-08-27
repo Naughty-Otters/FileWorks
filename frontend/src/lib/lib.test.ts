@@ -53,6 +53,7 @@ import {
   API_PLAN_CATALOG,
   PRICE_ROLES,
   formatPlanPrice,
+  formatPlanPriceForInterval,
   planDisplayLabel,
   apiPlanDisplayLabel,
 } from "@/lib/plans";
@@ -623,11 +624,11 @@ describe("plan policy", () => {
     expect(canMoveToPlan("premium", "pro", overPro)).toBe(false);
     expect(canMoveToPlan("pro", "premium", overPro)).toBe(true);
     expect(canMoveToPlan("pro", "pro", lowUsage)).toBe(false);
-    expect(usageFitsPlan({ used_day: 5, used_month: 0, used_ai_day: 0, used_ai_month: 3 }, "basic")).toBe(true);
+    expect(usageFitsPlan({ used_day: 5, used_month: 0, used_ai_day: 0, used_ai_month: 1 }, "basic")).toBe(true);
     expect(usageOverLimitReasons(overPro, "pro")[0]).toMatch(/50 conversions today/);
-    expect(usageOverLimitReasons({ used_day: 31, used_month: 0, used_ai_day: 0, used_ai_month: 30 }, "basic")).toEqual([
-      "31 conversions today (limit 30)",
-      "30 AI pages this month (limit 5)",
+    expect(usageOverLimitReasons({ used_day: 16, used_month: 0, used_ai_day: 0, used_ai_month: 15 }, "basic")).toEqual([
+      "16 conversions today (limit 15)",
+      "15 AI pages this month (limit 2)",
     ]);
     expect(planIsPurchasable("pro", { enabled: true, prices: { pro: false }, amounts: { pro: 5 } })).toBe(true);
     expect(planIsPurchasable("basic", { enabled: true, prices: { basic: false }, amounts: { basic: 0 } })).toBe(false);
@@ -644,6 +645,8 @@ describe("plan policy", () => {
     expect(formatPlanPrice(0)).toBe("Free");
     expect(formatPlanPrice(5)).toBe("$5 / month");
     expect(formatPlanPrice(29)).toBe("$29 / month");
+    expect(formatPlanPriceForInterval(5, "year")).toBe("$42 / year");
+    expect(formatPlanPriceForInterval(29, "year")).toBe("$244 / year");
   });
 
   it("describes each gate", () => {
@@ -673,7 +676,7 @@ describe("API plans", () => {
       "api_business",
     ]);
     expect(canMoveToApiPlan("api_free", "api_builder")).toBe(true);
-    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 3, limit_credits: 1000, remaining_credits: 997 })).toBe(true);
+    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 1, limit_credits: 1000, remaining_credits: 999 })).toBe(true);
     expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 100, limit_credits: 1000, remaining_credits: 900 })).toBe(false);
     expect(planIsPurchasable("api_builder", { enabled: true, prices: { api_builder: true } })).toBe(true);
     expect(planIsPurchasable("api_free", { enabled: true, prices: { api_free: false }, amounts: { api_free: 0 } })).toBe(false);

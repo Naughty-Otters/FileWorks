@@ -90,7 +90,7 @@ describe("PageEditor", () => {
 
   it("lands empty with Open/Save and no Convert play button", async () => {
     render(<PageEditor />);
-    expect(await screen.findByText(/Open a PDF or image\. Click the text\. Save/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Open a PDF, image, text, or Word file\. Edit\. Save\./i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Download copy" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Save as" })).toBeDisabled();
@@ -115,7 +115,7 @@ describe("PageEditor", () => {
         ],
       },
     });
-    expect(await screen.findByText(/Editor edits text on PDFs and images/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Page editing is for PDFs and images/i)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Convert this file" }));
     await waitFor(() => expect(sessionFiles.saveSessionFile).toHaveBeenCalled());
   });

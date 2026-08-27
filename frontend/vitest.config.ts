@@ -20,11 +20,15 @@ export default defineConfig({
         // Route shells — covered via higher-level/E2E, not unit thresholds.
         "src/app/**/page.tsx",
         "src/app/layout.tsx",
+        "src/app/manifest.ts",
+        "src/app/robots.ts",
+        "src/app/sitemap.ts",
         "src/lib/empty-polyfill.ts",
         "src/lib/editor-pdf.ts",
         // Thin page wrappers / marketing shells.
         "src/components/auth-redirect.tsx",
         "src/components/convert-guide-page.tsx",
+        "src/components/editor-shell.tsx",
         // Template studio UI chrome (logic modules under design-pad/ stay covered).
         "src/components/template-editor.tsx",
         "src/components/template-library.tsx",

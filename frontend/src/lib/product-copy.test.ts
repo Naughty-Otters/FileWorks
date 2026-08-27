@@ -8,7 +8,11 @@ describe("product-copy", () => {
     expect(PRODUCT.homeLine).not.toMatch(/Markdown or/i);
     expect(PRODUCT.makeFromFile).toMatch(/Produce a Design/i);
     expect(PRODUCT.chooseDesign).toMatch(/Choose a Design/i);
-    expect(PRODUCT.editorLine).toMatch(/Open a PDF or image/i);
+    expect(PRODUCT.editorLine).toMatch(/Open a PDF, image, text, or Word/i);
+    expect(PRODUCT.editDocumentHint).toMatch(/no convert/i);
+    expect(PRODUCT.editWordHint).toMatch(/no server convert/i);
+    expect(PRODUCT.editAsMarkdown).toMatch(/Convert & edit/i);
+    expect(PRODUCT.editAsMarkdownHint).toMatch(/Excel|PowerPoint/i);
     expect(PRODUCT.editor).toBe("Editor");
     expect(PRODUCT.oneLiner.toLowerCase()).toContain("design");
     expect(PRODUCT.produceFromFile).toMatch(/Produce from file/i);

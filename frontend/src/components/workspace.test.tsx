@@ -449,7 +449,7 @@ describe("Workspace", () => {
     expect(screen.queryByRole("button", { name: /Edit text on the page/i })).not.toBeInTheDocument();
   });
 
-  it("opens produce directly for an office file from history", async () => {
+  it("asks Edit this document vs Produce when opening a Word file from history", async () => {
     const user = userEvent.setup();
     historyState.items = [{ ...pastDocxItem }];
     vi.mocked(api.fetchHistoryDetail).mockResolvedValueOnce({
@@ -479,8 +479,8 @@ describe("Workspace", () => {
     await waitFor(() => expect(screen.getByText("notes.docx")).toBeInTheDocument());
     await user.click(screen.getByText("notes.docx"));
     await waitFor(() => expect(api.fetchHistoryDetail).toHaveBeenCalled());
-    expect(screen.queryByRole("button", { name: /Edit text on the page/i })).not.toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "Convert" })).toBeInTheDocument();
-    expect(await screen.findByText("notes")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /Edit this document/i })).toBeInTheDocument();
+    expect(screen.getByText(/no server convert/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Produce a Design/i })).toBeInTheDocument();
   });
 });

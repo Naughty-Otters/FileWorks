@@ -48,25 +48,41 @@ export const PRODUCT = {
   /** Edit path */
   editOnPage: "Edit text on the page",
   editOnPageHint: "Click the text. Change it. Save.",
+  editDocument: "Edit this document",
+  editDocumentHint: "Opens directly — no convert. Edit like a document. Save the same file.",
+  /** Word .docx — Mammoth in the browser, then TipTap (saved as .md). */
+  editWord: "Edit this document",
+  editWordHint: "Opens Word in the document editor here — no server convert. Saves as Markdown.",
+  /** Excel / PPT / legacy office — server extract to Markdown first. */
+  editAsMarkdown: "Convert & edit",
+  editAsMarkdownHint:
+    "Excel, PowerPoint, and older Office files can’t open as-is. Convert once to Markdown, then edit.",
   /** Produce path */
   makeFromFile: "Produce a Design",
   makeFromFileHint:
     "Turn the file into a finished Design — report, invoice, agenda, schedule, and more.",
   /** Non-editor file on the chooser */
-  editorPdfImagesOnly: "Editor is for PDFs and images. Produce a Design from this file.",
+  editorUnsupported:
+    "This file type opens in Produce. Editor opens PDFs, images, text, and Word (.docx) directly — other office files use Convert & edit.",
   /** Drop CTA */
   dropOrChoose: "Drop or choose a file",
   /** Empty source panel in produce workbench */
   sourceEmptyHint: "Choose a Design, then convert.",
   /** Empty target pane before convert */
-  targetEmptyHint: "Pick a Design on the right, then Convert.",
+  targetEmptyHint: "Choose a Design, turn on AI or translation if you need them, then Convert.",
   /** Produce-as dialog intro */
   produceAsIntro:
     "Choose a Design to fill from your file — Markdown, starter designs (family schedules, invoices, agendas), or one of your saved designs.",
   /** Page editor at /edit */
   editor: "Editor",
-  editorLine: "Open a PDF or image. Click the text. Save.",
+  editorLine: "Open a PDF, image, text, or Word file. Edit. Save.",
   editTextOnPage: "Edit text on the page.",
+  editorTextLine:
+    "Text and Word (.docx) open in TipTap. Excel/PowerPoint still need Convert & edit.",
+  editorOfficeNeedSignIn: "Sign in to convert this office file so you can edit it.",
+  editorConvertingOffice: "Opening Word in the document editor…",
+  editorOpeningWord: "Opening Word…",
+  editorWordFailed: "Couldn’t read this Word file. Try Convert & edit from Home, or another .docx.",
   /** CTA from Designs library into workspace with Intent set */
   produceFromFile: "Produce from file",
   /** Edit starter in studio */

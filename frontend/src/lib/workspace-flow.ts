@@ -1,10 +1,10 @@
-import { isEditorSourceFile } from "@/lib/editor-files";
+import { canOfferEditor } from "@/lib/editor-files";
 
 export type WorkspacePhase = "home" | "choose" | "produce";
 
-/** After history restore — PDF/image gets Edit vs Produce; other types go to produce. */
+/** After history restore — editable types get Edit vs Produce; others go to produce. */
 export function phaseForRestoredFile(file: File | null): WorkspacePhase {
-  if (file && isEditorSourceFile(file)) return "choose";
+  if (file && canOfferEditor(file)) return "choose";
   return "produce";
 }
 

@@ -542,8 +542,8 @@ describe("ConvertControls", () => {
     expect(onConvert).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog", { name: "Sign in to convert" })).toBeInTheDocument();
     expect(screen.getByText(/Free · Casual/i)).toBeInTheDocument();
-    expect(screen.getByText("30 conversions / day")).toBeInTheDocument();
-    expect(screen.getByText("30 files / day")).toBeInTheDocument();
+    expect(screen.getByText("15 conversions / day")).toBeInTheDocument();
+    expect(screen.getByText("15 files / day")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Start free with Casual" })).toHaveAttribute("href", "/login");
     expect(screen.getByRole("link", { name: /See Free Casual/i })).toHaveAttribute("href", "/pricing");
     await user.keyboard("{Escape}");
@@ -800,7 +800,7 @@ describe("LoginScreen", () => {
     expect(screen.getByRole("link", { name: "Continue as guest" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: /See Free Casual/i })).toHaveAttribute("href", "/pricing");
     expect(screen.getByText(/Free · Casual/i)).toBeInTheDocument();
-    expect(screen.getByText(/30 conversions a day/i)).toBeInTheDocument();
+    expect(screen.getByText(/15 conversions a day/i)).toBeInTheDocument();
     await waitFor(() => expect(api.fetchMe).toHaveBeenCalled());
   });
 
@@ -863,15 +863,18 @@ describe("PricingPage", () => {
   });
 
   it("lists dollar prices and syncs sign-in with the workspace session", async () => {
+    const user = userEvent.setup();
     vi.spyOn(api, "fetchMe").mockResolvedValue(guestMe);
     vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
       enabled: false,
       currency: "usd",
       amounts: { basic: 0, pro: 5, premium: 29 },
+      yearly_amounts: { basic: 0, pro: 42, premium: 244 },
       prices: { basic: false, pro: false, premium: false },
     });
     render(<PricingPage />);
     expect(await screen.findByText("Prices and roles")).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "How you pay" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Choose Daily" })).toHaveAttribute("href", "/login?next=%2Fpricing");
     expect(screen.getByRole("link", { name: "Start free with Casual" })).toHaveAttribute(
       "href",
@@ -882,6 +885,9 @@ describe("PricingPage", () => {
     expect(screen.getByText("Role comparison")).toBeInTheDocument();
     expect(screen.getAllByText("$5 / month").length).toBeGreaterThan(0);
     expect(screen.getAllByText("$29 / month").length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("radio", { name: /Yearly/i }));
+    expect(screen.getAllByText("$42 / year").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("$244 / year").length).toBeGreaterThan(0);
     expect(screen.getAllByText("100 AI pages / month").length).toBeGreaterThan(0);
     expect(screen.getAllByText("1,000 AI pages / month").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Refunds" })).toHaveAttribute("href", "/legal#refunds");
@@ -910,8 +916,84 @@ describe("PricingPage", () => {
     });
     render(<PricingPage />);
     await user.click(await screen.findByRole("button", { name: "Upgrade to Daily" }));
-    expect(api.startCheckout).toHaveBeenCalledWith("pro", "/pricing");
+    expect(api.startCheckout).toHaveBeenCalledWith("pro", "/pricing", "month");
     expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs");
+  });
+
+  it("checkouts yearly after switching How you pay", async () => {
+    const user = userEvent.setup();
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, search: "" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+      plan: "basic",
+    });
+    vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
+      enabled: true,
+      currency: "usd",
+      yearly_discount: 0.3,
+      amounts: { basic: 0, pro: 5, premium: 29 },
+      yearly_amounts: { basic: 0, pro: 42, premium: 244 },
+      prices: { basic: false, pro: true, premium: true },
+      yearly_prices: { basic: false, pro: true, premium: true },
+    });
+    vi.spyOn(api, "startCheckout").mockResolvedValue({
+      url: "https://checkout.stripe.test/year",
+      updated: false,
+      plan: "pro",
+    });
+    render(<PricingPage />);
+    await user.click(await screen.findByRole("radio", { name: /Yearly/i }));
+    expect(screen.getAllByText("$42 / year").length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("button", { name: "Upgrade to Daily" }));
+    expect(api.startCheckout).toHaveBeenCalledWith("pro", "/pricing", "year");
+    expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/year");
+  });
+
+  it("keeps yearly interval on guest subscribe login links", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(api, "fetchMe").mockResolvedValue(guestMe);
+    vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
+      enabled: true,
+      currency: "usd",
+      amounts: { basic: 0, pro: 5, premium: 29 },
+      yearly_amounts: { basic: 0, pro: 42, premium: 244 },
+      prices: { basic: false, pro: true, premium: true },
+    });
+    render(<PricingPage />);
+    await user.click(await screen.findByRole("radio", { name: /Yearly/i }));
+    expect(screen.getByRole("link", { name: "Choose Daily" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Fpricing%3Fsubscribe%3Dpro%26interval%3Dyear",
+    );
+  });
+
+  it("starts yearly checkout from subscribe deep link", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, search: "?subscribe=pro&interval=year" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+      plan: "basic",
+    });
+    vi.spyOn(api, "fetchBillingCatalog").mockResolvedValue({
+      enabled: true,
+      currency: "usd",
+      amounts: { basic: 0, pro: 5, premium: 29 },
+      yearly_amounts: { basic: 0, pro: 42, premium: 244 },
+      prices: { basic: false, pro: true, premium: true },
+    });
+    vi.spyOn(api, "startCheckout").mockResolvedValue({
+      url: "https://checkout.stripe.test/year",
+      updated: false,
+      plan: "pro",
+    });
+    render(<PricingPage />);
+    await waitFor(() => {
+      expect(api.startCheckout).toHaveBeenCalledWith("pro", "/pricing", "year");
+    });
+    expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/year");
   });
 
   it("shows the workspace avatar when signed in", async () => {
@@ -954,7 +1036,7 @@ describe("PricingPage", () => {
     });
     render(<PricingPage />);
     await user.click(await screen.findByRole("button", { name: "Switch to Daily" }));
-    expect(api.startCheckout).toHaveBeenCalledWith("pro", "/pricing");
+    expect(api.startCheckout).toHaveBeenCalledWith("pro", "/pricing", "month");
     expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs_switch");
   });
 
@@ -1276,15 +1358,44 @@ describe("ProfilePage", () => {
       user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
       plan: "basic",
       permissions: { extract: true, "extract.ai": true, export: true },
-      billing: { enabled: true, prices: { basic: false, pro: true, premium: true } },
+      billing: { enabled: true, prices: { basic: false, pro: true, premium: true }, amounts: { basic: 0, pro: 5, premium: 29 } },
     });
     vi.spyOn(api, "startCheckout").mockResolvedValue({ url: "https://checkout.stripe.test/cs", updated: false, plan: "pro" });
     render(<ProfilePage />);
     expect(await screen.findByText(/Downgrade when this period's usage fits/)).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "How you pay" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Upgrade to Daily" }));
-    expect(api.startCheckout).toHaveBeenCalledWith("pro");
+    expect(api.startCheckout).toHaveBeenCalledWith("pro", "/profile", "month");
     expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs");
     expect(screen.getByRole("button", { name: "Manage billing" })).toBeInTheDocument();
+  });
+
+  it("checkouts yearly from profile after switching How you pay", async () => {
+    const user = userEvent.setup();
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, search: "" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+      plan: "basic",
+      permissions: { extract: true, "extract.ai": true, export: true },
+      billing: {
+        enabled: true,
+        prices: { basic: false, pro: true, premium: true },
+        amounts: { basic: 0, pro: 5, premium: 29 },
+      },
+    });
+    vi.spyOn(api, "startCheckout").mockResolvedValue({
+      url: "https://checkout.stripe.test/year",
+      updated: false,
+      plan: "pro",
+    });
+    render(<ProfilePage />);
+    await user.click(await screen.findByRole("radio", { name: /Yearly/i }));
+    expect(screen.getAllByText(/\$42 \/ year/).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("button", { name: "Upgrade to Daily" }));
+    expect(api.startCheckout).toHaveBeenCalledWith("pro", "/profile", "year");
+    expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/year");
   });
 
   it("syncs Stripe after returning from the billing portal", async () => {
@@ -1338,7 +1449,7 @@ describe("ProfilePage", () => {
     });
     render(<ProfilePage />);
     await user.click(await screen.findByRole("button", { name: "Switch to Daily" }));
-    expect(api.startCheckout).toHaveBeenCalledWith("pro");
+    expect(api.startCheckout).toHaveBeenCalledWith("pro", "/profile", "month");
     expect(assign).toHaveBeenCalledWith("https://checkout.stripe.test/cs_switch");
   });
 
@@ -1377,7 +1488,7 @@ describe("ProfilePage", () => {
     expect(screen.getByRole("heading", { name: "API plan" })).toBeInTheDocument();
     expect(screen.getByText("API AI pages this month")).toBeInTheDocument();
     expect(screen.getAllByText(/0 \/ 25 this month/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Convert API: 5 AI pages \/ month/)).toBeInTheDocument();
+    expect(screen.getByText(/Convert API: 2 AI pages \/ month/)).toBeInTheDocument();
     await user.type(screen.getByPlaceholderText("Key name (optional)"), "CI");
     await user.click(screen.getByRole("button", { name: "Generate key" }));
     expect(api.createApiKey).toHaveBeenCalledWith("CI");
@@ -1471,6 +1582,59 @@ describe("ProfilePage", () => {
 });
 
 describe("ResultPanel", () => {
+  it("shows AI reading and translation on the empty Target panel", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const paidMe: MeResponse = {
+      ...guestMe,
+      user: {
+        id: "u1",
+        email: "a@b.c",
+        name: "A",
+        picture_url: null,
+        plan: "pro",
+      },
+      plan: "pro",
+      permissions: { "extract.ai": true, "extract.translate": true, extract: true },
+      quota: {
+        ...guestMe.quota,
+        remaining_ai_month: 100,
+      },
+    };
+    render(
+      <ResultPanel
+        result={null}
+        loading={false}
+        error={null}
+        view="markdown"
+        onViewChange={vi.fn()}
+        onChooseIntent={vi.fn()}
+        extractOptions={DEFAULT_EXTRACT_OPTIONS}
+        onExtractOptionsChange={onChange}
+        me={paidMe}
+        health={{
+          status: "ok",
+          app: "fileworks",
+          ocr_ready: true,
+          ocr_engine: null,
+          ocr_error: null,
+          llm_ready: true,
+          translate_ready: true,
+          translate_languages: [
+            { id: "original", label: "Original (no translation)" },
+            { id: "es", label: "Spanish" },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /Choose a Design/i })).toBeInTheDocument();
+    expect(screen.getByLabelText("Read with AI")).toBeInTheDocument();
+    expect(screen.getByLabelText("Translate to")).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Read with AI"));
+    expect(onChange).toHaveBeenCalled();
+    expect(onChange.mock.calls.at(-1)?.[0]).toMatchObject({ use_ai: true });
+  });
+
   it("hides conversion engine names from the client", () => {
     render(
       <ResultPanel
@@ -1588,7 +1752,7 @@ describe("ResultPanel", () => {
       <ResultPanel result={null} loading={false} error={null} view="markdown" onViewChange={vi.fn()} />,
     );
     expect(screen.getByText(/You’ll get Markdown/i)).toBeInTheDocument();
-    expect(screen.getByText(/Pick a Design on the right/i)).toBeInTheDocument();
+    expect(screen.getByText(/Choose a Design, turn on AI or translation/i)).toBeInTheDocument();
     rerender(
       <ResultPanel
         result={null}

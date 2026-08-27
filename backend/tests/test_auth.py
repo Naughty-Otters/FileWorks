@@ -37,8 +37,9 @@ class PlansTests(unittest.TestCase):
         self.assertTrue(perms["extract.ai"])
         self.assertTrue(perms["extract.translate"])
         self.assertTrue(perms["history.read"])
-        self.assertEqual(get_plan("basic").ai_per_month, 5)
+        self.assertEqual(get_plan("basic").ai_per_month, 2)
         self.assertIsNone(get_plan("basic").ai_per_day)
+        self.assertEqual(get_plan("basic").extracts_per_day, 15)
 
     def test_pro_permissions(self) -> None:
         perms = permissions_for(get_plan("pro"))
@@ -84,9 +85,9 @@ class QuotaTests(unittest.TestCase):
 
     def test_basic_can_extract(self) -> None:
         snap = quota_snapshot(None, user_id=None, plan=get_plan("basic"))
-        self.assertEqual(snap["remaining_day"], 30)
+        self.assertEqual(snap["remaining_day"], 15)
         self.assertIsNone(snap["remaining_ai_day"])
-        self.assertEqual(snap["remaining_ai_month"], 5)
+        self.assertEqual(snap["remaining_ai_month"], 2)
         assert_can_extract(None, user_id=None, plan=get_plan("basic"))
         assert_can_use_ai(None, user_id=None, plan=get_plan("basic"), use_ai=True, translate=True)
 

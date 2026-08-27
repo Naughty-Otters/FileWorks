@@ -76,6 +76,29 @@ test.describe("API docs @smoke", () => {
   });
 });
 
+test.describe("Pricing billing interval @smoke", () => {
+  test("pricing exposes monthly and yearly How you pay choices", async ({ page }) => {
+    const response = await page.goto("/pricing", { waitUntil: "domcontentloaded" });
+    expect(response).toBeTruthy();
+    expect(response!.status()).toBeLessThan(500);
+
+    await expect(page.getByRole("heading", { name: /Prices and roles/i })).toBeVisible({
+      timeout: 20_000,
+    });
+    await expect(page.getByText("How you pay")).toBeVisible();
+    const monthly = page.getByRole("radio", { name: /Monthly/i });
+    const yearly = page.getByRole("radio", { name: /Yearly/i });
+    await expect(monthly).toBeVisible();
+    await expect(yearly).toBeVisible();
+    await expect(monthly).toHaveAttribute("aria-checked", "true");
+
+    await yearly.click();
+    await expect(yearly).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByText(/\/ year/i).first()).toBeVisible();
+    await expect(page.getByText(/Save 30%/i).first()).toBeVisible();
+  });
+});
+
 test.describe("Primary navigation @smoke", () => {
   test("header links reach Pricing, API, Legal", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });

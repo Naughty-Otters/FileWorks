@@ -23,6 +23,7 @@ router = APIRouter(tags=["billing"])
 class CheckoutRequest(BaseModel):
     plan: str
     return_to: str | None = None
+    interval: str | None = "month"
 
 
 class CheckoutResponse(BaseModel):
@@ -42,14 +43,19 @@ class ConfirmResponse(BaseModel):
 
 class CatalogApiBucket(BaseModel):
     amounts: dict[str, int]
+    yearly_amounts: dict[str, int] | None = None
     prices: dict[str, bool]
+    yearly_prices: dict[str, bool] | None = None
 
 
 class CatalogResponse(BaseModel):
     enabled: bool
     currency: str = "usd"
+    yearly_discount: float = 0.3
     amounts: dict[str, int]
+    yearly_amounts: dict[str, int] | None = None
     prices: dict[str, bool]
+    yearly_prices: dict[str, bool] | None = None
     api: CatalogApiBucket
 
 
@@ -91,7 +97,11 @@ def start_checkout(
     db: Session | None = Depends(get_db),
 ) -> CheckoutResponse:
     user = _require_user(principal, db)
-    return CheckoutResponse(**create_checkout_session(db, user, body.plan, return_to=body.return_to))
+    return CheckoutResponse(
+        **create_checkout_session(
+            db, user, body.plan, return_to=body.return_to, interval=body.interval
+        )
+    )
 
 
 @router.post("/billing/confirm", response_model=ConfirmResponse)

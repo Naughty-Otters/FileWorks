@@ -29,9 +29,9 @@ API_PLANS: dict[str, ApiPlan] = {
     "api_free": ApiPlan(
         id="api_free",
         label="API Free",
-        credits_per_month=5,
-        standard_pages_per_month=1000,
-        max_keys=2,
+        credits_per_month=2,
+        standard_pages_per_month=500,
+        max_keys=1,
     ),
     "api_builder": ApiPlan(
         id="api_builder",

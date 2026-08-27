@@ -31,6 +31,49 @@ if (!window.URL.createObjectURL) {
   window.URL.revokeObjectURL = () => undefined;
 }
 
+/** Empty layout rect — jsdom lacks real geometry; TipTap/ProseMirror needs these. */
+const emptyDomRect = (): DOMRect => ({
+  x: 0,
+  y: 0,
+  width: 0,
+  height: 0,
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+  toJSON() {
+    return {};
+  },
+});
+
+const emptyDomRectList = (): DOMRectList =>
+  ({
+    length: 0,
+    item: () => null,
+    [Symbol.iterator]: function* () {},
+  }) as DOMRectList;
+
+for (const proto of [Element.prototype, Range.prototype]) {
+  if (typeof proto.getBoundingClientRect !== "function") {
+    proto.getBoundingClientRect = () => emptyDomRect();
+  }
+  if (typeof proto.getClientRects !== "function") {
+    proto.getClientRects = () => emptyDomRectList();
+  }
+}
+
+// ProseMirror scrollToSelection may call getClientRects on non-Element targets.
+const nodeProto = Node.prototype as Node & {
+  getClientRects?: () => DOMRectList;
+  getBoundingClientRect?: () => DOMRect;
+};
+if (typeof nodeProto.getClientRects !== "function") {
+  nodeProto.getClientRects = () => emptyDomRectList();
+}
+if (typeof nodeProto.getBoundingClientRect !== "function") {
+  nodeProto.getBoundingClientRect = () => emptyDomRect();
+}
+
 beforeEach(async () => {
   window.localStorage.clear();
   window.sessionStorage.clear();

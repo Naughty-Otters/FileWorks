@@ -36,6 +36,12 @@ import { SiteFooter } from "@/components/site-footer";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UploadPanel } from "@/components/upload-panel";
 import { historyCache } from "@/lib/history-cache";
+import {
+  isOfficeEditAsMarkdownFile,
+  markdownEditName,
+} from "@/lib/editor-files";
+import { docxFileToEditorMarkdown, isWordDocxFile } from "@/lib/docx-to-editor";
+import { PRODUCT } from "@/lib/product-copy";
 import { prefetchHeavyUi } from "@/lib/prefetch";
 import { reloadSession, useSession } from "@/lib/session";
 import { aiQuotaLeft } from "@/lib/plans";
@@ -49,7 +55,6 @@ import {
 } from "@/lib/workspace-session";
 import { BUILT_IN_TEMPLATES, builtInTemplate } from "@/design-pad/templates";
 import { isStaticTemplate } from "@/design-pad/templating";
-import { PRODUCT } from "@/lib/product-copy";
 import {
   phaseAfterFileSelect,
   phaseForRestoredFile,
@@ -877,9 +882,69 @@ export function Workspace() {
   }
 
   function openEditorWithFile(next: File) {
+    if (isWordDocxFile(next)) {
+      void openWordDocxInEditor(next);
+      return;
+    }
+    if (isOfficeEditAsMarkdownFile(next)) {
+      void convertOfficeToMarkdownEditor(next);
+      return;
+    }
     void saveEditorFile(next).then(() => {
       window.location.assign("/edit");
     });
+  }
+
+  async function openWordDocxInEditor(next: File) {
+    setBusyKind("convert");
+    setLoading(true);
+    setError(null);
+    try {
+      const mdFile = await docxFileToEditorMarkdown(next);
+      await saveEditorFile(mdFile);
+      window.location.assign("/edit");
+    } catch (err) {
+      if (isAbortError(err)) return;
+      setError(err instanceof Error ? err.message : PRODUCT.editorWordFailed);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function convertOfficeToMarkdownEditor(next: File) {
+    if (!me?.user || !me.permissions["extract"]) {
+      setError(PRODUCT.editorOfficeNeedSignIn);
+      return;
+    }
+    if (quotaBlocked) {
+      setError(
+        me.quota.remaining_day === 0
+          ? "Today's conversion limit is used. Come back tomorrow or upgrade."
+          : "This month's conversion limit is used. Upgrade or wait until next month.",
+      );
+      return;
+    }
+    setBusyKind("convert");
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await extractDocument(next, "markdown", extractOptions, undefined, {
+        directUpload: health?.direct_upload === true || health?.storage_backend === "s3",
+      });
+      const markdown = data.markdown || "";
+      const name = markdownEditName(next.name);
+      const mdFile = new File([markdown], name, {
+        type: "text/markdown",
+        lastModified: Date.now(),
+      });
+      await saveEditorFile(mdFile);
+      window.location.assign("/edit");
+    } catch (err) {
+      if (isAbortError(err)) return;
+      setError(err instanceof Error ? err.message : PRODUCT.editAsMarkdownHint);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function enterProduce() {
@@ -1240,6 +1305,10 @@ export function Workspace() {
               designContext={designContext}
               intentName={intentDisplayName}
               onChooseIntent={() => setProduceAsOpen(true)}
+              extractOptions={extractOptions}
+              onExtractOptionsChange={setExtractOptions}
+              me={me}
+              health={health}
               onApplyDesignVariables={activeTemplateId ? handleApplyDesignVariables : undefined}
               onDesignExport={activeTemplateId && renderedHtml ? handleDesignExport : undefined}
             />

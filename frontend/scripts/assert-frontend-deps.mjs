@@ -7,19 +7,36 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(join(root, "package.json"));
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 
-const missing = [];
-for (const name of Object.keys(pkg.dependencies || {})) {
+function packageInstalled(name) {
+  const dir = join(root, "node_modules", ...name.split("/"));
+  if (existsSync(join(dir, "package.json"))) return true;
+  // Fallback for odd packages: require.resolve may fail when "exports" has no ".".
   try {
     require.resolve(name);
+    return true;
   } catch {
-      missing.push(name);
+    return false;
   }
+}
+
+const missing = [];
+for (const name of Object.keys(pkg.dependencies || {})) {
+  if (!packageInstalled(name)) missing.push(name);
 }
 
 if (missing.length) {
   console.error(
     `Missing npm packages: ${missing.join(", ")}.\n` +
       `Run: cd frontend && npm install`,
+  );
+  process.exit(1);
+}
+
+const mammothBrowser = join(root, "node_modules/mammoth/mammoth.browser.js");
+if (!existsSync(mammothBrowser)) {
+  console.error(
+    "mammoth is installed but mammoth.browser.js is missing.\n" +
+      "Run: cd frontend && npm install mammoth",
   );
   process.exit(1);
 }

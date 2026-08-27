@@ -21,8 +21,22 @@ import { BrandLockup } from "@/components/brand-lockup";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteFooter } from "@/components/site-footer";
 import { MarketingNav } from "@/components/marketing-nav";
-import { canMoveToApiPlan, canMoveToPlan, formatPlanPrice, PERMISSION_LABELS, PLAN_CATALOG, API_PLAN_CATALOG, apiPlanSwitchLabel, apiUsageOverLimitReasons, planDisplayLabel, planIsPurchasable, planSwitchLabel, usageOverLimitReasons } from "@/lib/plans";
-import { checkoutCanceledNotice } from "@/lib/plan-quotas";
+import { BillingIntervalToggle } from "@/components/billing-interval-toggle";
+import {
+  canMoveToApiPlan,
+  canMoveToPlan,
+  formatPlanPriceForInterval,
+  PERMISSION_LABELS,
+  PLAN_CATALOG,
+  API_PLAN_CATALOG,
+  apiPlanSwitchLabel,
+  apiUsageOverLimitReasons,
+  planDisplayLabel,
+  planIsPurchasable,
+  planSwitchLabel,
+  usageOverLimitReasons,
+} from "@/lib/plans";
+import { checkoutCanceledNotice, equivalentMonthlyLabel, WORKSPACE_QUOTAS, API_QUOTAS, type BillingInterval } from "@/lib/plan-quotas";
 import { cn } from "@/lib/utils";
 
 function usageLine(used: number, limit: number | null, remaining: number | null, period: string) {
@@ -48,6 +62,7 @@ export function ProfilePage() {
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [keys, setKeys] = useState<ApiKeyPublic[]>([]);
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("month");
   const [newKey, setNewKey] = useState<CreatedApiKey | null>(null);
   const [keyName, setKeyName] = useState("");
   const [keyCopied, setKeyCopied] = useState(false);
@@ -117,7 +132,7 @@ export function ProfilePage() {
     setError(null);
     try {
       if (me?.billing?.enabled) {
-        const checkout = await startCheckout(plan);
+        const checkout = await startCheckout(plan, "/profile", billingInterval);
         if (!checkout.url) {
           throw new Error("Stripe did not return a billing URL");
         }
@@ -149,7 +164,7 @@ export function ProfilePage() {
     setError(null);
     try {
       if (me?.billing?.enabled) {
-        const checkout = await startCheckout(plan);
+        const checkout = await startCheckout(plan, "/profile", billingInterval);
         if (!checkout.url) {
           throw new Error("Stripe did not return a billing URL");
         }
@@ -380,6 +395,11 @@ export function ProfilePage() {
               ? "Upgrade anytime. Downgrade when this period's usage fits the lower plan."
               : "Switch plans anytime. A downgrade needs usage within that plan's limits."}
           </p>
+          {me.billing?.enabled ? (
+            <div className="mt-4">
+              <BillingIntervalToggle value={billingInterval} onChange={setBillingInterval} id="profile-billing-interval" />
+            </div>
+          ) : null}
           {notice ? <p className="mt-3 text-sm text-[var(--ink-muted)]">{notice}</p> : null}
           {error ? <p className="mt-3 text-sm text-[var(--danger)]">{error}</p> : null}
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -388,6 +408,15 @@ export function ProfilePage() {
               const switchable =
                 planIsPurchasable(plan.id, me.billing) && canMoveToPlan(me.plan, plan.id, me.quota);
               const usageBlock = usageOverLimitReasons(me.quota, plan.id);
+              const monthly =
+                typeof me.billing?.amounts?.[plan.id] === "number"
+                  ? me.billing.amounts[plan.id]
+                  : (WORKSPACE_QUOTAS[plan.id as keyof typeof WORKSPACE_QUOTAS]?.priceUsd ?? 0);
+              const priceLabel = formatPlanPriceForInterval(monthly, billingInterval);
+              const yearlyHint =
+                monthly != null && monthly > 0 && billingInterval === "year"
+                  ? equivalentMonthlyLabel(monthly)
+                  : null;
               return (
                 <article
                   key={plan.id}
@@ -398,11 +427,9 @@ export function ProfilePage() {
                 >
                   <p className="text-sm font-medium">{plan.label}</p>
                   <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                    {typeof me.billing?.amounts?.[plan.id] === "number"
-                      ? formatPlanPrice(me.billing.amounts[plan.id])
-                      : plan.price}{" "}
-                    · {plan.quota}
+                    {priceLabel} · {plan.quota}
                   </p>
+                  {yearlyHint ? <p className="text-[10px] text-[var(--ink-muted)]">{yearlyHint}</p> : null}
                   <ul className="mt-3 flex-1 space-y-1 text-xs text-[var(--ink-muted)]">
                     {plan.features.map((item) => (
                       <li key={item}>{item}</li>
@@ -617,9 +644,12 @@ export function ProfilePage() {
                 >
                   <p className="text-sm font-medium">{plan.label}</p>
                   <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                    {typeof me.billing?.api?.amounts?.[plan.id] === "number"
-                      ? formatPlanPrice(me.billing.api.amounts[plan.id])
-                      : plan.price}{" "}
+                    {formatPlanPriceForInterval(
+                      typeof me.billing?.api?.amounts?.[plan.id] === "number"
+                        ? me.billing.api.amounts[plan.id]
+                        : (API_QUOTAS[plan.id as keyof typeof API_QUOTAS]?.priceUsd ?? 0),
+                      billingInterval,
+                    )}{" "}
                     · {plan.quota}
                   </p>
                   <ul className="mt-3 flex-1 space-y-1 text-xs text-[var(--ink-muted)]">

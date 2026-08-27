@@ -52,10 +52,10 @@ PLANS: dict[str, Plan] = {
         translate=True,
         history=True,
         export=True,
-        extracts_per_day=30,
+        extracts_per_day=15,
         extracts_per_month=None,
         ai_per_day=None,
-        ai_per_month=5,
+        ai_per_month=2,
     ),
     "pro": Plan(
         id="pro",

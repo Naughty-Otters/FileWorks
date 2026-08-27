@@ -38,10 +38,10 @@ export const WORKSPACE_QUOTAS: Record<WorkspaceQuota["id"], WorkspaceQuota> = {
     id: "basic",
     label: "Casual",
     priceUsd: 0,
-    extractsPerDay: 30,
+    extractsPerDay: 15,
     extractsPerMonth: null,
     aiPerDay: null,
-    aiPerMonth: 5,
+    aiPerMonth: 2,
   },
   pro: {
     id: "pro",
@@ -68,9 +68,9 @@ export const API_QUOTAS: Record<ApiQuota["id"], ApiQuota> = {
     id: "api_free",
     label: "API Free",
     priceUsd: 0,
-    creditsPerMonth: 5,
-    standardPagesPerMonth: 1000,
-    maxKeys: 2,
+    creditsPerMonth: 2,
+    standardPagesPerMonth: 500,
+    maxKeys: 1,
   },
   api_builder: {
     id: "api_builder",
@@ -111,10 +111,46 @@ export function formatCount(n: number): string {
   return n.toLocaleString("en-US");
 }
 
+/** Checkout / display billing period. Yearly is 30% off the 12-month total. */
+export type BillingInterval = "month" | "year";
+
+export const YEARLY_DISCOUNT = 0.3;
+
+/** Yearly list price from a monthly USD amount (30% off of 12× monthly). */
+export function yearlyAmountFromMonthly(monthly: number): number {
+  if (monthly <= 0) return 0;
+  return Math.round(monthly * 12 * (1 - YEARLY_DISCOUNT));
+}
+
 export function formatUsdMonth(amount: number | null | undefined): string {
   if (amount == null) return "—";
   if (amount <= 0) return "Free";
   return `$${amount} / month`;
+}
+
+export function formatUsdYear(amount: number | null | undefined): string {
+  if (amount == null) return "—";
+  if (amount <= 0) return "Free";
+  return `$${amount} / year`;
+}
+
+/** Format a monthly catalog amount for the selected billing interval. */
+export function formatUsdForInterval(
+  monthlyAmount: number | null | undefined,
+  interval: BillingInterval,
+): string {
+  if (monthlyAmount == null) return "—";
+  if (monthlyAmount <= 0) return "Free";
+  if (interval === "month") return formatUsdMonth(monthlyAmount);
+  return formatUsdYear(yearlyAmountFromMonthly(monthlyAmount));
+}
+
+/** Equivalent monthly rate when paying yearly (for secondary copy). */
+export function equivalentMonthlyLabel(monthlyAmount: number): string {
+  const yearly = yearlyAmountFromMonthly(monthlyAmount);
+  const perMonth = yearly / 12;
+  const text = Number.isInteger(perMonth) ? `$${perMonth}` : `$${perMonth.toFixed(2)}`;
+  return `${text} / mo billed yearly`;
 }
 
 export function filesPerDayLabel(n: number | null | undefined): string {

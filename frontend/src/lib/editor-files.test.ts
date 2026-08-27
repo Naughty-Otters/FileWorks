@@ -1,31 +1,66 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  bytesLookLikeText,
+  canOfferEditor,
   canUseFilePicker,
   classifyEditorFile,
   downloadBlob,
   isEditorSourceFile,
+  isMarkdownDocumentFile,
+  isOfficeEditAsMarkdownFile,
+  isPageStampFile,
+  isSourceOnlyTextFile,
+  isTextEditorFile,
+  markdownEditName,
   saveActionLabel,
+  textMimeForName,
   winAnsiSafe,
   writeFileHandle,
 } from "@/lib/editor-files";
 
 describe("editor-files", () => {
-  it("classifies PDF, images, office, and other", () => {
+  it("classifies PDF, images, text, office, and other", () => {
     expect(classifyEditorFile({ name: "a.PDF", type: "" })).toBe("pdf");
     expect(classifyEditorFile({ name: "x", type: "application/pdf" })).toBe("pdf");
     expect(classifyEditorFile({ name: "scan.png", type: "image/png" })).toBe("image");
     expect(classifyEditorFile({ name: "photo.JPEG" })).toBe("image");
+    expect(classifyEditorFile({ name: "notes.md" })).toBe("text");
+    expect(classifyEditorFile({ name: "notes.txt" })).toBe("text");
+    expect(classifyEditorFile({ name: "table.csv", type: "text/csv" })).toBe("text");
+    expect(classifyEditorFile({ name: "data.json" })).toBe("text");
+    expect(classifyEditorFile({ name: "app.ts" })).toBe("text");
+    expect(classifyEditorFile({ name: "readme.MDX" })).toBe("text");
+    expect(classifyEditorFile({ name: "icon.svg" })).toBe("text");
     expect(classifyEditorFile({ name: "letter.docx" })).toBe("office");
     expect(classifyEditorFile({ name: "sheet.xlsx" })).toBe("office");
     expect(classifyEditorFile({ name: "deck.pptx" })).toBe("office");
-    expect(classifyEditorFile({ name: "notes.md" })).toBe("other");
-    expect(classifyEditorFile({ name: "notes.txt" })).toBe("other");
+    expect(classifyEditorFile({ name: "archive.zip" })).toBe("other");
   });
 
-  it("treats only PDF and images as editor sources", () => {
+  it("sniffs binary vs text bytes", () => {
+    expect(bytesLookLikeText(new TextEncoder().encode('{"ok":true}'))).toBe(true);
+    expect(bytesLookLikeText(new Uint8Array([0, 1, 2, 3, 4]))).toBe(false);
+  });
+
+  it("offers the right editor paths per kind", () => {
     expect(isEditorSourceFile({ name: "a.pdf" })).toBe(true);
     expect(isEditorSourceFile({ name: "a.png" })).toBe(true);
+    expect(isEditorSourceFile({ name: "a.md" })).toBe(true);
+    expect(isEditorSourceFile({ name: "a.json" })).toBe(true);
     expect(isEditorSourceFile({ name: "a.docx" })).toBe(false);
+    expect(isPageStampFile({ name: "a.pdf" })).toBe(true);
+    expect(isTextEditorFile({ name: "a.md" })).toBe(true);
+    expect(isMarkdownDocumentFile({ name: "a.md" })).toBe(true);
+    expect(isMarkdownDocumentFile({ name: "a.json" })).toBe(false);
+    expect(isSourceOnlyTextFile({ name: "a.csv" })).toBe(true);
+    expect(isSourceOnlyTextFile({ name: "a.json" })).toBe(false);
+    expect(isOfficeEditAsMarkdownFile({ name: "a.docx" })).toBe(true);
+    expect(canOfferEditor({ name: "a.docx" })).toBe(true);
+    expect(canOfferEditor({ name: "a.zip" })).toBe(false);
+    expect(canOfferEditor({ name: "notes.yaml" })).toBe(true);
+    expect(markdownEditName("Quarterly.docx")).toBe("Quarterly.md");
+    expect(textMimeForName("notes.md")).toBe("text/markdown");
+    expect(textMimeForName("data.json")).toBe("application/json");
   });
 
   it("labels Save vs Download copy from the file handle", () => {

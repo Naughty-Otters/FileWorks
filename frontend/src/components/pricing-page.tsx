@@ -6,6 +6,7 @@ import { AuthBar } from "@/components/auth-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteFooter } from "@/components/site-footer";
 import { MarketingNav } from "@/components/marketing-nav";
+import { BillingIntervalToggle } from "@/components/billing-interval-toggle";
 import {
   confirmCheckout,
   fetchBillingCatalog,
@@ -17,8 +18,26 @@ import {
 import { reloadSession, setSessionMe, useSession } from "@/lib/session";
 import { SeoFaq } from "@/components/seo-faq";
 import { JsonLd } from "@/components/json-ld";
-import { API_PLAN_CATALOG, PUBLIC_API_PLANS, apiFreeQuotaSentence, apiPlanSwitchLabel, canMoveToApiPlan, formatPlanPrice, PLAN_CATALOG, planIsPurchasable, planSwitchLabel, PRICE_ROLES, usageFitsPlan, usageOverLimitReasons } from "@/lib/plans";
-import { checkoutCanceledNotice } from "@/lib/plan-quotas";
+import {
+  API_PLAN_CATALOG,
+  PUBLIC_API_PLANS,
+  apiFreeQuotaSentence,
+  apiPlanSwitchLabel,
+  canMoveToApiPlan,
+  formatPlanPriceForInterval,
+  PLAN_CATALOG,
+  planIsPurchasable,
+  planSwitchLabel,
+  PRICE_ROLES,
+  usageFitsPlan,
+  usageOverLimitReasons,
+} from "@/lib/plans";
+import {
+  checkoutCanceledNotice,
+  equivalentMonthlyLabel,
+  YEARLY_DISCOUNT,
+  type BillingInterval,
+} from "@/lib/plan-quotas";
 import { faqJsonLd, organizationJsonLd, PRICING_FAQS, softwareApplicationJsonLd } from "@/lib/seo";
 import { SITE_URL } from "@/lib/legal";
 import { cn } from "@/lib/utils";
@@ -27,13 +46,23 @@ function loginNext(path: string) {
   return `/login?next=${encodeURIComponent(path)}`;
 }
 
+function parseInterval(raw: string | null): BillingInterval {
+  return raw === "year" ? "year" : "month";
+}
+
 export function PricingPage() {
   const { status: authStatus, me, displayUser } = useSession();
   const [catalog, setCatalog] = useState<BillingCatalog | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("month");
   const handledReturn = useRef(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setBillingInterval(parseInterval(params.get("interval")));
+  }, []);
 
   useEffect(() => {
     void Promise.all([reloadSession(), fetchBillingCatalog().catch(() => null)]).then(async ([session, cat]) => {
@@ -81,6 +110,7 @@ export function PricingPage() {
         return;
       }
       const subscribe = params.get("subscribe");
+      const checkoutInterval = parseInterval(params.get("interval"));
       const apiIds = API_PLAN_CATALOG.map((plan) => plan.id);
       if (
         session.user &&
@@ -90,16 +120,16 @@ export function PricingPage() {
         (cat.prices[subscribe] || cat.api?.prices?.[subscribe])
       ) {
         handledReturn.current = true;
-        await goCheckout(subscribe);
+        await goCheckout(subscribe, checkoutInterval);
       }
     }).catch(() => undefined);
   }, []);
 
-  async function goCheckout(plan: string) {
+  async function goCheckout(plan: string, chosenInterval: BillingInterval = billingInterval) {
     setPending(plan);
     setError(null);
     try {
-      const checkout = await startCheckout(plan, "/pricing");
+      const checkout = await startCheckout(plan, "/pricing", chosenInterval);
       if (!checkout.url) {
         throw new Error("Stripe did not return a billing URL");
       }
@@ -111,12 +141,38 @@ export function PricingPage() {
     }
   }
 
-  function priceFor(id: string, fallback: string) {
-    if (id === "anonymous") return "Free";
+  function monthlyAmountFor(id: string, fallbackPrice: string): number | null {
+    if (id === "anonymous") return 0;
     const amount = catalog?.amounts?.[id] ?? catalog?.api?.amounts?.[id];
-    if (typeof amount === "number") return formatPlanPrice(amount);
-    return fallback;
+    if (typeof amount === "number") return amount;
+    const match = fallbackPrice.match(/\$(\d+)/);
+    return match ? Number(match[1]) : null;
   }
+
+  function priceFor(id: string, fallback: string) {
+    if (fallback === "Free" || id === "anonymous") {
+      const amount = monthlyAmountFor(id, fallback);
+      if (amount == null || amount <= 0) return "Free";
+    }
+    const monthly = monthlyAmountFor(id, fallback);
+    if (monthly == null) return fallback;
+    if (monthly <= 0) return "Free";
+    if (billingInterval === "year") {
+      const yearly = catalog?.yearly_amounts?.[id] ?? catalog?.api?.yearly_amounts?.[id];
+      if (typeof yearly === "number" && yearly > 0) return `$${yearly} / year`;
+    }
+    return formatPlanPriceForInterval(monthly, billingInterval);
+  }
+
+  function priceHint(id: string, fallback: string) {
+    const monthly = monthlyAmountFor(id, fallback);
+    if (monthly == null || monthly <= 0 || billingInterval !== "year") return null;
+    return equivalentMonthlyLabel(monthly);
+  }
+
+  const savePct = Math.round((catalog?.yearly_discount ?? YEARLY_DISCOUNT) * 100);
+  const subscribeQuery = (planId: string) =>
+    `/pricing?subscribe=${planId}${billingInterval === "year" ? "&interval=year" : ""}`;
 
   return (
     <div className="app-shell relative">
@@ -172,12 +228,21 @@ export function PricingPage() {
           {error ? <p className="mt-3 text-sm text-[var(--danger)]">{error}</p> : null}
         </div>
 
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+          <BillingIntervalToggle value={billingInterval} onChange={setBillingInterval} />
+          <p className="max-w-xs text-xs leading-5 text-[var(--ink-muted)] sm:pb-1.5 sm:text-right">
+            {billingInterval === "year"
+              ? `Prices below are yearly totals (${savePct}% off 12 months). Allowances stay the same.`
+              : "Prices below are monthly. Switch to yearly anytime for the discount."}
+          </p>
+        </div>
+
         <div>
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">Workspace</h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
             File conversions in the app.{" "}
             <span className="font-medium text-[var(--accent-strong)]">Guest and Casual are Free</span>
-            — no card required. Daily is $5. Expert is the volume plan.
+            — no card required. Daily is $5/mo. Expert is the volume plan.
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -196,6 +261,7 @@ export function PricingPage() {
               signedIn && catalogPlan ? planSwitchLabel(me?.plan || "anonymous", catalogPlan) : item.cta.label;
             const usageBlock = me ? usageOverLimitReasons(me.quota, item.id) : [];
             const isFree = Boolean(item.free) || item.price === "Free";
+            const hint = isFree ? null : priceHint(item.id, item.price);
             return (
               <article
                 key={item.id}
@@ -205,14 +271,17 @@ export function PricingPage() {
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p
-                    className={cn(
-                      "text-[11px] uppercase tracking-[0.14em]",
-                      isFree ? "font-semibold text-[var(--accent-strong)]" : "text-[var(--ink-muted)]",
-                    )}
-                  >
-                    {priceFor(item.id, item.price)}
-                  </p>
+                  <div>
+                    <p
+                      className={cn(
+                        "text-[11px] uppercase tracking-[0.14em]",
+                        isFree ? "font-semibold text-[var(--accent-strong)]" : "text-[var(--ink-muted)]",
+                      )}
+                    >
+                      {priceFor(item.id, item.price)}
+                    </p>
+                    {hint ? <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{hint}</p> : null}
+                  </div>
                   {isFree ? (
                     <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white dark:text-[#06281d]">
                       Free
@@ -237,7 +306,7 @@ export function PricingPage() {
                   </a>
                 ) : !signedIn ? (
                   <a
-                    href={loginNext(stripeReady ? `/pricing?subscribe=${item.id}` : "/pricing")}
+                    href={loginNext(stripeReady ? subscribeQuery(item.id) : "/pricing")}
                     className={cn(
                       "mt-5 inline-flex justify-center rounded-full px-3 py-2 text-sm font-medium",
                       item.highlight
@@ -319,13 +388,15 @@ export function PricingPage() {
               prices: catalog?.api?.prices,
               amounts: catalog?.api?.amounts,
             });
-            const usageOk = !signedIn || !me || canMoveToApiPlan(me.api_plan || "api_free", item.id, me.api_quota) || current;
+            const usageOk =
+              !signedIn || !me || canMoveToApiPlan(me.api_plan || "api_free", item.id, me.api_quota) || current;
             const stripeReady = Boolean(catalog?.enabled && paidPlan && purchasable && !current && usageOk);
             const actionLabel = signedIn
               ? apiPlanSwitchLabel(me?.api_plan || "api_free", item)
               : item.id === "api_free"
                 ? "Get a free key"
                 : `Choose ${item.label}`;
+            const hint = isFree ? null : priceHint(item.id, item.price);
             return (
               <article
                 key={item.id}
@@ -335,14 +406,17 @@ export function PricingPage() {
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p
-                    className={cn(
-                      "text-[11px] uppercase tracking-[0.14em]",
-                      isFree ? "font-semibold text-[var(--accent-strong)]" : "text-[var(--ink-muted)]",
-                    )}
-                  >
-                    {priceFor(item.id, item.price)}
-                  </p>
+                  <div>
+                    <p
+                      className={cn(
+                        "text-[11px] uppercase tracking-[0.14em]",
+                        isFree ? "font-semibold text-[var(--accent-strong)]" : "text-[var(--ink-muted)]",
+                      )}
+                    >
+                      {priceFor(item.id, item.price)}
+                    </p>
+                    {hint ? <p className="mt-0.5 text-[10px] text-[var(--ink-muted)]">{hint}</p> : null}
+                  </div>
                   {isFree ? (
                     <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white dark:text-[#06281d]">
                       Free
@@ -360,7 +434,7 @@ export function PricingPage() {
                   <p className="mt-5 text-center text-sm font-medium text-[var(--accent-strong)]">Current API plan</p>
                 ) : !signedIn ? (
                   <a
-                    href={loginNext(stripeReady ? `/pricing?subscribe=${item.id}` : "/docs")}
+                    href={loginNext(stripeReady ? subscribeQuery(item.id) : "/docs")}
                     className={cn(
                       "mt-5 inline-flex justify-center rounded-full px-3 py-2 text-sm font-medium",
                       item.highlight

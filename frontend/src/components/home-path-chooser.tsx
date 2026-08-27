@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { FilePenLine, FileOutput, Replace } from "lucide-react";
-import { isEditorSourceFile } from "@/lib/editor-files";
+import {
+  canOfferEditor,
+  isOfficeEditAsMarkdownFile,
+  isPageStampFile,
+  isTextEditorFile,
+} from "@/lib/editor-files";
+import { isWordDocxFile } from "@/lib/docx-to-editor";
 import { PRODUCT } from "@/lib/product-copy";
 import { cn, formatBytes } from "@/lib/utils";
 
@@ -23,14 +29,27 @@ export function HomePathChooser({
   onProduce,
   onReplace,
 }: HomePathChooserProps) {
-  const canEdit = isEditorSourceFile(file);
+  const canEdit = canOfferEditor(file);
+  const pageStamp = isPageStampFile(file);
+  const textDoc = isTextEditorFile(file);
+  const wordDocx = isWordDocxFile(file);
+  const officeAsMd = isOfficeEditAsMarkdownFile(file) && !wordDocx;
+  const editTitle = pageStamp
+    ? PRODUCT.editOnPage
+    : textDoc
+      ? PRODUCT.editDocument
+      : wordDocx
+        ? PRODUCT.editWord
+        : PRODUCT.editAsMarkdown;
+  const editHint = pageStamp
+    ? PRODUCT.editOnPageHint
+    : textDoc
+      ? PRODUCT.editDocumentHint
+      : wordDocx
+        ? PRODUCT.editWordHint
+        : PRODUCT.editAsMarkdownHint;
   const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-  const isText = Boolean(
-    /\.(txt|md|markdown)$/i.test(file.name) ||
-      file.type === "text/plain" ||
-      file.type === "text/markdown" ||
-      file.type === "text/x-markdown",
-  );
+  const isText = textDoc;
   const [textPreview, setTextPreview] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,23 +99,23 @@ export function HomePathChooser({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={previewUrl}
-              alt={file.name}
+              alt=""
               className="mx-auto h-full max-h-full w-auto max-w-full object-contain"
             />
           ) : (
-            <div className="flex h-full min-h-[12rem] items-center justify-center px-4 text-center text-sm text-[var(--ink-muted)] lg:min-h-0">
-              Preview not available for this file type.
+            <div className="flex h-full min-h-[12rem] items-center justify-center rounded-xl border border-dashed border-[var(--line)] text-sm text-[var(--ink-muted)] lg:min-h-0">
+              {officeAsMd ? "Office document" : wordDocx ? "Word document" : "Preview unavailable"}
             </div>
           )}
         </div>
       </section>
 
-      <section className="home-rise home-rise-2 flex w-full shrink-0 flex-col justify-center px-5 py-8 sm:px-8 lg:w-[min(26rem,42%)] lg:px-8 lg:py-10">
-        <p className="font-[family-name:var(--font-display)] text-2xl tracking-tight text-[var(--ink)] sm:text-3xl">
+      <section className="home-rise home-rise-2 flex w-full shrink-0 flex-col justify-center px-5 py-8 sm:px-8 lg:w-[min(100%,22rem)] lg:py-10">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]">
           {PRODUCT.whatNext}
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--ink-muted)]">
-          {canEdit ? PRODUCT.homeSupport : PRODUCT.editorPdfImagesOnly}
+        <p className="mt-3 text-sm leading-relaxed text-[var(--ink-muted)]">
+          {canEdit ? PRODUCT.homeSupport : PRODUCT.editorUnsupported}
         </p>
 
         <div className="mt-7 flex flex-col gap-3">
@@ -114,11 +133,9 @@ export function HomePathChooser({
             >
               <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--ink)] group-hover:text-[var(--accent-strong)]">
                 <FilePenLine size={16} aria-hidden />
-                {PRODUCT.editOnPage}
+                {editTitle}
               </span>
-              <span className="pl-6 text-xs leading-relaxed text-[var(--ink-muted)]">
-                {PRODUCT.editOnPageHint}
-              </span>
+              <span className="pl-6 text-xs leading-relaxed text-[var(--ink-muted)]">{editHint}</span>
             </button>
           ) : null}
 
