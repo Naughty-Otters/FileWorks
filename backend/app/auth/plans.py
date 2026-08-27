@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+"""Workspace plan permissions and quotas.
+
+Numeric quotas must stay aligned with frontend/src/lib/plan-quotas.ts
+(WORKSPACE_QUOTAS). Change both when adjusting AI or convert allowances.
+"""
+
 from dataclasses import dataclass
 
 
@@ -49,7 +55,7 @@ PLANS: dict[str, Plan] = {
         extracts_per_day=30,
         extracts_per_month=None,
         ai_per_day=None,
-        ai_per_month=25,
+        ai_per_month=5,
     ),
     "pro": Plan(
         id="pro",
@@ -63,7 +69,7 @@ PLANS: dict[str, Plan] = {
         extracts_per_day=40,
         extracts_per_month=None,
         ai_per_day=None,
-        ai_per_month=500,
+        ai_per_month=100,
     ),
     "premium": Plan(
         id="premium",
@@ -77,7 +83,7 @@ PLANS: dict[str, Plan] = {
         extracts_per_day=200,
         extracts_per_month=None,
         ai_per_day=None,
-        ai_per_month=5000,
+        ai_per_month=1000,
     ),
 }
 

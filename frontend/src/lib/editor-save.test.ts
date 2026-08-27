@@ -9,7 +9,9 @@ async function samplePdf(): Promise<ArrayBuffer> {
   const font = await doc.embedFont(StandardFonts.Helvetica);
   page.drawText("Hello", { x: 40, y: 500, size: 12, font });
   const bytes = await doc.save();
-  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  const copy = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(copy).set(bytes);
+  return copy;
 }
 
 const font = {

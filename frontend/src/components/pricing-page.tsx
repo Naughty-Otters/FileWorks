@@ -17,7 +17,8 @@ import {
 import { reloadSession, setSessionMe, useSession } from "@/lib/session";
 import { SeoFaq } from "@/components/seo-faq";
 import { JsonLd } from "@/components/json-ld";
-import { API_PLAN_CATALOG, PUBLIC_API_PLANS, apiPlanSwitchLabel, canMoveToApiPlan, formatPlanPrice, PLAN_CATALOG, planIsPurchasable, planSwitchLabel, PRICE_ROLES, usageFitsPlan, usageOverLimitReasons } from "@/lib/plans";
+import { API_PLAN_CATALOG, PUBLIC_API_PLANS, apiFreeQuotaSentence, apiPlanSwitchLabel, canMoveToApiPlan, formatPlanPrice, PLAN_CATALOG, planIsPurchasable, planSwitchLabel, PRICE_ROLES, usageFitsPlan, usageOverLimitReasons } from "@/lib/plans";
+import { checkoutCanceledNotice } from "@/lib/plan-quotas";
 import { faqJsonLd, organizationJsonLd, PRICING_FAQS, softwareApplicationJsonLd } from "@/lib/seo";
 import { SITE_URL } from "@/lib/legal";
 import { cn } from "@/lib/utils";
@@ -76,9 +77,7 @@ export function PricingPage() {
       }
       if (params.get("checkout") === "cancel") {
         handledReturn.current = true;
-        setNotice(
-          "Checkout canceled — no charge. You can keep using Free Casual (30 conversions / day) or pick Daily or Expert when you are ready.",
-        );
+        setNotice(checkoutCanceledNotice());
         return;
       }
       const subscribe = params.get("subscribe");
@@ -301,7 +300,7 @@ export function PricingPage() {
             (monthly page cap). AI reading, translation, or Design auto-fill is 1 credit per
             page.{" "}
             <span className="font-medium text-[var(--accent-strong)]">API Free</span> starts at
-            1,000 standard pages and 25 AI pages / month with no card. Combines with any
+            {` ${apiFreeQuotaSentence()} `}with no card. Combines with any
             workspace role.{" "}
             <a href="/docs" className="text-[var(--accent-strong)] hover:underline">
               API docs

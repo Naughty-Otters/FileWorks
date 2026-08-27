@@ -559,7 +559,9 @@ export function PageEditor() {
     try {
       const blob =
         kind === "pdf" && pdfBytesRef.current
-          ? new Blob([await stampPdfBytes(pdfBytesRef.current, regions)], { type: "application/pdf" })
+          ? new Blob([(await stampPdfBytes(pdfBytesRef.current, regions)).slice()], {
+              type: "application/pdf",
+            })
           : await stampImageFile(file, regions);
       let handle = handleRef.current;
       if (mode === "save-as") {

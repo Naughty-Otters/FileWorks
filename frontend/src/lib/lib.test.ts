@@ -627,7 +627,7 @@ describe("plan policy", () => {
     expect(usageOverLimitReasons(overPro, "pro")[0]).toMatch(/50 conversions today/);
     expect(usageOverLimitReasons({ used_day: 31, used_month: 0, used_ai_day: 0, used_ai_month: 30 }, "basic")).toEqual([
       "31 conversions today (limit 30)",
-      "30 AI pages this month (limit 25)",
+      "30 AI pages this month (limit 5)",
     ]);
     expect(planIsPurchasable("pro", { enabled: true, prices: { pro: false }, amounts: { pro: 5 } })).toBe(true);
     expect(planIsPurchasable("basic", { enabled: true, prices: { basic: false }, amounts: { basic: 0 } })).toBe(false);
@@ -673,8 +673,8 @@ describe("API plans", () => {
       "api_business",
     ]);
     expect(canMoveToApiPlan("api_free", "api_builder")).toBe(true);
-    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 10, limit_credits: 5000, remaining_credits: 4990 })).toBe(true);
-    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 500, limit_credits: 5000, remaining_credits: 4500 })).toBe(false);
+    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 3, limit_credits: 1000, remaining_credits: 997 })).toBe(true);
+    expect(canMoveToApiPlan("api_scale", "api_free", { used_credits: 100, limit_credits: 1000, remaining_credits: 900 })).toBe(false);
     expect(planIsPurchasable("api_builder", { enabled: true, prices: { api_builder: true } })).toBe(true);
     expect(planIsPurchasable("api_free", { enabled: true, prices: { api_free: false }, amounts: { api_free: 0 } })).toBe(false);
   });

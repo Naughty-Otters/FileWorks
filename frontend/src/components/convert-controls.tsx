@@ -11,7 +11,7 @@ import {
   type TranslateLanguage,
 } from "@/lib/api";
 import type { MeResponse } from "@/lib/auth";
-import { aiQuotaLeft, convertGate, convertGateTitle } from "@/lib/plans";
+import { aiQuotaLeft, convertGate, convertGateTitle, casualConvertTeaser } from "@/lib/plans";
 import { PlanPolicyDialog } from "@/components/plan-policy-dialog";
 import { PRODUCT, produceActionLabel } from "@/lib/product-copy";
 import { TEMPLATE_CATEGORIES } from "@/design-pad/templates";
@@ -266,7 +266,7 @@ export function ConvertControls({
                 </a>{" "}
                 to convert on{" "}
                 <span className="font-medium text-[var(--accent-strong)]">Free Casual</span>{" "}
-                (30 conversions / day, no credit card) and save history.
+                {casualConvertTeaser()} and save history.
               </p>
             ) : null}
           </div>

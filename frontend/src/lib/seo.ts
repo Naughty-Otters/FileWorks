@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
 import { BUSINESS_NAME, SITE_HOST, SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
+import {
+  apiDocsFaqAnswer,
+  casualAiAllowanceFaqAnswer,
+  casualFreeTierFaqAnswer,
+  casualOfferDescription,
+  freeCasualCardFaqAnswer,
+  pricingCostFaqAnswer,
+} from "@/lib/plan-quotas";
 
 export const DEFAULT_OG_IMAGE = "/opengraph-image.png";
 export const LOGO_URL = `${SITE_URL}/icons/icon-512.png`;
@@ -96,8 +104,7 @@ export const HOME_FAQS: FaqItem[] = [
   },
   {
     question: "Is there a PDF to Markdown API?",
-    answer:
-      "Yes. POST multipart files to /api/v1/convert with a long-lived fw_live_ API key. Examples for curl, Python, and JavaScript are on the API docs. API Free includes 1,000 standard pages and 25 AI pages per month; paid API plans start at $5/month.",
+    answer: apiDocsFaqAnswer(),
   },
   {
     question: "Does FileWorks translate documents?",
@@ -111,8 +118,7 @@ export const HOME_FAQS: FaqItem[] = [
   },
   {
     question: "How much does FileWorks cost?",
-    answer:
-      "Workspace Casual is free (30 conversions/day). Daily is $5/month (500 AI pages) and Expert is $29/month (5,000 AI pages). Convert is included; you pay for AI pages. Convert API Free is free; API Daily $5 and API Expert $29. You can hold a workspace role and an API plan together.",
+    answer: pricingCostFaqAnswer(),
   },
 ];
 
@@ -152,8 +158,7 @@ export const PRICING_FAQS: FaqItem[] = [
   },
   {
     question: "Do I need to pay to try PDF to Markdown?",
-    answer:
-      "No. Sign in for free Casual (30 conversions per day and 25 AI pages). API Free adds 1,000 standard pages and 25 AI pages per month for programmatic convert calls.",
+    answer: freeCasualCardFaqAnswer(),
   },
 ];
 
@@ -194,8 +199,7 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
     faqs: [
       {
         question: "Is PDF to Markdown free on FileWorks?",
-        answer:
-          "Yes on Casual: thirty conversions per day after you sign in, plus 25 AI pages a month. Guest browsing does not convert files. Daily ($5) and Expert ($29) raise AI page allowances.",
+        answer: casualFreeTierFaqAnswer(),
       },
       {
         question: "Can I OCR and translate a PDF in one step?",
@@ -315,8 +319,7 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
     faqs: [
       {
         question: "Is AI OCR and translation included on the free plan?",
-        answer:
-          "Casual includes 25 AI / translation pages per month. Daily and Expert raise that allowance. Convert API charges 1 credit per page when AI reading or translation is on. Standard convert does not use AI credits.",
+        answer: casualAiAllowanceFaqAnswer(),
       },
     ],
     related: ["pdf-to-markdown", "word-to-markdown", "powerpoint-to-markdown"],
@@ -446,7 +449,7 @@ export function softwareApplicationJsonLd() {
         priceCurrency: "USD",
         availability: "https://schema.org/InStock",
         url: absoluteUrl("/pricing"),
-        description: "30 conversions per day with 25 AI / translation pages per month",
+        description: casualOfferDescription(),
       },
       {
         "@type": "Offer",

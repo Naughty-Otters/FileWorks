@@ -9,6 +9,7 @@ import { BrandLockup } from "@/components/brand-lockup";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteFooter } from "@/components/site-footer";
 import { MarketingNav } from "@/components/marketing-nav";
+import { casualLoginBlurb } from "@/lib/plan-quotas";
 
 export function loginRedirectPath(
   search = window.location.search,
@@ -98,9 +99,7 @@ export function LoginScreen() {
               </span>
             </div>
             <p className="mt-1.5 text-sm leading-5 text-[var(--ink)]">
-              Sign in and you start on Free Casual — thirty conversions a day and 25 AI pages a
-              month. No credit card. Daily is $5 when you use AI every workday. Expert is $29 for
-              volume.
+              {casualLoginBlurb()}
             </p>
           </div>
           <div className="mt-8">

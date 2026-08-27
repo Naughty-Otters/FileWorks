@@ -24,7 +24,11 @@ type PdfjsPage = {
     items: Array<PdfTextItem | { type?: string }>;
     styles?: Record<string, { fontFamily?: string }>;
   }>;
-  render: (params: { canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }) => {
+  render: (params: {
+    canvasContext: CanvasRenderingContext2D;
+    canvas: HTMLCanvasElement;
+    viewport: { width: number; height: number };
+  }) => {
     promise: Promise<void>;
   };
 };
@@ -81,7 +85,7 @@ export async function openPdfDocument(data: ArrayBuffer): Promise<OpenedPdf> {
     verbosity: 0,
     useWasm: false,
   });
-  const doc = (await task.promise) as PdfjsDocument;
+  const doc = (await task.promise) as unknown as PdfjsDocument;
   return {
     pageCount: doc.numPages,
     getPage: (pageNumber) => doc.getPage(pageNumber),
@@ -156,7 +160,7 @@ export async function renderPdfPage(
     canvas.style.width = `${Math.ceil(viewport.width)}px`;
     canvas.style.height = `${Math.ceil(viewport.height)}px`;
     try {
-      await page.render({ canvasContext: context, viewport }).promise;
+      await page.render({ canvasContext: context, canvas, viewport }).promise;
     } catch (err) {
       if (isRenderCancelled(err)) {
         return { width: canvas.width, height: canvas.height };

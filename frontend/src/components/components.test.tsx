@@ -668,7 +668,7 @@ describe("ConvertControls", () => {
     );
     await user.click(screen.getByRole("button", { name: "AI Convert" }));
     expect(screen.getByRole("dialog", { name: "Monthly AI allowance reached" })).toBeInTheDocument();
-    expect(screen.getByText(/500 AI pages \/ month/)).toBeInTheDocument();
+    expect(screen.getByText(/100 AI pages \/ month/)).toBeInTheDocument();
   });
 });
 
@@ -800,7 +800,7 @@ describe("LoginScreen", () => {
     expect(screen.getByRole("link", { name: "Continue as guest" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: /See Free Casual/i })).toHaveAttribute("href", "/pricing");
     expect(screen.getByText(/Free · Casual/i)).toBeInTheDocument();
-    expect(screen.getByText(/thirty conversions a day/i)).toBeInTheDocument();
+    expect(screen.getByText(/30 conversions a day/i)).toBeInTheDocument();
     await waitFor(() => expect(api.fetchMe).toHaveBeenCalled());
   });
 
@@ -882,8 +882,8 @@ describe("PricingPage", () => {
     expect(screen.getByText("Role comparison")).toBeInTheDocument();
     expect(screen.getAllByText("$5 / month").length).toBeGreaterThan(0);
     expect(screen.getAllByText("$29 / month").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("500 AI pages / month").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("5,000 AI pages / month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("100 AI pages / month").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1,000 AI pages / month").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Refunds" })).toHaveAttribute("href", "/legal#refunds");
     expect(screen.getByRole("link", { name: "Cancellation" })).toHaveAttribute("href", "/legal#cancellation");
   });
@@ -1377,7 +1377,7 @@ describe("ProfilePage", () => {
     expect(screen.getByRole("heading", { name: "API plan" })).toBeInTheDocument();
     expect(screen.getByText("API AI pages this month")).toBeInTheDocument();
     expect(screen.getAllByText(/0 \/ 25 this month/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Convert API: 25 AI pages \/ month/)).toBeInTheDocument();
+    expect(screen.getByText(/Convert API: 5 AI pages \/ month/)).toBeInTheDocument();
     await user.type(screen.getByPlaceholderText("Key name (optional)"), "CI");
     await user.click(screen.getByRole("button", { name: "Generate key" }));
     expect(api.createApiKey).toHaveBeenCalledWith("CI");

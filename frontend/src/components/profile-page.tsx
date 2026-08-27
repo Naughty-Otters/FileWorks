@@ -22,6 +22,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteFooter } from "@/components/site-footer";
 import { MarketingNav } from "@/components/marketing-nav";
 import { canMoveToApiPlan, canMoveToPlan, formatPlanPrice, PERMISSION_LABELS, PLAN_CATALOG, API_PLAN_CATALOG, apiPlanSwitchLabel, apiUsageOverLimitReasons, planDisplayLabel, planIsPurchasable, planSwitchLabel, usageOverLimitReasons } from "@/lib/plans";
+import { checkoutCanceledNotice } from "@/lib/plan-quotas";
 import { cn } from "@/lib/utils";
 
 function usageLine(used: number, limit: number | null, remaining: number | null, period: string) {
@@ -55,9 +56,7 @@ export function ProfilePage() {
     const params = new URLSearchParams(window.location.search);
     const checkout = params.get("checkout");
     if (checkout === "cancel") {
-      setNotice(
-        "Checkout canceled — no charge. You can keep using Free Casual (30 conversions / day) or pick Daily or Expert when you are ready.",
-      );
+      setNotice(checkoutCanceledNotice());
     }
     const fromPortal = params.get("billing") === "return";
     void (fromPortal ? syncBilling() : reloadSession())

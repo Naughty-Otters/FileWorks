@@ -12,6 +12,7 @@ import { reloadSession, useSession } from "@/lib/session";
 import { SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
 import { organizationJsonLd, softwareApplicationJsonLd } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
+import { apiFreeQuotaSentence } from "@/lib/plans";
 
 type CodeLang = "bash" | "python" | "javascript";
 
@@ -388,7 +389,7 @@ console.log(data.markdown);`,
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             Standard convert is free (monthly page cap). AI reading, translation, or Design{" "}
             <code className="api-inline">design_fill=auto</code> is 1 credit per page. API Free
-            includes 1,000 standard pages and 25 AI pages / month. See{" "}
+            includes {apiFreeQuotaSentence()}. See{" "}
             <a href="/pricing" className="text-[var(--accent-strong)] underline-offset-2 hover:underline">
               Pricing
             </a>

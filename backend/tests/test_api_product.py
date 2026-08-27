@@ -42,13 +42,13 @@ class ApiPlanTests(unittest.TestCase):
         self.assertTrue(is_api_plan("api_scale"))
         self.assertFalse(is_api_plan("pro"))
         self.assertEqual(get_api_plan("nope").id, "api_free")
-        self.assertEqual(get_api_plan("api_business").credits_per_month, 10000)
+        self.assertEqual(get_api_plan("api_business").credits_per_month, 2000)
         self.assertEqual(get_api_plan("api_free").standard_pages_per_month, 1000)
 
     def test_quota_blocks_at_zero(self) -> None:
         plan = get_api_plan("api_free")
         db = MagicMock()
-        db.scalar.return_value = 25
+        db.scalar.return_value = 5
         snap = api_quota_snapshot(db, user_id=uuid4(), plan=plan)
         self.assertEqual(snap["remaining_credits"], 0)
         with self.assertRaises(HTTPException) as ctx:

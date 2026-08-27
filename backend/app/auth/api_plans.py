@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+"""Convert API plan credits and page caps.
+
+Numeric quotas must stay aligned with frontend/src/lib/plan-quotas.ts
+(API_QUOTAS). Change both when adjusting AI credits or standard page caps.
+"""
+
 from dataclasses import dataclass
 
 
@@ -23,28 +29,28 @@ API_PLANS: dict[str, ApiPlan] = {
     "api_free": ApiPlan(
         id="api_free",
         label="API Free",
-        credits_per_month=25,
+        credits_per_month=5,
         standard_pages_per_month=1000,
         max_keys=2,
     ),
     "api_builder": ApiPlan(
         id="api_builder",
         label="API Daily",
-        credits_per_month=500,
+        credits_per_month=100,
         standard_pages_per_month=5000,
         max_keys=5,
     ),
     "api_scale": ApiPlan(
         id="api_scale",
         label="API Expert",
-        credits_per_month=5000,
+        credits_per_month=1000,
         standard_pages_per_month=20000,
         max_keys=20,
     ),
     "api_business": ApiPlan(
         id="api_business",
         label="API Business",
-        credits_per_month=10000,
+        credits_per_month=2000,
         standard_pages_per_month=40000,
         max_keys=20,
     ),

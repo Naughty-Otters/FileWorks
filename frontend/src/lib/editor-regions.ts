@@ -398,10 +398,10 @@ export function mergeLineRuns(regions: EditorRegion[]): EditorRegion[] {
         continue;
       }
       const sameLine = Math.abs(next.box.y - current.box.y) <= Math.max(current.box.h, next.box.h) * 0.4;
-      const gap = next.box.x - (current.box.x + current.box.w);
+      const gap: number = next.box.x - (current.box.x + current.box.w);
       const close = gap >= -0.004 && gap < Math.max(0.012, current.box.h * 0.8);
       if (sameLine && close && current.source === next.source) {
-        const space = gap > 0.003 ? " " : "";
+        const space: string = gap > 0.003 ? " " : "";
         const right = next.box.x + next.box.w;
         const bottom = Math.max(current.box.y + current.box.h, next.box.y + next.box.h);
         current = {

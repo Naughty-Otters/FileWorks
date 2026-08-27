@@ -18,7 +18,7 @@ fileworks/
 - Automatic fallback for scans and images (layout + text recognition when a file has no text layer)
 - Editable Markdown preview on the right; download as Markdown / TXT / HTML / JSON / PDF
 - Light / dark theme toggle
-- Google sign-in with plans: **Guest** (browse only), **Casual** (30 files/day, 25 AI pages/month, free), **Daily** ($5, 40 files/day, 500 AI pages), **Expert** ($29, 200 files/day, 5,000 AI pages)
+- Google sign-in with plans: **Guest**, **Casual**, **Daily** ($5), **Expert** ($29). Quotas live in `frontend/src/lib/plan-quotas.ts` (UI) and `backend/app/auth/plans.py` (enforcement).
 - Stripe subscriptions (optional): each pay grade maps to the matching role after Checkout / webhook confirmation
 - Reading order: **Text** (`.txt` / `.md`) → **Docling** (PDF/images when Prefer structure) → **AnyDoc** → **LLM** (if configured) → **OCR**
 

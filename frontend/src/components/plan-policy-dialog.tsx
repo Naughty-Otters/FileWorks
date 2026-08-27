@@ -6,8 +6,11 @@ import {
   PLAN_RULES,
   convertGateBody,
   convertGateTitle,
+  conversionsPerDayLabel,
+  aiPagesMonthLabel,
   type ConvertGate,
 } from "@/lib/plans";
+import { WORKSPACE_QUOTAS } from "@/lib/plan-quotas";
 import { cn } from "@/lib/utils";
 
 type PlanPolicyDialogProps = {
@@ -75,8 +78,8 @@ export function PlanPolicyDialog({
               </span>
             </div>
             <ul className="mt-2 space-y-1 text-sm leading-5 text-[var(--ink)]">
-              <li>30 conversions / day</li>
-              <li>25 AI reading or translation pages / month</li>
+              <li>{conversionsPerDayLabel(WORKSPACE_QUOTAS.basic.extractsPerDay)}</li>
+              <li>{aiPagesMonthLabel(WORKSPACE_QUOTAS.basic.aiPerMonth, { prefix: "AI reading or translation" })}</li>
               <li>No credit card · document history after sign-in</li>
             </ul>
           </div>
