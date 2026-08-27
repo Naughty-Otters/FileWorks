@@ -29,6 +29,8 @@ import {
 import { AuthBar } from "@/components/auth-bar";
 import { BrandLockup } from "@/components/brand-lockup";
 import { ConvertControls, TargetFormatDialog } from "@/components/convert-controls";
+import { HomeLanding } from "@/components/home-landing";
+import { HomePathChooser } from "@/components/home-path-chooser";
 import { ResultPanel } from "@/components/result-panel";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -48,12 +50,19 @@ import {
 import { BUILT_IN_TEMPLATES, builtInTemplate } from "@/design-pad/templates";
 import { isStaticTemplate } from "@/design-pad/templating";
 import { PRODUCT } from "@/lib/product-copy";
+import {
+  phaseAfterFileSelect,
+  phaseForRestoredFile,
+  type WorkspacePhase,
+} from "@/lib/workspace-flow";
 
 const HistoryPanel = dynamic(
   () => import("@/components/history-panel").then((mod) => mod.HistoryPanel),
 );
 
 const BUILTIN_PREFIX = "builtin:";
+
+export type { WorkspacePhase } from "@/lib/workspace-flow";
 
 function parseBuiltinLayout(layout: string): string | null {
   if (!layout.startsWith(BUILTIN_PREFIX)) return null;
@@ -101,6 +110,7 @@ export function Workspace() {
   const [outputLayout, setOutputLayout] = useState("standard");
   const [returnFileType, setReturnFileType] = useState<"markdown" | "docx" | "pdf">("markdown");
   const [produceAsOpen, setProduceAsOpen] = useState(false);
+  const [phase, setPhase] = useState<WorkspacePhase>("home");
   const [renderedHtml, setRenderedHtml] = useState<string | null>(null);
   const [designMarkdown, setDesignMarkdown] = useState<string | null>(null);
   const [designContext, setDesignContext] = useState<Record<string, unknown> | null>(null);
@@ -232,6 +242,7 @@ export function Workspace() {
   const paintHistoryDetail = useCallback(
     (id: string, detail: ExtractResponse, nextFile: File | null) => {
       if (nextFile) setFile(nextFile);
+      setPhase(phaseForRestoredFile(nextFile));
       setResult({
         id: detail.id ?? id,
         filename: detail.filename,
@@ -328,6 +339,7 @@ export function Workspace() {
       historyCache.putFile(id, fileFromHistory);
       if (selectGen !== historySelectGenRef.current) return;
       setFile(fileFromHistory);
+      setPhase(phaseForRestoredFile(fileFromHistory));
     },
     [],
   );
@@ -850,6 +862,30 @@ export function Workspace() {
     clearDesignState();
     setSelectedId(null);
     setActiveRegionId(null);
+    if (!next) {
+      setPhase("home");
+      return;
+    }
+    setPhase((current) =>
+      phaseAfterFileSelect({
+        currentPhase: current,
+        outputLayout,
+        cleared: false,
+      }),
+    );
+    setPreviewOpen(true);
+  }
+
+  function openEditorWithFile(next: File) {
+    void saveEditorFile(next).then(() => {
+      window.location.assign("/edit");
+    });
+  }
+
+  function enterProduce() {
+    setPhase("produce");
+    setPreviewOpen(true);
+    setHistoryOpen(false);
   }
 
   async function handleSelectHistory(id: string) {
@@ -911,6 +947,7 @@ export function Workspace() {
         setMarkdownDraft("");
         setActiveRegionId(null);
         clearDesignState();
+        setPhase("home");
       }
       await refreshHistory();
     } catch (err) {
@@ -996,7 +1033,13 @@ export function Workspace() {
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
           <BrandLockup asHeading />
           <p className="hidden min-w-0 truncate text-xs text-[var(--ink-muted)] sm:block lg:max-w-[28rem]">
-            {PRODUCT.homeLine}
+            {phase === "produce"
+              ? intentDisplayName
+                ? `Fill ${intentDisplayName}`
+                : PRODUCT.makeFromFile
+              : phase === "choose"
+                ? PRODUCT.whatNext
+                : PRODUCT.homeSupport}
           </p>
           <div className="ml-auto flex items-center gap-1.5">
             <a
@@ -1041,6 +1084,58 @@ export function Workspace() {
       </header>
 
       <main className="relative z-10 mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col overflow-hidden px-4 py-3 md:px-6 md:py-4">
+        {phase === "home" ? (
+          <HomeLanding
+            disabled={uiLocked}
+            intentName={intentDisplayName}
+            onFileSelect={(next) => handleFileSelect(next)}
+            onOpenHistory={
+              authStatus === "signed-in"
+                ? () => {
+                    setPhase("produce");
+                    setHistoryOpen(true);
+                  }
+                : undefined
+            }
+          />
+        ) : phase === "choose" && file ? (
+          historyOpen ? (
+            <div className="flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden">
+              <div id="history-panel" className="hidden min-h-0 w-52 shrink-0 overflow-hidden md:block">
+                <HistoryPanel
+                  items={history}
+                  selectedId={selectedId}
+                  loading={historyLoading}
+                  disabled={uiLocked}
+                  storageBackend={storageBackend}
+                  requiresLogin={
+                    authStatus !== "signed-in" || (me != null && !me.permissions?.["history.read"])
+                  }
+                  onSelect={handleSelectHistory}
+                  onDelete={handleDeleteHistory}
+                  onCollapse={() => setHistoryOpen(false)}
+                />
+              </div>
+              <HomePathChooser
+                file={file}
+                previewUrl={previewUrl}
+                disabled={uiLocked}
+                onEdit={() => openEditorWithFile(file)}
+                onProduce={enterProduce}
+                onReplace={() => handleFileSelect(null)}
+              />
+            </div>
+          ) : (
+            <HomePathChooser
+              file={file}
+              previewUrl={previewUrl}
+              disabled={uiLocked}
+              onEdit={() => openEditorWithFile(file)}
+              onProduce={enterProduce}
+              onReplace={() => handleFileSelect(null)}
+            />
+          )
+        ) : (
         <div
           className={cn(
             "grid min-h-0 min-w-0 flex-1 gap-3 overflow-hidden lg:gap-3",
@@ -1107,15 +1202,7 @@ export function Workspace() {
                 activeRegionId={activeRegionId}
                 onActiveRegionChange={setActiveRegionId}
                 onFileSelect={handleFileSelect}
-                onEditText={
-                  file
-                    ? () => {
-                        void saveEditorFile(file).then(() => {
-                          window.location.assign("/edit");
-                        });
-                      }
-                    : undefined
-                }
+                onEditText={file ? () => openEditorWithFile(file) : undefined}
                 onCollapse={() => {
                   restoreShowSourceFocusRef.current = true;
                   setPreviewOpen(false);
@@ -1158,6 +1245,7 @@ export function Workspace() {
             />
           </div>
         </div>
+        )}
         {produceAsDialog}
       </main>
       <SiteFooter compact />

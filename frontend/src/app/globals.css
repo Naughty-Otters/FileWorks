@@ -126,6 +126,66 @@ body {
   opacity: 0.9;
 }
 
+@keyframes home-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes home-drop-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 28%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in oklab, var(--accent) 0%, transparent);
+  }
+}
+
+.home-rise {
+  animation: home-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.home-rise-1 {
+  animation-delay: 0.04s;
+}
+.home-rise-2 {
+  animation-delay: 0.1s;
+}
+.home-rise-3 {
+  animation-delay: 0.16s;
+}
+.home-rise-4 {
+  animation-delay: 0.22s;
+}
+.home-rise-5 {
+  animation-delay: 0.28s;
+}
+
+.home-landing-glow {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 18%, color-mix(in oklab, var(--accent) 18%, transparent), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 90%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 65%);
+}
+
+.home-drop-cta {
+  animation:
+    home-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both,
+    home-drop-breathe 2.8s ease-in-out 0.8s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-rise,
+  .home-drop-cta {
+    animation: none;
+  }
+}
+
 .panel {
   background: var(--bg-panel);
   border: 1px solid var(--line);

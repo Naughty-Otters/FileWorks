@@ -237,7 +237,7 @@ export function UploadPanel({
                 <p className="text-xs leading-relaxed text-[var(--ink-muted)]">
                   {intentName
                     ? `Then fill ${intentName} from this file.`
-                    : "Choose what to produce on the right, then convert this file."}
+                    : PRODUCT.sourceEmptyHint}
                 </p>
               </div>
             </div>
@@ -254,7 +254,7 @@ export function UploadPanel({
               >
                 <Upload size={16} className="shrink-0" aria-hidden />
                 <span className="min-w-0 truncate">
-                  {intentName ? `Choose file for ${intentName}` : "Drop or choose a file"}
+                  {intentName ? `Choose file for ${intentName}` : PRODUCT.dropOrChoose}
                 </span>
               </button>
             </div>
@@ -296,13 +296,13 @@ export function UploadPanel({
             {onEditText && isEditorSourceFile(file) ? (
               <p className="pointer-events-none absolute bottom-4 left-4 right-4 text-center text-[11px] text-[var(--ink-muted)]">
                 <span className="pointer-events-auto rounded-full bg-[var(--bg)]/90 px-3 py-1.5">
-                  Want to change text on the page?{" "}
+                  {PRODUCT.editOnPage}?{" "}
                   <button
                     type="button"
                     onClick={onEditText}
                     className="font-medium text-[var(--accent-strong)] underline-offset-2 hover:underline"
                   >
-                    Open in Editor
+                    Open {PRODUCT.editor}
                   </button>
                 </span>
               </p>

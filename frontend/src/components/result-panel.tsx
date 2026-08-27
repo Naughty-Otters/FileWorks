@@ -23,7 +23,7 @@ import {
 import { applyMarkdownFormat, type FormatCommand, type FormatExtra } from "@/lib/markdown-format";
 import { joinLines, lineRangeForPages, PAGES_PER_VIEW, replaceLineRange, splitLines } from "@/lib/markdown-pages";
 import { cn } from "@/lib/utils";
-import { PRODUCT } from "@/lib/product-copy";
+import { PRODUCT, targetEmptyTitle } from "@/lib/product-copy";
 import { EditableMarkdownPreview, type MarkdownPreviewHandle } from "@/components/editable-markdown-preview";
 import { MarkdownToolbar, MarkdownToolbarToggle } from "@/components/markdown-toolbar";
 import { RegionList } from "@/components/region-overlay";
@@ -376,7 +376,7 @@ export function ResultPanel({
                 ? `${result.page_count} page${result.page_count === 1 ? "" : "s"}`
                 : intentName
                   ? `Ready for ${intentName}`
-                  : "Choose what to produce"}
+                  : PRODUCT.chooseDesign}
             </p>
           </div>
           {actions ? <div className="flex shrink-0 items-center">{actions}</div> : null}
@@ -540,14 +540,14 @@ export function ResultPanel({
             <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto_minmax(0,1fr)] overflow-y-auto px-5 py-6 text-center sm:px-8">
               <div className="flex min-h-0 flex-col items-center justify-end pb-5">
                 <div className="min-w-0 w-full max-w-sm space-y-2">
-                  <p className="font-[family-name:var(--font-display)] text-xl tracking-tight text-[var(--ink)]">
-                    {intentName ? `You’ll get ${intentName}` : "You’ll get Markdown"}
-                  </p>
-                  <p className="text-xs leading-relaxed text-[var(--ink-muted)]">
-                    {intentName
-                      ? "Drop a source file on the left, then Fill — the finished Design lands here."
-                      : "Choose what to produce, drop a source file, then Convert."}
-                  </p>
+                <p className="font-[family-name:var(--font-display)] text-xl tracking-tight text-[var(--ink)]">
+                  {targetEmptyTitle(intentName)}
+                </p>
+                <p className="text-xs leading-relaxed text-[var(--ink-muted)]">
+                  {intentName
+                    ? "Source is ready on the left. Press Fill when you are."
+                    : PRODUCT.targetEmptyHint}
+                </p>
                 </div>
               </div>
               <div className="flex justify-center">
@@ -563,7 +563,7 @@ export function ResultPanel({
                   >
                     <FileOutput size={16} className="shrink-0" aria-hidden />
                     <span className="min-w-0 truncate">
-                      {intentName ? "Change what to produce" : "Choose what to produce"}
+                      {intentName ? PRODUCT.changeDesign : PRODUCT.chooseDesign}
                     </span>
                   </button>
                 ) : (

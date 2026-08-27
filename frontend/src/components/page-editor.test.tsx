@@ -96,7 +96,7 @@ describe("PageEditor", () => {
     expect(screen.getByRole("button", { name: "Save as" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Redo" })).toBeDisabled();
-    expect(screen.getByRole("link", { name: /Need Markdown or a Design/i })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: /Produce a Design/i })).toHaveAttribute("href", "/");
     expect(screen.getAllByRole("link", { name: "Editor" })[0]).toHaveAttribute("href", "/edit");
     expect(screen.queryByRole("button", { name: "Convert" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "FileWorks" })).toHaveAttribute("href", "/");

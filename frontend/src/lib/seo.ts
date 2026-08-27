@@ -77,9 +77,9 @@ export const INPUT_FORMATS = [
 export const OUTPUT_FORMATS = ["Markdown", "TXT", "HTML", "JSON", "Word (.docx)", "print PDF"] as const;
 
 export const SITE_DESCRIPTION =
-  "From any file → Markdown or a finished Design. Convert PDF, Word, Excel, PowerPoint, images, and scans online; optionally AI-read and translate; fill invoices, family schedules, agendas, and more from that content. Workspace from free Casual; Convert API from free with AI page credits.";
+  "Drop a file to edit text on the page, or produce a finished Design. Convert PDF, Word, Excel, PowerPoint, images, and scans; optionally AI-read and translate; fill Markdown reports, invoices, family schedules, agendas, and more. Workspace from free Casual; Convert API from free with AI page credits.";
 
-export const SITE_TAGLINE = "Drop a file. Choose what to produce.";
+export const SITE_TAGLINE = "Drop a file. Edit the page, or produce a Design.";
 
 export type FaqItem = { question: string; answer: string };
 

@@ -243,7 +243,7 @@ describe("UploadPanel", () => {
         onEditText={onEditText}
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: "Open in Editor" }));
+    await userEvent.click(screen.getByRole("button", { name: "Open Editor" }));
     expect(onEditText).toHaveBeenCalled();
   });
 
@@ -256,8 +256,8 @@ describe("UploadPanel", () => {
         onCollapse={vi.fn()}
       />,
     );
-    expect(screen.getAllByText(/Drop a file\. Choose what to produce/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Choose what to produce on the right/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Drop a file\. Edit the page/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Choose a Design, then convert/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument();
   });
 
@@ -443,7 +443,9 @@ describe("ConvertControls", () => {
       />,
     );
     expect(screen.getByRole("button", { name: "Fill Client invoice" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Fill Client invoice" })).toHaveTextContent("");
+    expect(screen.getByRole("button", { name: "Fill Client invoice" })).toHaveTextContent(
+      "Fill Client invoice",
+    );
     await user.click(screen.getByRole("button", { name: "Fill Client invoice" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Sign in to convert")).toBeInTheDocument();
@@ -485,7 +487,7 @@ describe("ConvertControls", () => {
       />,
     );
     const run = screen.getByRole("button", { name: "AI Convert" });
-    expect(run).toHaveTextContent("");
+    expect(run).toHaveTextContent("AI Convert");
     await user.click(run);
     expect(onConvert).toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Options" }));
@@ -535,7 +537,7 @@ describe("ConvertControls", () => {
     );
     const convert = screen.getByRole("button", { name: "Convert" });
     expect(convert).toBeEnabled();
-    expect(convert).toHaveTextContent("");
+    expect(convert).toHaveTextContent("Convert");
     await user.click(convert);
     expect(onConvert).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog", { name: "Sign in to convert" })).toBeInTheDocument();
@@ -1586,7 +1588,7 @@ describe("ResultPanel", () => {
       <ResultPanel result={null} loading={false} error={null} view="markdown" onViewChange={vi.fn()} />,
     );
     expect(screen.getByText(/You’ll get Markdown/i)).toBeInTheDocument();
-    expect(screen.getByText(/Choose what to produce, drop a source file/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pick a Design on the right/i)).toBeInTheDocument();
     rerender(
       <ResultPanel
         result={null}
@@ -1599,7 +1601,7 @@ describe("ResultPanel", () => {
       />,
     );
     expect(screen.getByText(/You’ll get Client invoice/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Change what to produce/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Change Design/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Produce as: Client invoice/i })).toHaveTextContent(
       "Client invoice",
     );

@@ -5,6 +5,8 @@ import type { MeResponse } from "@/lib/auth";
 import * as api from "@/lib/api";
 import { historyCache } from "@/lib/history-cache";
 import { setSession } from "@/lib/auth";
+import * as sessionFiles from "@/lib/workspace-session";
+import { PRODUCT } from "@/lib/product-copy";
 
 const guestMe: MeResponse = {
   user: { id: "u1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
@@ -122,6 +124,19 @@ vi.mock("@/lib/prefetch", () => ({
   prefetchHeavyUi: vi.fn(async () => []),
 }));
 
+const pastDocxItem = {
+  id: "h2",
+  filename: "notes.docx",
+  content_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  size_bytes: 24,
+  created_at: "2026-01-02T12:00:00.000Z",
+  engine: "anydoc",
+  page_count: 1,
+  storage_backend: "local",
+  has_markdown: true,
+  has_json: false,
+};
+
 describe("Workspace", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -141,7 +156,31 @@ describe("Workspace", () => {
     vi.mocked(api.fetchMe).mockImplementation(async () => guestMe);
   });
 
-  it("lands empty with history visible and only loads blobs on click", async () => {
+  async function openHistory(user: ReturnType<typeof userEvent.setup>) {
+    await waitFor(() => expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "History" }));
+    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
+  }
+
+  async function chooseProduceFromHistory(user: ReturnType<typeof userEvent.setup>) {
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Produce a Design/i })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: /Produce a Design/i }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Convert" })).toBeInTheDocument());
+  }
+
+  async function uploadAndProduce(user: ReturnType<typeof userEvent.setup>, file: File) {
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, file);
+    const make = await screen
+      .findByRole("button", { name: /Produce a Design/i })
+      .catch(() => null);
+    if (make) await user.click(make);
+    await waitFor(() => expect(screen.getByRole("button", { name: /Convert|Fill /i })).toBeInTheDocument());
+  }
+
+  it("lands on a home drop zone and opens history on demand", async () => {
     const user = userEvent.setup();
     render(<Workspace />);
     await waitFor(() => expect(screen.getByRole("link", { name: "FileWorks" })).toBeInTheDocument());
@@ -149,13 +188,14 @@ describe("Workspace", () => {
     expect(screen.getAllByRole("link", { name: "Editor" })[0]).toHaveAttribute("href", "/edit");
     expect(screen.getAllByRole("link", { name: "API" })[0]).toHaveAttribute("href", "/docs");
     expect(screen.getByRole("link", { name: "About" })).toHaveAttribute("href", "/about");
-    expect(screen.getAllByText(/Drop a file\. Choose what to produce/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Choose what to produce on the right/i)).toBeInTheDocument();
+    expect(screen.getByText(/Drop a file\. Edit the page/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Fix text where it sits/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument();
-    expect(screen.getByText(/You’ll get Markdown/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Choose what to produce" })).toBeInTheDocument();
+    expect(screen.queryByText(/You’ll get Markdown/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
+    expect(document.getElementById("history-panel")).not.toBeInTheDocument();
+
+    await openHistory(user);
     expect(document.getElementById("history-panel")?.className).toContain("[grid-area:history]");
     expect(api.fetchHistoryDetail).not.toHaveBeenCalled();
     expect(api.fetchHistoryFile).not.toHaveBeenCalled();
@@ -163,7 +203,11 @@ describe("Workspace", () => {
     await user.click(screen.getByText("old.pdf"));
     await waitFor(() => expect(api.fetchHistoryDetail).toHaveBeenCalled());
     expect(api.fetchHistoryFile).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /Edit text on the page/i })).toBeInTheDocument();
+    await chooseProduceFromHistory(user);
 
+    await user.click(screen.getByLabelText("Show history"));
+    await waitFor(() => expect(screen.getByLabelText("Hide history")).toBeInTheDocument());
     await user.click(screen.getByLabelText("Hide history"));
     expect(screen.queryByLabelText("Hide history")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Show history")).toBeInTheDocument();
@@ -178,10 +222,24 @@ describe("Workspace", () => {
     await waitFor(() => expect(api.deleteHistoryItem).toHaveBeenCalled());
   });
 
+  it("asks Edit vs Produce after a file lands", async () => {
+    const user = userEvent.setup();
+    render(<Workspace />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument());
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, new File(["pdf"], "letter.pdf", { type: "application/pdf" }));
+    expect(await screen.findAllByText(/What do you want to do/i)).not.toHaveLength(0);
+    expect(screen.getByRole("button", { name: /Edit text on the page/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Produce a Design/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Produce a Design/i }));
+    expect(await screen.findByText(/You’ll get Markdown/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Convert" })).toBeInTheDocument();
+  });
+
   it("keeps a far-left global pane toggle list when any pane is closed", async () => {
     const user = userEvent.setup();
     render(<Workspace />);
-    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
+    await openHistory(user);
 
     expect(screen.queryByRole("navigation", { name: "Workspace panes" })).not.toBeInTheDocument();
 
@@ -223,11 +281,14 @@ describe("Workspace", () => {
           resolveHistory = resolve;
         }),
     );
+    const user = userEvent.setup();
     render(<Workspace />);
     await waitFor(() => expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument());
     expect(screen.queryByLabelText("Loading workspace")).not.toBeInTheDocument();
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     expect(fileInput).not.toBeDisabled();
+    await waitFor(() => expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "History" }));
     resolveHistory({ items: [{ ...pastItem }], storage_backend: "local" });
     await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
   });
@@ -244,24 +305,29 @@ describe("Workspace", () => {
     expect(screen.queryByText("Loading history…")).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument());
     expect(screen.getAllByRole("link", { name: "Sign in" })[0]).toHaveAttribute("href", "/login");
-    expect(screen.getByText(/to save conversions and see history/i)).toBeInTheDocument();
-    expect(screen.getByText(/You’ll get Markdown/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "History" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Drop a file\. Edit the page/i)).toBeInTheDocument();
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     expect(fileInput).not.toBeDisabled();
     expect(api.fetchHistory).not.toHaveBeenCalled();
   });
 
   it("applies ?produce= Intent from the Designs library deep link", async () => {
+    const user = userEvent.setup();
     window.history.replaceState({}, "", "/?produce=invoice");
     render(<Workspace />);
+    await waitFor(() =>
+      expect(screen.getByText(/Drop a file to fill Client invoice/i)).toBeInTheDocument(),
+    );
+    expect(screen.getByRole("button", { name: "Upload document" })).toHaveTextContent(
+      /Choose file for Client invoice/i,
+    );
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, new File(["pdf"], "bill.pdf", { type: "application/pdf" }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /Fill Client invoice/i })).toBeInTheDocument(),
     );
     expect(screen.getByText(/You’ll get Client invoice/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Upload document" })).toHaveTextContent(
-      /Choose file for Client invoice/i,
-    );
-    expect(screen.getByText(/Then fill Client invoice/i)).toBeInTheDocument();
   });
 
   it("opens Produce as from the Target Intent control", async () => {
@@ -274,26 +340,43 @@ describe("Workspace", () => {
     });
     render(<Workspace />);
     await waitFor(() => expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Choose what to produce" }));
+    await uploadAndProduce(user, new File(["x"], "note.png", { type: "image/png" }));
+    await user.click(screen.getByRole("button", { name: "Choose a Design" }));
     expect(screen.getByRole("dialog", { name: "Produce as" })).toBeInTheDocument();
     expect(screen.getByRole("listbox", { name: "Starter design" })).toBeInTheDocument();
+  });
+
+  it("asks Edit vs Produce when opening a PDF from history", async () => {
+    const user = userEvent.setup();
+    render(<Workspace />);
+    await openHistory(user);
+    await user.click(screen.getByTitle("old.pdf"));
+    await waitFor(() => expect(api.fetchHistoryDetail).toHaveBeenCalled());
+    expect(screen.getByRole("button", { name: /Edit text on the page/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Produce a Design/i })).toBeInTheDocument();
+    await chooseProduceFromHistory(user);
+    expect(await screen.findByText("restored")).toBeInTheDocument();
   });
 
   it("reuses cached detail and file on a second click", async () => {
     const user = userEvent.setup();
     render(<Workspace />);
-    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
+    await openHistory(user);
 
     const historyRow = () => screen.getByTitle("old.pdf");
     await user.click(historyRow());
     await waitFor(() => expect(api.fetchHistoryDetail).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(api.fetchHistoryFile).toHaveBeenCalledTimes(1));
+    await chooseProduceFromHistory(user);
     await waitFor(() => expect(screen.getByText("restored")).toBeInTheDocument());
 
     vi.mocked(api.fetchHistoryDetail).mockClear();
     vi.mocked(api.fetchHistoryFile).mockClear();
 
+    await user.click(screen.getByLabelText("Show history"));
+    await waitFor(() => expect(screen.getByTitle("old.pdf")).toBeInTheDocument());
     await user.click(historyRow());
+    await chooseProduceFromHistory(user);
     await waitFor(() => expect(screen.getByText("restored")).toBeInTheDocument());
     expect(api.fetchHistoryDetail).not.toHaveBeenCalled();
     expect(api.fetchHistoryFile).not.toHaveBeenCalled();
@@ -302,10 +385,8 @@ describe("Workspace", () => {
   it("seeds cache from convert so opening that history row skips detail fetch", async () => {
     const user = userEvent.setup();
     render(<Workspace />);
-    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-    await user.upload(input, new File(["abc"], "note.png", { type: "image/png" }));
-    await waitFor(() => expect(screen.getByText("note.png")).toBeInTheDocument());
+    await openHistory(user);
+    await uploadAndProduce(user, new File(["abc"], "note.png", { type: "image/png" }));
     await user.click(screen.getByRole("button", { name: "Convert" }));
     await waitFor(() => expect(screen.getByText("1 page")).toBeInTheDocument());
     await waitFor(() => expect(screen.getByTitle("a.png")).toBeInTheDocument());
@@ -314,6 +395,7 @@ describe("Workspace", () => {
     vi.mocked(api.fetchHistoryFile).mockClear();
 
     await user.click(screen.getByTitle("a.png"));
+    await chooseProduceFromHistory(user);
     await waitFor(() => expect(screen.getByText("hi")).toBeInTheDocument());
     expect(api.fetchHistoryDetail).not.toHaveBeenCalled();
     expect(api.fetchHistoryFile).not.toHaveBeenCalled();
@@ -322,10 +404,9 @@ describe("Workspace", () => {
   it("converts a new file and prepends it in history", async () => {
     const user = userEvent.setup();
     render(<Workspace />);
-    await waitFor(() => expect(screen.getByText("old.pdf")).toBeInTheDocument());
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-    await user.upload(input, new File(["abc"], "note.png", { type: "image/png" }));
-    await waitFor(() => expect(screen.getByText("note.png")).toBeInTheDocument());
+    await openHistory(user);
+    await uploadAndProduce(user, new File(["abc"], "note.png", { type: "image/png" }));
+    expect(screen.getByText("old.pdf")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Convert" }));
     await waitFor(() => expect(screen.getByText("1 page")).toBeInTheDocument());
     expect(screen.queryByText(/AnyDoc|PP-OCR|Paddle/i)).not.toBeInTheDocument();
@@ -339,5 +420,67 @@ describe("Workspace", () => {
     await user.click(screen.getByLabelText("Show source"));
     expect(screen.getByLabelText("Hide source")).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Workspace panes" })).not.toBeInTheDocument();
+  });
+
+  it("opens Editor from the path chooser after upload", async () => {
+    const user = userEvent.setup();
+    const saveEditor = vi.spyOn(sessionFiles, "saveEditorFile").mockResolvedValue();
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+
+    render(<Workspace />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument());
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, new File(["pdf"], "letter.pdf", { type: "application/pdf" }));
+    await user.click(await screen.findByRole("button", { name: /Edit text on the page/i }));
+    await waitFor(() => expect(saveEditor).toHaveBeenCalled());
+    expect(assign).toHaveBeenCalledWith("/edit");
+  });
+
+  it("returns to the home landing when Replace is clicked on the chooser", async () => {
+    const user = userEvent.setup();
+    render(<Workspace />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Upload document" })).toBeInTheDocument());
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(input, new File(["pdf"], "letter.pdf", { type: "application/pdf" }));
+    expect(await screen.findByRole("button", { name: /Produce a Design/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Replace" }));
+    expect(await screen.findByText(PRODUCT.homeLine)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Edit text on the page/i })).not.toBeInTheDocument();
+  });
+
+  it("opens produce directly for an office file from history", async () => {
+    const user = userEvent.setup();
+    historyState.items = [{ ...pastDocxItem }];
+    vi.mocked(api.fetchHistoryDetail).mockResolvedValueOnce({
+      id: "h2",
+      filename: "notes.docx",
+      content_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      size_bytes: 24,
+      created_at: "2026-01-02T12:00:00.000Z",
+      engine: "anydoc",
+      page_count: 1,
+      format: "both",
+      markdown: "# notes",
+      json: {},
+      pages: [],
+      storage_backend: "local",
+      file_url: "/api/history/h2/file",
+    });
+    vi.mocked(api.fetchHistoryFile).mockResolvedValueOnce(
+      new File(["doc"], "notes.docx", {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      }),
+    );
+
+    render(<Workspace />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "History" }));
+    await waitFor(() => expect(screen.getByText("notes.docx")).toBeInTheDocument());
+    await user.click(screen.getByText("notes.docx"));
+    await waitFor(() => expect(api.fetchHistoryDetail).toHaveBeenCalled());
+    expect(screen.queryByRole("button", { name: /Edit text on the page/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Convert" })).toBeInTheDocument();
+    expect(await screen.findByText("notes")).toBeInTheDocument();
   });
 });

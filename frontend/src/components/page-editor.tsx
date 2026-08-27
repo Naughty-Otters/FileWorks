@@ -733,7 +733,7 @@ export function PageEditor() {
             href="/"
             className="ml-auto text-xs text-[var(--ink-muted)] underline-offset-2 hover:text-[var(--accent-strong)] hover:underline"
           >
-            Need Markdown or a Design? Convert.
+            {PRODUCT.needProduce}
           </a>
         </div>
 

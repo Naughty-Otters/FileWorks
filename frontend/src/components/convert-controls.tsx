@@ -304,15 +304,16 @@ export function ConvertControls({
             onConvert();
           }}
           className={cn(
-            "ml-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full border transition",
+            "ml-0.5 inline-flex h-8 items-center justify-center gap-1.5 rounded-full border px-3 text-sm font-medium transition",
             "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]",
             "disabled:cursor-not-allowed disabled:opacity-40",
             fileReady
-              ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent-strong)] enabled:hover:border-[var(--accent-strong)] enabled:hover:bg-[color-mix(in_oklab,var(--accent-soft)_70%,var(--accent)_18%)]"
+              ? "border-[var(--accent)] bg-[var(--accent)] text-white dark:text-[#06281d] enabled:hover:bg-[var(--accent-strong)]"
               : "border-[var(--line)] bg-[var(--bg-panel)] text-[var(--ink-muted)]",
           )}
         >
-          <Play size={15} strokeWidth={2.25} aria-hidden />
+          <Play size={14} strokeWidth={2.25} aria-hidden />
+          <span className="max-w-[9rem] truncate sm:max-w-[14rem]">{actionLabel}</span>
         </button>
       )}
       {policyOpen ? (
@@ -380,11 +381,7 @@ export function TargetFormatDialog({
             >
               {PRODUCT.produceAs}
             </p>
-            <p className="mt-1 text-sm leading-6 text-[var(--ink-muted)]">
-              {PRODUCT.homeLine} Markdown is the default. Choose a starter design (family schedules,
-              invoices, agendas, plans) or one of your saved designs to fill from the converted
-              document.
-            </p>
+            <p className="mt-1 text-sm leading-6 text-[var(--ink-muted)]">{PRODUCT.produceAsIntro}</p>
           </div>
           <button
             type="button"

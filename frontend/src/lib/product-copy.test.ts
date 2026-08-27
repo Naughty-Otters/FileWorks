@@ -1,15 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { PRODUCT, produceActionLabel } from "@/lib/product-copy";
+import { PRODUCT, produceActionLabel, targetEmptyTitle } from "@/lib/product-copy";
 
 describe("product-copy", () => {
-  it("frames Source meets Intent in the home line and one-liner", () => {
+  it("frames edit and produce in the home line and one-liner", () => {
     expect(PRODUCT.homeLine).toMatch(/Drop a file/i);
-    expect(PRODUCT.homeLine).toMatch(/produce/i);
+    expect(PRODUCT.homeLine).toMatch(/produce a Design/i);
+    expect(PRODUCT.homeLine).not.toMatch(/Markdown or/i);
+    expect(PRODUCT.makeFromFile).toMatch(/Produce a Design/i);
+    expect(PRODUCT.chooseDesign).toMatch(/Choose a Design/i);
     expect(PRODUCT.editorLine).toMatch(/Open a PDF or image/i);
     expect(PRODUCT.editor).toBe("Editor");
-    expect(PRODUCT.oneLiner.toLowerCase()).toContain("markdown");
     expect(PRODUCT.oneLiner.toLowerCase()).toContain("design");
     expect(PRODUCT.produceFromFile).toMatch(/Produce from file/i);
+  });
+
+  it("names the default Design in the empty target headline", () => {
+    expect(targetEmptyTitle(null)).toBe(`You’ll get ${PRODUCT.defaultDesignName}`);
+    expect(targetEmptyTitle("Client invoice")).toBe("You’ll get Client invoice");
   });
 
   it("builds Convert vs Fill action labels", () => {
