@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, IBM_Plex_Mono, Manrope } from "next/font/google";
 import { CanonicalRedirect } from "@/components/canonical-redirect";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BUSINESS_NAME, SITE_URL } from "@/lib/legal";
 import { DEFAULT_OG_IMAGE, PRIMARY_KEYWORDS, SITE_DESCRIPTION, SITE_TAGLINE } from "@/lib/seo";
@@ -116,6 +117,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script src="/config.js" />
       </head>
       <body className={`${body.className} min-h-full antialiased`}>
+        <GoogleAnalytics />
         <CanonicalRedirect />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
