@@ -37,7 +37,7 @@ class PlansTests(unittest.TestCase):
         self.assertTrue(perms["extract.ai"])
         self.assertTrue(perms["extract.translate"])
         self.assertTrue(perms["history.read"])
-        self.assertEqual(get_plan("basic").ai_per_month, 2)
+        self.assertEqual(get_plan("basic").ai_per_month, 25)
         self.assertIsNone(get_plan("basic").ai_per_day)
         self.assertEqual(get_plan("basic").extracts_per_day, 15)
         self.assertFalse(perms["editor.download"])
@@ -50,12 +50,12 @@ class PlansTests(unittest.TestCase):
         self.assertTrue(perms["editor.download"])
         self.assertEqual(get_plan("pro").extracts_per_day, 40)
         self.assertIsNone(get_plan("pro").extracts_per_month)
-        self.assertEqual(get_plan("pro").ai_per_month, 100)
+        self.assertEqual(get_plan("pro").ai_per_month, 500)
         self.assertTrue(get_plan("pro").editor_download)
         self.assertFalse(get_plan("anonymous").editor_download)
         self.assertTrue(get_plan("premium").editor_download)
         self.assertEqual(get_plan("premium").extracts_per_day, 200)
-        self.assertEqual(get_plan("premium").ai_per_month, 1000)
+        self.assertEqual(get_plan("premium").ai_per_month, 5000)
 
     def test_plan_upgrade_ranks(self) -> None:
         self.assertTrue(can_change_plan("basic", "pro"))
@@ -93,7 +93,7 @@ class QuotaTests(unittest.TestCase):
         snap = quota_snapshot(None, user_id=None, plan=get_plan("basic"))
         self.assertEqual(snap["remaining_day"], 15)
         self.assertIsNone(snap["remaining_ai_day"])
-        self.assertEqual(snap["remaining_ai_month"], 2)
+        self.assertEqual(snap["remaining_ai_month"], 25)
         assert_can_extract(None, user_id=None, plan=get_plan("basic"))
         assert_can_use_ai(None, user_id=None, plan=get_plan("basic"), use_ai=True, translate=True)
 
@@ -208,12 +208,12 @@ class QuotaTests(unittest.TestCase):
 
             def scalar(self, _q):
                 self.n += 1
-                return 100 if self.n >= 4 else 0
+                return 500 if self.n >= 4 else 0
 
         with self.assertRaises(HTTPException) as ctx:
             assert_can_use_ai(FakeDb(), user_id=uuid4(), plan=plan, use_ai=True, translate=False)
         self.assertEqual(ctx.exception.detail["code"], "quota_ai_month")
-        self.assertEqual(ctx.exception.detail["limit"], 100)
+        self.assertEqual(ctx.exception.detail["limit"], 500)
 
     def test_ai_forbidden_when_plan_disallows(self) -> None:
         from dataclasses import replace

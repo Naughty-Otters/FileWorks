@@ -58,7 +58,7 @@ PLANS: dict[str, Plan] = {
         extracts_per_day=15,
         extracts_per_month=None,
         ai_per_day=None,
-        ai_per_month=2,
+        ai_per_month=25,
     ),
     "pro": Plan(
         id="pro",
@@ -73,7 +73,7 @@ PLANS: dict[str, Plan] = {
         extracts_per_day=40,
         extracts_per_month=None,
         ai_per_day=None,
-        ai_per_month=100,
+        ai_per_month=500,
     ),
     "premium": Plan(
         id="premium",
@@ -88,7 +88,7 @@ PLANS: dict[str, Plan] = {
         extracts_per_day=200,
         extracts_per_month=None,
         ai_per_day=None,
-        ai_per_month=1000,
+        ai_per_month=5000,
     ),
 }
 

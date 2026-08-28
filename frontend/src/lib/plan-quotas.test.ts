@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  API_FREE,
   API_QUOTAS,
   CASUAL,
   DAILY,
@@ -38,19 +37,52 @@ import {
 } from "@/lib/plans";
 
 describe("plan-quotas", () => {
-  it("keeps thinned free-tier counts as the catalog source of truth", () => {
-    expect(CASUAL.extractsPerDay).toBe(15);
-    expect(CASUAL.aiPerMonth).toBe(2);
-    expect(API_FREE.creditsPerMonth).toBe(2);
-    expect(API_FREE.standardPagesPerMonth).toBe(500);
-    expect(API_FREE.maxKeys).toBe(1);
+  it("keeps restored AI pools as the catalog source of truth", () => {
+    expect(CASUAL).toMatchObject({ priceUsd: 0, extractsPerDay: 15, aiPerMonth: 25 });
+    expect(DAILY).toMatchObject({ priceUsd: 5, extractsPerDay: 40, aiPerMonth: 500 });
+    expect(EXPERT).toMatchObject({ priceUsd: 29, extractsPerDay: 200, aiPerMonth: 5000 });
+    expect(API_QUOTAS.api_free).toMatchObject({
+      priceUsd: 0,
+      creditsPerMonth: 25,
+      standardPagesPerMonth: 1000,
+      maxKeys: 2,
+    });
+    expect(API_QUOTAS.api_builder).toMatchObject({
+      priceUsd: 5,
+      creditsPerMonth: 500,
+      standardPagesPerMonth: 5000,
+      maxKeys: 5,
+    });
+    expect(API_QUOTAS.api_scale).toMatchObject({
+      priceUsd: 29,
+      creditsPerMonth: 5000,
+      standardPagesPerMonth: 20000,
+      maxKeys: 20,
+    });
+    expect(API_QUOTAS.api_business).toMatchObject({
+      priceUsd: 99,
+      creditsPerMonth: 10000,
+      standardPagesPerMonth: 40000,
+      maxKeys: 20,
+      hidden: true,
+    });
     expect(PLAN_LIMITS.basic).toMatchObject({
       extractsPerDay: 15,
-      aiPerMonth: 2,
+      aiPerMonth: 25,
     });
+    expect(PLAN_LIMITS.pro).toMatchObject({ extractsPerDay: 40, aiPerMonth: 500 });
+    expect(PLAN_LIMITS.premium).toMatchObject({ extractsPerDay: 200, aiPerMonth: 5000 });
     expect(API_PLAN_LIMITS.api_free).toEqual({
-      creditsPerMonth: 2,
-      standardPagesPerMonth: 500,
+      creditsPerMonth: 25,
+      standardPagesPerMonth: 1000,
+    });
+    expect(API_PLAN_LIMITS.api_builder).toEqual({
+      creditsPerMonth: 500,
+      standardPagesPerMonth: 5000,
+    });
+    expect(API_PLAN_LIMITS.api_scale).toEqual({
+      creditsPerMonth: 5000,
+      standardPagesPerMonth: 20000,
     });
   });
 
@@ -90,6 +122,7 @@ describe("plan-quotas", () => {
     expect(PLAN_RULES.find((p) => p.id === "pro")?.extras).toBe(
       `${aiPagesMonthLabel(DAILY.aiPerMonth)} · editor save`,
     );
+    expect(PRICE_ROLES.find((p) => p.id === "basic")?.ai).toBe(aiPagesMonthLabel(CASUAL.aiPerMonth));
     expect(PRICE_ROLES.find((p) => p.id === "premium")?.ai).toBe(aiPagesMonthLabel(EXPERT.aiPerMonth));
     expect(PRICE_ROLES.find((p) => p.id === "basic")?.quota).toContain("15");
   });
@@ -110,14 +143,14 @@ describe("plan-quotas", () => {
 
   it("builds marketing and FAQ copy from free-tier quotas", () => {
     expect(casualSignupSentence()).toMatch(/15 conversions/);
-    expect(casualSignupSentence()).toMatch(/2 AI pages/);
+    expect(casualSignupSentence()).toMatch(/25 AI pages/);
     expect(casualLoginBlurb()).toMatch(/\$5/);
-    expect(apiFreeQuotaSentence()).toMatch(/500 standard pages/);
+    expect(apiFreeQuotaSentence()).toMatch(/1,000 standard pages/);
     expect(pricingCostFaqAnswer()).toMatch(/\$29\/month/);
     expect(apiDocsFaqAnswer()).toMatch(/\$5\/month/);
     expect(freeCasualCardFaqAnswer()).toMatch(/API Free/);
     expect(casualFreeTierFaqAnswer()).toMatch(/15 conversions/);
-    expect(casualAiAllowanceFaqAnswer()).toMatch(/2 AI \/ translation pages/);
+    expect(casualAiAllowanceFaqAnswer()).toMatch(/25 AI \/ translation pages/);
     expect(casualOfferDescription()).toMatch(/15 conversions/);
     expect(checkoutCanceledNotice()).toMatch(/15 conversions \/ day/);
     expect(pricingPageDescription()).toMatch(/Daily \$5\/mo/);

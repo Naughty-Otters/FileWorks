@@ -155,7 +155,7 @@ function workspaceCatalogEntry(id: "basic" | "pro" | "premium"): CatalogPlan {
           id === "pro"
             ? `${conversionsPerDayLabel(day)} (PDF, office, Markdown, TXT, images, scans)`
             : conversionsPerDayLabel(day),
-          `${formatCount(ai)} AI reading or translation pages`,
+          aiPagesMonthLabel(ai, { prefix: "AI reading or translation" }),
           "Translate into 19 languages",
           "Save and download from the Editor",
           "Unlimited downloads of each convert result",
@@ -209,7 +209,7 @@ export const PRICE_ROLES: PriceRole[] = [
     role: WORKSPACE_QUOTAS.basic.label,
     price: formatUsdMonth(WORKSPACE_QUOTAS.basic.priceUsd),
     quota: filesPerDayLabel(WORKSPACE_QUOTAS.basic.extractsPerDay),
-    ai: aiPagesMonthLabel(WORKSPACE_QUOTAS.basic.aiPerMonth, { short: true }),
+    ai: aiPagesMonthLabel(WORKSPACE_QUOTAS.basic.aiPerMonth),
     history: "Convert downloads · edit free",
     blurb: "Stay here forever if you only convert. No credit card.",
     features: PLAN_CATALOG[0].features,

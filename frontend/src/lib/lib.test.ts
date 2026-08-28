@@ -627,9 +627,9 @@ describe("plan policy", () => {
     expect(canMoveToPlan("pro", "pro", lowUsage)).toBe(false);
     expect(usageFitsPlan({ used_day: 5, used_month: 0, used_ai_day: 0, used_ai_month: 1 }, "basic")).toBe(true);
     expect(usageOverLimitReasons(overPro, "pro")[0]).toMatch(/50 conversions today/);
-    expect(usageOverLimitReasons({ used_day: 16, used_month: 0, used_ai_day: 0, used_ai_month: 15 }, "basic")).toEqual([
+    expect(usageOverLimitReasons({ used_day: 16, used_month: 0, used_ai_day: 0, used_ai_month: 30 }, "basic")).toEqual([
       "16 conversions today (limit 15)",
-      "15 AI pages this month (limit 2)",
+      "30 AI pages this month (limit 25)",
     ]);
     expect(planIsPurchasable("pro", { enabled: true, prices: { pro: false }, amounts: { pro: 5 } })).toBe(true);
     expect(planIsPurchasable("basic", { enabled: true, prices: { basic: false }, amounts: { basic: 0 } })).toBe(false);

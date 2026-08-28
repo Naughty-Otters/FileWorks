@@ -42,15 +42,37 @@ class ApiPlanTests(unittest.TestCase):
         self.assertTrue(is_api_plan("api_scale"))
         self.assertFalse(is_api_plan("pro"))
         self.assertEqual(get_api_plan("nope").id, "api_free")
-        self.assertEqual(get_api_plan("api_business").credits_per_month, 2000)
-        self.assertEqual(get_api_plan("api_free").standard_pages_per_month, 500)
-        self.assertEqual(get_api_plan("api_free").credits_per_month, 2)
-        self.assertEqual(get_api_plan("api_free").max_keys, 1)
+        self.assertEqual(get_plan("basic").label, "Casual")
+        self.assertEqual(
+            (
+                get_plan("basic").extracts_per_day,
+                get_plan("basic").ai_per_month,
+            ),
+            (15, 25),
+        )
+        self.assertEqual(
+            (get_plan("pro").extracts_per_day, get_plan("pro").ai_per_month),
+            (40, 500),
+        )
+        self.assertEqual(
+            (get_plan("premium").extracts_per_day, get_plan("premium").ai_per_month),
+            (200, 5000),
+        )
+        for plan_id, credits, standard, keys in (
+            ("api_free", 25, 1000, 2),
+            ("api_builder", 500, 5000, 5),
+            ("api_scale", 5000, 20000, 20),
+            ("api_business", 10000, 40000, 20),
+        ):
+            plan = get_api_plan(plan_id)
+            self.assertEqual(plan.credits_per_month, credits)
+            self.assertEqual(plan.standard_pages_per_month, standard)
+            self.assertEqual(plan.max_keys, keys)
 
     def test_quota_blocks_at_zero(self) -> None:
         plan = get_api_plan("api_free")
         db = MagicMock()
-        db.scalar.return_value = 5
+        db.scalar.return_value = 25
         snap = api_quota_snapshot(db, user_id=uuid4(), plan=plan)
         self.assertEqual(snap["remaining_credits"], 0)
         with self.assertRaises(HTTPException) as ctx:
@@ -82,7 +104,7 @@ class ApiKeyHelperTests(unittest.TestCase):
 
     def test_key_limit(self) -> None:
         db = MagicMock()
-        db.scalar.return_value = 1
+        db.scalar.return_value = 2
         with self.assertRaises(HTTPException) as ctx:
             create_api_key(db, user_id=uuid4(), plan=get_api_plan("api_free"))
         self.assertEqual(ctx.exception.detail["code"], "api_key_limit")
