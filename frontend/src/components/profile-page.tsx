@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ApiError,
   confirmCheckout,
   createApiKey,
   fetchMe,
@@ -39,6 +40,9 @@ import {
 import { checkoutCanceledNotice, equivalentMonthlyLabel, WORKSPACE_QUOTAS, API_QUOTAS, type BillingInterval } from "@/lib/plan-quotas";
 import { cn } from "@/lib/utils";
 
+/** Returning users often hit expired access tokens; never spin forever on a hung refresh/Stripe call. */
+const PROFILE_BOOT_TIMEOUT_MS = 15_000;
+
 function usageLine(used: number, limit: number | null, remaining: number | null, period: string) {
   if (limit == null) return `Unlimited ${period}`;
   return `${used} / ${limit} ${period} · ${remaining ?? 0} left`;
@@ -56,8 +60,28 @@ function formatPeriodEnd(iso: string | null | undefined) {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(`${label} timed out. Check your connection and try again.`));
+    }, ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
 export function ProfilePage() {
   const { me, displayUser } = useSession();
+  const [bootError, setBootError] = useState<string | null>(null);
+  const [bootNonce, setBootNonce] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -66,34 +90,52 @@ export function ProfilePage() {
   const [newKey, setNewKey] = useState<CreatedApiKey | null>(null);
   const [keyName, setKeyName] = useState("");
   const [keyCopied, setKeyCopied] = useState(false);
+  const bootGeneration = useRef(0);
+
+  const retryBoot = useCallback(() => {
+    setBootError(null);
+    setBootNonce((n) => n + 1);
+  }, []);
 
   useEffect(() => {
+    const generation = ++bootGeneration.current;
+    let cancelled = false;
     const params = new URLSearchParams(window.location.search);
     const checkout = params.get("checkout");
     if (checkout === "cancel") {
       setNotice(checkoutCanceledNotice());
     }
     const fromPortal = params.get("billing") === "return";
-    void (fromPortal ? syncBilling() : reloadSession())
+
+    // Always load /api/me first so the page can paint. Never gate the shell on
+    // Stripe sync — a hung portal reconcile used to leave returning users on
+    // "Loading account for …" forever.
+    void withTimeout(reloadSession({ force: bootNonce > 0 }), PROFILE_BOOT_TIMEOUT_MS, "Account load")
       .then(async (session) => {
+        if (cancelled || generation !== bootGeneration.current) return;
         if (!session.user) {
           window.location.assign("/login?next=/profile");
           return;
         }
         setSessionMe(session);
+        setBootError(null);
+
         const sessionId = params.get("session_id");
         if (checkout === "success" && sessionId) {
           try {
             await confirmCheckout(sessionId);
+            if (cancelled || generation !== bootGeneration.current) return;
             setSessionMe(await syncBilling().catch(() => fetchMe()));
             setNotice("Payment received. Your role is updated.");
             return;
           } catch {
             try {
               setSessionMe(await syncBilling());
+              if (cancelled || generation !== bootGeneration.current) return;
               setNotice("Payment received. Your role is updated.");
               return;
             } catch {
+              if (cancelled || generation !== bootGeneration.current) return;
               setNotice("Payment received. Your role updates when Stripe confirms the subscription.");
             }
           }
@@ -104,21 +146,45 @@ export function ProfilePage() {
           return;
         }
         if (fromPortal) {
-          setNotice(
-            session.billing?.cancel_at_period_end
-              ? `Billing updated. This role stays until ${formatPeriodEnd(session.billing.current_period_end)}, then Casual.`
-              : "Billing updated from Stripe.",
-          );
+          try {
+            const synced = await syncBilling();
+            if (cancelled || generation !== bootGeneration.current) return;
+            setSessionMe(synced);
+            setNotice(
+              synced.billing?.cancel_at_period_end
+                ? `Billing updated. This role stays until ${formatPeriodEnd(synced.billing.current_period_end)}, then Casual.`
+                : "Billing updated from Stripe.",
+            );
+          } catch {
+            if (cancelled || generation !== bootGeneration.current) return;
+            setNotice("Returned from Stripe. Refresh if your role looks stale.");
+          }
           return;
         }
         // /api/me answers from our database so the page paints without waiting on
         // Stripe. Reconcile in the background in case a webhook was missed.
         void syncBilling()
-          .then(setSessionMe)
+          .then((next) => {
+            if (cancelled || generation !== bootGeneration.current) return;
+            setSessionMe(next);
+          })
           .catch(() => undefined);
       })
-      .catch(() => window.location.assign("/login?next=/profile"));
-  }, []);
+      .catch((err) => {
+        if (cancelled || generation !== bootGeneration.current) return;
+        // Only a rejected credential means signed out. Network / timeout must not
+        // bounce a returning user into a login loop while their hint still shows.
+        if (err instanceof ApiError && err.status === 401) {
+          window.location.assign("/login?next=/profile");
+          return;
+        }
+        setBootError(err instanceof Error ? err.message : "Could not load your account");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bootNonce]);
 
   useEffect(() => {
     if (!me?.user) return;
@@ -213,9 +279,37 @@ export function ProfilePage() {
     return (
       <div className="app-shell relative">
         <div className="atmosphere" aria-hidden />
-        <p className="relative z-10 p-8 text-sm text-[var(--ink-muted)]">
-          {who ? `Loading account for ${who}…` : "Loading account…"}
-        </p>
+        <div className="relative z-10 flex flex-col gap-3 p-8">
+          {bootError ? (
+            <>
+              <p className="text-sm text-[var(--danger)]">{bootError}</p>
+              <p className="text-sm text-[var(--ink-muted)]">
+                {who
+                  ? `We still recognize ${who} on this device, but the account request did not finish.`
+                  : "Your account request did not finish."}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={retryBoot}
+                  className="rounded-full bg-[var(--accent)] px-4 py-1.5 text-sm font-medium text-white dark:text-[#06281d]"
+                >
+                  Try again
+                </button>
+                <a href="/login?next=/profile" className="text-sm text-[var(--accent-strong)] hover:underline">
+                  Sign in again
+                </a>
+                <a href="/" className="text-sm text-[var(--ink-muted)] hover:text-[var(--accent-strong)]">
+                  Back to workspace
+                </a>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-[var(--ink-muted)]">
+              {who ? `Loading account for ${who}…` : "Loading account…"}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
@@ -224,7 +318,21 @@ export function ProfilePage() {
   const initial = name.slice(0, 1).toUpperCase();
   const current = PLAN_CATALOG.find((plan) => plan.id === me.plan);
   const currentApiPlan = API_PLAN_CATALOG.find((plan) => plan.id === (me.api_plan || "api_free"));
-
+  const permissions = me.permissions ?? {};
+  const quota = me.quota ?? {
+    used_day: 0,
+    used_month: 0,
+    limit_day: null,
+    limit_month: null,
+    remaining_day: null,
+    remaining_month: null,
+    used_ai_day: 0,
+    used_ai_month: 0,
+    limit_ai_day: null,
+    limit_ai_month: null,
+    remaining_ai_day: null,
+    remaining_ai_month: null,
+  };
   return (
     <div className="app-shell relative">
       <div className="atmosphere" aria-hidden />
@@ -270,63 +378,63 @@ export function ProfilePage() {
             {currentApiPlan ? ` Convert API: ${currentApiPlan.quota}.` : ""}
           </p>
           <dl className="mt-5 space-y-4">
-            {me.quota.limit_day != null ? (
+            {quota.limit_day != null ? (
               <div>
                 <div className="flex justify-between text-sm">
                   <dt>Today</dt>
                   <dd className="text-[var(--ink-muted)]">
-                    {usageLine(me.quota.used_day, me.quota.limit_day, me.quota.remaining_day, "today")}
+                    {usageLine(quota.used_day, quota.limit_day, quota.remaining_day, "today")}
                   </dd>
                 </div>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
                   <div
                     className="h-full rounded-full bg-[var(--accent)]"
-                    style={{ width: `${usagePercent(me.quota.used_day, me.quota.limit_day)}%` }}
+                    style={{ width: `${usagePercent(quota.used_day, quota.limit_day)}%` }}
                   />
                 </div>
               </div>
             ) : null}
-            {me.quota.limit_month != null ? (
+            {quota.limit_month != null ? (
               <div>
                 <div className="flex justify-between text-sm">
                   <dt>This month</dt>
                   <dd className="text-[var(--ink-muted)]">
-                    {usageLine(me.quota.used_month, me.quota.limit_month, me.quota.remaining_month, "this month")}
+                    {usageLine(quota.used_month, quota.limit_month, quota.remaining_month, "this month")}
                   </dd>
                 </div>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
                   <div
                     className="h-full rounded-full bg-[var(--accent)]"
-                    style={{ width: `${usagePercent(me.quota.used_month, me.quota.limit_month)}%` }}
+                    style={{ width: `${usagePercent(quota.used_month, quota.limit_month)}%` }}
                   />
                 </div>
               </div>
             ) : null}
-            {me.quota.limit_ai_day != null ? (
+            {quota.limit_ai_day != null ? (
               <div>
                 <div className="flex justify-between text-sm">
                   <dt>AI / translation today</dt>
                   <dd className="text-[var(--ink-muted)]">
-                    {usageLine(me.quota.used_ai_day, me.quota.limit_ai_day, me.quota.remaining_ai_day, "today")}
+                    {usageLine(quota.used_ai_day, quota.limit_ai_day, quota.remaining_ai_day, "today")}
                   </dd>
                 </div>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
                   <div
                     className="h-full rounded-full bg-[var(--accent)]"
-                    style={{ width: `${usagePercent(me.quota.used_ai_day, me.quota.limit_ai_day)}%` }}
+                    style={{ width: `${usagePercent(quota.used_ai_day, quota.limit_ai_day)}%` }}
                   />
                 </div>
               </div>
             ) : null}
-            {me.quota.limit_ai_month != null ? (
+            {quota.limit_ai_month != null ? (
               <div>
                 <div className="flex justify-between text-sm">
                   <dt>AI / translation pages this month</dt>
                   <dd className="text-[var(--ink-muted)]">
                     {usageLine(
-                      me.quota.used_ai_month,
-                      me.quota.limit_ai_month,
-                      me.quota.remaining_ai_month,
+                      quota.used_ai_month,
+                      quota.limit_ai_month,
+                      quota.remaining_ai_month,
                       "this month",
                     )}
                   </dd>
@@ -334,7 +442,7 @@ export function ProfilePage() {
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--accent-soft)]">
                   <div
                     className="h-full rounded-full bg-[var(--accent)]"
-                    style={{ width: `${usagePercent(me.quota.used_ai_month, me.quota.limit_ai_month)}%` }}
+                    style={{ width: `${usagePercent(quota.used_ai_month, quota.limit_ai_month)}%` }}
                   />
                 </div>
               </div>
@@ -360,7 +468,7 @@ export function ProfilePage() {
                 </div>
               </div>
             ) : null}
-            {me.quota.limit_day == null && me.quota.limit_month == null && !me.api_quota ? (
+            {quota.limit_day == null && quota.limit_month == null && !me.api_quota ? (
               <p className="text-sm text-[var(--ink-muted)]">No conversion quota on this plan.</p>
             ) : null}
           </dl>
@@ -377,7 +485,7 @@ export function ProfilePage() {
                 key={key}
                 className={cn(
                   "rounded-full px-3 py-1 text-xs",
-                  me.permissions[key]
+                  permissions[key]
                     ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]"
                     : "bg-[color-mix(in_oklab,var(--ink)_6%,transparent)] text-[var(--ink-muted)] line-through",
                 )}
@@ -406,8 +514,8 @@ export function ProfilePage() {
             {PLAN_CATALOG.map((plan) => {
               const currentPlan = plan.id === me.plan;
               const switchable =
-                planIsPurchasable(plan.id, me.billing) && canMoveToPlan(me.plan, plan.id, me.quota);
-              const usageBlock = usageOverLimitReasons(me.quota, plan.id);
+                planIsPurchasable(plan.id, me.billing) && canMoveToPlan(me.plan, plan.id, quota);
+              const usageBlock = usageOverLimitReasons(quota, plan.id);
               const monthly =
                 typeof me.billing?.amounts?.[plan.id] === "number"
                   ? me.billing.amounts[plan.id]
@@ -697,9 +805,16 @@ export function ProfilePage() {
         </section>
 
         <div className="flex items-center justify-between px-1">
-          <a href="/" className="text-sm text-[var(--ink-muted)] hover:text-[var(--accent-strong)]">
-            Back to workspace
-          </a>
+          <div className="flex flex-wrap items-center gap-4">
+            <a href="/" className="text-sm text-[var(--ink-muted)] hover:text-[var(--accent-strong)]">
+              Back to workspace
+            </a>
+            {me.is_admin ? (
+              <a href="/admin" className="text-sm font-medium text-[var(--accent-strong)] hover:underline">
+                Admin
+              </a>
+            ) : null}
+          </div>
           <button
             type="button"
             onClick={async () => {

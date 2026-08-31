@@ -91,9 +91,15 @@ function applyError(err: unknown) {
  * `/api/me` returns an anonymous principal (200) when no access token is sent, so
  * a tab that only has a refresh token must refresh first — otherwise we would
  * incorrectly treat a signed-in browser as a guest.
+ *
+ * Pass `{ force: true }` to abandon a stuck in-flight load (e.g. profile retry
+ * after a hung refresh) and start a fresh request.
  */
-export function reloadSession(): Promise<MeResponse> {
+export function reloadSession(options?: { force?: boolean }): Promise<MeResponse> {
   hydrate();
+  if (options?.force) {
+    inFlight = null;
+  }
   if (!inFlight) {
     const seq = ++issued;
     inFlight = (async () => {

@@ -12,8 +12,11 @@ from sqlalchemy.orm import Session
 
 from app.auth.deps import Principal, get_principal
 from app.auth.quota import AI_ACTION, assert_can_use_ai
+from app.core.config import get_settings
+from app.engines.llm.engine import LLMEngine
 from app.db.models import UsageEvent, UserTemplate
 from app.db.session import get_db
+from app.processing.template.design_edit import run_design_edit
 from app.processing.template.extract import extract_template_context
 from app.processing.template.render import render_docx, render_html, render_markdown, render_pdf
 from app.processing.template.runtime import (
@@ -71,6 +74,30 @@ class TemplateResponse(BaseModel):
 
 class TemplateListResponse(BaseModel):
     items: list[TemplateResponse]
+
+
+class DesignEditConversationTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1)
+
+
+class DesignEditRequest(BaseModel):
+    message: str = Field(min_length=1)
+    document: DesignDocument
+    selection_id: str | None = None
+    conversation: list[DesignEditConversationTurn] = Field(default_factory=list)
+    mode: Literal["plan_and_apply"] = "plan_and_apply"
+
+
+class DesignEditStepResponse(BaseModel):
+    reasoning: str
+    summary: str
+    ops: list[dict[str, Any]]
+
+
+class DesignEditResponse(BaseModel):
+    reply: str
+    steps: list[DesignEditStepResponse]
 
 
 class TemplateRenderRequest(BaseModel):
@@ -455,6 +482,44 @@ def create_template(
     session.add(row)
     session.flush()
     return _response(row, body.document)
+
+
+@router.post("/edit", response_model=DesignEditResponse)
+def edit_design(
+    body: DesignEditRequest,
+    principal: PrincipalDep,
+    db: DatabaseDep,
+) -> DesignEditResponse:
+    """Natural-language design editing — returns structured ops for the client to apply."""
+    _user_id, session = _authenticated_user(principal, db)
+    assert_can_use_ai(
+        session,
+        user_id=principal.user_id,
+        plan=principal.plan,
+        use_ai=True,
+        translate=False,
+    )
+    engine = LLMEngine(get_settings())
+    if not engine.configured():
+        raise HTTPException(
+            status_code=503,
+            detail=engine.init_error or "LLM is not configured for design editing",
+        )
+    try:
+        result = run_design_edit(
+            body.document,
+            body.message,
+            selection_id=body.selection_id,
+            conversation=[turn.model_dump() for turn in body.conversation],
+            engine=engine,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    session.add(UsageEvent(user_id=principal.user_id, action=AI_ACTION))
+    return DesignEditResponse(
+        reply=result["reply"],
+        steps=[DesignEditStepResponse.model_validate(step) for step in result["steps"]],
+    )
 
 
 @router.get("/{template_id}", response_model=TemplateResponse)

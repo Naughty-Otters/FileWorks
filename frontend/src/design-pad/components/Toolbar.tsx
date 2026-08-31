@@ -19,6 +19,7 @@ import {
   IconVariable,
   IconEye,
   IconEyeOff,
+  IconChat,
 } from "../icons";
 
 interface Props {
@@ -30,6 +31,8 @@ interface Props {
   onToggleJsonPanel: () => void;
   onOpenOutputPreview: () => void;
   libraryHref?: string;
+  chatOpen?: boolean;
+  onToggleChat?: () => void;
 }
 
 export default function Toolbar({
@@ -41,6 +44,8 @@ export default function Toolbar({
   onToggleJsonPanel,
   onOpenOutputPreview,
   libraryHref = "/templates",
+  chatOpen = false,
+  onToggleChat,
 }: Props) {
   const selectedId = useEditorStore((s) => s.selectedId);
   const removeElement = useEditorStore((s) => s.removeElement);
@@ -164,6 +169,14 @@ export default function Toolbar({
       <div className="toolbar-divider" />
 
       <div className="toolbar-group">
+        <button
+          type="button"
+          className={`icon-btn${chatOpen ? " active" : ""}`}
+          title={chatOpen ? "Hide design chat" : "Edit design with chat"}
+          onClick={() => onToggleChat?.()}
+        >
+          <IconChat />
+        </button>
         <button
           type="button"
           className={`icon-btn${showVariablesPanel ? " active" : ""}`}

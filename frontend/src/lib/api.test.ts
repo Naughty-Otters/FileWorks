@@ -21,6 +21,12 @@ import {
   openBillingPortal,
   syncBilling,
   exportMarkdownFile,
+  editDesign,
+  fetchAdminOverview,
+  fetchAdminPlans,
+  fetchAdminUser,
+  fetchAdminUsers,
+  updateAdminUser,
   unreachableMessage,
 } from "@/lib/api";
 import { getAccessToken, setSession } from "@/lib/auth";
@@ -354,6 +360,112 @@ describe("api client", () => {
       directUpload: true,
     });
     expect(result.markdown).toBe("ok");
+  });
+});
+
+describe("design edit and admin api client", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("posts design edit requests", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        reply: "Done.",
+        steps: [
+          {
+            reasoning: "Need a clearer hierarchy.",
+            summary: "Enlarge title",
+            ops: [{ op: "update_style", id: "title", patch: { fontSize: 32 } }],
+          },
+        ],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const doc = {
+      version: 2,
+      pageSize: { w: 850, h: 1100 },
+      root: { id: "root", kind: "box", label: "Document", children: [] },
+      variables: [],
+    };
+    const result = await editDesign({
+      message: "Make title bigger",
+      document: doc as never,
+      selection_id: "title",
+      conversation: [{ role: "user", content: "Hi" }],
+    });
+    expect(result.reply).toBe("Done.");
+    expect(result.steps[0]?.reasoning).toContain("hierarchy");
+    expect(fetchMock).toHaveBeenCalled();
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/api/templates/edit");
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      message: "Make title bigger",
+      selection_id: "title",
+      mode: "plan_and_apply",
+    });
+  });
+
+  it("fetches admin overview plans users and updates a user", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/api/admin/overview")) {
+        return jsonResponse({
+          users: 2,
+          usage_events: 1,
+          api_keys: 0,
+          history_documents: 0,
+          templates: 0,
+          plans: { basic: 2 },
+          api_plans: { api_free: 2 },
+        });
+      }
+      if (url.endsWith("/api/admin/plans")) {
+        return jsonResponse({
+          workspace_plans: [{ id: "basic", label: "Casual" }],
+          api_plans: [{ id: "api_free", label: "API Free" }],
+        });
+      }
+      if (url.includes("/api/admin/users?") || url.endsWith("/api/admin/users")) {
+        return jsonResponse({
+          items: [{ id: "u1", email: "a@b.co", name: "A", plan: "basic", api_plan: "api_free" }],
+          total: 1,
+          limit: 100,
+          offset: 0,
+        });
+      }
+      if (url.endsWith("/api/admin/users/u1") && (!init || !init.method || init.method === "GET")) {
+        return jsonResponse({
+          id: "u1",
+          email: "a@b.co",
+          name: "A",
+          plan: "basic",
+          api_plan: "api_free",
+          quota: {},
+          api_quota: {},
+        });
+      }
+      if (url.endsWith("/api/admin/users/u1") && init?.method === "PATCH") {
+        return jsonResponse({
+          id: "u1",
+          email: "a@b.co",
+          name: "A",
+          plan: "premium",
+          api_plan: "api_scale",
+          quota: {},
+          api_quota: {},
+        });
+      }
+      return new Response("nope", { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    expect((await fetchAdminOverview()).users).toBe(2);
+    expect((await fetchAdminPlans()).workspace_plans[0]?.id).toBe("basic");
+    expect((await fetchAdminUsers({ q: "a@", limit: 10 })).total).toBe(1);
+    expect((await fetchAdminUser("u1")).email).toBe("a@b.co");
+    const updated = await updateAdminUser("u1", { plan: "premium", api_plan: "api_scale" });
+    expect(updated.plan).toBe("premium");
+    expect(updated.api_plan).toBe("api_scale");
   });
 });
 

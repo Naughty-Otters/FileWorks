@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.auth.admin import is_admin_user
 from app.auth.api_plans import FALLBACK_API_PLAN, get_api_plan
 from app.auth.deps import Principal, get_principal
 from app.auth.google import verify_google_id_token
@@ -68,6 +69,7 @@ class MeResponse(BaseModel):
     billing: BillingStatus | None = None
     api_plan: str = FALLBACK_API_PLAN
     api_quota: dict
+    is_admin: bool = False
 
 
 class PlanChangeRequest(BaseModel):
@@ -195,6 +197,7 @@ def me(principal: Principal = Depends(get_principal), db: Session | None = Depen
         billing=BillingStatus(**billing),
         api_plan=api_plan.id,
         api_quota=api_quota_snapshot(db, user_id=principal.user_id, plan=api_plan),
+        is_admin=is_admin_user(user),
     )
 
 
@@ -262,4 +265,5 @@ def change_api_plan(
         billing=BillingStatus(**billing),
         api_plan=api_plan.id,
         api_quota=api_quota_snapshot(db, user_id=user.id, plan=api_plan),
+        is_admin=is_admin_user(user),
     )

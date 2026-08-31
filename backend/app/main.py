@@ -11,6 +11,7 @@ from starlette.responses import JSONResponse, Response
 
 from app.api.routes import router
 from app.api.auth_routes import router as auth_router
+from app.api.admin_routes import router as admin_router
 from app.api.billing_routes import router as billing_router
 from app.api.key_routes import router as key_router
 from app.api.template_routes import router as template_router
@@ -109,6 +110,7 @@ def create_app() -> FastAPI:
     app.add_middleware(PrivateNetworkMiddleware)
     app.include_router(router, prefix=settings.api_prefix)
     app.include_router(auth_router, prefix=settings.api_prefix)
+    app.include_router(admin_router, prefix=settings.api_prefix)
     app.include_router(billing_router, prefix=settings.api_prefix)
     app.include_router(key_router, prefix=settings.api_prefix)
     app.include_router(template_router, prefix=settings.api_prefix)

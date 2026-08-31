@@ -284,6 +284,27 @@ describe("session store", () => {
     await pending;
     expect(getSessionState().me?.plan).toBe("premium");
   });
+
+  it("force reloads after abandoning a stuck in-flight request", async () => {
+    setSession("acc", "ref");
+    let release: (me: MeResponse) => void = () => undefined;
+    const fetchMe = vi.spyOn(api, "fetchMe").mockReturnValue(
+      new Promise<MeResponse>((resolve) => {
+        release = resolve;
+      }),
+    );
+    const stuck = reloadSession();
+    expect(fetchMe).toHaveBeenCalledTimes(1);
+    fetchMe.mockResolvedValue(signedInMe);
+    const forced = await reloadSession({ force: true });
+    expect(fetchMe).toHaveBeenCalledTimes(2);
+    expect(forced.user?.email).toBe("a@b.co");
+    expect(getSessionState().me?.user?.email).toBe("a@b.co");
+    release({ ...signedInMe, plan: "premium" });
+    await stuck;
+    // Stale hung load must not overwrite the forced result.
+    expect(getSessionState().me?.plan).toBe("pro");
+  });
 });
 
 describe("workspace prefs", () => {

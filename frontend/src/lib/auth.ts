@@ -79,6 +79,8 @@ export type MeResponse = {
     limit_standard_pages?: number | null;
     remaining_standard_pages?: number | null;
   };
+  /** True only for the hard-coded admin email (kenny.zlee@gmail.com). */
+  is_admin?: boolean;
 };
 
 /**

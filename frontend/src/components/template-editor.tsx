@@ -13,6 +13,8 @@ import JsonPanel from "@/design-pad/components/JsonPanel";
 import TemplatePicker from "@/design-pad/components/TemplatePicker";
 import VariablesPanel from "@/design-pad/components/VariablesPanel";
 import DocumentPreview from "@/design-pad/components/DocumentPreview";
+import ChatPanel from "@/design-pad/components/ChatPanel";
+import { useChatStore } from "@/design-pad/chat/store";
 import { builtInTemplate } from "@/design-pad/templates";
 import { isStaticTemplate } from "@/design-pad/templating";
 import { findNode, findParent, useEditorStore } from "@/design-pad/store";
@@ -55,6 +57,8 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
   const [jsonPanelOpen, setJsonPanelOpen] = useState(false);
   const [outputPreviewOpen, setOutputPreviewOpen] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
+  const chatOpen = useChatStore((s) => s.open);
+  const toggleChat = useChatStore((s) => s.toggleOpen);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,12 +205,17 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
               jsonPanelOpen={jsonPanelOpen}
               onToggleJsonPanel={() => setJsonPanelOpen((v) => !v)}
               onOpenOutputPreview={() => setOutputPreviewOpen(true)}
+              chatOpen={chatOpen}
+              onToggleChat={toggleChat}
             />
             <div className="left-panel">
               <Palette />
               <Layers />
             </div>
-            <Canvas />
+            <div className="canvas-column">
+              <Canvas />
+              {chatOpen ? <ChatPanel /> : null}
+            </div>
             <Inspector />
             {jsonPanelOpen ? <JsonPanel /> : null}
             {showVariablesPanel ? <VariablesPanel /> : null}

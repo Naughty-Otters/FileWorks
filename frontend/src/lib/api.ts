@@ -967,3 +967,110 @@ export async function renderStarter(
   if (!res.ok) throw new Error(await readError(res, `Starter render failed (${res.status})`));
   return parseTemplateRenderResponse(res, input.format);
 }
+
+export async function editDesign(input: {
+  message: string;
+  document: DesignDocument;
+  selection_id?: string | null;
+  conversation?: { role: "user" | "assistant"; content: string }[];
+}): Promise<import("@/design-pad/ops/schema").DesignEditResponse> {
+  const res = await apiFetch("/api/templates/edit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: input.message,
+      document: input.document,
+      selection_id: input.selection_id ?? null,
+      conversation: input.conversation ?? [],
+      mode: "plan_and_apply",
+    }),
+  });
+  if (!res.ok) throw new Error(await readError(res, `Design edit failed (${res.status})`));
+  return res.json();
+}
+
+export type AdminUserSummary = {
+  id: string;
+  email: string;
+  name: string | null;
+  plan: string;
+  api_plan: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  stripe_api_subscription_id: string | null;
+  history_indexed: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+  usage_events: number;
+  api_keys: number;
+  history_documents: number;
+  templates: number;
+};
+
+export type AdminUserDetail = AdminUserSummary & {
+  picture_url: string | null;
+  google_sub: string | null;
+  quota: MeResponse["quota"];
+  api_quota: NonNullable<MeResponse["api_quota"]>;
+};
+
+export type AdminOverview = {
+  users: number;
+  usage_events: number;
+  api_keys: number;
+  history_documents: number;
+  templates: number;
+  plans: Record<string, number>;
+  api_plans: Record<string, number>;
+};
+
+export type AdminPlanOptions = {
+  workspace_plans: { id: string; label: string }[];
+  api_plans: { id: string; label: string }[];
+};
+
+export async function fetchAdminOverview(): Promise<AdminOverview> {
+  const res = await apiFetch("/api/admin/overview", { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Admin overview failed (${res.status})`));
+  return res.json();
+}
+
+export async function fetchAdminPlans(): Promise<AdminPlanOptions> {
+  const res = await apiFetch("/api/admin/plans", { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Admin plans failed (${res.status})`));
+  return res.json();
+}
+
+export async function fetchAdminUsers(input?: {
+  q?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ items: AdminUserSummary[]; total: number; limit: number; offset: number }> {
+  const params = new URLSearchParams();
+  if (input?.q) params.set("q", input.q);
+  if (input?.limit != null) params.set("limit", String(input.limit));
+  if (input?.offset != null) params.set("offset", String(input.offset));
+  const query = params.toString();
+  const res = await apiFetch(`/api/admin/users${query ? `?${query}` : ""}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Admin users failed (${res.status})`));
+  return res.json();
+}
+
+export async function fetchAdminUser(id: string): Promise<AdminUserDetail> {
+  const res = await apiFetch(`/api/admin/users/${encodeURIComponent(id)}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(await readError(res, `Admin user failed (${res.status})`));
+  return res.json();
+}
+
+export async function updateAdminUser(
+  id: string,
+  patch: { plan?: string; api_plan?: string },
+): Promise<AdminUserDetail> {
+  const res = await apiFetch(`/api/admin/users/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) throw new Error(await readError(res, `Admin update failed (${res.status})`));
+  return res.json();
+}

@@ -159,6 +159,11 @@ interface EditorState {
   addVariable: (name: string, label: string, type?: VariableType, sampleValue?: string) => void;
   updateVariable: (id: string, patch: Partial<Omit<TemplateVariable, "id">>) => void;
   removeVariable: (id: string) => void;
+  /** Batch AI/chat edits into a single undo step. */
+  beginHistoryGroup: () => void;
+  commitHistoryGroup: () => void;
+  /** Re-run the WASM layout solver (used after batched design ops). */
+  relayoutDocument: () => Promise<void>;
 }
 
 let layoutVersion = 0;
@@ -171,11 +176,21 @@ let layoutVersion = 0;
 // make a fresh edit), matching Figma/Docs-style undo behavior.
 let historyTimer: ReturnType<typeof setTimeout> | null = null;
 let historyBaseline: DesignDocument | null = null;
+let historyGroupDepth = 0;
+let historyGroupSnapshot: DesignDocument | null = null;
+let relayoutSuppressDepth = 0;
+let relayoutPending = false;
 const HISTORY_LIMIT = 50;
 const HISTORY_DEBOUNCE_MS = 600;
 
 export const useEditorStore = create<EditorState>((set, get) => {
   function noteHistory() {
+    if (historyGroupDepth > 0) {
+      if (!historyGroupSnapshot) {
+        historyGroupSnapshot = structuredClone(get().doc);
+      }
+      return;
+    }
     const state = get();
     if (!historyBaseline) {
       historyBaseline = state.doc;
@@ -197,6 +212,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
   }
 
   async function relayout() {
+    if (relayoutSuppressDepth > 0) {
+      relayoutPending = true;
+      return;
+    }
     const myVersion = ++layoutVersion;
     set({ layoutPending: true });
     const root = structuredClone(get().doc.root);
@@ -207,6 +226,12 @@ export const useEditorStore = create<EditorState>((set, get) => {
       doc: { ...state.doc, root: result },
       layoutPending: false,
     }));
+  }
+
+  async function flushRelayout() {
+    if (!relayoutPending) return;
+    relayoutPending = false;
+    await relayout();
   }
 
   return {
@@ -565,6 +590,40 @@ export const useEditorStore = create<EditorState>((set, get) => {
       set((state) => ({
         doc: { ...state.doc, variables: state.doc.variables.filter((v) => v.id !== id) },
       }));
+    },
+
+    beginHistoryGroup: () => {
+      historyGroupDepth += 1;
+      relayoutSuppressDepth += 1;
+      if (historyGroupDepth === 1 && !historyGroupSnapshot) {
+        historyGroupSnapshot = structuredClone(get().doc);
+      }
+    },
+
+    commitHistoryGroup: () => {
+      if (historyGroupDepth <= 0) return;
+      historyGroupDepth -= 1;
+      relayoutSuppressDepth = Math.max(0, relayoutSuppressDepth - 1);
+      if (historyGroupDepth === 0) {
+        const snapshot = historyGroupSnapshot;
+        historyGroupSnapshot = null;
+        if (snapshot) {
+          set((s) => ({
+            history: {
+              past: [...s.history.past, snapshot].slice(-HISTORY_LIMIT),
+              future: [],
+            },
+          }));
+        }
+      }
+      if (relayoutSuppressDepth === 0 && relayoutPending) {
+        void flushRelayout();
+      }
+    },
+
+    relayoutDocument: async () => {
+      relayoutPending = true;
+      await flushRelayout();
     },
   };
 });

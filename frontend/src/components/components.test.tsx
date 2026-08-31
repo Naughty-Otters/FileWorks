@@ -22,7 +22,8 @@ import { EditableMarkdownPreview, type MarkdownPreviewHandle } from "@/component
 import { DEFAULT_EXTRACT_OPTIONS, type MeResponse } from "@/lib/api";
 import { LINES_PER_PAGE, PAGES_PER_VIEW } from "@/lib/markdown-pages";
 import * as api from "@/lib/api";
-import { clearSession, setSession } from "@/lib/auth";
+import { clearSession, setSession, writeSessionHint } from "@/lib/auth";
+import { resetSessionStore } from "@/lib/session";
 import * as gis from "@/lib/google-gis";
 
 vi.mock("next-themes", () => ({
@@ -1261,10 +1262,14 @@ describe("ProfilePage", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    resetSessionStore();
+    clearSession();
   });
 
   beforeEach(() => {
     vi.spyOn(api, "listApiKeys").mockResolvedValue([]);
+    resetSessionStore();
+    clearSession();
   });
 
   it("shows usage role and lets a basic account upgrade", async () => {
@@ -1403,6 +1408,18 @@ describe("ProfilePage", () => {
 
   it("syncs Stripe after returning from the billing portal", async () => {
     vi.stubGlobal("location", { assign: vi.fn(), search: "?billing=return" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
+      plan: "pro",
+      permissions: { extract: true, "extract.ai": true, export: true },
+      billing: {
+        enabled: true,
+        prices: { basic: false, pro: true, premium: true },
+        cancel_at_period_end: true,
+        current_period_end: "2030-01-01T00:00:00+00:00",
+      },
+    });
     vi.spyOn(api, "syncBilling").mockResolvedValue({
       ...guestMe,
       user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
@@ -1418,6 +1435,85 @@ describe("ProfilePage", () => {
     render(<ProfilePage />);
     expect(await screen.findByText(/This role stays until/)).toBeInTheDocument();
     expect(api.syncBilling).toHaveBeenCalled();
+  });
+
+  it("shows a retry path when account load fails instead of spinning forever", async () => {
+    setSession("access", "refresh");
+    writeSessionHint({
+      id: "1",
+      email: "kenny@example.com",
+      name: "kenny zli",
+      picture_url: null,
+      plan: "basic",
+    });
+    vi.spyOn(api, "fetchMe").mockRejectedValue(new Error("offline"));
+    render(<ProfilePage />);
+    expect(await screen.findByText("offline")).toBeInTheDocument();
+    expect(screen.getByText(/We still recognize kenny zli/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+
+  it("shows an Admin link only for admin accounts", async () => {
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: {
+        id: "1",
+        email: "kenny.zlee@gmail.com",
+        name: "Kenny",
+        picture_url: null,
+        plan: "premium",
+      },
+      plan: "premium",
+      permissions: { extract: true, export: true },
+      is_admin: true,
+    });
+    render(<ProfilePage />);
+    expect(await screen.findByRole("link", { name: "Admin" })).toHaveAttribute("href", "/admin");
+  });
+
+  it("hides the Admin link for regular members", async () => {
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+      plan: "basic",
+      permissions: { extract: true, export: true },
+      is_admin: false,
+    });
+    render(<ProfilePage />);
+    expect(await screen.findByText("Ada")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
+  });
+
+  it("paints the profile before a slow billing sync after portal return", async () => {
+    vi.stubGlobal("location", { assign: vi.fn(), search: "?billing=return" });
+    vi.spyOn(api, "fetchMe").mockResolvedValue({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "basic" },
+      plan: "basic",
+      permissions: { extract: true, export: true },
+    });
+    let release!: (me: MeResponse) => void;
+    vi.spyOn(api, "syncBilling").mockReturnValue(
+      new Promise<MeResponse>((resolve) => {
+        release = resolve;
+      }),
+    );
+    render(<ProfilePage />);
+    expect(await screen.findByText("Ada")).toBeInTheDocument();
+    expect(screen.getByText("Usage")).toBeInTheDocument();
+    release({
+      ...guestMe,
+      user: { id: "1", email: "a@b.co", name: "Ada", picture_url: null, plan: "pro" },
+      plan: "pro",
+      permissions: { extract: true, "extract.ai": true, export: true },
+      billing: {
+        enabled: true,
+        prices: { basic: false, pro: true, premium: true },
+        cancel_at_period_end: true,
+        current_period_end: "2030-01-01T00:00:00+00:00",
+      },
+    });
+    expect(await screen.findByText(/This role stays until/)).toBeInTheDocument();
   });
 
   it("blocks a downgrade when usage exceeds the lower plan", async () => {
