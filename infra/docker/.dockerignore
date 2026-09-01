@@ -19,5 +19,7 @@
 **/.terraform
 **/secrets
 **/tests
+# Markdown docs only. Runtime prompts must be Python modules under app/…
+# (see infra/docker/assert_runtime_assets.py) — never ship them as *.md.
 **/*.md
 !**/README.md

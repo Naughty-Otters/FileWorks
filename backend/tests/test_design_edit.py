@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -43,6 +44,19 @@ def test_design_edit_schema_requires_reasoning() -> None:
     step_props = schema["properties"]["steps"]["items"]["properties"]
     assert step_props["reasoning"]["minLength"] == 1
     assert "reasoning" in schema["properties"]["steps"]["items"]["required"]
+
+
+def test_design_edit_prompt_is_embedded_python_module() -> None:
+    """Prompts must not be loose .md files — Docker **/*.md excludes crash Lambda boot."""
+    from app.processing.template.design_edit import _system_prompt
+    from app.processing.template.prompts.design_edit_prompt import SYSTEM_PROMPT
+
+    prompt = _system_prompt()
+    assert prompt == SYSTEM_PROMPT.strip()
+    assert "ops" in prompt.lower()
+    prompts_dir = Path(__file__).resolve().parents[1] / "app" / "processing" / "template" / "prompts"
+    assert list(prompts_dir.glob("*.md")) == []
+    assert (prompts_dir / "design_edit_prompt.py").is_file()
 
 
 def test_build_design_edit_prompt_includes_document_and_message() -> None:

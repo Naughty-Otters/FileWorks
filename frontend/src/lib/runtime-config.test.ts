@@ -33,6 +33,52 @@ describe("runtime api endpoint", () => {
     window.__FILEWORKS_CONFIG__ = { apiUrl: "https://new.on.aws" };
     expect(getApiBase()).toBe("https://new.on.aws");
   });
+
+  it("honors config.js apiUrl on the canonical host (do not force same-origin)", () => {
+    window.__FILEWORKS_CONFIG__ = {
+      apiUrl: "https://api.fileworks.ai",
+      canonicalOrigin: "https://fileworks.ai",
+    };
+    Object.defineProperty(window, "location", {
+      value: new URL("https://fileworks.ai/templates/new"),
+      configurable: true,
+    });
+    // Live prod may still pin api.* until the zone Worker route is published.
+    expect(resolveApiBase()).toBe("https://api.fileworks.ai");
+  });
+
+  it("uses same-origin when config.js pins the canonical site", () => {
+    window.__FILEWORKS_CONFIG__ = {
+      apiUrl: "https://staging.fileworks.ai",
+      canonicalOrigin: "https://staging.fileworks.ai",
+    };
+    Object.defineProperty(window, "location", {
+      value: new URL("https://staging.fileworks.ai/templates/new"),
+      configurable: true,
+    });
+    expect(resolveApiBase()).toBe("https://staging.fileworks.ai");
+  });
+
+  it("falls back to same-origin on canonical hosts when config.js is blank", () => {
+    window.__FILEWORKS_CONFIG__ = { apiUrl: "", canonicalOrigin: "https://fileworks.ai" };
+    Object.defineProperty(window, "location", {
+      value: new URL("https://fileworks.ai/"),
+      configurable: true,
+    });
+    expect(resolveApiBase()).toBe("https://fileworks.ai");
+  });
+
+  it("keeps cross-origin api.* on Pages preview hosts", () => {
+    window.__FILEWORKS_CONFIG__ = {
+      apiUrl: "https://api.staging.fileworks.ai",
+      canonicalOrigin: "https://staging.fileworks.ai",
+    };
+    Object.defineProperty(window, "location", {
+      value: new URL("https://abc123.fileworks-staging.pages.dev/login"),
+      configurable: true,
+    });
+    expect(resolveApiBase()).toBe("https://api.staging.fileworks.ai");
+  });
 });
 
 describe("canonical origin redirect", () => {

@@ -17,6 +17,7 @@ from fw.context import (
     lambda_logs_tail_args,
     resolve_lambda_log_groups,
     resolve_public_api_url,
+    ui_api_url,
 )
 
 
@@ -86,6 +87,22 @@ class SeedSecretTests(unittest.TestCase):
         self.assertEqual(ENVIRONMENTS["dev"].api_origin, "")
         self.assertTrue((ROOT / "infra/cloudflare/api-proxy/wrangler.jsonc").is_file())
         self.assertTrue((ROOT / "infra/cloudflare/api-proxy/src/index.js").is_file())
+        wrangler = (ROOT / "infra/cloudflare/api-proxy/wrangler.jsonc").read_text(encoding="utf-8")
+        self.assertIn("fileworks.ai/api/*", wrangler)
+        self.assertIn("staging.fileworks.ai/api/*", wrangler)
+        self.assertEqual(
+            ui_api_url("https://api.fileworks.ai", "https://fileworks.ai"),
+            "https://api.fileworks.ai",
+        )
+        self.assertEqual(
+            ui_api_url("https://api.staging.fileworks.ai", "https://staging.fileworks.ai"),
+            "https://api.staging.fileworks.ai",
+        )
+        self.assertEqual(
+            ui_api_url("https://abc.lambda-url.us-east-1.on.aws", "https://staging.fileworks.ai"),
+            "https://abc.lambda-url.us-east-1.on.aws",
+        )
+        self.assertEqual(ui_api_url("", "https://fileworks.ai"), "https://fileworks.ai")
         local = Context(env=ENVIRONMENTS["staging"], scope="local")
         cloud = Context(env=ENVIRONMENTS["staging"], scope="cloud")
         self.assertFalse(local.is_cloud)

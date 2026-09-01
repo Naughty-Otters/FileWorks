@@ -31,5 +31,8 @@ scripts
 agent-transcripts
 
 infra/terraform
+# Exclude markdown docs from the image context. Do NOT store runtime prompts as
+# .md under backend/app — Docker will drop them and the API crashes on boot.
+# Put prompts in Python modules (see app/processing/template/prompts/).
 **/*.md
 !backend/README.md

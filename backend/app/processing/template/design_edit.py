@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any, Protocol
 
 from app.core.config import get_settings
 from app.engines.llm.engine import LLMEngine
 from app.processing.template.ops_schema import design_edit_schema
+from app.processing.template.prompts.design_edit_prompt import SYSTEM_PROMPT
 from app.processing.template.schema import DesignDocument, DesignNode
-
-_PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "design_edit.md"
-_SYSTEM_PROMPT = _PROMPT_PATH.read_text(encoding="utf-8").strip()
 
 
 class DesignEditEngine(Protocol):
@@ -21,6 +18,14 @@ class DesignEditEngine(Protocol):
         *,
         purpose: str = "text",
     ) -> dict[str, Any]: ...
+
+
+def _system_prompt() -> str:
+    """Return the embedded system prompt (Python module — immune to *.md dockerignore)."""
+    text = (SYSTEM_PROMPT or "").strip()
+    if not text:
+        raise RuntimeError("Design-edit system prompt is empty")
+    return text
 
 
 def _truncate(text: str, limit: int = 80) -> str:
@@ -109,7 +114,7 @@ def build_design_edit_prompt(
             }
 
     lines = [
-        _SYSTEM_PROMPT,
+        _system_prompt(),
         "",
         "Current document:",
         json.dumps(doc_context, indent=2),

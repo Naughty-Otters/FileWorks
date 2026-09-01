@@ -155,6 +155,20 @@ def resolve_public_api_url(*candidates: str) -> str:
     return fallback
 
 
+def ui_api_url(api_url: str, canonical_origin: str) -> str:
+    """API origin written into the UI ``config.js``.
+
+    Prefer the dedicated ``api.*`` host. Same-origin ``{site}/api/*`` is optional and
+    only works when a Worker zone route wins over Pages; pinning the UI to it before
+    that route is live breaks production deploys. Cross-origin CORS on ``api.*`` is
+    the reliable path for both staging and prod.
+    """
+    public = (api_url or "").strip().rstrip("/")
+    if public:
+        return public
+    return (canonical_origin or "").strip().rstrip("/")
+
+
 def resolve_environment(token: str) -> Environment | None:
     token = token.strip().lower()
     for env in ENVIRONMENTS.values():

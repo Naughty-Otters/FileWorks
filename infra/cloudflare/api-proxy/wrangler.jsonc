@@ -21,8 +21,11 @@
       "vars": {
         "ORIGIN": "https://example.invalid"
       },
+      "triggers": { "crons": ["*/3 * * * *"] },
       "routes": [
-        { "pattern": "api.fileworks.ai", "custom_domain": true }
+        { "pattern": "api.fileworks.ai", "custom_domain": true },
+        { "pattern": "fileworks.ai/api/*", "zone_name": "fileworks.ai" },
+        { "pattern": "www.fileworks.ai/api/*", "zone_name": "fileworks.ai" }
       ]
     }
   }

@@ -25,16 +25,35 @@ declare global {
 
 const LOCAL_FALLBACK = "http://127.0.0.1:8000";
 
+/** Stable site hosts that proxy /api/* on the same origin (no cross-origin CORS). */
+const SAME_ORIGIN_API_HOSTS = new Set([
+  "staging.fileworks.ai",
+  "fileworks.ai",
+  "www.fileworks.ai",
+]);
+
 function trimSlash(value: string): string {
   return value.replace(/\/$/, "");
 }
 
+/** On the canonical site host, call /api on the same origin — the zone Worker proxies to Lambda. */
+function sameOriginApiBase(): string | null {
+  if (typeof window === "undefined") return null;
+  const host = window.location.hostname.toLowerCase();
+  if (!SAME_ORIGIN_API_HOSTS.has(host)) return null;
+  return trimSlash(window.location.origin);
+}
+
 export function resolveApiBase(): string {
   if (typeof window !== "undefined") {
+    // Prefer deploy-written config.js. Do not force same-origin when config still
+    // points at api.* — that zone route may not exist until `fw frontend` publishes it.
     const injected = window.__FILEWORKS_CONFIG__?.apiUrl;
     if (typeof injected === "string" && injected.trim()) {
       return trimSlash(injected.trim());
     }
+    const onCanonical = sameOriginApiBase();
+    if (onCanonical) return onCanonical;
   }
   const fromBuild = process.env.NEXT_PUBLIC_API_URL;
   if (fromBuild && fromBuild.trim()) return trimSlash(fromBuild.trim());

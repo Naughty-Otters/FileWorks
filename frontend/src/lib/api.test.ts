@@ -369,7 +369,7 @@ describe("design edit and admin api client", () => {
   });
 
   it("posts design edit requests", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
       jsonResponse({
         reply: "Done.",
         steps: [
@@ -397,9 +397,9 @@ describe("design edit and admin api client", () => {
     expect(result.reply).toBe("Done.");
     expect(result.steps[0]?.reasoning).toContain("hierarchy");
     expect(fetchMock).toHaveBeenCalled();
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/api/templates/edit");
-    expect(JSON.parse(String(init.body))).toMatchObject({
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(String(url)).toContain("/api/templates/edit");
+    expect(JSON.parse(String(init?.body))).toMatchObject({
       message: "Make title bigger",
       selection_id: "title",
       mode: "plan_and_apply",

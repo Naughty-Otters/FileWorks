@@ -33,6 +33,7 @@ from fw.context import (
     app_bucket_name,
     resolve_public_api_url,
     terraform_state_key,
+    ui_api_url,
 )
 from fw.tools import (
     CommandError,
@@ -1186,6 +1187,11 @@ def _deploy_api_proxy(ctx: Context, outputs: dict) -> None:
         return
     if is_lambda_function_url(public):
         return
+    if not is_lambda_function_url(origin):
+        raise CommandError(
+            f"terraform output lambda_url must be a Function URL, got {origin!r}. "
+            "Run `fw --env <env> apply` first."
+        )
     if not API_PROXY_CONFIG.is_file():
         raise CommandError(f"API proxy config missing: {API_PROXY_CONFIG}")
     console.info(f"Publishing API proxy {public} → {origin}")
@@ -1200,6 +1206,73 @@ def _deploy_api_proxy(ctx: Context, outputs: dict) -> None:
         f"ORIGIN:{origin}",
     )
     console.success(f"API proxy published → {public}")
+    if not _check_cors(ctx, public, ctx.env.public_origin):
+        raise CommandError(
+            f"API proxy at {public} is not answering CORS preflight for {ctx.env.public_origin}. "
+            "Check Lambda health and Cloudflare Worker ORIGIN."
+        )
+    # Same-origin /api/* is optional. Pages custom domains often 404 /api until
+    # _routes.json excludes it and the Worker zone route propagates — never block deploy.
+    site = ctx.env.public_origin.rstrip("/")
+    if site and site != public.rstrip("/"):
+        if _probe_same_origin_api(ctx, site, attempts=3, delay_s=5):
+            console.info(f"Same-origin {site}/api/* is live (UI still pins {public} for reliability).")
+        else:
+            console.warn(
+                f"Same-origin {site}/api/* not ready yet; UI will use {public}. "
+                "Ensure Pages ships public/_routes.json excluding /api/*."
+            )
+
+
+def _probe_same_origin_api(
+    ctx: Context,
+    site_origin: str,
+    *,
+    attempts: int = 1,
+    delay_s: float = 0,
+) -> bool:
+    """GET {site}/api/health must hit the Worker, not Pages' static 404 HTML."""
+    import tempfile
+    import time
+
+    url = f"{site_origin.rstrip('/')}/api/health"
+    last_detail = ""
+    for attempt in range(1, max(1, attempts) + 1):
+        with tempfile.NamedTemporaryFile(prefix="fw-same-origin-", suffix=".body", delete=False) as tmp:
+            body_path = Path(tmp.name)
+        try:
+            probe = run(
+                [
+                    "curl",
+                    "-sS",
+                    "-o",
+                    str(body_path),
+                    "-w",
+                    "%{http_code}",
+                    "--max-time",
+                    "60",
+                    url,
+                ],
+                check=False,
+                capture=True,
+                ctx=ctx,
+            )
+            code = (probe.stdout or "").strip()
+            body = body_path.read_text(encoding="utf-8", errors="replace") if body_path.is_file() else ""
+            if code == "200" and '"status"' in body:
+                console.success(f"Same-origin API ok at {url}")
+                return True
+            last_detail = f"HTTP {code or probe.returncode}"
+        finally:
+            body_path.unlink(missing_ok=True)
+        if attempt < attempts and delay_s > 0:
+            console.info(f"Same-origin check retry {attempt}/{attempts} after {delay_s:.0f}s…")
+            time.sleep(delay_s)
+    console.warn(
+        f"Same-origin API check failed for {url} ({last_detail}). "
+        "Worker zone route may still be propagating, or Pages is claiming /api/*."
+    )
+    return False
 
 
 def _resolve_api_url(ctx: Context, outputs: dict) -> str:
@@ -1213,15 +1286,22 @@ def _resolve_api_url(ctx: Context, outputs: dict) -> str:
     )
 
 
+def _ui_api_url(api_url: str, canonical_origin: str) -> str:
+    return ui_api_url(api_url, canonical_origin)
+
+
 def _write_runtime_config(out_dir: Path, api_url: str, canonical_origin: str) -> None:
     """Point the built UI at the API without rebuilding any JS bundle."""
-    payload = json.dumps({"apiUrl": api_url, "canonicalOrigin": canonical_origin})
+    ui_api = _ui_api_url(api_url, canonical_origin)
+    payload = json.dumps({"apiUrl": ui_api, "canonicalOrigin": canonical_origin})
     (out_dir / "config.js").write_text(
         "// Written by `fw frontend` from PUBLIC_API_URL or Terraform api_url.\n"
         f"window.__FILEWORKS_CONFIG__ = {payload};\n",
         encoding="utf-8",
     )
-    console.success(f"UI endpoint pinned to {api_url}")
+    console.success(f"UI endpoint pinned to {ui_api}")
+    if ui_api.rstrip("/") != (api_url or "").rstrip("/"):
+        console.info(f"UI uses same-origin proxy; dedicated API host is {api_url}")
     console.info(f"Preview hosts redirect to {canonical_origin}")
 
 
@@ -1249,13 +1329,17 @@ def _check_cors(ctx: Context, api_url: str, origin: str) -> bool:
         capture=True,
         ctx=ctx,
     )
-    allowed = origin.lower() in (probe.stdout or "").lower()
+    body = probe.stdout or ""
+    first = body.split("\n", 1)[0] if body else ""
+    status_ok = any(token in first for token in (" 200 ", " 204 ", " 201 "))
+    allowed = status_ok and origin.lower() in body.lower()
     if allowed:
         console.success(f"CORS ok for {origin}")
     else:
+        detail = first.strip() or f"exit {probe.returncode}"
         console.warn(
-            f"CORS check failed for {origin}. "
-            "Confirm cors_origins in envs/<env>.tfvars, then re-run apply."
+            f"CORS check failed for {origin} ({detail}). "
+            "Confirm the API proxy ORIGIN (Lambda Function URL) and cors_origins in envs/<env>.tfvars."
         )
     return allowed
 
@@ -1414,9 +1498,12 @@ def frontend(ctx: Context) -> None:
             + ", ".join(preview_urls)
             + " — sign-in only works on origins registered with Google; use the stable URL."
         )
-    console.info(f"API {api_url}")
+    console.info(f"API {api_url} (UI config.js pins this dedicated host)")
     for origin in (frontend_url, ctx.env.pages_origin):
         _check_cors(ctx, api_url, origin)
+    site = (canonical or "").rstrip("/")
+    if site and site != api_url.rstrip("/"):
+        _probe_same_origin_api(ctx, site, attempts=2, delay_s=3)
 
 
 def full(ctx: Context) -> None:

@@ -60,11 +60,45 @@ function upstreamInit(request) {
   return init;
 }
 
+function validateOrigin(request, origin) {
+  if (!origin || /example\.invalid/i.test(origin)) {
+    return "API origin is not configured. Re-run `fw --env <env> frontend` to publish the proxy.";
+  }
+  let originHost = "";
+  let requestHost = "";
+  try {
+    originHost = new URL(origin).hostname.toLowerCase();
+    requestHost = new URL(request.url).hostname.toLowerCase();
+  } catch {
+    return "API origin is not a valid URL.";
+  }
+  // Never proxy back to this host (or its api.* alias) — that loops and 502s.
+  const apex = requestHost.replace(/^www\./, "");
+  if (
+    originHost === requestHost ||
+    originHost === apex ||
+    originHost === `api.${apex}` ||
+    requestHost === `api.${originHost}`
+  ) {
+    return "API origin must be the Lambda Function URL, not the public API host.";
+  }
+  return "";
+}
+
 export default {
   async fetch(request, env) {
+    if (request.method === "OPTIONS") {
+      const headers = corsHeaders(request);
+      if (!Object.keys(headers).length) {
+        return new Response(null, { status: 403 });
+      }
+      return new Response(null, { status: 204, headers });
+    }
+
     const origin = String(env.ORIGIN || "").replace(/\/$/, "");
-    if (!origin) {
-      return jsonError(request, 502, "API origin is not configured");
+    const originError = validateOrigin(request, origin);
+    if (originError) {
+      return jsonError(request, 502, originError);
     }
     const incoming = new URL(request.url);
     const target = new URL(`${incoming.pathname}${incoming.search}`, `${origin}/`);

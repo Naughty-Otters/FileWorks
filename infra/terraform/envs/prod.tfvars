@@ -15,7 +15,8 @@ cors_origins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "https://fileworks-prod.pages.dev",
-  "https://fileworks.ai"
+  "https://fileworks.ai",
+  "https://www.fileworks.ai",
 ]
-cors_origin_regex     = "^https://([a-z0-9-]+\\.)?fileworks-prod\\.pages\\.dev$"
+cors_origin_regex     = "^https://(([a-z0-9-]+\\.)?fileworks-prod\\.pages\\.dev|www\\.fileworks\\.ai)$"
 cors_wildcard_origins = ["https://*.fileworks-prod.pages.dev"]

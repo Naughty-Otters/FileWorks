@@ -47,6 +47,11 @@ COPY backend/pyproject.toml backend/uv.lock backend/README.md backend/alembic.in
 RUN uv sync --frozen --no-dev --no-install-project --all-extras
 
 COPY backend/app ./app
+# Fail the build if dockerignore / COPY dropped required runtime assets.
+# A missing prompt previously crashed every Lambda invoke with 502.
+COPY infra/docker/assert_runtime_assets.py /tmp/assert_runtime_assets.py
+RUN FILEWORKS_APP_ROOT=/var/task/app python /tmp/assert_runtime_assets.py \
+    && rm /tmp/assert_runtime_assets.py
 RUN uv sync --frozen --no-dev --all-extras
 # Lambda is CPU-only and caps uncompressed images at 10 GiB. EasyOCR/torch
 # otherwise pull CUDA wheels (~4 GiB nvidia + triton) that cannot run here.
