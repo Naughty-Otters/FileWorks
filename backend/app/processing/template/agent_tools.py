@@ -34,6 +34,8 @@ _AGENT_TOOL_SCHEMA: dict[str, Any] = {
     "description": (
         "One agent tool call. Prefer scaffold_page / add_section / add_info_row for structure, "
         "then edit_node for fine tweaks. "
+        "For adjust/update: edit_node update (label/style/layout/box/parentId+index) or "
+        "edit_node remove (delete by real id). "
         f"tool must be one of: {', '.join(AGENT_TOOLS)}."
     ),
     "properties": {
@@ -45,18 +47,26 @@ _AGENT_TOOL_SCHEMA: dict[str, Any] = {
         "action": {
             "type": "string",
             "enum": ["add", "update", "remove"],
-            "description": "For edit_node / edit_variable.",
+            "description": (
+                "For edit_node / edit_variable. "
+                "edit_node: add|update|remove — remove deletes the node (and descendants if box). "
+                "update with parentId+index reorders/reparents; box.w/h resizes; layout patches auto-layout."
+            ),
         },
         "id": {
             "type": "string",
-            "description": "Target node/variable id, or last_created after an add in this step.",
+            "description": (
+                "Target node/variable id. For updates/removes use a real id from "
+                "nodeIndex/selection — not last_created unless you just added in this step."
+            ),
         },
         "parentId": {
             "type": "string",
             "description": (
                 "Parent box id, or last_created / last_created_sibling / last_column. "
                 "For stacking add_info_row under a section, use last_column (never "
-                "last_created_sibling after a row — that nests rows)."
+                "last_created_sibling after a row — that nests rows). "
+                "For reorder/reparent (edit_node update), use the real parent id from nodeIndex."
             ),
         },
         "kind": {
@@ -77,7 +87,10 @@ _AGENT_TOOL_SCHEMA: dict[str, Any] = {
         "index": {
             "type": "integer",
             "minimum": 0,
-            "description": "Child index when reparenting (edit_node update).",
+            "description": (
+                "0-based sibling index under parentId when reparenting/reordering "
+                "(edit_node update). Use nodeIndex.index from document context."
+            ),
         },
         "style": {
             "type": "object",
@@ -101,7 +114,10 @@ _AGENT_TOOL_SCHEMA: dict[str, Any] = {
         },
         "box": {
             "type": "object",
-            "description": "Freeform geometry (x,y,w,h).",
+            "description": (
+                "Geometry. For resize use w/h only (omit x/y under auto-layout parents). "
+                "x/y only when the parent is freeform."
+            ),
             "properties": {
                 "x": {"type": "number"},
                 "y": {"type": "number"},

@@ -59,6 +59,18 @@ def test_design_edit_schema_requires_reasoning() -> None:
         "add_info_row",
         "add_two_col",
     }
+    bands_desc = schema["properties"]["designBrief"]["properties"]["bands"]["description"]
+    assert "mutation" in bands_desc.lower() or "adjust" in bands_desc.lower()
+    tools_desc = step_props["tools"]["description"]
+    assert "edit_node" in tools_desc and ("adjust" in tools_desc.lower() or "remove" in tools_desc.lower())
+    id_desc = tool_schema["properties"]["id"]["description"]
+    assert "nodeIndex" in id_desc or "real id" in id_desc.lower()
+    index_desc = tool_schema["properties"]["index"]["description"]
+    assert "0-based" in index_desc or "nodeIndex" in index_desc
+    box_desc = tool_schema["properties"]["box"]["description"]
+    assert "resize" in box_desc.lower() or "w/h" in box_desc.lower()
+    action_desc = tool_schema["properties"]["action"]["description"]
+    assert "remove" in action_desc.lower()
 
 
 def test_normalize_ops_aliases_and_drops_unknown() -> None:
@@ -130,6 +142,10 @@ def test_design_edit_prompt_is_embedded_python_module() -> None:
     assert prompt == SYSTEM_PROMPT.strip()
     assert "edit_node" in prompt
     assert "tools" in prompt.lower()
+    assert "MODIFY WORKFLOW" in prompt
+    assert "action: \"remove\"" in prompt or 'action: "remove"' in prompt or "edit_node remove" in prompt
+    assert "nodeIndex.index" in prompt or "0-based sibling" in prompt
+    assert "intent = adjust" in prompt or "intent = adjust | update" in prompt
     prompts_dir = Path(__file__).resolve().parents[1] / "app" / "processing" / "template" / "prompts"
     assert list(prompts_dir.glob("*.md")) == []
     assert (prompts_dir / "design_edit_prompt.py").is_file()
@@ -149,9 +165,185 @@ def test_build_design_edit_prompt_includes_document_and_message() -> None:
     assert "User request:" in prompt
     assert "nodeIndex" in prompt
     assert "layoutMap" in prompt
+    assert '"index"' in prompt
+    assert '"path"' in prompt
+    assert "root > title" in prompt or "path" in prompt
+    assert "Default target" in prompt or "this/that/selected" in prompt
+    assert "Adjust/update" in prompt
     assert "edit_node" in prompt or "Allowed tools" in prompt
     assert "designBrief" in prompt or "Workflow" in prompt or "scaffold_page" in prompt
     assert "empty decorative" in prompt.lower() or "never leave" in prompt.lower()
+
+
+def test_node_index_includes_sibling_index_and_path() -> None:
+    from app.processing.template.design_edit import _flat_index
+
+    document = _document()
+    index = _flat_index(document.root)
+    by_id = {item["id"]: item for item in index}
+    assert by_id["root"]["index"] == 0
+    assert by_id["root"]["path"] == "root"
+    assert by_id["root"]["parentId"] is None
+    title = by_id["title"]
+    assert title["parentId"] == "root"
+    assert title["index"] == 0
+    assert title["path"] == "root > title"
+
+
+def test_flat_index_and_layout_map_number_siblings() -> None:
+    from app.processing.template.design_edit import _flat_index, _layout_map
+
+    document = DesignDocument.model_validate(
+        {
+            "version": 2,
+            "pageSize": {"w": 850, "h": 1100},
+            "root": {
+                "id": "root",
+                "kind": "box",
+                "label": "Document",
+                "layout": {
+                    "direction": "column",
+                    "gap": 12,
+                    "padding": 40,
+                    "align": "stretch",
+                    "justify": "start",
+                },
+                "children": [
+                    {"id": "a", "kind": "heading", "label": "A", "level": 1},
+                    {"id": "b", "kind": "paragraph", "label": "B"},
+                    {
+                        "id": "sec",
+                        "kind": "box",
+                        "label": "Section",
+                        "layout": {
+                            "direction": "column",
+                            "gap": 8,
+                            "padding": 0,
+                            "align": "stretch",
+                            "justify": "start",
+                        },
+                        "children": [
+                            {"id": "c", "kind": "paragraph", "label": "C"},
+                            {"id": "d", "kind": "paragraph", "label": "D"},
+                        ],
+                    },
+                ],
+            },
+            "variables": [],
+        }
+    )
+    by_id = {item["id"]: item for item in _flat_index(document.root)}
+    assert by_id["a"]["index"] == 0
+    assert by_id["b"]["index"] == 1
+    assert by_id["sec"]["index"] == 2
+    assert by_id["c"]["index"] == 0
+    assert by_id["d"]["index"] == 1
+    assert by_id["d"]["path"] == "root > sec > d"
+    assert by_id["c"]["parentId"] == "sec"
+
+    layout_map = _layout_map(document.root)
+    root_container = next(c for c in layout_map["containers"] if c["id"] == "root")
+    assert [child["index"] for child in root_container["children"]] == [0, 1, 2]
+    sec_container = next(c for c in layout_map["containers"] if c["id"] == "sec")
+    assert [child["index"] for child in sec_container["children"]] == [0, 1]
+
+
+def test_run_design_edit_adjust_uses_real_ids_for_remove_and_reorder() -> None:
+    document = DesignDocument.model_validate(
+        {
+            "version": 2,
+            "pageSize": {"w": 850, "h": 1100},
+            "root": {
+                "id": "root",
+                "kind": "box",
+                "label": "Document",
+                "layout": {
+                    "direction": "column",
+                    "gap": 12,
+                    "padding": 40,
+                    "align": "stretch",
+                    "justify": "start",
+                },
+                "children": [
+                    {
+                        "id": "sec",
+                        "kind": "box",
+                        "label": "Specs",
+                        "layout": {
+                            "direction": "column",
+                            "gap": 8,
+                            "padding": 0,
+                            "align": "stretch",
+                            "justify": "start",
+                        },
+                        "children": [
+                            {"id": "row_a", "kind": "box", "label": "Row", "children": []},
+                            {"id": "row_b", "kind": "box", "label": "Row", "children": []},
+                            {"id": "note", "kind": "paragraph", "label": "Remove me"},
+                        ],
+                    }
+                ],
+            },
+            "variables": [],
+        }
+    )
+
+    class Engine:
+        def configured(self) -> bool:
+            return True
+
+        @property
+        def init_error(self) -> str | None:
+            return None
+
+        def complete_structured(self, prompt: str, schema: dict, *, purpose: str) -> dict:
+            assert "MODIFY WORKFLOW" in prompt
+            assert '"path"' in prompt
+            return {
+                "reply": "Reordered rows and removed the note.",
+                "designBrief": {
+                    "intent": "adjust",
+                    "concept": "Reorder Specs and delete unused note.",
+                    "bands": ["Reorder Specs rows", "Delete footer note"],
+                    "notes": "Patch existing ids only.",
+                },
+                "steps": [
+                    {
+                        "reasoning": "Parent sec is column; move row_b to index 0.",
+                        "summary": "Reorder Specs rows",
+                        "tools": [
+                            {
+                                "tool": "edit_node",
+                                "action": "update",
+                                "id": "row_b",
+                                "parentId": "sec",
+                                "index": 0,
+                            }
+                        ],
+                    },
+                    {
+                        "reasoning": "Delete unused paragraph last so prior ops still resolve.",
+                        "summary": "Delete footer note",
+                        "tools": [{"tool": "edit_node", "action": "remove", "id": "note"}],
+                    },
+                ],
+            }
+
+    result = run_design_edit(document, "Move the second row to the top and delete the note", engine=Engine())
+    assert result["designBrief"]["intent"] == "adjust"
+    assert result["designBrief"]["bands"] == ["Reorder Specs rows", "Delete footer note"]
+    assert result["steps"][0]["ops"] == [
+        {"op": "move_in_tree", "id": "row_b", "parentId": "sec", "index": 0}
+    ]
+    assert result["steps"][1]["ops"] == [{"op": "remove_element", "id": "note"}]
+    # Simulate client apply of returned ops
+    from app.processing.template.doc_ops import apply_design_ops
+
+    flat = [op for step in result["steps"] for op in step["ops"]]
+    out, errors, _ = apply_design_ops(document, flat)
+    assert errors == []
+    section = out.root.children[0]
+    assert [c.id for c in section.children] == ["row_b", "row_a"]
 
 
 def test_run_design_edit_normalizes_steps() -> None:

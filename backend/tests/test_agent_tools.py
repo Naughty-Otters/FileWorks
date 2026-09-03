@@ -208,3 +208,56 @@ def test_expand_edit_node_remove_move_image_repeat() -> None:
     assert "update_variable" in names
     assert "remove_variable" in names
     assert names.count("add_element") >= 3  # two-col row + left + right
+
+
+def test_expand_modify_recipes_relabel_resize_reorder_delete() -> None:
+    """Canonical adjust recipes from the modify workflow prompt."""
+    ops = expand_agent_tools(
+        [
+            {"tool": "edit_node", "action": "update", "id": "ai_paragraph_13", "label": "Sq Ft"},
+            {
+                "tool": "edit_node",
+                "action": "update",
+                "id": "ai_box_12",
+                "box": {"w": 714, "h": 40},
+            },
+            {
+                "tool": "edit_node",
+                "action": "update",
+                "id": "ai_box_15",
+                "parentId": "ai_box_6",
+                "index": 0,
+            },
+            {
+                "tool": "edit_node",
+                "action": "update",
+                "id": "ai_box_6",
+                "layout": {"gap": 16, "padding": 8, "direction": "column", "align": "stretch"},
+            },
+            {"tool": "edit_node", "action": "remove", "id": "ai_paragraph_23"},
+        ]
+    )
+    assert ops == [
+        {"op": "update_label", "id": "ai_paragraph_13", "label": "Sq Ft"},
+        {"op": "resize_node", "id": "ai_box_12", "w": 714.0, "h": 40.0},
+        {"op": "move_in_tree", "id": "ai_box_15", "parentId": "ai_box_6", "index": 0},
+        {"op": "toggle_auto_layout", "id": "ai_box_6", "enabled": True},
+        {
+            "op": "update_layout_props",
+            "id": "ai_box_6",
+            "patch": {"gap": 16, "padding": 8, "direction": "column", "align": "stretch"},
+        },
+        {"op": "remove_element", "id": "ai_paragraph_23"},
+    ]
+
+
+def test_agent_tool_schema_documents_modify_targeting() -> None:
+    from app.processing.template.agent_tools import agent_tool_item_schema
+
+    schema = agent_tool_item_schema()
+    assert "adjust/update" in schema["description"].lower() or "remove" in schema["description"].lower()
+    assert "nodeIndex" in schema["properties"]["id"]["description"]
+    assert "nodeIndex.index" in schema["properties"]["index"]["description"]
+    assert "auto-layout" in schema["properties"]["box"]["description"].lower() or "freeform" in schema[
+        "properties"
+    ]["box"]["description"].lower()

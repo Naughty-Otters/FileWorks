@@ -39,6 +39,8 @@ def test_unit_prompt_requires_last_column_for_info_rows() -> None:
     prompt = build_design_edit_prompt(_blank(), "Create a property flyer")
     assert "last_column" in prompt
     assert "nests a row inside" in prompt or "row-in-row" in prompt or "collapses widths" in prompt
+    assert "MODIFY WORKFLOW" in prompt
+    assert "edit_node remove" in prompt or "action: \"remove\"" in prompt or "Delete node" in prompt
 
 
 def test_unit_expand_rewrites_ambiguous_info_row_parents() -> None:

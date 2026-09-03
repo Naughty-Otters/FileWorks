@@ -141,7 +141,11 @@ def design_edit_schema() -> dict[str, Any]:
                     "bands": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Ordered vertical page bands top→bottom.",
+                        "description": (
+                            "Ordered vertical page bands top→bottom on create. "
+                            "On adjust/update, list mutation targets instead "
+                            '(e.g. ["Reorder Specs rows", "Delete footer note"]).'
+                        ),
                     },
                     "notes": {
                         "type": "string",
@@ -175,7 +179,8 @@ def design_edit_schema() -> dict[str, Any]:
                             "type": "array",
                             "description": (
                                 f"Agent tools ({', '.join(AGENT_TOOLS)}). "
-                                "Creates: scaffold_page → add_section / add_info_row band-by-band."
+                                "Creates: scaffold_page → add_section / add_info_row band-by-band. "
+                                "Adjust/update: edit_node update/remove with real nodeIndex ids."
                             ),
                             "items": agent_tool_item_schema(),
                         },

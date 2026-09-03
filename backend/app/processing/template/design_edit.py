@@ -48,12 +48,15 @@ def _style_summary(node: DesignNode) -> dict[str, Any] | None:
     if style is None:
         return None
     patch: dict[str, Any] = {}
+    # Always surface size/align when set — critical for adjust/update targeting.
     if style.font_size is not None:
         patch["fontSize"] = style.font_size
     if style.align:
         patch["align"] = style.align
     if style.bold:
         patch["bold"] = True
+    if style.italic:
+        patch["italic"] = True
     if style.color and style.color not in {"#000000", "#000", "black"}:
         patch["color"] = style.color
     bg = (style.background_color or "").lower()
@@ -118,21 +121,27 @@ def _flat_index(
     out: list[dict[str, Any]] | None = None,
     *,
     parent_id: str | None = None,
+    index: int = 0,
+    path_ids: list[str] | None = None,
 ) -> list[dict[str, Any]]:
+    """Flat node list for targeting. Includes sibling index + short path."""
     items = out if out is not None else []
+    trail = [*(path_ids or []), node.id]
     items.append(
         {
             "id": node.id,
             "kind": node.type,
             "label": _truncate(node.label or "", 60),
             "parentId": parent_id,
+            "index": index,
+            "path": " > ".join(trail),
             "layoutMode": _layout_mode(node),
             "box": {"x": node.x, "y": node.y, "w": node.w, "h": node.h},
             "children": len(node.children),
         }
     )
-    for child in node.children:
-        _flat_index(child, items, parent_id=node.id)
+    for i, child in enumerate(node.children):
+        _flat_index(child, items, parent_id=node.id, index=i, path_ids=trail)
     return items
 
 
@@ -158,6 +167,7 @@ def _layout_map(root: DesignNode) -> dict[str, Any]:
                             "id": child.id,
                             "kind": child.type,
                             "label": _truncate(child.label or "", 40),
+                            "index": i,
                             "box": {
                                 "x": child.x,
                                 "y": child.y,
@@ -166,7 +176,7 @@ def _layout_map(root: DesignNode) -> dict[str, Any]:
                             },
                             "layoutMode": _layout_mode(child),
                         }
-                        for child in node.children
+                        for i, child in enumerate(node.children)
                     ],
                 }
             )
@@ -312,6 +322,10 @@ def build_design_edit_prompt(
         if selected:
             doc_context["selection"] = {
                 "id": selection_id,
+                "note": (
+                    "Default target when the user says this/that/selected/here — "
+                    "use this id for edit_node update/remove unless they name another node."
+                ),
                 "breadcrumb": _breadcrumb(document, selection_id),
                 "node": _node_json(selected),
             }
@@ -353,8 +367,10 @@ def build_design_edit_prompt(
             message.strip(),
             "",
             "Respond with JSON: designBrief (intent/concept/bands), reply, steps.",
-            "Workflow: designBrief → scaffold_page + variables → one step per band "
+            "Creates: designBrief → scaffold_page + variables → one band per step "
             "(add_section / add_info_row). Do not dump freeform leaves on root.",
+            "Adjust/update: resolve real ids from nodeIndex/selection (index + path), "
+            "then edit_node update/remove in safe order — do not rebuild the page.",
             f"Page size is {document.page.w}×{document.page.h}; content width ≈ {max(100, int(document.page.w) - 48)}.",
             f"Allowed tools only: {', '.join(AGENT_TOOLS)}.",
         ]
