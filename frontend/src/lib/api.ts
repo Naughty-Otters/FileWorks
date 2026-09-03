@@ -974,7 +974,10 @@ export async function editDesign(input: {
   selection_id?: string | null;
   conversation?: { role: "user" | "assistant"; content: string }[];
 }): Promise<import("@/design-pad/ops/schema").DesignEditResponse> {
+  // Bypass the Next.js /api rewrite proxy — design-edit can take >30s with
+  // Gemini thinking, and the proxy resets the socket (ECONNRESET / hang up).
   const res = await apiFetch("/api/templates/edit", {
+    direct: true,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

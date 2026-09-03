@@ -77,7 +77,7 @@ interface EditorState {
   redo: () => void;
   setZoom: (zoom: number) => void;
   select: (id: string | null) => void;
-  addElement: (kind: ElementKind, parentId: string, x: number, y: number) => void;
+  addElement: (kind: ElementKind, parentId: string, x: number, y: number, id?: string) => void;
   removeElement: (id: string) => void;
   updateLabel: (id: string, label: string) => void;
   updateStyle: (id: string, patch: Partial<NodeStyle>) => void;
@@ -297,13 +297,13 @@ export const useEditorStore = create<EditorState>((set, get) => {
     setZoom: (zoom) => set({ zoom: Math.min(2, Math.max(0.25, zoom)) }),
     select: (id) => set({ selectedId: id }),
 
-    addElement: (kind, parentId, x, y) => {
+    addElement: (kind, parentId, x, y, id) => {
       noteHistory();
       let newId = "";
       set((state) => {
         const root = structuredClone(state.doc.root);
         const parent = findNode(root, parentId) ?? root;
-        const node = createNode(kind, x, y);
+        const node = createNode(kind, x, y, id);
         newId = node.id;
         parent.children.push(node);
         return { doc: { ...state.doc, root } };

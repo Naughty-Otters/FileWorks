@@ -9,17 +9,25 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 from app.engines.llm.providers.base import CONVERT_PROMPT, ConvertRequest, LangChainChatProvider, openai_vision_parts
 
+# Design-edit needs real planning; convert/OCR must not burn the output budget on thoughts.
+# Keep this moderate — high budgets + a repair pass easily exceed the Next.js proxy timeout.
+_DESIGN_EDIT_THINKING_BUDGET = 4096
 
-def gemini_thinking_kwargs(model: str) -> dict[str, Any]:
-    """Turn thinking off so convert/translate return text instead of empty MAX_TOKENS.
 
-    Gemini 2.5 defaults to dynamic thinking, which can spend the whole ``max_tokens``
-    budget on thoughts (empty ``content``) and stall long enough that Cloudflare
-    drops the request — the browser then reports that as CORS. Do not set
-    ``thinking_level`` together with ``thinking_budget``: langchain-google-genai
-    ignores the budget when both are present.
+def gemini_thinking_kwargs(model: str, *, purpose: str = "convert") -> dict[str, Any]:
+    """Configure Gemini thinking by purpose.
+
+    Convert/translate keep thinking off so ``max_tokens`` is not spent on empty content
+    (which previously stalled long enough that Cloudflare surfaced CORS). Design-edit
+    enables a bounded budget so layout/component/label/variable plans get deeper
+    reasoning. Do not set ``thinking_level`` together with ``thinking_budget``:
+    langchain-google-genai ignores the budget when both are present.
     """
     name = (model or "").lower()
+    if purpose == "design-edit":
+        if "2.5" in name or name.startswith("gemini-2"):
+            return {"thinking_budget": _DESIGN_EDIT_THINKING_BUDGET}
+        return {"thinking_level": "medium"}
     if "2.5" in name or name.startswith("gemini-2"):
         return {"thinking_budget": 0}
     return {"thinking_level": "minimal"}
@@ -38,7 +46,7 @@ class GeminiProvider(LangChainChatProvider):
             max_tokens=request.max_tokens,
             timeout=request.timeout_s,
             temperature=0,
-            **gemini_thinking_kwargs(request.model),
+            **gemini_thinking_kwargs(request.model, purpose=request.purpose),
         )
 
     def build_parts(self, request: ConvertRequest) -> list[dict[str, Any]]:

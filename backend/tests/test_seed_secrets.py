@@ -25,6 +25,7 @@ class SeedSecretTests(unittest.TestCase):
     def test_stripe_and_public_url_are_seeded(self) -> None:
         self.assertIn("STRIPE_", SECRET_ENV_PREFIXES)
         self.assertIn("GEMINI_", SECRET_ENV_PREFIXES)
+        self.assertIn("DESIGN_AGENT_", SECRET_ENV_PREFIXES)
         self.assertIn("GOOGLE_CLIENT_ID", SECRET_EXACT_KEYS)
         self.assertIn("GOOGLE_API_KEY", SECRET_EXACT_KEYS)
         self.assertIn("PUBLIC_APP_URL", SECRET_EXACT_KEYS)

@@ -176,22 +176,27 @@ class LLMEngine(OCREngine):
     def _convert(self, file_path: Path, suffix: str) -> str:
         return PAGE_SEPARATOR.join(self._convert_pages(file_path, suffix))
 
-    def _completion_request(self) -> ConvertRequest:
+    def _completion_request(self, *, purpose: str = "text") -> ConvertRequest:
         self.ensure_ready()
         spec = self._spec
         api_key = self._api_key()
         assert spec is not None and api_key
+        max_tokens = int(self.settings.llm_max_tokens)
+        # Thinking tokens share the output budget; give design-edit headroom for plan + JSON.
+        if purpose == "design-edit":
+            max_tokens = max(max_tokens, 16384)
         return ConvertRequest(
             spec=spec,
             file_path=Path("."),
             suffix=".md",
             api_key=api_key,
             model=self._model(),
-            max_tokens=int(self.settings.llm_max_tokens),
+            max_tokens=max_tokens,
             timeout_s=float(self.settings.llm_timeout_s),
             target=self._http_target(),
             max_pages=1,
             max_image_side=1,
+            purpose=purpose,
         )
 
     def complete_text(self, prompt: str, *, purpose: str = "text") -> str:
@@ -199,7 +204,7 @@ class LLMEngine(OCREngine):
         spec = self._spec
         assert spec is not None
         raw = get_api_provider(spec.id).complete_text(
-            self._completion_request(),
+            self._completion_request(purpose=purpose),
             prompt,
             purpose=purpose,
         )
@@ -219,7 +224,7 @@ class LLMEngine(OCREngine):
         spec = self._spec
         assert spec is not None
         return get_api_provider(spec.id).complete_structured(
-            self._completion_request(),
+            self._completion_request(purpose=purpose),
             prompt,
             schema,
             purpose=purpose,

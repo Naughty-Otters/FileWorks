@@ -40,6 +40,9 @@ def _test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     settings.google_api_key = None
     settings.translate_provider = None
     settings.translate_api_key = None
+    settings.design_agent_provider = None
+    settings.design_agent_api_key = None
+    settings.design_agent_model = None
     settings.llm_lambda_function = None
     settings.google_client_id = None
     settings.database_url = None

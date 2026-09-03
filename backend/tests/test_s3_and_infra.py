@@ -408,7 +408,15 @@ class LLMEngineTests(unittest.TestCase):
         from app.engines.llm.urls import resolve_http_target
 
         self.assertEqual(gemini_thinking_kwargs("gemini-2.5-flash"), {"thinking_budget": 0})
-        self.assertEqual(gemini_thinking_kwargs("gemini-3-flash"), {"thinking_level": "minimal"})
+        self.assertEqual(gemini_thinking_kwargs("gemini-3.8-flash"), {"thinking_level": "minimal"})
+        self.assertEqual(
+            gemini_thinking_kwargs("gemini-2.5-flash", purpose="design-edit"),
+            {"thinking_budget": 4096},
+        )
+        self.assertEqual(
+            gemini_thinking_kwargs("gemini-3.8-flash", purpose="design-edit"),
+            {"thinking_level": "medium"},
+        )
         fake = MagicMock()
         settings = get_settings()
         spec = get_provider_spec("gemini")
@@ -429,6 +437,24 @@ class LLMEngineTests(unittest.TestCase):
         kwargs = fake.call_args.kwargs
         self.assertEqual(kwargs.get("thinking_budget"), 0)
         self.assertNotIn("thinking_level", kwargs)
+
+        design_req = ConvertRequest(
+            spec=spec,
+            file_path=Path("a.md"),
+            suffix=".md",
+            api_key="k",
+            model="gemini-2.5-flash",
+            max_tokens=16384,
+            timeout_s=1,
+            target=resolve_http_target(settings, spec),
+            max_pages=1,
+            max_image_side=1,
+            purpose="design-edit",
+        )
+        fake.reset_mock()
+        with patch.dict("sys.modules", {"langchain_google_genai": MagicMock(ChatGoogleGenerativeAI=fake)}):
+            get_api_provider("gemini").build_chat_model(design_req)
+        self.assertEqual(fake.call_args.kwargs.get("thinking_budget"), 4096)
 
     def test_deepseek_v4_disables_thinking(self) -> None:
         from app.engines.llm.catalog import get_provider_spec

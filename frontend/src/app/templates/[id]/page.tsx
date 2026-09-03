@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { TemplateEditor } from "@/components/template-editor";
 import { buildPageMetadata } from "@/lib/seo";
 
@@ -16,5 +17,9 @@ export function generateStaticParams() {
 
 export default async function TemplateEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <TemplateEditor templateId={id} />;
+  return (
+    <Suspense fallback={<p className="p-6 text-sm text-[var(--ink-muted)]">Loading design editor…</p>}>
+      <TemplateEditor templateId={id} />
+    </Suspense>
+  );
 }

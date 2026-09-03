@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { applyDesignOps } from "./executor";
+import { applyDesignOps, resolveLastColumn, resolveParentRef, resetAiIdSequence } from "./executor";
 import type { DesignOp } from "./schema";
 import { validateOp, validateOps } from "./validate";
 import { useEditorStore } from "../store";
@@ -46,6 +46,15 @@ describe("design op validation", () => {
     expect(
       validateOp(doc, { op: "add_element", kind: "paragraph", parentId: heading.id }),
     ).toMatch(/not a box/);
+  });
+
+  it("accepts last_column / last_created aliases on add_element", () => {
+    const doc = createEmptyDocument();
+    expect(validateOp(doc, { op: "add_element", kind: "box", parentId: "last_column" })).toBeNull();
+    expect(validateOp(doc, { op: "add_element", kind: "box", parentId: "last_created" })).toBeNull();
+    expect(
+      validateOp(doc, { op: "add_element", kind: "box", parentId: "last_created_sibling" }),
+    ).toBeNull();
   });
 
   it("rejects heading levels outside 1–6", () => {
@@ -108,6 +117,20 @@ describe("applyDesignOps", () => {
       selectedId: null,
       history: { past: [], future: [] },
     });
+  });
+
+  it("stacks omitted coordinates below existing freeform siblings", async () => {
+    await applyDesignOps([{ op: "add_element", kind: "heading", parentId: "root" }]);
+    const firstId = useEditorStore.getState().selectedId!;
+    const first = useEditorStore.getState().doc.root.children.find((c) => c.id === firstId)!;
+    expect(first.x).toBe(16);
+    expect(first.y).toBe(16);
+
+    await applyDesignOps([{ op: "add_element", kind: "paragraph", parentId: "root" }]);
+    const secondId = useEditorStore.getState().selectedId!;
+    const second = useEditorStore.getState().doc.root.children.find((c) => c.id === secondId)!;
+    expect(second.y).toBeGreaterThan(first.y + first.h);
+    expect(second.x).toBe(16);
   });
 
   it("adds a heading and updates its label in one batch", async () => {
@@ -212,6 +235,26 @@ describe("applyDesignOps", () => {
     );
   });
 
+  it("finishes a new box with last_created aliases in one step", async () => {
+    await applyDesignOps([
+      { op: "add_element", kind: "box", parentId: "root" },
+      { op: "toggle_auto_layout", id: "last_created", enabled: true },
+      {
+        op: "update_layout_props",
+        id: "last_created",
+        patch: { direction: "column", gap: 8, padding: 16, align: "center" },
+      },
+      { op: "add_element", kind: "heading", parentId: "last_created" },
+      { op: "update_label", id: "last_created", label: "{{ document_title }}" },
+      { op: "update_style", id: "last_created", patch: { fontSize: 28, align: "center" } },
+    ]);
+    const box = useEditorStore.getState().doc.root.children.find((c) => c.kind === "box");
+    expect(box?.layout).toBeTruthy();
+    expect(box?.children).toHaveLength(1);
+    expect(box?.children[0]?.kind).toBe("heading");
+    expect(box?.children[0]?.label).toBe("{{ document_title }}");
+  });
+
   it("moves nodes in the tree and nests under a box", async () => {
     await applyDesignOps([{ op: "add_element", kind: "box", parentId: "root" }]);
     const boxId = useEditorStore.getState().selectedId!;
@@ -244,6 +287,64 @@ describe("applyDesignOps", () => {
     expect(useEditorStore.getState().doc.root.children.some((c) => c.id === paraId)).toBe(true);
   });
 
+  it("stacks info rows under last_column without nesting row-in-row", async () => {
+    resetAiIdSequence();
+    // Mimic expand(add_section) + two expand(add_info_row) with last_column parents.
+    await applyDesignOps(
+      [
+        { op: "toggle_auto_layout", id: "root", enabled: true },
+        {
+          op: "update_layout_props",
+          id: "root",
+          patch: { direction: "column", gap: 24, padding: 40, align: "stretch", justify: "start" },
+        },
+        { op: "add_element", kind: "box", parentId: "root" },
+        { op: "toggle_auto_layout", id: "last_created", enabled: true },
+        {
+          op: "update_layout_props",
+          id: "last_created",
+          patch: { direction: "column", gap: 12, padding: 0, align: "stretch", justify: "start" },
+        },
+        { op: "update_label", id: "last_created", label: "Meta" },
+        { op: "add_element", kind: "heading", parentId: "last_created" },
+        { op: "update_label", id: "last_created", label: "Meta" },
+        // row 1
+        { op: "add_element", kind: "box", parentId: "last_column" },
+        { op: "resize_node", id: "last_created", w: 700, h: 32 },
+        { op: "toggle_auto_layout", id: "last_created", enabled: true },
+        {
+          op: "update_layout_props",
+          id: "last_created",
+          patch: { direction: "row", gap: 0, padding: 0, align: "center", justify: "space-between" },
+        },
+        { op: "add_element", kind: "paragraph", parentId: "last_created" },
+        { op: "update_label", id: "last_created", label: "Date" },
+        { op: "add_element", kind: "paragraph", parentId: "last_created_sibling" },
+        { op: "update_label", id: "last_created", label: "2026-01-01" },
+        // row 2 — must be sibling of row 1, not nested
+        { op: "add_element", kind: "box", parentId: "last_column" },
+        { op: "resize_node", id: "last_created", w: 700, h: 32 },
+        { op: "toggle_auto_layout", id: "last_created", enabled: true },
+        {
+          op: "update_layout_props",
+          id: "last_created",
+          patch: { direction: "row", gap: 0, padding: 0, align: "center", justify: "space-between" },
+        },
+        { op: "add_element", kind: "paragraph", parentId: "last_created" },
+        { op: "update_label", id: "last_created", label: "Price" },
+        { op: "add_element", kind: "paragraph", parentId: "last_created_sibling" },
+        { op: "update_label", id: "last_created", label: "$100" },
+      ],
+      { useAiIds: true },
+    );
+
+    const section = useEditorStore.getState().doc.root.children[0]!;
+    expect(section.children.filter((c) => c.kind === "box")).toHaveLength(2);
+    const rows = section.children.filter((c) => c.kind === "box");
+    expect(rows.every((r) => r.children.every((c) => c.kind === "paragraph"))).toBe(true);
+    expect(rows.every((r) => r.w >= 100)).toBe(true);
+  });
+
   it("updates and removes variables and images", async () => {
     await applyDesignOps([
       { op: "add_variable", name: "client_name", label: "Client", type: "text", sampleValue: "Ada" },
@@ -262,5 +363,43 @@ describe("applyDesignOps", () => {
 
     await applyDesignOps([{ op: "remove_variable", id: varId }]);
     expect(useEditorStore.getState().doc.variables).toHaveLength(0);
+  });
+
+  it("resolveLastColumn walks past row wrappers to the section", async () => {
+    resetAiIdSequence();
+    await applyDesignOps(
+      [
+        { op: "toggle_auto_layout", id: "root", enabled: true },
+        {
+          op: "update_layout_props",
+          id: "root",
+          patch: { direction: "column", gap: 20, padding: 40, align: "stretch", justify: "start" },
+        },
+        { op: "add_element", kind: "box", parentId: "root" },
+        { op: "toggle_auto_layout", id: "last_created", enabled: true },
+        {
+          op: "update_layout_props",
+          id: "last_created",
+          patch: { direction: "column", gap: 12, padding: 0, align: "stretch", justify: "start" },
+        },
+        { op: "add_element", kind: "box", parentId: "last_created" },
+        { op: "toggle_auto_layout", id: "last_created", enabled: true },
+        {
+          op: "update_layout_props",
+          id: "last_created",
+          patch: { direction: "row", gap: 0, padding: 0, align: "center", justify: "space-between" },
+        },
+        { op: "add_element", kind: "paragraph", parentId: "last_created" },
+        { op: "update_label", id: "last_created", label: "Value" },
+      ],
+      { useAiIds: true },
+    );
+    const valueId = useEditorStore.getState().selectedId!;
+    const sectionId = useEditorStore.getState().doc.root.children[0]!.id;
+    expect(resolveLastColumn(valueId)).toBe(sectionId);
+    expect(resolveParentRef("last_column", valueId)).toBe(sectionId);
+    // last_created_sibling from the value paragraph is the ROW — the nesting bug.
+    const rowId = useEditorStore.getState().doc.root.children[0]!.children[0]!.id;
+    expect(resolveParentRef("last_created_sibling", valueId)).toBe(rowId);
   });
 });

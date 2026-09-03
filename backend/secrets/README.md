@@ -40,6 +40,25 @@ TRANSLATE_BASE_URL=                  # optional
 `TRANSLATE_PROVIDER` uses the same catalog as `LLM_PROVIDER`. Default UI language is
 **Original (no translation)** — the post-process is skipped.
 
+## Design Agent (template editor chat)
+
+The design-editor vibecoding agent uses **separate** env vars from the vision reader
+and from translation. Prefer a stronger model here (e.g. Gemini 3.8 Flash) while
+keeping OCR on a cheaper lite model.
+
+```
+DESIGN_AGENT_PROVIDER=gemini
+DESIGN_AGENT_MODEL=gemini-3.8-flash
+DESIGN_AGENT_API_KEY=                   # or reuse GEMINI_API_KEY / GOOGLE_API_KEY
+DESIGN_AGENT_BASE_URL=                  # optional
+DESIGN_AGENT_ENDPOINT=                  # optional
+DESIGN_AGENT_MAX_TOKENS=16384
+DESIGN_AGENT_TIMEOUT_S=120
+```
+
+`DESIGN_AGENT_PROVIDER` uses the same catalog as `LLM_PROVIDER`. When unset, design
+edit falls back to `LLM_PROVIDER` / `LLM_MODEL` / `LLM_API_KEY`.
+
 ## API endpoint
 
 The LangChain client posts to `{base_url}/chat/completions` (Claude uses its own Messages URL). Set one of:
@@ -57,7 +76,7 @@ Priority: `LLM_ENDPOINT` → `LLM_BASE_URL` → `{provider}_base_url` → catalo
 | Provider | Default vision model |
 | --- | --- |
 | OpenAI | `gpt-4o` |
-| Gemini | `gemini-2.5-flash` (native PDF) |
+| Gemini | `gemini-3.8-flash` (native PDF) |
 | Claude | `claude-sonnet-4-5` (native PDF) |
 | GLM | `glm-4.5v` |
 | OpenRouter | `openai/gpt-4o-mini` |
@@ -84,7 +103,7 @@ Set **only the provider you use**. Unused variables can stay unset.
 | DeepSeek | `langchain-deepseek` | hosted no (custom OCR host yes) | `DEEPSEEK_API_KEY` | `deepseek-chat` |
 | Kimi | `langchain-moonshot` | yes | `KIMI_API_KEY` or `MOONSHOT_API_KEY` | `kimi-k2.5` |
 | GLM | `langchain-openai` (OpenAI-compatible; no partner pkg) | yes | `GLM_API_KEY` or `ZHIPU_API_KEY` | `glm-4.5v` |
-| Gemini | `langchain-google-genai` | yes (native PDF) | `GEMINI_API_KEY` or `GOOGLE_API_KEY` | `gemini-2.5-flash` |
+| Gemini | `langchain-google-genai` | yes (native PDF) | `GEMINI_API_KEY` or `GOOGLE_API_KEY` | `gemini-3.8-flash` |
 | OpenAI | `langchain-openai` | yes | `OPENAI_API_KEY` | `gpt-4o` |
 | Grok | `langchain-xai` | yes | `GROK_API_KEY` or `XAI_API_KEY` | `grok-2-vision-1212` |
 | Claude | `langchain-anthropic` | yes (native PDF) | `ANTHROPIC_API_KEY` or `CLAUDE_API_KEY` | `claude-sonnet-4-5` |
@@ -94,7 +113,7 @@ Example (Gemini):
 ```
 LLM_PROVIDER=gemini
 GOOGLE_API_KEY=...
-LLM_MODEL=gemini-2.5-flash
+LLM_MODEL=gemini-3.8-flash
 ```
 
 Example (OpenAI):
@@ -117,7 +136,7 @@ Example (OpenRouter, pick any routed model):
 ```
 LLM_PROVIDER=openrouter
 OPENROUTER_API_KEY=sk-or-...
-LLM_MODEL=google/gemini-2.5-flash
+LLM_MODEL=google/gemini-3.8-flash
 ```
 
 `GET /api/health` lists the `llm` reader with `"configured": true` when the selected key is present.

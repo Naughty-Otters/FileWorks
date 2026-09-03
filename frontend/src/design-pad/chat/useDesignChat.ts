@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { editDesign } from "@/lib/api";
 import { useSession } from "@/lib/session";
-import { applyDesignOps } from "../ops/executor";
+import { applyDesignOps, resetAiIdSequence } from "../ops/executor";
 import type { DesignEditStep } from "../ops/schema";
 import { useEditorStore } from "../store";
 import type { DesignEditStepWithStatus } from "./store";
@@ -13,10 +13,22 @@ import { useChatStore } from "./store";
 function toConversation(messages: ReturnType<typeof useChatStore.getState>["messages"]) {
   const turns: { role: "user" | "assistant"; content: string }[] = [];
   for (const msg of messages) {
-    if (msg.type === "user") turns.push({ role: "user", content: msg.content });
-    if (msg.type === "assistant") turns.push({ role: "assistant", content: msg.content });
+    if (msg.type !== "turn") continue;
+    turns.push({ role: "user", content: msg.user });
+    if (msg.reply) {
+      const stepBits = msg.steps
+        .map((step) => `${step.summary}: ${step.reasoning}`)
+        .filter(Boolean)
+        .join(" | ");
+      const content = stepBits ? `${msg.reply}\n[steps] ${stepBits}` : msg.reply;
+      turns.push({ role: "assistant", content });
+    }
   }
-  return turns.slice(0, -1);
+  // Drop the in-flight turn (last user without reply yet).
+  if (turns.length && turns[turns.length - 1]?.role === "user") {
+    turns.pop();
+  }
+  return turns.slice(-8);
 }
 
 export function useDesignChat() {
@@ -28,12 +40,14 @@ export function useDesignChat() {
 
   const loading = useChatStore((s) => s.loading);
   const messages = useChatStore((s) => s.messages);
-  const addUserMessage = useChatStore((s) => s.addUserMessage);
-  const addAssistantMessage = useChatStore((s) => s.addAssistantMessage);
-  const addStepsMessage = useChatStore((s) => s.addStepsMessage);
+  const startTurn = useChatStore((s) => s.startTurn);
+  const completeTurn = useChatStore((s) => s.completeTurn);
+  const failTurn = useChatStore((s) => s.failTurn);
+  const setTurnActivity = useChatStore((s) => s.setTurnActivity);
   const addErrorMessage = useChatStore((s) => s.addErrorMessage);
   const setLoading = useChatStore((s) => s.setLoading);
   const updateStepStatus = useChatStore((s) => s.updateStepStatus);
+  const clearMessages = useChatStore((s) => s.clearMessages);
 
   const send = useCallback(
     async (text: string) => {
@@ -45,7 +59,7 @@ export function useDesignChat() {
         return;
       }
 
-      addUserMessage(message);
+      const turnId = startTurn(message);
       setLoading(true);
 
       try {
@@ -56,37 +70,53 @@ export function useDesignChat() {
           conversation: toConversation(useChatStore.getState().messages),
         });
 
-        addAssistantMessage(response.reply);
+        const stepsWithStatus: DesignEditStepWithStatus[] = response.steps.map(
+          (step: DesignEditStep) => ({
+            ...step,
+            status: step.ops.length > 0 ? "pending" : "done",
+          }),
+        );
+        completeTurn(turnId, {
+          reply: response.reply,
+          designBrief: response.designBrief,
+          steps: stepsWithStatus,
+        });
 
-        const stepsWithStatus: DesignEditStepWithStatus[] = response.steps.map((step: DesignEditStep) => ({
-          ...step,
-          status: step.ops.length > 0 ? "pending" : "done",
-        }));
-        const messageId = addStepsMessage(stepsWithStatus);
-        if (!messageId) return;
+        const actionable = stepsWithStatus.filter((step) => step.ops.length > 0).length;
+        let applied = 0;
+        resetAiIdSequence();
+        let continueLastCreated: string | undefined;
 
         for (let i = 0; i < stepsWithStatus.length; i++) {
           const step = stepsWithStatus[i];
           if (step.ops.length === 0) {
-            updateStepStatus(messageId, i, { status: "done" });
+            updateStepStatus(turnId, i, { status: "done" });
             continue;
           }
-          updateStepStatus(messageId, i, { status: "applying" });
-          const { results, affectedNodeIds } = await applyDesignOps(step.ops);
+          applied += 1;
+          setTurnActivity(turnId, `Applying ${applied}/${actionable}…`, "applying");
+          updateStepStatus(turnId, i, { status: "applying" });
+          const { results, affectedNodeIds, lastCreatedId } = await applyDesignOps(step.ops, {
+            useAiIds: true,
+            continueLastCreated,
+          });
+          if (lastCreatedId) continueLastCreated = lastCreatedId;
           const failed = results.find((r) => !r.ok);
           if (failed) {
-            updateStepStatus(messageId, i, {
+            updateStepStatus(turnId, i, {
               status: "failed",
               error: failed.error ?? "Operation failed",
             });
           } else {
-            updateStepStatus(messageId, i, { status: "done" });
+            updateStepStatus(turnId, i, { status: "done" });
             const lastAffected = affectedNodeIds.at(-1);
             if (lastAffected) select(lastAffected);
           }
         }
       } catch (e) {
-        addErrorMessage(e instanceof Error ? e.message : "Design edit failed");
+        const err = e instanceof Error ? e.message : "Design edit failed";
+        failTurn(turnId, err);
+        addErrorMessage(err);
       } finally {
         setLoading(false);
       }
@@ -97,9 +127,10 @@ export function useDesignChat() {
       router,
       doc,
       selectedId,
-      addUserMessage,
-      addAssistantMessage,
-      addStepsMessage,
+      startTurn,
+      completeTurn,
+      failTurn,
+      setTurnActivity,
       addErrorMessage,
       setLoading,
       updateStepStatus,
@@ -107,5 +138,5 @@ export function useDesignChat() {
     ],
   );
 
-  return { send, loading, messages };
+  return { send, loading, messages, clearMessages };
 }

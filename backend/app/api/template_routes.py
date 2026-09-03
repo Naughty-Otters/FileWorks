@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.auth.deps import Principal, get_principal
 from app.auth.quota import AI_ACTION, assert_can_use_ai
 from app.core.config import get_settings
-from app.engines.llm.engine import LLMEngine
+from app.engines.llm.design_agent import get_design_agent_engine
 from app.db.models import UsageEvent, UserTemplate
 from app.db.session import get_db
 from app.processing.template.design_edit import run_design_edit
@@ -89,15 +89,26 @@ class DesignEditRequest(BaseModel):
     mode: Literal["plan_and_apply"] = "plan_and_apply"
 
 
+class DesignEditBriefResponse(BaseModel):
+    intent: str = "update"
+    concept: str = ""
+    bands: list[str] = Field(default_factory=list)
+    notes: str = ""
+
+
 class DesignEditStepResponse(BaseModel):
     reasoning: str
     summary: str
-    ops: list[dict[str, Any]]
+    tools: list[dict[str, Any]] = Field(default_factory=list)
+    ops: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class DesignEditResponse(BaseModel):
     reply: str
+    design_brief: DesignEditBriefResponse | None = Field(default=None, alias="designBrief")
     steps: list[DesignEditStepResponse]
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class TemplateRenderRequest(BaseModel):
@@ -499,11 +510,11 @@ def edit_design(
         use_ai=True,
         translate=False,
     )
-    engine = LLMEngine(get_settings())
+    engine = get_design_agent_engine(get_settings())
     if not engine.configured():
         raise HTTPException(
             status_code=503,
-            detail=engine.init_error or "LLM is not configured for design editing",
+            detail=engine.init_error or "Design Agent is not configured for design editing",
         )
     try:
         result = run_design_edit(
@@ -518,6 +529,7 @@ def edit_design(
     session.add(UsageEvent(user_id=principal.user_id, action=AI_ACTION))
     return DesignEditResponse(
         reply=result["reply"],
+        designBrief=result.get("designBrief"),
         steps=[DesignEditStepResponse.model_validate(step) for step in result["steps"]],
     )
 

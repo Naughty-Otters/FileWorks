@@ -46,6 +46,7 @@ class ConvertRequest:
     target: LLMHttpTarget
     max_pages: int
     max_image_side: int
+    purpose: str = "convert"
 
 
 class LLMApiProvider(ABC):

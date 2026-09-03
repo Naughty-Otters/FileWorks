@@ -196,6 +196,19 @@ class Settings(BaseSettings):
     translate_timeout_s: float = 120
     translate_chunk_chars: int = 8000
 
+    # Design Agent (template editor chat). Separate from vision LLM_PROVIDER.
+    # When unset, design edit falls back to the vision LLM settings.
+    design_agent_provider: str | None = None
+    design_agent_model: str | None = None
+    design_agent_api_key: str | None = None
+    design_agent_base_url: str | None = None
+    design_agent_endpoint: str | None = None
+    design_agent_max_tokens: int = 16384
+    design_agent_timeout_s: float = 120
+    # Second LLM "repair" pass after layout QA. Off by default — doubles latency
+    # and often trips the Next.js / Cloudflare proxy (socket hang up).
+    design_agent_repair_pass: bool = False
+
     # Document history storage: local path today, switch to s3 later.
     storage_backend: str = "local"  # local | s3
     storage_local_root: Path = Path(__file__).resolve().parents[2] / "data" / "history"

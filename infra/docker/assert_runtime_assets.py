@@ -78,7 +78,7 @@ def main() -> int:
             text = ""
         if not text:
             errors.append("design_edit SYSTEM_PROMPT is empty")
-        elif "ops" not in text.lower():
+        elif "tools" not in text.lower() and "ops" not in text.lower():
             errors.append("design_edit SYSTEM_PROMPT looks truncated")
 
     starters = root / "processing" / "template" / "starters" / "data"

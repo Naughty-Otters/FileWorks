@@ -11,22 +11,23 @@ describe("ChatStepCard", () => {
     status: "pending",
   };
 
-  it("shows summary status ops count and reasoning", () => {
+  it("shows summary status ops and thinking", () => {
     render(<ChatStepCard step={base} index={0} />);
     expect(screen.getByText("Center title")).toBeInTheDocument();
     expect(screen.getByText("Pending")).toBeInTheDocument();
-    expect(screen.getByText(/1 operation/)).toBeInTheDocument();
+    expect(screen.getByText(/1 op/)).toBeInTheDocument();
     expect(screen.getByText(/centering improves hierarchy/i)).toBeInTheDocument();
   });
 
-  it("collapses reasoning after toggle", async () => {
+  it("collapses thinking after toggle and expands ops", async () => {
     const user = userEvent.setup();
     render(<ChatStepCard step={{ ...base, status: "done" }} index={1} />);
     expect(screen.getByText("Done")).toBeInTheDocument();
-    // done steps start with reasoning collapsed
     expect(screen.queryByText(/centering improves hierarchy/i)).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Reasoning" }));
+    await user.click(screen.getByRole("button", { name: "Thinking" }));
     expect(screen.getByText(/centering improves hierarchy/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /1 op/ }));
+    expect(screen.getByText(/update_style\(title\)/)).toBeInTheDocument();
   });
 
   it("surfaces step errors", () => {

@@ -263,10 +263,10 @@ export function nextStackedPosition(parent: DesignNode): { x: number; y: number 
   return { x: PAD, y: maxBottom + 12 };
 }
 
-export function createNode(kind: ElementKind, x = 0, y = 0): DesignNode {
+export function createNode(kind: ElementKind, x = 0, y = 0, id?: string): DesignNode {
   const defaults = KIND_DEFAULTS[kind];
   return {
-    id: nextId(kind),
+    id: id ?? nextId(kind),
     kind,
     label: defaults.label,
     level: defaults.level,

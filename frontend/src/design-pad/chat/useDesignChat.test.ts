@@ -65,10 +65,16 @@ describe("useDesignChat", () => {
     expect(useChatStore.getState().messages).toHaveLength(0);
   });
 
-  it("applies returned ops and records step statuses", async () => {
+  it("applies returned ops and records turn statuses", async () => {
     setSessionMe(signedInMe);
     vi.spyOn(api, "editDesign").mockResolvedValue({
       reply: "Centered the title.",
+      designBrief: {
+        intent: "adjust",
+        concept: "Center the title for balance.",
+        bands: [],
+        notes: "",
+      },
       steps: [
         {
           reasoning: "Title was left-aligned.",
@@ -84,19 +90,103 @@ describe("useDesignChat", () => {
     });
 
     await waitFor(() => expect(useChatStore.getState().loading).toBe(false));
-    const messages = useChatStore.getState().messages;
-    expect(messages.some((m) => m.type === "user")).toBe(true);
-    expect(messages.some((m) => m.type === "assistant")).toBe(true);
-    const steps = messages.find((m) => m.type === "steps");
-    expect(steps?.type).toBe("steps");
-    if (steps?.type === "steps") {
-      expect(steps.steps[0]?.status).toBe("done");
+    const turn = useChatStore.getState().messages.find((m) => m.type === "turn");
+    expect(turn?.type).toBe("turn");
+    if (turn?.type === "turn") {
+      expect(turn.user).toBe("Add a heading");
+      expect(turn.reply).toBe("Centered the title.");
+      expect(turn.designBrief?.concept).toContain("Center the title");
+      expect(turn.steps[0]?.status).toBe("done");
+      expect(turn.status).toBe("done");
     }
     expect(useEditorStore.getState().doc.root.children.some((c) => c.kind === "heading")).toBe(true);
     expect(api.editDesign).toHaveBeenCalled();
   });
 
-  it("surfaces API errors in the chat thread", async () => {
+  it("applies multi-step create with last_column info rows without nesting", async () => {
+    setSessionMe(signedInMe);
+    vi.spyOn(api, "editDesign").mockResolvedValue({
+      reply: "Built specs.",
+      designBrief: {
+        intent: "create",
+        concept: "Property specs band.",
+        bands: ["Specs"],
+        notes: "",
+      },
+      steps: [
+        {
+          reasoning: "Root column spine.",
+          summary: "Scaffold",
+          ops: [
+            { op: "toggle_auto_layout", id: "root", enabled: true },
+            {
+              op: "update_layout_props",
+              id: "root",
+              patch: { direction: "column", gap: 20, padding: 40, align: "stretch", justify: "start" },
+            },
+          ],
+        },
+        {
+          reasoning: "Section + two info rows under last_column.",
+          summary: "Specs",
+          ops: [
+            { op: "add_element", kind: "box", parentId: "root" },
+            { op: "toggle_auto_layout", id: "last_created", enabled: true },
+            {
+              op: "update_layout_props",
+              id: "last_created",
+              patch: { direction: "column", gap: 12, padding: 0, align: "stretch", justify: "start" },
+            },
+            { op: "update_label", id: "last_created", label: "Specs" },
+            { op: "add_element", kind: "heading", parentId: "last_created" },
+            { op: "update_label", id: "last_created", label: "Specs" },
+            { op: "add_element", kind: "box", parentId: "last_column" },
+            { op: "resize_node", id: "last_created", w: 700, h: 32 },
+            { op: "toggle_auto_layout", id: "last_created", enabled: true },
+            {
+              op: "update_layout_props",
+              id: "last_created",
+              patch: { direction: "row", gap: 0, padding: 0, align: "center", justify: "space-between" },
+            },
+            { op: "update_label", id: "last_created", label: "Row" },
+            { op: "add_element", kind: "paragraph", parentId: "last_created" },
+            { op: "update_label", id: "last_created", label: "Price" },
+            { op: "add_element", kind: "paragraph", parentId: "last_created_sibling" },
+            { op: "update_label", id: "last_created", label: "$100" },
+            { op: "add_element", kind: "box", parentId: "last_column" },
+            { op: "resize_node", id: "last_created", w: 700, h: 32 },
+            { op: "toggle_auto_layout", id: "last_created", enabled: true },
+            {
+              op: "update_layout_props",
+              id: "last_created",
+              patch: { direction: "row", gap: 0, padding: 0, align: "center", justify: "space-between" },
+            },
+            { op: "update_label", id: "last_created", label: "Row" },
+            { op: "add_element", kind: "paragraph", parentId: "last_created" },
+            { op: "update_label", id: "last_created", label: "Beds" },
+            { op: "add_element", kind: "paragraph", parentId: "last_created_sibling" },
+            { op: "update_label", id: "last_created", label: "4" },
+          ],
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useDesignChat());
+    await act(async () => {
+      await result.current.send("Create property specs");
+    });
+    await waitFor(() => expect(useChatStore.getState().loading).toBe(false));
+
+    const section = useEditorStore.getState().doc.root.children[0]!;
+    const rows = section.children.filter((c) => c.kind === "box");
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.children.every((c) => c.kind === "paragraph"))).toBe(true);
+    expect(rows.every((r) => r.w >= 100)).toBe(true);
+    const turn = useChatStore.getState().messages.find((m) => m.type === "turn");
+    expect(turn?.type === "turn" && turn.designBrief?.bands).toEqual(["Specs"]);
+  });
+
+  it("surfaces API errors on the turn and error message", async () => {
     setSessionMe(signedInMe);
     vi.spyOn(api, "editDesign").mockRejectedValue(new Error("quota exceeded"));
     const { result } = renderHook(() => useDesignChat());
@@ -104,6 +194,8 @@ describe("useDesignChat", () => {
       await result.current.send("Make it bigger");
     });
     await waitFor(() => expect(useChatStore.getState().loading).toBe(false));
+    const turn = useChatStore.getState().messages.find((m) => m.type === "turn");
+    expect(turn?.type === "turn" && turn.status).toBe("failed");
     const err = useChatStore.getState().messages.find((m) => m.type === "error");
     expect(err?.type === "error" && err.content).toBe("quota exceeded");
   });
@@ -130,12 +222,13 @@ describe("useDesignChat", () => {
       await result.current.send("Rename missing");
     });
     await waitFor(() => expect(useChatStore.getState().loading).toBe(false));
-    const steps = useChatStore.getState().messages.find((m) => m.type === "steps");
-    expect(steps?.type).toBe("steps");
-    if (steps?.type === "steps") {
-      expect(steps.steps[0]?.status).toBe("done");
-      expect(steps.steps[1]?.status).toBe("failed");
-      expect(steps.steps[1]?.error).toMatch(/Unknown/);
+    const turn = useChatStore.getState().messages.find((m) => m.type === "turn");
+    expect(turn?.type).toBe("turn");
+    if (turn?.type === "turn") {
+      expect(turn.steps[0]?.status).toBe("done");
+      expect(turn.steps[1]?.status).toBe("failed");
+      expect(turn.steps[1]?.error).toMatch(/Unknown/);
+      expect(turn.status).toBe("failed");
     }
   });
 

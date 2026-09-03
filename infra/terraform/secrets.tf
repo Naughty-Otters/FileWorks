@@ -16,6 +16,9 @@ resource "aws_secretsmanager_secret_version" "app" {
     TRANSLATE_PROVIDER    = "deepseek"
     TRANSLATE_MODEL       = "deepseek-v4-flash"
     TRANSLATE_API_KEY     = ""
+    DESIGN_AGENT_PROVIDER = "gemini"
+    DESIGN_AGENT_MODEL    = "gemini-3.8-flash"
+    DESIGN_AGENT_API_KEY  = ""
     GOOGLE_CLIENT_ID      = var.google_client_id
     JWT_SECRET            = random_password.jwt.result
     STRIPE_SECRET_KEY     = ""

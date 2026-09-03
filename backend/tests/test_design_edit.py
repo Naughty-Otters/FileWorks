@@ -44,6 +44,81 @@ def test_design_edit_schema_requires_reasoning() -> None:
     step_props = schema["properties"]["steps"]["items"]["properties"]
     assert step_props["reasoning"]["minLength"] == 1
     assert "reasoning" in schema["properties"]["steps"]["items"]["required"]
+    assert "tools" in step_props
+    assert "tools" in schema["properties"]["steps"]["items"]["required"]
+    tool_schema = step_props["tools"]["items"]
+    assert "designBrief" in schema["properties"]
+    assert "designBrief" in schema["required"]
+    assert set(tool_schema["properties"]["tool"]["enum"]) == {
+        "edit_node",
+        "edit_variable",
+        "edit_page",
+        "select",
+        "scaffold_page",
+        "add_section",
+        "add_info_row",
+        "add_two_col",
+    }
+
+
+def test_normalize_ops_aliases_and_drops_unknown() -> None:
+    from app.processing.template.ops_schema import normalize_ops
+
+    cleaned = normalize_ops(
+        [
+            {"op": "addElement", "kind": "box", "parentId": "root"},
+            {"op": "create_element", "kind": "heading", "parentId": "root"},
+            {"op": "invented_op", "id": "x"},
+            {"op": "update_label", "id": "title", "label": "Hi"},
+            "not-an-object",
+        ]
+    )
+    assert [item["op"] for item in cleaned] == ["add_element", "add_element", "update_label"]
+
+
+def test_run_design_edit_expands_agent_tools() -> None:
+    document = _document()
+
+    class Engine:
+        def configured(self) -> bool:
+            return True
+
+        @property
+        def init_error(self) -> str | None:
+            return None
+
+        def complete_structured(self, prompt: str, schema: dict, *, purpose: str) -> dict:
+            assert "tools" in schema["properties"]["steps"]["items"]["properties"]
+            return {
+                "reply": "Centered the title.",
+                "designBrief": {
+                    "intent": "adjust",
+                    "concept": "Center the existing title for balance.",
+                    "bands": [],
+                    "notes": "",
+                },
+                "steps": [
+                    {
+                        "reasoning": "Title was left-aligned; center improves balance.",
+                        "summary": "Center title",
+                        "tools": [
+                            {
+                                "tool": "edit_node",
+                                "action": "update",
+                                "id": "title",
+                                "style": {"align": "center"},
+                            }
+                        ],
+                    }
+                ],
+            }
+
+    result = run_design_edit(document, "Center the title", engine=Engine())
+    assert result["reply"] == "Centered the title."
+    assert result["steps"][0]["tools"][0]["tool"] == "edit_node"
+    assert result["steps"][0]["ops"] == [
+        {"op": "update_style", "id": "title", "patch": {"align": "center"}}
+    ]
 
 
 def test_design_edit_prompt_is_embedded_python_module() -> None:
@@ -53,7 +128,8 @@ def test_design_edit_prompt_is_embedded_python_module() -> None:
 
     prompt = _system_prompt()
     assert prompt == SYSTEM_PROMPT.strip()
-    assert "ops" in prompt.lower()
+    assert "edit_node" in prompt
+    assert "tools" in prompt.lower()
     prompts_dir = Path(__file__).resolve().parents[1] / "app" / "processing" / "template" / "prompts"
     assert list(prompts_dir.glob("*.md")) == []
     assert (prompts_dir / "design_edit_prompt.py").is_file()
@@ -71,6 +147,11 @@ def test_build_design_edit_prompt_includes_document_and_message() -> None:
     assert "title" in prompt
     assert "Current document:" in prompt
     assert "User request:" in prompt
+    assert "nodeIndex" in prompt
+    assert "layoutMap" in prompt
+    assert "edit_node" in prompt or "Allowed tools" in prompt
+    assert "designBrief" in prompt or "Workflow" in prompt or "scaffold_page" in prompt
+    assert "empty decorative" in prompt.lower() or "never leave" in prompt.lower()
 
 
 def test_run_design_edit_normalizes_steps() -> None:
@@ -80,11 +161,20 @@ def test_run_design_edit_normalizes_steps() -> None:
         def configured(self) -> bool:
             return True
 
+        @property
+        def init_error(self) -> str | None:
+            return None
+
         def complete_structured(self, prompt: str, schema: dict, *, purpose: str) -> dict:
             assert purpose == "design-edit"
             assert "Center the title" in prompt
             return {
                 "reply": "Centered the title.",
+                "designBrief": {
+                    "intent": "adjust",
+                    "concept": "Center title.",
+                    "bands": [],
+                },
                 "steps": [
                     {
                         "reasoning": "Title was left-aligned; center improves balance.",
@@ -113,9 +203,14 @@ def test_run_design_edit_rejects_empty_reasoning() -> None:
         def configured(self) -> bool:
             return True
 
+        @property
+        def init_error(self) -> str | None:
+            return None
+
         def complete_structured(self, prompt: str, schema: dict, *, purpose: str) -> dict:
             return {
                 "reply": "Done.",
+                "designBrief": {"intent": "update", "concept": "x", "bands": []},
                 "steps": [{"reasoning": "", "summary": "x", "ops": []}],
             }
 
@@ -129,6 +224,10 @@ def test_run_design_edit_rejects_empty_reply() -> None:
     class Engine:
         def configured(self) -> bool:
             return True
+
+        @property
+        def init_error(self) -> str | None:
+            return None
 
         def complete_structured(self, prompt: str, schema: dict, *, purpose: str) -> dict:
             return {"reply": "  ", "steps": []}
@@ -144,9 +243,14 @@ def test_run_design_edit_defaults_missing_summary() -> None:
         def configured(self) -> bool:
             return True
 
+        @property
+        def init_error(self) -> str | None:
+            return None
+
         def complete_structured(self, prompt: str, schema: dict, *, purpose: str) -> dict:
             return {
                 "reply": "Updated.",
+                "designBrief": {"intent": "update", "concept": "Rename title.", "bands": []},
                 "steps": [
                     {
                         "reasoning": "Need a clearer label.",
@@ -158,6 +262,79 @@ def test_run_design_edit_defaults_missing_summary() -> None:
 
     result = run_design_edit(document, "Rename title", engine=Engine())
     assert result["steps"][0]["summary"] == "Edit step"
+
+
+def test_create_without_scaffold_gets_spine_injected() -> None:
+    document = DesignDocument.model_validate(
+        {
+            "version": 2,
+            "pageSize": {"w": 850, "h": 1100},
+            "root": {"id": "root", "kind": "box", "label": "Document", "children": []},
+            "variables": [],
+        }
+    )
+
+    class Engine:
+        def configured(self) -> bool:
+            return True
+
+        @property
+        def init_error(self) -> str | None:
+            return None
+
+        def complete_structured(self, prompt: str, schema: dict, *, purpose: str) -> dict:
+            return {
+                "reply": "Built a header.",
+                "designBrief": {
+                    "intent": "create",
+                    "concept": "Simple header page.",
+                    "bands": ["Header"],
+                },
+                "steps": [
+                    {
+                        "reasoning": "Header band with title.",
+                        "summary": "Header",
+                        "tools": [{"tool": "add_section", "title": "Welcome", "parentId": "root"}],
+                    }
+                ],
+            }
+
+    result = run_design_edit(document, "Create a simple welcome page", engine=Engine())
+    assert result["designBrief"]["intent"] == "create"
+    assert result["steps"][0]["summary"] == "Scaffold page spine"
+    assert any(op["op"] == "toggle_auto_layout" for op in result["steps"][0]["ops"])
+
+
+def test_run_design_edit_clarify_returns_no_steps() -> None:
+    class Engine:
+        def configured(self) -> bool:
+            return True
+
+        @property
+        def init_error(self) -> str | None:
+            return None
+
+        def complete_structured(self, prompt: str, schema: dict, *, purpose: str) -> dict:
+            return {
+                "reply": "Which brand colors should I use?",
+                "designBrief": {
+                    "intent": "clarify",
+                    "concept": "Need brand direction.",
+                    "bands": [],
+                },
+                "steps": [
+                    {
+                        "reasoning": "Should not apply.",
+                        "summary": "noop",
+                        "tools": [{"tool": "add_section", "title": "X"}],
+                    }
+                ],
+            }
+
+    result = run_design_edit(_document(), "Make it nicer", engine=Engine())
+    assert result["designBrief"]["intent"] == "clarify"
+    assert result["steps"] == []
+    assert "brand" in result["reply"].lower()
 
 
 def test_build_design_edit_prompt_includes_selection_breadcrumb() -> None:
@@ -213,7 +390,7 @@ def test_edit_endpoint_returns_structured_response(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr("app.api.template_routes.run_design_edit", fake_run_design_edit)
     monkeypatch.setattr("app.api.template_routes.assert_can_use_ai", lambda *a, **k: None)
     monkeypatch.setattr(
-        "app.api.template_routes.LLMEngine",
+        "app.api.template_routes.get_design_agent_engine",
         lambda *_: type("E", (), {"configured": lambda self: True})(),
     )
 

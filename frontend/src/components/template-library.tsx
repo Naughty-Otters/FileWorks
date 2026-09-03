@@ -226,19 +226,25 @@ export function TemplateLibrary() {
                 </h3>
                 <p className="mt-1 text-sm text-[var(--ink-muted)]">{cat.blurb}</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {categoryItems.map((item) => (
+                  {categoryItems.map((item) => {
+                    const editHref = signedIn
+                      ? `/templates/new?starter=${encodeURIComponent(item.id)}`
+                      : `/login?next=${encodeURIComponent(`/templates/new?starter=${item.id}`)}`;
+                    return (
                     <article
                       key={item.id}
                       className="panel flex flex-col rounded-2xl p-4 text-left transition hover:-translate-y-0.5 hover:border-[var(--accent)]"
                     >
-                      <div className="flex h-[70px] flex-col justify-center gap-1.5 rounded-lg bg-[color-mix(in_oklab,var(--bg)_70%,#94a3b8_30%)] px-3 py-2">
-                        <div className="h-2.5 w-[70%] rounded-sm bg-[color-mix(in_oklab,var(--ink-muted)_55%,transparent)]" />
-                        <div className="h-1.5 w-full rounded-sm bg-[color-mix(in_oklab,var(--ink-muted)_35%,transparent)]" />
-                        <div className="h-1.5 w-[60%] rounded-sm bg-[color-mix(in_oklab,var(--ink-muted)_35%,transparent)]" />
-                        <div className="h-1.5 w-full rounded-sm bg-[color-mix(in_oklab,var(--ink-muted)_35%,transparent)]" />
-                      </div>
-                      <h3 className="mt-3 font-semibold">{item.name}</h3>
-                      <p className="mt-1 min-h-10 text-sm text-[var(--ink-muted)]">{item.description}</p>
+                      <a href={editHref} className="block min-w-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">
+                        <div className="flex h-[70px] flex-col justify-center gap-1.5 rounded-lg bg-[color-mix(in_oklab,var(--bg)_70%,#94a3b8_30%)] px-3 py-2">
+                          <div className="h-2.5 w-[70%] rounded-sm bg-[color-mix(in_oklab,var(--ink-muted)_55%,transparent)]" />
+                          <div className="h-1.5 w-full rounded-sm bg-[color-mix(in_oklab,var(--ink-muted)_35%,transparent)]" />
+                          <div className="h-1.5 w-[60%] rounded-sm bg-[color-mix(in_oklab,var(--ink-muted)_35%,transparent)]" />
+                          <div className="h-1.5 w-full rounded-sm bg-[color-mix(in_oklab,var(--ink-muted)_35%,transparent)]" />
+                        </div>
+                        <h3 className="mt-3 font-semibold">{item.name}</h3>
+                        <p className="mt-1 min-h-10 text-sm text-[var(--ink-muted)]">{item.description}</p>
+                      </a>
                       <div className="mt-4 flex flex-wrap items-center gap-2">
                         <a
                           href={`/?produce=${encodeURIComponent(item.id)}`}
@@ -247,18 +253,15 @@ export function TemplateLibrary() {
                           {PRODUCT.produceFromFile}
                         </a>
                         <a
-                          href={
-                            signedIn
-                              ? `/templates/new?starter=${item.id}`
-                              : `/login?next=${encodeURIComponent(`/templates/new?starter=${item.id}`)}`
-                          }
+                          href={editHref}
                           className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--accent-strong)]"
                         >
                           {PRODUCT.editInStudio}
                         </a>
                       </div>
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );

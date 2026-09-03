@@ -84,5 +84,5 @@ def test_prompt_module_parses_via_ast() -> None:
     ns = _load_assert()
     prompt = APP / "processing" / "template" / "prompts" / "design_edit_prompt.py"
     text = ns["read_system_prompt"](prompt)
-    assert "ops" in text.lower()
+    assert "tools" in text.lower()
     assert len(text.strip()) > 100

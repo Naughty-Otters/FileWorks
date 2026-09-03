@@ -1083,7 +1083,7 @@ def seed_secrets(ctx: Context) -> None:
     }
     sources = _dotenv_label(ctx)
     if not payload:
-        raise CommandError(f"No LLM/translate/Google/Stripe keys found in {sources}")
+        raise CommandError(f"No LLM/translate/design-agent/Google/Stripe keys found in {sources}")
     _guard_prod_secrets(ctx, payload)
     existing: dict[str, str] = {}
     current = run(

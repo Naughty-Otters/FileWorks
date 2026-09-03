@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { TemplateShell } from "./template-shell";
 import "@/design-pad/design-pad.css";
 import Toolbar from "@/design-pad/components/Toolbar";
@@ -29,6 +29,8 @@ const NUDGE_LARGE = 32;
 export function TemplateEditor({ templateId }: { templateId: string }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const starterId = searchParams.get("starter");
   // Cloudflare Pages rewrites /templates/:id → /templates/new HTML for static
   // export; prefer the live URL so hard-refreshes still load the right design.
   const routeId = useMemo(() => {
@@ -64,18 +66,34 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     let cancelled = false;
     async function boot() {
       setError(null);
+      // Clear any leftover picker flag from a prior studio visit in this tab.
+      setShowTemplatePicker(false);
+
       if (routeId === "new") {
-        const starter = new URLSearchParams(window.location.search).get("starter");
-        const builtIn = starter ? builtInTemplate(starter) : null;
+        const builtIn = starterId ? builtInTemplate(starterId) : null;
         if (builtIn) {
           loadDocument(builtIn.build());
           if (!cancelled) {
+            setId(null);
             setName(`${builtIn.name} copy`);
+            setShowTemplatePicker(false);
+          }
+        } else if (starterId) {
+          // Starter was selected but id is unknown — still skip the picker.
+          loadDocument(createEmptyDocument());
+          if (!cancelled) {
+            setId(null);
+            setName(PRODUCT.untitledDesign);
+            setError(`Unknown starter “${starterId}”. Start blank or pick another design.`);
             setShowTemplatePicker(false);
           }
         } else {
           loadDocument(createEmptyDocument());
-          if (!cancelled) setShowTemplatePicker(true);
+          if (!cancelled) {
+            setId(null);
+            setName(PRODUCT.untitledDesign);
+            setShowTemplatePicker(true);
+          }
         }
         if (!cancelled) setBootstrapped(true);
         return;
@@ -84,6 +102,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
         const template = await fetchTemplate(routeId);
         if (cancelled) return;
         loadDocument(normalizeDocument(template.document));
+        setId(routeId);
         setName(template.name);
         setShowTemplatePicker(false);
       } catch (reason) {
@@ -96,7 +115,7 @@ export function TemplateEditor({ templateId }: { templateId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [loadDocument, setShowTemplatePicker, routeId]);
+  }, [loadDocument, setShowTemplatePicker, routeId, starterId]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {

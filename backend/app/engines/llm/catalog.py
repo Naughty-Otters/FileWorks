@@ -94,7 +94,7 @@ PROVIDERS: dict[str, LLMProviderSpec] = {
         label="Gemini",
         package="langchain-google-genai",
         base_url="https://generativelanguage.googleapis.com/v1beta",
-        default_model="gemini-2.5-flash",
+        default_model="gemini-3.8-flash",
         key_fields=("gemini_api_key", "google_api_key"),
         native_pdf=True,
     ),
