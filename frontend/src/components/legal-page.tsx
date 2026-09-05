@@ -2,7 +2,14 @@ import { BrandLockup } from "@/components/brand-lockup";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SiteFooter } from "@/components/site-footer";
 import { MarketingNav } from "@/components/marketing-nav";
-import { BUSINESS_NAME, LEGAL_UPDATED, SITE_HOST, SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
+import {
+  BUSINESS_NAME,
+  LEGAL_ENTITY_NAME,
+  LEGAL_UPDATED,
+  SITE_HOST,
+  SITE_URL,
+  SUPPORT_EMAIL,
+} from "@/lib/legal";
 
 const SECTIONS = [
   { id: "business", label: "Business and services" },
@@ -32,8 +39,9 @@ export function LegalPage() {
             Legal, refunds, and contact
           </h1>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            {BUSINESS_NAME} ({SITE_HOST}) is an online document conversion service. These policies
-            apply to the website, paid subscriptions, and related billing. Last updated {LEGAL_UPDATED}.
+            {BUSINESS_NAME} ({SITE_HOST}) is an online document conversion service operated by{" "}
+            {LEGAL_ENTITY_NAME}. These policies apply to the website, paid subscriptions, and related
+            billing. Last updated {LEGAL_UPDATED}.
           </p>
           <nav aria-label="On this page" className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm">
             {SECTIONS.map((item) => (
@@ -49,7 +57,8 @@ export function LegalPage() {
             Business and services
           </h2>
           <ul className="mt-3 space-y-1 text-sm leading-6 text-[var(--ink-muted)]">
-            <li>Business name: {BUSINESS_NAME}</li>
+            <li>Legal entity: {LEGAL_ENTITY_NAME}</li>
+            <li>Product / brand: {BUSINESS_NAME}</li>
             <li>
               Website:{" "}
               <a href={SITE_URL} className="text-[var(--accent-strong)] hover:underline">

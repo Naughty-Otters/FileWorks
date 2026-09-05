@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BUSINESS_NAME, SITE_HOST, SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
+import { BUSINESS_NAME, LEGAL_ENTITY_NAME, SITE_HOST, SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
 import {
   apiDocsFaqAnswer,
   casualAiAllowanceFaqAnswer,
@@ -391,6 +391,8 @@ export function organizationJsonLd() {
     "@type": "Organization",
     "@id": `${SITE_URL}/#organization`,
     name: BUSINESS_NAME,
+    legalName: LEGAL_ENTITY_NAME,
+    alternateName: LEGAL_ENTITY_NAME,
     url: SITE_URL,
     email: SUPPORT_EMAIL,
     logo: {
@@ -568,4 +570,4 @@ export const INDEXABLE_ROUTES: Array<{ path: string; changeFrequency: "weekly" |
   })),
 ];
 
-export { BUSINESS_NAME, SITE_HOST, SITE_URL, SUPPORT_EMAIL };
+export { BUSINESS_NAME, LEGAL_ENTITY_NAME, SITE_HOST, SITE_URL, SUPPORT_EMAIL };

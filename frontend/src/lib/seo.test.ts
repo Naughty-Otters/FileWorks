@@ -53,6 +53,10 @@ describe("seo helpers", () => {
     const types = (graph["@graph"] as Array<{ "@type": string }>).map((node) => node["@type"]);
     expect(types).toEqual(expect.arrayContaining(["Organization", "WebSite", "WebApplication"]));
     expect(types).not.toContain("FAQPage");
+    const org = (graph["@graph"] as Array<{ "@type": string; legalName?: string }>).find(
+      (node) => node["@type"] === "Organization",
+    );
+    expect(org?.legalName).toBe("Naughty Otters LLC");
   });
 
   it("lists every public marketing route in the sitemap set", () => {

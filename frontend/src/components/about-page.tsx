@@ -5,7 +5,7 @@ import { MarketingNav } from "@/components/marketing-nav";
 import { SeoFaq } from "@/components/seo-faq";
 import { JsonLd } from "@/components/json-ld";
 import { PUBLIC_API_PLANS, PLAN_CATALOG, PRICE_ROLES } from "@/lib/plans";
-import { BUSINESS_NAME, SITE_HOST, SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
+import { BUSINESS_NAME, LEGAL_ENTITY_NAME, SITE_HOST, SITE_URL, SUPPORT_EMAIL } from "@/lib/legal";
 import {
   CONVERT_GUIDES,
   HOME_FAQS,
@@ -49,7 +49,8 @@ export function AboutPage() {
           <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{SITE_HOST}</p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl tracking-tight">{BUSINESS_NAME}</h1>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            {BUSINESS_NAME} is an online document conversion service at{" "}
+            {BUSINESS_NAME} is an online document conversion service operated by{" "}
+            <strong className="font-medium text-[var(--ink)]">{LEGAL_ENTITY_NAME}</strong> at{" "}
             <a href={SITE_URL} className="text-[var(--accent-strong)] hover:underline">
               {SITE_URL}
             </a>
@@ -60,6 +61,36 @@ export function AboutPage() {
             Convert API. We do not sell physical goods.
           </p>
         </div>
+
+        <section className="panel rounded-3xl px-5 py-5">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
+            Company
+          </h2>
+          <ul className="mt-3 space-y-1 text-sm leading-6 text-[var(--ink-muted)]">
+            <li>
+              Legal entity: <span className="text-[var(--ink)]">{LEGAL_ENTITY_NAME}</span>
+            </li>
+            <li>
+              Product / brand: <span className="text-[var(--ink)]">{BUSINESS_NAME}</span>
+            </li>
+            <li>
+              Website:{" "}
+              <a href={SITE_URL} className="text-[var(--accent-strong)] hover:underline">
+                {SITE_URL}
+              </a>
+            </li>
+            <li>
+              Contact:{" "}
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-[var(--accent-strong)] hover:underline">
+                {SUPPORT_EMAIL}
+              </a>
+            </li>
+          </ul>
+          <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">
+            {LEGAL_ENTITY_NAME} builds and operates {BUSINESS_NAME} at {SITE_HOST}. The product name
+            and domain are branding for the same company.
+          </p>
+        </section>
 
         <section className="panel rounded-3xl px-5 py-5">
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">

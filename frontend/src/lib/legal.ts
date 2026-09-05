@@ -1,10 +1,12 @@
 export const BUSINESS_NAME = "FileWorks";
+/** Legal entity that operates FileWorks (fileworks.ai). */
+export const LEGAL_ENTITY_NAME = "Naughty Otters LLC";
 export const SITE_HOST = "fileworks.ai";
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://fileworks.ai").replace(/\/$/, "");
 export const SUPPORT_EMAIL =
   process.env.NEXT_PUBLIC_SUPPORT_EMAIL || `support@${SITE_HOST}`;
 
-export const LEGAL_UPDATED = "August 15, 2026";
+export const LEGAL_UPDATED = "September 4, 2026";
 
 export const MARKETING_LINKS = [
   { href: "/templates", label: "Designs" },
