@@ -1096,7 +1096,7 @@ export function Workspace() {
 
       <header className="relative z-10 shrink-0 border-b border-[var(--line)]">
         <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-2.5 md:px-6">
-          <BrandLockup asHeading />
+          <BrandLockup />
           <p className="hidden min-w-0 truncate text-xs text-[var(--ink-muted)] sm:block lg:max-w-[28rem]">
             {phase === "produce"
               ? intentDisplayName

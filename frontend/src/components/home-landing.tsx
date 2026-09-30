@@ -134,7 +134,26 @@ export function HomeLanding({
         </button>
 
         <p className="home-rise home-rise-5 mt-4 max-w-md text-[11px] leading-relaxed text-[var(--ink-muted)]">
-          Word, Excel, PowerPoint, PDF, Markdown, TXT, CSV, images · up to 50MB
+          <a href="/word-to-markdown" className="underline-offset-2 hover:text-[var(--accent-strong)] hover:underline">
+            Word
+          </a>
+          {", "}
+          <a href="/excel-to-markdown" className="underline-offset-2 hover:text-[var(--accent-strong)] hover:underline">
+            Excel
+          </a>
+          {", "}
+          <a href="/powerpoint-to-markdown" className="underline-offset-2 hover:text-[var(--accent-strong)] hover:underline">
+            PowerPoint
+          </a>
+          {", "}
+          <a href="/pdf-to-markdown" className="underline-offset-2 hover:text-[var(--accent-strong)] hover:underline">
+            PDF
+          </a>
+          {", Markdown, TXT, CSV, "}
+          <a href="/image-to-markdown" className="underline-offset-2 hover:text-[var(--accent-strong)] hover:underline">
+            images
+          </a>
+          {" · up to 50MB"}
         </p>
 
         <div className="home-rise home-rise-5 mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
