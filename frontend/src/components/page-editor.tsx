@@ -801,7 +801,7 @@ export function PageEditor({
             )}
             {...dropHandlers}
           >
-            <p className="font-[family-name:var(--font-display)] text-3xl tracking-tight">{PRODUCT.editorLine}</p>
+            <h1 className="m-0 font-[family-name:var(--font-display)] text-3xl tracking-tight">{PRODUCT.editorLine}</h1>
             <p className="mt-2 max-w-md text-sm text-[var(--ink-muted)]">
               PDF or image for page stamps. Markdown, TXT, or CSV opens the text editor.
             </p>

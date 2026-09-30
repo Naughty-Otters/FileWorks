@@ -7,6 +7,7 @@ import {
   isTextEditorFile,
   type EditorWritableHandle,
 } from "@/lib/editor-files";
+import { PRODUCT } from "@/lib/product-copy";
 import { loadEditorFile } from "@/lib/workspace-session";
 
 type Seed = {
@@ -43,8 +44,11 @@ export function EditorShell() {
 
   if (!ready) {
     return (
-      <div className="app-shell flex min-h-dvh items-center justify-center text-sm text-[var(--ink-muted)]">
-        Loading editor…
+      <div className="app-shell flex min-h-dvh flex-col items-center justify-center gap-2 px-6 text-center">
+        <h1 className="m-0 font-[family-name:var(--font-display)] text-3xl tracking-tight">
+          {PRODUCT.editorLine}
+        </h1>
+        <p className="text-sm text-[var(--ink-muted)]">Loading editor…</p>
       </div>
     );
   }

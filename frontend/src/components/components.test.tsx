@@ -1209,7 +1209,9 @@ describe("LegalPage", () => {
 describe("AboutPage", () => {
   it("lists the business, services, and products without requiring sign-in", () => {
     render(<AboutPage />);
-    expect(screen.getByRole("heading", { name: "FileWorks" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "About FileWorks — PDF and Office to Markdown" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Goods and services" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Products we sell" })).toBeInTheDocument();
     expect(screen.getAllByText("$5 / month").length).toBeGreaterThan(0);

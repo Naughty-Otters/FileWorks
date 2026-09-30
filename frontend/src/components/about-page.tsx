@@ -47,7 +47,9 @@ export function AboutPage() {
       <main className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-10 md:px-6">
         <div>
           <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--ink-muted)]">{SITE_HOST}</p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl tracking-tight">{BUSINESS_NAME}</h1>
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl tracking-tight">
+            About {BUSINESS_NAME} — PDF and Office to Markdown
+          </h1>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             {BUSINESS_NAME} is an online document conversion service operated by{" "}
             <strong className="font-medium text-[var(--ink)]">{LEGAL_ENTITY_NAME}</strong> at{" "}
