@@ -20,6 +20,8 @@ export const PRIMARY_KEYWORDS = [
   "Excel to Markdown",
   "PowerPoint to Markdown",
   "image to Markdown",
+  "CSV to Markdown",
+  "EPUB to Markdown",
   "scanned PDF OCR",
   "document to Markdown converter",
   "PDF OCR to Markdown",
@@ -171,8 +173,13 @@ export type ConvertGuide = {
   intro: string;
   bullets: string[];
   steps: string[];
+  useCases: string[];
+  /** Real curl example against the public Convert API, shown on the guide page. */
+  apiExample: string;
   faqs: FaqItem[];
   related: string[];
+  /** First-published date (YYYY-MM-DD), for accurate structured-data freshness signals. */
+  publishedDate: string;
 };
 
 export const CONVERT_GUIDES: ConvertGuide[] = [
@@ -182,7 +189,7 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
     title: "PDF to Markdown with AI & translation",
     headline: "Convert PDF to Markdown — AI reading & translation",
     description:
-      "Turn PDFs into editable Markdown online. Optional AI reading for scanned/OCR pages and translation into 19 languages in the same pass. Free Casual plan at fileworks.ai.",
+      "Turn PDFs into editable Markdown online. AI reading for scanned/OCR pages, plus translation into 19 languages in one pass. Free Casual plan.",
     intro:
       "PDFs keep layout for printing, not for editing or feeding LLMs. FileWorks converts PDF layout into Markdown for Obsidian, Cursor, ChatGPT, Claude, docs repos, and RAG pipelines. Enable AI reading for scans, and optionally translate the result into 19 languages without a second tool.",
     bullets: [
@@ -196,6 +203,17 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
       "Turn on AI reading for scans; pick a target language if you want translation.",
       "Convert, then edit Markdown in the preview or download the result.",
     ],
+    useCases: [
+      "Developers and AI agents pulling PDF content into RAG pipelines or LLM context windows",
+      "Writers and researchers moving papers and reports into Obsidian or Git-backed docs",
+      "Teams digitizing scanned contracts or forms with OCR before archiving as Markdown",
+    ],
+    apiExample: `curl -s -H "Authorization: Bearer YOUR_API_KEY" \\
+  -F file=@report.pdf \\
+  -F target=markdown \\
+  -F download=true \\
+  -o report.md \\
+  https://api.fileworks.ai/api/v1/convert`,
     faqs: [
       {
         question: "Is PDF to Markdown free on FileWorks?",
@@ -206,8 +224,25 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
         answer:
           "Yes. Enable AI reading for image-only or poorly selectable PDFs, and set a translation language. Both share the workspace AI page allowance, or Convert API AI credits (1 per page).",
       },
+      {
+        question: "Does PDF to Markdown conversion keep tables and headings?",
+        answer:
+          "Yes. FileWorks maps PDF headings, lists, and tables to Markdown structure (#, -, and pipe tables) instead of flattening the page into plain text, so the output stays editable and LLM-friendly.",
+      },
+      {
+        question: "Is there a file size limit for PDF to Markdown?",
+        answer: "PDFs up to 50 MB are accepted, whether uploaded in the workspace or via the Convert API.",
+      },
     ],
-    related: ["word-to-markdown", "image-to-markdown", "excel-to-markdown"],
+    related: [
+      "word-to-markdown",
+      "image-to-markdown",
+      "excel-to-markdown",
+      "powerpoint-to-markdown",
+      "csv-to-markdown",
+      "epub-to-markdown",
+    ],
+    publishedDate: "2026-08-16",
   },
   {
     slug: "word-to-markdown",
@@ -215,7 +250,7 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
     title: "Word to Markdown with AI & translation",
     headline: "Convert Word (DOCX) to Markdown — translate too",
     description:
-      "Convert Microsoft Word .doc and .docx to editable Markdown online. Optional AI cleanup for hard pages and translation into 19 languages. Free Casual plan available.",
+      "Convert Word .doc/.docx to editable Markdown online. AI cleanup for hard pages, plus translation into 19 languages in one pass. Free Casual plan.",
     intro:
       "Move Word drafts into Markdown without hand-fixing headings and lists. FileWorks accepts .doc and .docx, extracts structure, and can translate into 19 languages in the same pass — then you edit in the workspace or export again as DOCX, HTML, or PDF.",
     bullets: [
@@ -229,14 +264,42 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
       "Optionally enable AI reading and choose a translation language.",
       "Convert, review Markdown, then download or re-export to HTML, DOCX, or PDF.",
     ],
+    useCases: [
+      "Writers moving drafts and long reports from Word into Markdown-based docs tools",
+      "Developers feeding Word specs or requirements into coding agents and LLM prompts",
+      "Teams translating Word policies or contracts into another language in the same pass",
+    ],
+    apiExample: `curl -s -H "Authorization: Bearer YOUR_API_KEY" \\
+  -F file=@report.docx \\
+  -F target=markdown \\
+  -F download=true \\
+  -o report.md \\
+  https://api.fileworks.ai/api/v1/convert`,
     faqs: [
       {
         question: "Can I convert and translate DOCX with an API?",
         answer:
           "Yes. Use POST /api/v1/convert with target=markdown, optional use_ai=true, and target_lang. Auth with a fw_live_ API key. See the API docs for curl, Python, and JavaScript examples.",
       },
+      {
+        question: "Does Word to Markdown keep headings, lists, and tables?",
+        answer:
+          "Yes. FileWorks extracts Word document structure — headings, numbered and bulleted lists, and tables — into Markdown syntax instead of dumping raw paragraph text.",
+      },
+      {
+        question: "Is there a file size limit for Word to Markdown?",
+        answer: "Word files up to 50 MB are accepted, whether uploaded in the workspace or via the Convert API.",
+      },
     ],
-    related: ["pdf-to-markdown", "powerpoint-to-markdown", "excel-to-markdown"],
+    related: [
+      "pdf-to-markdown",
+      "powerpoint-to-markdown",
+      "excel-to-markdown",
+      "image-to-markdown",
+      "csv-to-markdown",
+      "epub-to-markdown",
+    ],
+    publishedDate: "2026-08-16",
   },
   {
     slug: "excel-to-markdown",
@@ -244,7 +307,7 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
     title: "Excel to Markdown with translation",
     headline: "Convert Excel to Markdown tables — with translation",
     description:
-      "Convert Excel .xls and .xlsx into Markdown tables online. Optionally translate sheet text into 19 languages. Useful for reports, docs, and LLM context. Free Casual plan.",
+      "Convert Excel .xls/.xlsx into Markdown tables online. Optional translation into 19 languages. Great for reports, docs, and LLM context. Free plan.",
     intro:
       "Spreadsheets do not paste cleanly into notes or prompts. FileWorks turns Excel workbooks into Markdown you can edit, share, or send to an API — and optionally translate cell text into 19 languages in the same pass. CSV and OpenDocument spreadsheets are supported too.",
     bullets: [
@@ -258,14 +321,42 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
       "Optionally choose a translation language, then convert.",
       "Inspect tables in Markdown preview, download, or call the same path from scripts.",
     ],
+    useCases: [
+      "Analysts turning spreadsheet exports into Markdown tables for reports and wikis",
+      "Developers piping CSV/Excel data into LLM prompts or RAG pipelines as structured tables",
+      "Teams translating spreadsheet text for multilingual reporting in one conversion pass",
+    ],
+    apiExample: `curl -s -H "Authorization: Bearer YOUR_API_KEY" \\
+  -F file=@report.xlsx \\
+  -F target=markdown \\
+  -F download=true \\
+  -o report.md \\
+  https://api.fileworks.ai/api/v1/convert`,
     faqs: [
       {
         question: "Does Excel to Markdown keep multiple sheets?",
         answer:
           "FileWorks extracts spreadsheet content into Markdown suitable for reading and editing. For large multi-sheet books, convert focused ranges or use the API in a loop over exports. Translation applies to extracted text in the same pass.",
       },
+      {
+        question: "Can I automate Excel to Markdown conversion?",
+        answer:
+          "Yes. POST /api/v1/convert with an Excel, CSV, or OpenDocument spreadsheet and target=markdown returns Markdown tables over the Convert API — standard conversion is free up to the monthly page cap.",
+      },
+      {
+        question: "Is there a file size limit for Excel to Markdown?",
+        answer: "Spreadsheets up to 50 MB are accepted, whether uploaded in the workspace or via the Convert API.",
+      },
     ],
-    related: ["word-to-markdown", "pdf-to-markdown", "powerpoint-to-markdown"],
+    related: [
+      "word-to-markdown",
+      "pdf-to-markdown",
+      "powerpoint-to-markdown",
+      "image-to-markdown",
+      "csv-to-markdown",
+      "epub-to-markdown",
+    ],
+    publishedDate: "2026-08-16",
   },
   {
     slug: "powerpoint-to-markdown",
@@ -273,7 +364,7 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
     title: "PowerPoint to Markdown with AI & translation",
     headline: "Convert PowerPoint to Markdown — AI & translation",
     description:
-      "Convert PowerPoint .ppt and .pptx into editable Markdown online. AI reading for image-heavy slides and translation into 19 languages. Free Casual plan available.",
+      "Convert PowerPoint .ppt/.pptx into editable Markdown online. AI reading for image-heavy slides, translation into 19 languages. Free Casual plan.",
     intro:
       "Slide decks are awkward to quote in docs and agents. FileWorks converts PowerPoint into Markdown so you can summarize, search, and reuse the content. Use AI reading when slides are image-heavy, and optionally translate into 19 languages in one pass.",
     bullets: [
@@ -287,14 +378,42 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
       "Optionally enable AI reading and pick a translation language.",
       "Convert, edit the Markdown outline, then download or integrate via API keys.",
     ],
+    useCases: [
+      "Developers and AI agents chunking slide decks into Markdown for RAG ingestion",
+      "Teams turning image-heavy decks into searchable, text-first Markdown notes",
+      "Presenters translating slide content into another language before reuse",
+    ],
+    apiExample: `curl -s -H "Authorization: Bearer YOUR_API_KEY" \\
+  -F file=@deck.pptx \\
+  -F target=markdown \\
+  -F download=true \\
+  -o deck.md \\
+  https://api.fileworks.ai/api/v1/convert`,
     faqs: [
       {
         question: "Can I convert and translate PPTX for RAG ingestion?",
         answer:
           "Yes. Markdown with clear structure chunks more reliably than binary PPTX. Use AI reading for image-heavy decks and target_lang for translation, in the web app or via the Convert API.",
       },
+      {
+        question: "Does FileWorks convert .ppt and .odp, or only .pptx?",
+        answer:
+          "All three. FileWorks accepts .ppt, .pptx, and OpenDocument .odp presentations and converts each into text-first Markdown, with AI reading available for image-heavy or scanned slides.",
+      },
+      {
+        question: "Is there a file size limit for PowerPoint to Markdown?",
+        answer: "Presentations up to 50 MB are accepted, whether uploaded in the workspace or via the Convert API.",
+      },
     ],
-    related: ["pdf-to-markdown", "word-to-markdown", "image-to-markdown"],
+    related: [
+      "pdf-to-markdown",
+      "word-to-markdown",
+      "image-to-markdown",
+      "excel-to-markdown",
+      "csv-to-markdown",
+      "epub-to-markdown",
+    ],
+    publishedDate: "2026-08-16",
   },
   {
     slug: "image-to-markdown",
@@ -302,7 +421,7 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
     title: "Image OCR to Markdown with AI & translation",
     headline: "AI OCR images & scans to Markdown — translate too",
     description:
-      "Convert PNG, JPEG, WebP, TIFF photos and scanned pages into editable Markdown with AI reading, then optionally translate into 19 languages. Online document OCR at fileworks.ai.",
+      "Convert PNG/JPEG/WebP/TIFF photos and scans into editable Markdown with AI OCR, then optional translation into 19 languages. Free Casual plan.",
     intro:
       "Phone photos of whiteboards, receipts, and paper scans are not selectable text. FileWorks AI reading performs OCR-style extraction and returns Markdown you can edit, translate into 19 languages, and download — without a separate OCR or translation app.",
     bullets: [
@@ -316,13 +435,154 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
       "Enable AI reading and optionally choose a translation language.",
       "Convert, edit Markdown, then download or re-export.",
     ],
+    useCases: [
+      "Digitizing paper forms, receipts, and whiteboard photos into editable Markdown",
+      "Developers OCR-ing scanned archives for search or RAG ingestion",
+      "Teams translating photographed foreign-language documents in the same pass",
+    ],
+    apiExample: `curl -s -H "Authorization: Bearer YOUR_API_KEY" \\
+  -F file=@scan.png \\
+  -F target=markdown \\
+  -F use_ai=true \\
+  -F download=true \\
+  -o scan.md \\
+  https://api.fileworks.ai/api/v1/convert`,
     faqs: [
       {
         question: "Is AI OCR and translation included on the free plan?",
         answer: casualAiAllowanceFaqAnswer(),
       },
+      {
+        question: "Can I batch-convert multiple scanned images at once?",
+        answer:
+          "In the workspace, upload images one at a time through the editor; for bulk OCR pipelines, call POST /api/v1/convert per image with use_ai=true from a script or the Convert API in a loop.",
+      },
+      {
+        question: "Is there a file size limit for image OCR to Markdown?",
+        answer: "Images and scans up to 50 MB are accepted, whether uploaded in the workspace or via the Convert API.",
+      },
     ],
-    related: ["pdf-to-markdown", "word-to-markdown", "powerpoint-to-markdown"],
+    related: [
+      "pdf-to-markdown",
+      "word-to-markdown",
+      "powerpoint-to-markdown",
+      "excel-to-markdown",
+      "csv-to-markdown",
+      "epub-to-markdown",
+    ],
+    publishedDate: "2026-08-16",
+  },
+  {
+    slug: "csv-to-markdown",
+    path: "/csv-to-markdown",
+    title: "CSV to Markdown table converter",
+    headline: "Convert CSV to Markdown tables — with translation",
+    description:
+      "Convert CSV files into Markdown tables online, free. Same spreadsheet pipeline as Excel, with optional translation into 19 languages in one pass.",
+    intro:
+      "Raw CSV doesn't paste cleanly into docs, wikis, or LLM prompts. FileWorks parses CSV through the same spreadsheet pipeline as Excel and OpenDocument sheets, turning rows and columns into clean Markdown tables you can edit, translate, or automate over the API.",
+    bullets: [
+      "Parses comma- and common delimiter-separated CSV files",
+      "Markdown table output, same pipeline as Excel and OpenDocument sheets",
+      "Optional translation of cell text into 19 languages",
+      "Automate with the Convert API for batch CSV-to-Markdown jobs",
+    ],
+    steps: [
+      "Drop a CSV file into the FileWorks workspace.",
+      "Optionally choose a translation language, then convert.",
+      "Review the Markdown table, download it, or call the same path from a script.",
+    ],
+    useCases: [
+      "Developers turning CSV exports into Markdown tables for docs or READMEs",
+      "Analysts pasting CSV data into LLM prompts or RAG pipelines as structured tables",
+      "Teams automating recurring CSV-to-Markdown jobs over the Convert API",
+    ],
+    apiExample: `curl -s -H "Authorization: Bearer YOUR_API_KEY" \\
+  -F file=@data.csv \\
+  -F target=markdown \\
+  -F download=true \\
+  -o data.md \\
+  https://api.fileworks.ai/api/v1/convert`,
+    faqs: [
+      {
+        question: "Is CSV to Markdown free on FileWorks?",
+        answer: casualFreeTierFaqAnswer(),
+      },
+      {
+        question: "Does CSV conversion use the same pipeline as Excel?",
+        answer:
+          "Yes. CSV, Excel (.xls/.xlsx), and OpenDocument spreadsheets (.ods) all convert through the same tabular pipeline into Markdown tables, with optional translation into 19 languages.",
+      },
+      {
+        question: "Is there a file size limit for CSV to Markdown?",
+        answer: "CSV files up to 50 MB are accepted, whether uploaded in the workspace or via the Convert API.",
+      },
+    ],
+    related: [
+      "excel-to-markdown",
+      "pdf-to-markdown",
+      "word-to-markdown",
+      "powerpoint-to-markdown",
+      "image-to-markdown",
+      "epub-to-markdown",
+    ],
+    publishedDate: "2026-09-30",
+  },
+  {
+    slug: "epub-to-markdown",
+    path: "/epub-to-markdown",
+    title: "EPUB to Markdown converter",
+    headline: "Convert EPUB ebooks to Markdown — with translation",
+    description:
+      "Convert EPUB ebooks into editable Markdown online, free. Chapters and headings map to Markdown structure, with optional translation into 19 languages.",
+    intro:
+      "EPUB keeps chapter and reflow structure for e-readers, not for editing or quoting in notes. FileWorks converts EPUB into Markdown you can edit, search, translate into 19 languages, and feed into docs tools or LLM context.",
+    bullets: [
+      "Accepts standard .epub ebook files",
+      "Chapter headings and text structure map to Markdown",
+      "Optional translation into 19 languages in the same pass",
+      "Download Markdown, TXT, HTML, or re-export via the Convert API",
+    ],
+    steps: [
+      "Open the FileWorks workspace and drop an EPUB file.",
+      "Optionally pick a translation language.",
+      "Convert, then edit the Markdown chapters or download the result.",
+    ],
+    useCases: [
+      "Readers and researchers pulling ebook excerpts into Markdown notes",
+      "Developers and AI agents chunking ebook chapters for RAG ingestion",
+      "Translating an EPUB book's text into another language in one pass",
+    ],
+    apiExample: `curl -s -H "Authorization: Bearer YOUR_API_KEY" \\
+  -F file=@book.epub \\
+  -F target=markdown \\
+  -F download=true \\
+  -o book.md \\
+  https://api.fileworks.ai/api/v1/convert`,
+    faqs: [
+      {
+        question: "Is EPUB to Markdown free on FileWorks?",
+        answer: casualFreeTierFaqAnswer(),
+      },
+      {
+        question: "Can I translate an EPUB while converting it to Markdown?",
+        answer:
+          "Yes. Set a target language alongside the EPUB upload and translation runs in the same conversion pass, sharing the workspace AI page allowance or Convert API AI credits.",
+      },
+      {
+        question: "Is there a file size limit for EPUB to Markdown?",
+        answer: "EPUB files up to 50 MB are accepted, whether uploaded in the workspace or via the Convert API.",
+      },
+    ],
+    related: [
+      "pdf-to-markdown",
+      "word-to-markdown",
+      "csv-to-markdown",
+      "image-to-markdown",
+      "excel-to-markdown",
+      "powerpoint-to-markdown",
+    ],
+    publishedDate: "2026-09-30",
   },
 ];
 
@@ -350,9 +610,22 @@ export function buildPageMetadata(input: {
     description: input.description,
     keywords: [...(input.keywords || PRIMARY_KEYWORDS)],
     alternates: { canonical: url },
+    // Next.js metadata merging replaces `robots` wholesale rather than merging
+    // with the root layout's googleBot snippet/preview directives, so restate
+    // them here — otherwise every page silently loses large image/snippet previews.
     robots: input.noIndex
       ? { index: false, follow: false, googleBot: { index: false, follow: false } }
-      : { index: true, follow: true },
+      : {
+          index: true,
+          follow: true,
+          googleBot: {
+            index: true,
+            follow: true,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+            "max-video-preview": -1,
+          },
+        },
     openGraph: {
       type: "website",
       locale: "en_US",
@@ -530,6 +803,9 @@ export function guideJsonLd(guide: ConvertGuide) {
         url: absoluteUrl(guide.path),
         name: `${guide.title} — ${BUSINESS_NAME}`,
         description: guide.description,
+        datePublished: guide.publishedDate,
+        // Build-time timestamp, same freshness-signal approach as sitemap.ts.
+        dateModified: new Date().toISOString(),
         isPartOf: { "@id": `${SITE_URL}/#website` },
         about: { "@id": `${SITE_URL}/#app` },
       },

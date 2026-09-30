@@ -86,6 +86,11 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   formatDetection: { telephone: false },
+  // Set NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION after adding the domain in Google
+  // Search Console — required to submit the sitemap and request indexing.
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
+    : {}),
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },

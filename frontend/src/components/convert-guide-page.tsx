@@ -64,6 +64,35 @@ export function ConvertGuidePage({ guide }: { guide: ConvertGuide }) {
           </ol>
         </section>
 
+        <section className="panel rounded-3xl px-5 py-5">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
+            Who uses this converter
+          </h2>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--ink-muted)]">
+            {guide.useCases.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="panel rounded-3xl px-5 py-5">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
+            Automate it with the Convert API
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+            Same conversion, scripted. Auth with a <code className="api-inline">fw_live_</code> API
+            key from Profile; standard conversion is free up to the monthly page cap.
+          </p>
+          <pre className="mt-3 overflow-x-auto rounded-2xl bg-[var(--ink)] px-4 py-3 text-xs leading-5 text-white">
+            <code>{guide.apiExample}</code>
+          </pre>
+          <p className="mt-2 text-sm">
+            <a href="/docs" className="text-[var(--accent-strong)] hover:underline">
+              Full API docs — curl, Python, and JavaScript examples →
+            </a>
+          </p>
+        </section>
+
         <SeoFaq items={guide.faqs} />
 
         {related.length ? (

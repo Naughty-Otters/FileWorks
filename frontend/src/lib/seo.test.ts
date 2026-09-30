@@ -23,8 +23,19 @@ describe("seo helpers", () => {
       "excel-to-markdown",
       "powerpoint-to-markdown",
       "image-to-markdown",
+      "csv-to-markdown",
+      "epub-to-markdown",
     ]);
     expect(guideBySlug("pdf-to-markdown")?.path).toBe("/pdf-to-markdown");
+  });
+
+  it("gives every convert guide use cases and full cross-linking", () => {
+    for (const guide of CONVERT_GUIDES) {
+      expect(guide.useCases.length).toBeGreaterThanOrEqual(2);
+      expect(guide.faqs.length).toBeGreaterThanOrEqual(2);
+      // Every guide should link to all four of the other guides for crawl discovery.
+      expect(guide.related.length).toBe(CONVERT_GUIDES.length - 1);
+    }
   });
 
   it("builds absolute canonical URLs and absolute titles", () => {
@@ -46,6 +57,28 @@ describe("seo helpers", () => {
       noIndex: true,
     });
     expect(meta.robots).toMatchObject({ index: false, follow: false });
+  });
+
+  it("keeps large-image/unlimited-snippet googleBot directives on indexable pages", () => {
+    // Next.js metadata merging replaces `robots` wholesale rather than merging
+    // with the root layout's googleBot directives, so buildPageMetadata must
+    // restate them itself — regression would silently shrink search previews.
+    const meta = buildPageMetadata({
+      title: "PDF to Markdown converter",
+      description: "Convert PDF to Markdown online.",
+      path: "/pdf-to-markdown",
+    });
+    expect(meta.robots).toMatchObject({
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    });
   });
 
   it("includes homepage structured data entities", () => {

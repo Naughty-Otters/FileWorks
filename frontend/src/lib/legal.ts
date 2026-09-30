@@ -22,6 +22,8 @@ export const GUIDE_LINKS = [
   { href: "/excel-to-markdown", label: "Excel → Markdown (+ translate)" },
   { href: "/powerpoint-to-markdown", label: "PowerPoint → Markdown (+ AI / translate)" },
   { href: "/image-to-markdown", label: "Image OCR → Markdown (+ translate)" },
+  { href: "/csv-to-markdown", label: "CSV → Markdown (+ translate)" },
+  { href: "/epub-to-markdown", label: "EPUB → Markdown (+ translate)" },
   { href: "/templates", label: "Fillable document designs" },
 ] as const;
 
