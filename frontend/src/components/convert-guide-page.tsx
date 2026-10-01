@@ -66,6 +66,52 @@ export function ConvertGuidePage({ guide }: { guide: ConvertGuide }) {
 
         <section className="panel rounded-3xl px-5 py-5">
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
+            Tips to get clean Markdown
+          </h2>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--ink-muted)]">
+            {guide.tips.map((tip) => (
+              <li key={tip}>{tip}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="panel rounded-3xl px-5 py-5">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
+            How this compares to typical online converters
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">{guide.comparisonIntro}</p>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[480px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-[var(--line)] text-left">
+                  <th scope="col" className="py-2 pr-3 font-medium">
+                    Aspect
+                  </th>
+                  <th scope="col" className="py-2 pr-3 font-medium">
+                    FileWorks
+                  </th>
+                  <th scope="col" className="py-2 font-medium">
+                    Typical free converter
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {guide.comparisonRows.map((row) => (
+                  <tr key={row.aspect} className="border-b border-[var(--line)] align-top">
+                    <th scope="row" className="py-2 pr-3 font-medium text-[var(--ink)]">
+                      {row.aspect}
+                    </th>
+                    <td className="py-2 pr-3 text-[var(--ink-muted)]">{row.fileworks}</td>
+                    <td className="py-2 text-[var(--ink-muted)]">{row.typical}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="panel rounded-3xl px-5 py-5">
+          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
             Who uses this converter
           </h2>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-[var(--ink-muted)]">

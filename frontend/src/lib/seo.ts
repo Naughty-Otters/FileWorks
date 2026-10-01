@@ -164,6 +164,8 @@ export const PRICING_FAQS: FaqItem[] = [
   },
 ];
 
+export type ComparisonRow = { aspect: string; fileworks: string; typical: string };
+
 export type ConvertGuide = {
   slug: string;
   path: string;
@@ -176,6 +178,11 @@ export type ConvertGuide = {
   useCases: string[];
   /** Real curl example against the public Convert API, shown on the guide page. */
   apiExample: string;
+  /** Lead-in for the comparison table, naming the specific failure mode of generic converters. */
+  comparisonIntro: string;
+  comparisonRows: ComparisonRow[];
+  /** Format-specific troubleshooting, not generic advice — what actually goes wrong and why. */
+  tips: string[];
   faqs: FaqItem[];
   related: string[];
   /** First-published date (YYYY-MM-DD), for accurate structured-data freshness signals. */
@@ -214,6 +221,40 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   -F download=true \\
   -o report.md \\
   https://api.fileworks.ai/api/v1/convert`,
+    comparisonIntro:
+      "Most free PDF-to-Markdown tools either flatten everything into plain text or choke on scanned pages. Here's how FileWorks handles the same PDF differently.",
+    comparisonRows: [
+      {
+        aspect: "Scanned / image-only pages",
+        fileworks: "AI reading (OCR) extracts text and keeps structure, in the same pass",
+        typical: "Usually skipped, or dumped as empty or garbled text",
+      },
+      {
+        aspect: "Tables",
+        fileworks: "Rebuilt as Markdown pipe tables",
+        typical: "Often flattened into run-on paragraphs",
+      },
+      {
+        aspect: "Translation",
+        fileworks: "Optional, into 19 languages, in the same conversion pass",
+        typical: "Not offered — needs a second tool",
+      },
+      {
+        aspect: "Automation",
+        fileworks: "Convert API with curl, Python, and JavaScript examples, free tier included",
+        typical: "Browser-only, or an API that's paid-only",
+      },
+      {
+        aspect: "File size",
+        fileworks: "Up to 50 MB per PDF",
+        typical: "Often capped at 5–10 MB on free tiers",
+      },
+    ],
+    tips: [
+      "If headings come out as plain paragraphs, the PDF likely has no real heading styles — turn on AI reading, which infers structure from layout instead of relying on embedded tags.",
+      "For multi-column PDFs (two-column papers, newsletters), AI reading reads in natural reading order; without it, columns can interleave line-by-line.",
+      "Translating a long PDF? Convert first, confirm the Markdown structure looks right, then re-run with a target language — it's cheaper to fix structure once before translating.",
+    ],
     faqs: [
       {
         question: "Is PDF to Markdown free on FileWorks?",
@@ -275,6 +316,40 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   -F download=true \\
   -o report.md \\
   https://api.fileworks.ai/api/v1/convert`,
+    comparisonIntro:
+      "DOCX files carry heavier internal formatting than most converters expect. Here's where that usually breaks, and how FileWorks avoids it.",
+    comparisonRows: [
+      {
+        aspect: "Nested or numbered lists",
+        fileworks: "Preserved as ordered/unordered Markdown lists, including nesting",
+        typical: "Nesting frequently collapses into a single flat list",
+      },
+      {
+        aspect: "Tables",
+        fileworks: "Converted to Markdown pipe tables",
+        typical: "Often rendered as tab-separated text, or dropped",
+      },
+      {
+        aspect: "Legacy .doc files",
+        fileworks: "Accepted directly, same pipeline as .docx",
+        typical: "Frequently unsupported, requiring a manual re-save to .docx first",
+      },
+      {
+        aspect: "Translation",
+        fileworks: "Optional 19-language translation in the same pass",
+        typical: "Not offered",
+      },
+      {
+        aspect: "Re-export",
+        fileworks: "Export back to DOCX, HTML, or PDF after editing",
+        typical: "One-way conversion only",
+      },
+    ],
+    tips: [
+      "If bullet indentation looks off after conversion, it's usually because the Word doc used manual spaces or tabs instead of real list styles — AI reading can often recover the intended structure.",
+      "Track changes and comments aren't preserved in Markdown by design — accept or resolve them in Word before converting if you need the clean final text.",
+      "For legacy .doc files with embedded OLE objects (old Excel charts, etc.), expect the surrounding text to extract but not the live chart — convert the source spreadsheet separately if you need that data.",
+    ],
     faqs: [
       {
         question: "Can I convert and translate DOCX with an API?",
@@ -332,6 +407,40 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   -F download=true \\
   -o report.md \\
   https://api.fileworks.ai/api/v1/convert`,
+    comparisonIntro:
+      "Spreadsheets aren't really \"text\" at all. Here's how FileWorks' tabular pipeline differs from general-purpose converters.",
+    comparisonRows: [
+      {
+        aspect: "Formats accepted",
+        fileworks: ".xls, .xlsx, .ods, and CSV through one pipeline",
+        typical: "Usually one spreadsheet format only",
+      },
+      {
+        aspect: "Merged cells",
+        fileworks: "Resolved into clean Markdown table rows",
+        typical: "Often produces broken or misaligned table syntax",
+      },
+      {
+        aspect: "Translation",
+        fileworks: "Optional cell-text translation into 19 languages",
+        typical: "Not offered",
+      },
+      {
+        aspect: "Automation",
+        fileworks: "Convert API, same request shape as PDF, Word, and CSV",
+        typical: "Spreadsheet-specific tools rarely expose an API",
+      },
+      {
+        aspect: "File size",
+        fileworks: "Up to 50 MB per workbook",
+        typical: "Often capped well below real-world export sizes",
+      },
+    ],
+    tips: [
+      "Very wide sheets (20+ columns) make Markdown tables hard to read — convert a filtered range instead of the whole sheet if you're pasting the result into a chat or doc.",
+      "Formulas convert to their last calculated value, not the formula text — recalculate and save in Excel before converting if a cell shows a stale number.",
+      "For recurring exports (a weekly report, say), the Convert API lets you script the xlsx-to-Markdown step instead of re-uploading by hand each time.",
+    ],
     faqs: [
       {
         question: "Does Excel to Markdown keep multiple sheets?",
@@ -389,6 +498,40 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   -F download=true \\
   -o deck.md \\
   https://api.fileworks.ai/api/v1/convert`,
+    comparisonIntro:
+      "Slide decks pack most of their meaning into visual layout, not text flow. Here's the difference in practice.",
+    comparisonRows: [
+      {
+        aspect: "Image-heavy slides",
+        fileworks: "AI reading extracts on-slide text via OCR-style reading",
+        typical: "Slides with text-in-images usually convert to blank sections",
+      },
+      {
+        aspect: "Speaker notes",
+        fileworks: "Captured alongside slide content, kept text-first",
+        typical: "Often dropped entirely",
+      },
+      {
+        aspect: "Formats",
+        fileworks: ".ppt, .pptx, and .odp through one pipeline",
+        typical: "Usually .pptx only",
+      },
+      {
+        aspect: "Translation",
+        fileworks: "Optional translation of slide text into 19 languages",
+        typical: "Not offered",
+      },
+      {
+        aspect: "RAG / agent use",
+        fileworks: "Clean per-slide Markdown headings, better for chunking",
+        typical: "Raw text dumps with no slide boundaries",
+      },
+    ],
+    tips: [
+      "If a slide's text comes back empty, the text is probably embedded in a picture — turn on AI reading so OCR can pull it out.",
+      "Decks with heavy SmartArt or diagrams convert the surrounding labels and text, not the diagram shape itself — re-describe complex diagrams manually if you need that detail in Markdown.",
+      "Converting for RAG ingestion? Keep slide titles short and descriptive in the source deck — they become your Markdown headings and chunk boundaries.",
+    ],
     faqs: [
       {
         question: "Can I convert and translate PPTX for RAG ingestion?",
@@ -447,6 +590,39 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   -F download=true \\
   -o scan.md \\
   https://api.fileworks.ai/api/v1/convert`,
+    comparisonIntro: "A photo of a page is pixels, not text — the gap between tools shows up here.",
+    comparisonRows: [
+      {
+        aspect: "Handwriting / low-light scans",
+        fileworks: "AI reading handles moderately messy scans and phone photos",
+        typical: "Basic OCR tools often fail outside clean, flat scans",
+      },
+      {
+        aspect: "Formats",
+        fileworks: "PNG, JPEG, WebP, BMP, and TIFF in one flow",
+        typical: "Frequently JPEG/PNG only",
+      },
+      {
+        aspect: "Translation",
+        fileworks: "Optional translation of OCR'd text into 19 languages",
+        typical: "Needs a second translation tool",
+      },
+      {
+        aspect: "Output",
+        fileworks: "Structured Markdown (headings/lists where detectable), not just a text blob",
+        typical: "Usually plain, unstructured text",
+      },
+      {
+        aspect: "Batch use",
+        fileworks: "Script per-image calls over the Convert API",
+        typical: "One image at a time in a browser UI",
+      },
+    ],
+    tips: [
+      "For whiteboard photos, shoot straight-on if possible — heavy perspective skew causes more OCR mistakes than messy handwriting does.",
+      "Receipts and forms with small print convert more reliably at higher photo resolution — a blurry 1 MB photo OCRs worse than a sharp 5 MB one, even though both are well under the 50 MB limit.",
+      "If you're OCR-ing a multi-page scan, convert and save each page's Markdown separately so one bad page doesn't force you to redo the whole batch.",
+    ],
     faqs: [
       {
         question: "Is AI OCR and translation included on the free plan?",
@@ -503,6 +679,39 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   -F download=true \\
   -o data.md \\
   https://api.fileworks.ai/api/v1/convert`,
+    comparisonIntro: "CSV looks simple until delimiters, quoting, or encoding don't match what a tool expects.",
+    comparisonRows: [
+      {
+        aspect: "Delimiters",
+        fileworks: "Common delimiter variants parsed through the same pipeline as Excel",
+        typical: "Many tools assume comma-only and mis-split semicolon/tab files",
+      },
+      {
+        aspect: "Large files",
+        fileworks: "Up to 50 MB per file",
+        typical: "Often capped much lower for plain-text tools",
+      },
+      {
+        aspect: "Translation",
+        fileworks: "Optional translation of cell text into 19 languages",
+        typical: "Not offered",
+      },
+      {
+        aspect: "Consistency with Excel",
+        fileworks: "Same tabular pipeline as .xlsx/.ods, so output format matches",
+        typical: "A separate tool from the Excel converter, with different output quirks",
+      },
+      {
+        aspect: "Automation",
+        fileworks: "Convert API for batch CSV-to-Markdown jobs",
+        typical: "Manual upload only",
+      },
+    ],
+    tips: [
+      "If columns come out misaligned, double-check the CSV's actual delimiter (comma vs. semicolon vs. tab) — re-saving from the source spreadsheet as standard comma-separated usually fixes it.",
+      "Very large CSVs (tens of thousands of rows) make unwieldy Markdown tables for a person to read — convert a filtered export instead if the result isn't going straight to a script.",
+      "For recurring exports from the same system, the Convert API lets you automate the CSV-to-Markdown step as part of a pipeline instead of converting by hand each time.",
+    ],
     faqs: [
       {
         question: "Is CSV to Markdown free on FileWorks?",
@@ -559,6 +768,39 @@ export const CONVERT_GUIDES: ConvertGuide[] = [
   -F download=true \\
   -o book.md \\
   https://api.fileworks.ai/api/v1/convert`,
+    comparisonIntro: "Ebooks are built for reflowable reading, not editing — here's what usually gets lost elsewhere.",
+    comparisonRows: [
+      {
+        aspect: "Chapter structure",
+        fileworks: "Chapter headings map to Markdown heading levels",
+        typical: "Often flattened into one long, untitled block of text",
+      },
+      {
+        aspect: "Footnotes / endnotes",
+        fileworks: "Kept inline near their reference where the EPUB structure supports it",
+        typical: "Frequently dropped or separated from context",
+      },
+      {
+        aspect: "Translation",
+        fileworks: "Optional translation of the full book's text into 19 languages",
+        typical: "Not offered",
+      },
+      {
+        aspect: "Output options",
+        fileworks: "Markdown, TXT, or HTML re-export",
+        typical: "Usually plain text only",
+      },
+      {
+        aspect: "File size",
+        fileworks: "Up to 50 MB per EPUB",
+        typical: "Often capped well below typical ebook sizes",
+      },
+    ],
+    tips: [
+      "If chapter breaks disappear in the output, check that the source EPUB actually uses heading tags for chapter titles — some poorly structured EPUBs rely on page breaks alone, which carry no heading information.",
+      "For long books, convert and review one chapter's Markdown first before translating the whole file, since translation uses AI page credits or allowance.",
+      "Image-heavy EPUBs (comics, illustrated books) convert the surrounding text well but won't meaningfully OCR embedded illustrations — this converter is for text-structured ebooks, not scanned picture books.",
+    ],
     faqs: [
       {
         question: "Is EPUB to Markdown free on FileWorks?",
